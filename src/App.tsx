@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { AppLayout } from './components/layout/AppLayout';
-import { ManningWaterfall } from './components/dashboard/ManningWaterfall';
+import { StrategicPulseDashboard } from './components/dashboard/StrategicPulseDashboard';
 import type { Tab } from './components/layout/Sidebar';
 
 function App() {
@@ -9,7 +9,7 @@ function App() {
   const renderContent = () => {
     switch (activeTab) {
       case 'dashboard':
-        return <ManningWaterfall />;
+        return <StrategicPulseDashboard />;
       case 'reports':
         return <div className="p-8 text-slate-500">Reports Manager - Coming Soon</div>;
       case 'groups':
@@ -17,7 +17,7 @@ function App() {
       case 'schedule':
         return <div className="p-8 text-slate-500">Board Schedule - Coming Soon</div>;
       default:
-        return <ManningWaterfall />;
+        return <StrategicPulseDashboard />;
     }
   };
 

@@ -1,10 +1,7 @@
 
 import {
-    FileText,
-    LogOut,
     Plus,
     Users,
-    ArrowRight
 } from 'lucide-react';
 import type { Member } from '../../types';
 import { MONTHS, PERIODIC_SCHEDULE, CURRENT_YEAR } from '../../lib/constants';
@@ -12,9 +9,11 @@ import { MONTHS, PERIODIC_SCHEDULE, CURRENT_YEAR } from '../../lib/constants';
 interface TimelineRowProps {
     member: Member;
     coDetachDate: string;
+    avgRSCA: number;
+    onReportClick: () => void;
 }
 
-export const TimelineRow = ({ member, coDetachDate }: TimelineRowProps) => {
+export const TimelineRow = ({ member, coDetachDate, avgRSCA, onReportClick }: TimelineRowProps) => {
     // Helper to calculate position percentage (0-100%) based on month (0-11)
     const getPos = (monthIndex: number, day = 15) => {
         const totalDays = 12 * 30;
@@ -49,30 +48,13 @@ export const TimelineRow = ({ member, coDetachDate }: TimelineRowProps) => {
                 </div>
             </div>
 
-            {/* Trajectory Stats */}
-            <div className="col-span-2 flex flex-col justify-center border-l border-r border-slate-100 px-2">
-                <div className="flex items-center justify-between text-xs mb-1">
-                    <span className="text-slate-400">Trend</span>
-                    <div className="flex items-center space-x-1">
-                        <span className="text-slate-400">{member.lastTrait?.toFixed(2) || 'N/A'}</span>
-                        <ArrowRight size={10} className="text-slate-300" />
-                        <span className="font-bold text-blue-600">{member.nextPlan === 'NOB' || !member.nextPlan ? 'NOB' : (member.nextPlan as number).toFixed(2)}</span>
-                        <ArrowRight size={10} className="text-slate-300" />
-                        <span className="font-bold text-green-600">{member.target?.toFixed(2)}</span>
-                    </div>
-                </div>
-                <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
-                    {typeof member.nextPlan === 'number' && (
-                        <div
-                            className="h-full bg-blue-500 rounded-full"
-                            style={{ width: `${(member.nextPlan / 5.0) * 100}%` }}
-                        ></div>
-                    )}
-                </div>
-            </div>
+            {/* Trajectory Stats REMOVED */}
+            {/* <div className="col-span-2 flex flex-col justify-center border-l border-r border-slate-100 px-2">
+                ...
+            </div> */}
 
             {/* The Timeline Visual */}
-            <div className="col-span-7 relative h-12 flex items-center pr-4">
+            <div className="col-span-9 relative h-12 flex items-center pr-4">
                 {/* Background Grid Lines (Months) */}
                 {MONTHS.map((_, idx) => (
                     <div key={idx} className="absolute h-full border-r border-slate-100 top-0" style={{ left: `${(idx + 1) * 8.33}%` }}></div>
@@ -81,31 +63,56 @@ export const TimelineRow = ({ member, coDetachDate }: TimelineRowProps) => {
                 {/* Timeline Track */}
                 <div className="absolute w-full h-1 bg-slate-200 rounded top-1/2 -translate-y-1/2"></div>
 
-                {/* 1. Periodic Report Marker */}
-                {!isGaining && periodicPos > 0 && (
+                {/* 1. Periodic Report Marker - Only show if before Detach Date */}
+                {!isGaining && periodicPos > 0 && periodicPos <= coDetachPos && (
                     <div
-                        className="absolute top-1/2 -translate-y-1/2 w-6 h-6 bg-blue-500 rounded-full border-2 border-white shadow-sm flex items-center justify-center z-10 group cursor-pointer hover:scale-110 transition-transform"
+                        className={`absolute top-1/2 -translate-y-1/2 w-8 h-8 rounded-full border-2 shadow-sm flex items-center justify-center z-10 group cursor-pointer hover:scale-110 transition-transform ${typeof member.nextPlan === 'number' && member.nextPlan >= avgRSCA
+                            ? 'bg-blue-500 border-green-400 ring-2 ring-green-100'
+                            : 'bg-blue-500 border-white'
+                            }`}
                         style={{ left: `${periodicPos}%` }}
                         title={`Periodic Report Due: ${MONTHS[periodicMonth - 1]}`}
+                        onClick={onReportClick}
                     >
-                        <FileText size={12} className="text-white" />
+                        <span className="text-[10px] font-bold text-white">
+                            {member.nextPlan === 'NOB' || !member.nextPlan ? 'NOB' : (member.nextPlan as number).toFixed(2)}
+                        </span>
+
                         {/* Tooltip */}
-                        <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 bg-slate-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 whitespace-nowrap z-20 pointer-events-none">
-                            Periodic: {member.nextPlan}
+                        <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 bg-slate-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 whitespace-nowrap z-20 pointer-events-none text-center">
+                            <div>Periodic: {member.nextPlan}</div>
+                            {typeof member.nextPlan === 'number' && (
+                                <div className={member.nextPlan >= avgRSCA ? 'text-green-300' : 'text-yellow-300'}>
+                                    {member.nextPlan >= avgRSCA ? '+' : ''}{(member.nextPlan - avgRSCA).toFixed(2)} vs RSCA
+                                </div>
+                            )}
                         </div>
                     </div>
                 )}
 
-                {/* 2. Transfer/Loss Marker */}
-                {isTransferring && (
+                {/* 2. Transfer/Loss Marker - Only show if before Detach Date */}
+                {isTransferring && transferPos <= coDetachPos && (
                     <div
-                        className="absolute top-1/2 -translate-y-1/2 w-6 h-6 bg-red-500 rounded-full border-2 border-white shadow-sm flex items-center justify-center z-10 group cursor-pointer"
+                        className={`absolute top-1/2 -translate-y-1/2 w-8 h-8 rounded-full border-2 shadow-sm flex items-center justify-center z-10 group cursor-pointer hover:scale-110 transition-transform ${typeof member.target === 'number' && member.target >= avgRSCA
+                            ? 'bg-red-500 border-green-400 ring-2 ring-green-100'
+                            : 'bg-red-500 border-white'
+                            }`}
                         style={{ left: `${transferPos}%` }}
                         title={`Transfer PRD: ${member.prd}`}
+                        onClick={onReportClick}
                     >
-                        <LogOut size={12} className="text-white ml-0.5" />
-                        <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 bg-slate-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 whitespace-nowrap z-20 pointer-events-none">
-                            Transfer: Detach Report
+                        <span className="text-[10px] font-bold text-white">
+                            {member.target ? member.target.toFixed(2) : 'N/A'}
+                        </span>
+
+                        {/* Tooltip */}
+                        <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 bg-slate-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 whitespace-nowrap z-20 pointer-events-none text-center">
+                            <div>Transfer: Detach Report</div>
+                            {typeof member.target === 'number' && (
+                                <div className={member.target >= avgRSCA ? 'text-green-300' : 'text-yellow-300'}>
+                                    {member.target >= avgRSCA ? '+' : ''}{(member.target - avgRSCA).toFixed(2)} vs RSCA
+                                </div>
+                            )}
                         </div>
                     </div>
                 )}
