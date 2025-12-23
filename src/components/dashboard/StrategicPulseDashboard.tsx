@@ -1,7 +1,8 @@
-import { Calendar, Plus } from 'lucide-react';
-import { CURRENT_YEAR } from '../../lib/constants';
+// import { Calendar, Plus } from 'lucide-react'; 
+// import { CURRENT_YEAR } from '../../lib/constants';
 import { ManningWaterfall } from './ManningWaterfall';
-import { RscaHealthWidget } from './RscaHealthWidget';
+import { RscaHealthScoreboard } from './RscaHealthScoreboard';
+// import { OpportunityRadarWidget } from './OpportunityRadarWidget';
 
 import { ActivitySyncBar } from './ActivitySyncBar';
 
@@ -9,31 +10,20 @@ export const StrategicPulseDashboard = () => {
     return (
         <div className="flex flex-col h-full bg-slate-50">
             {/* Header */}
-            <header className="h-16 bg-white border-b border-slate-200 flex justify-between items-center px-8 shadow-sm flex-shrink-0">
-                <h2 className="text-xl font-bold text-slate-800">Command Strategic Pulse</h2>
+            <header className="h-16 bg-white border-b border-slate-200 flex justify-between items-center px-8 shadow-sm flex-shrink-0 z-10">
+                {/* Replaced Title with Scoreboard */}
+                <div className="flex-1 overflow-hidden flex items-center">
+                    <RscaHealthScoreboard />
+                </div>
                 <div className="flex items-center space-x-4">
-                    <div className="flex items-center space-x-2 text-sm text-slate-600 bg-slate-100 px-3 py-1.5 rounded-lg border border-slate-200">
-                        <Calendar size={14} />
-                        <span>Year: {CURRENT_YEAR}</span>
-                    </div>
-                    <button className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center">
-                        <Plus size={16} className="mr-2" />
-                        New Report
-                    </button>
+                    {/* Controls removed as requested */}
                 </div>
             </header>
 
-            <div className="flex-1 overflow-y-auto p-8 custom-scrollbar">
-                {/* Top Row: Strategy Cards */}
-                <RscaHealthWidget />
-
+            <div className="flex-1 overflow-hidden p-4 flex flex-col">
                 {/* Main Row: Manning Waterfall */}
-                <div className="grid grid-cols-12 gap-8">
-                    <div className="col-span-12">
-                        <div className="h-[600px] w-full">
-                            <ManningWaterfall />
-                        </div>
-                    </div>
+                <div className="flex-1 w-full min-h-0">
+                    <ManningWaterfall />
                 </div>
             </div>
 

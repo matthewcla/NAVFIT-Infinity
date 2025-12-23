@@ -1,13 +1,14 @@
 import React, { useState, useRef, useMemo, useEffect } from 'react';
+import { Target, Wand2 } from 'lucide-react';
 import { projectRSCA } from '../../lib/engines/rsca';
-import { RscaFlexibilityWidget } from './RscaFlexibilityWidget';
+import { optimizeStrategy } from '../../lib/engines/strategy';
 
 // --- MOCK DATA FOR PROTOTYPING ---
 const MOCK_START_DATE = new Date('2025-01-01');
 
 const INITIAL_RSCA = 3.85;
 const INITIAL_SIGNED_COUNT = 45;
-const TARGET_RANGE = { min: 3.80, max: 4.00 };
+// const TARGET_RANGE = { min: 3.80, max: 4.00 };
 
 // Types for detailed member info
 interface MemberProfile {
@@ -105,17 +106,9 @@ const INITIAL_REPORTS = generateMockReports();
 
 interface ScatterPoint {
     id: string;
-    originalX: number;
     x: number; // pixel (render)
     y: number; // pixel (render)
     report: typeof INITIAL_REPORTS[0];
-}
-
-interface TrendPoint {
-    monthIndex: number;
-    x: number;
-    y: number;
-    value: number;
 }
 
 export const StrategyScattergram = () => {
@@ -131,9 +124,74 @@ export const StrategyScattergram = () => {
     const [zOrder, setZOrder] = useState<string[]>([]);
 
     const svgRef = useRef<SVGSVGElement>(null);
+    const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+    // --- DIMENSIONS & SCALES ---
+    const height = 500;
+    const padding = { top: 60, bottom: 40 }; // Reduced bottom padding as labels moved up
+
+    // Y-Axis Config
+    const CHART_H = height - padding.top - padding.bottom;
+
+    // X-Axis Config
+    // Extended Timeline: 24 Months
+    const NUM_MONTHS = 24;
+    const COL_WIDTH = 96; // match ManningWaterfall
+    const CHART_TOTAL_WIDTH = NUM_MONTHS * COL_WIDTH; // Scrollable Width
+
+    const NOB_TRAIT_VALUE = 5.5; // Exactly 0.5 above 5.0
+    const MIN_TRAIT = 1.0;
+    const MAX_TRAIT = 5.5; // NOB is at the max edge
+
+    const traitToY = (trait: number) => {
+        const range = MAX_TRAIT - MIN_TRAIT;
+        const normalized = (trait - MIN_TRAIT) / range;
+        return CHART_H - (normalized * CHART_H) + padding.top;
+    };
+
+    const yToTrait = (y: number) => {
+        const relativeY = y - padding.top;
+        const normalized = 1 - (relativeY / CHART_H);
+        return MIN_TRAIT + (normalized * (MAX_TRAIT - MIN_TRAIT));
+    };
+
+    const monthToX = (monthIndex: number) => {
+        return (monthIndex * COL_WIDTH) + (COL_WIDTH / 2);
+    };
+
+    // Auto-Scroll Logic
+    const handleJumpToNow = () => {
+        if (scrollContainerRef.current) {
+            // Calculate months between MOCK_START_DATE and Now
+            const now = new Date();
+            const start = new Date(MOCK_START_DATE);
+            // Timeline starts 3 months BEFORE Mock Start
+            // So index 0 = MOCK_START - 3 months.
+            // Index of MOCK_START = 3.
+
+            const diffYears = now.getFullYear() - start.getFullYear();
+            const diffMonths = now.getMonth() - start.getMonth();
+            const totalMonthsDiff = (diffYears * 12) + diffMonths;
+
+            // Timeline index for "Now"
+            const currentMonthIndex = totalMonthsDiff + 3;
+
+            const scrollX = (currentMonthIndex * COL_WIDTH) - (scrollContainerRef.current.clientWidth / 2) + (COL_WIDTH / 2);
+            scrollContainerRef.current.scrollTo({ left: Math.max(0, scrollX), behavior: 'smooth' });
+        }
+    };
+
+
+    // Initial Scroll
+    useEffect(() => {
+        // Small timeout to ensure layout is ready
+        const timer = setTimeout(() => {
+            handleJumpToNow();
+        }, 100);
+        return () => clearTimeout(timer);
+    }, []);
 
     // --- FILTERS ---
-    // ... (unchanged)
     // 1. Get available groups for current macro
     const availableGroups = useMemo(() => {
         const groups = new Set<string>();
@@ -167,41 +225,6 @@ export const StrategyScattergram = () => {
     }, [reports, selectedSummaryGroup]);
 
 
-    // --- DIMENSIONS & SCALES ---
-    const width = 800;
-    const height = 500;
-    const padding = { top: 60, right: 40, bottom: 80, left: 60 }; // Increased bottom padding for labels
-
-    // Add internal buffer for X axis to prevent overlap with Y axis labels
-    const X_AXIS_BUFFER = 40;
-    const chartWidth = width - padding.left - padding.right - X_AXIS_BUFFER;
-    const chartHeight = height - padding.top - padding.bottom;
-
-    // NOB Zone now a specific line above 5.0
-    const NOB_TRAIT_VALUE = 5.25;
-
-    // Y-Axis: 1.0 to 5.5 (to include NOB line)
-    const MIN_TRAIT = 1.0;
-    const MAX_TRAIT = 5.5;
-
-    const traitToY = (trait: number) => {
-        const range = MAX_TRAIT - MIN_TRAIT;
-        const normalized = (trait - MIN_TRAIT) / range;
-        return chartHeight - (normalized * chartHeight) + padding.top;
-    };
-
-    const yToTrait = (y: number) => {
-        const relativeY = y - padding.top;
-        const normalized = 1 - (relativeY / chartHeight);
-        return MIN_TRAIT + (normalized * (MAX_TRAIT - MIN_TRAIT));
-    };
-
-    const monthToX = (monthIndex: number) => {
-        const step = chartWidth / 11;
-        // Start after the buffer
-        return padding.left + X_AXIS_BUFFER + (monthIndex * step);
-    };
-
     // --- DERIVED DATA ---
     const projectedRSCAVal = useMemo(() => {
         const itas = filteredReports.filter(r => !r.isNOB).map(r => r.traitAverage);
@@ -210,46 +233,34 @@ export const StrategyScattergram = () => {
     }, [filteredReports]);
 
     const points: ScatterPoint[] = useMemo(() => {
-        // 1. Calculate raw positions
         let rawPoints = filteredReports.map(r => ({
             id: r.id,
-            originalX: monthToX(r.monthIndex),
-            x: monthToX(r.monthIndex),
-            // Dynamically calculate y based on trait value (NOB is just another value now)
+            // Shift +3 months to align with display timeline start (which starts 3 months before mock start)
+            x: monthToX(r.monthIndex + 3),
             y: traitToY(r.isNOB ? NOB_TRAIT_VALUE : r.traitAverage),
             report: r
         }));
 
-        // 2. Lateral Offset Collision Handling
-        const COLLISION_RADIUS = 22; // approx icon size
+        // Collision Handling
+        const COLLISION_RADIUS = 22;
         const ITERATIONS = 3;
 
         for (let iter = 0; iter < ITERATIONS; iter++) {
-            // Sort by X to process left-to-right
             rawPoints.sort((a, b) => a.x - b.x);
-
             for (let i = 0; i < rawPoints.length; i++) {
                 const p1 = rawPoints[i];
                 for (let j = i + 1; j < rawPoints.length; j++) {
                     const p2 = rawPoints[j];
-
-                    // Optimization: If X distance is large, break
                     if (p2.x - p1.x > COLLISION_RADIUS) break;
-
-                    // Check Y overlap (visual distance in local scaled group space)
                     if (Math.abs(p1.y - p2.y) < COLLISION_RADIUS) {
-                        // Overlap detected! Shift laterally.
                         const overlap = COLLISION_RADIUS - (p2.x - p1.x);
-                        // Distribute shift
                         const shift = Math.max(0.5, overlap / 2);
-
                         p1.x -= shift;
                         p2.x += shift;
                     }
                 }
             }
         }
-
         return rawPoints;
     }, [filteredReports]);
 
@@ -263,7 +274,7 @@ export const StrategyScattergram = () => {
         });
     }, [points, zOrder]);
 
-    const connections = useMemo(() => {
+    const globalConnections = useMemo(() => {
         const memberReports: Record<string, ScatterPoint[]> = {};
         points.forEach(p => {
             if (!memberReports[p.report.memberId]) memberReports[p.report.memberId] = [];
@@ -286,23 +297,95 @@ export const StrategyScattergram = () => {
         return lines;
     }, [points]);
 
-    const trendPoints: TrendPoint[] = useMemo(() => {
-        const pts: TrendPoint[] = [];
-        for (let m = 0; m < 12; m++) {
-            const reportsUpToNow = filteredReports.filter(r => r.monthIndex <= m && r.type !== 'Gain' && !r.isNOB);
-            if (reportsUpToNow.length === 0) continue;
+    // Stepped RSCA Trend Lines & Connections
+    const { trendLines, impactConnections } = useMemo(() => {
+        const lines: { x1: number, x2: number, y: number, value: number }[] = [];
 
-            const itas = reportsUpToNow.map(r => r.traitAverage);
-            const val = projectRSCA(INITIAL_RSCA, INITIAL_SIGNED_COUNT, itas);
+        // We simulate time flowing.
+        // RSCA holds steady until (Report Date + 3 Months).
+        // At (Report Date + 3 Months), RSCA updates.
+        let currentRSCA = INITIAL_RSCA;
+        const RSCA_LAG_MONTHS = 3;
 
-            pts.push({
-                monthIndex: m,
-                x: monthToX(m),
-                y: traitToY(val),
-                value: val
-            });
+        // Create a map of "Impact Months" -> "Trait Averages"
+        const impacts = new Map<number, number[]>();
+        filteredReports.forEach(r => {
+            if (r.isNOB) return;
+            const impactMonth = r.monthIndex + RSCA_LAG_MONTHS;
+            if (!impacts.has(impactMonth)) impacts.set(impactMonth, []);
+            impacts.get(impactMonth)?.push(r.traitAverage);
+        });
+
+        // Find all "Change Events" (months where RSCA changes)
+        const changeEvents = Array.from(impacts.keys()).sort((a, b) => a - b);
+
+        let lastX = 0;
+
+        for (let m = 0; m < NUM_MONTHS + RSCA_LAG_MONTHS; m++) {
+            const chartMonthIndex = m;
+            const realMonthIndex = chartMonthIndex - 3; // Convert back to data month index
+
+            // Check if there's an impact at this Real Month Index
+            if (impacts.has(realMonthIndex)) {
+                // Time to update RSCA
+                // 1. End previous line at this X
+                const thisX = monthToX(chartMonthIndex);
+
+                lines.push({
+                    x1: lastX,
+                    x2: thisX,
+                    y: traitToY(currentRSCA),
+                    value: currentRSCA
+                });
+
+                // 2. Calculate new RSCA
+                // Simple weighted average drift for visual demo
+                const newItas = impacts.get(realMonthIndex) || [];
+                // Calculate average of new reports
+                const avgNew = newItas.reduce((a, b) => a + b, 0) / newItas.length;
+
+                // If avg > rsca, it goes up.
+                const diff = (avgNew - currentRSCA) * 0.1; // Damped impact
+                const nextRSCA = currentRSCA + diff;
+
+                currentRSCA = nextRSCA;
+                lastX = thisX;
+            }
         }
-        return pts;
+
+        // Final line to end
+        lines.push({
+            x1: lastX,
+            x2: CHART_TOTAL_WIDTH,
+            y: traitToY(currentRSCA),
+            value: currentRSCA
+        });
+
+        const finalConnections = filteredReports.map(r => {
+            if (r.isNOB) return null;
+            // Impact is 3 months later
+            const impactChartMonth = (r.monthIndex + 3) + RSCA_LAG_MONTHS;
+            const impactX = monthToX(impactChartMonth);
+
+            // Find RSCA value at that time (roughly)
+            // We can just look at the lines we generated
+            const lineAtImpact = lines.find(l => l.x1 <= impactX && l.x2 >= impactX);
+            const impactY = lineAtImpact ? lineAtImpact.y : traitToY(currentRSCA);
+
+            const reportX = monthToX(r.monthIndex + 3);
+            const reportY = traitToY(r.traitAverage);
+
+            return {
+                id: r.id,
+                x1: reportX,
+                y1: reportY,
+                x2: impactX,
+                y2: impactY,
+                color: r.traitAverage >= impactY ? '#22c55e' : '#ef4444' // Green if pulling up? Or just neutral
+            };
+        }).filter(Boolean) as { id: string, x1: number, y1: number, x2: number, y2: number, color: string }[];
+
+        return { trendLines: lines, impactConnections: finalConnections };
     }, [filteredReports]);
 
     // --- UTILS ---
@@ -316,7 +399,7 @@ export const StrategyScattergram = () => {
         switch (type) {
             case 'Periodic': return '#3b82f6'; // Blue-500
             case 'Transfer': return '#ef4444'; // Red-500
-            case 'Gain': return '#64748b'; // Slate-500 equivalent color for the stroke
+            case 'Gain': return '#64748b'; // Slate-500
             case 'Special': return '#eab308'; // Yellow-500
             case 'Promotion': return '#22c55e'; // Green-500
             default: return '#64748b';
@@ -324,8 +407,6 @@ export const StrategyScattergram = () => {
     };
 
     // --- HANDLERS ---
-
-    // Simplified Mouse Down for Dragging only (no panning)
     const handleMouseDown = (e: React.MouseEvent, id: string) => {
         e.stopPropagation();
         e.preventDefault();
@@ -338,22 +419,15 @@ export const StrategyScattergram = () => {
 
     const handleMouseMove = (e: React.MouseEvent) => {
         if (!activeDragId || !svgRef.current) return;
-        const CTM = svgRef.current.getScreenCTM();
-        if (!CTM) return;
-
-        const clientY = e.clientY;
-        const svgY = (clientY - CTM.f) / CTM.d;
-
-        const chartY = svgY;
+        const rect = svgRef.current.getBoundingClientRect();
+        const clientY = e.clientY - rect.top;
 
         let newTrait = 0;
         let isNowNOB = false;
 
-        // NOB Logic: Check if cursor visually in top area (above 5.10)
-        // Map Y back to Trait
-        newTrait = Number(yToTrait(chartY).toFixed(2));
+        newTrait = Number(yToTrait(clientY).toFixed(2));
 
-        if (newTrait > 5.10) {
+        if (newTrait > 5.10) { // Threshold for snapping to NOB
             isNowNOB = true;
         } else {
             isNowNOB = false;
@@ -363,7 +437,7 @@ export const StrategyScattergram = () => {
         setReports(prev => prev.map(r =>
             r.id === activeDragId ? {
                 ...r,
-                traitAverage: isNowNOB ? 0 : newTrait, // Value doesn't determine position for NOB
+                traitAverage: isNowNOB ? 0 : newTrait,
                 isNOB: isNowNOB
             } : r
         ));
@@ -379,189 +453,237 @@ export const StrategyScattergram = () => {
         return () => window.removeEventListener('mouseup', globalUp);
     }, [activeDragId]);
 
+    // Timeline Labels Generator
+    const TIMELINE_LABELS = useMemo(() => {
+        const arr = [];
+        const start = new Date(MOCK_START_DATE);
+        start.setMonth(start.getMonth() - 3); // Start 3 months back
+
+        for (let i = 0; i < NUM_MONTHS; i++) {
+            const d = new Date(start);
+            d.setMonth(start.getMonth() + i);
+            arr.push(d.toLocaleDateString('en-US', { month: 'short', year: '2-digit' }));
+        }
+        return arr;
+    }, []);
+
+    // Optimization Logic
+    const handleOptimize = () => {
+        // Run optimization based on current RSCA projection (or initial if not enough data)
+        const currentProjection = projectedRSCAVal || INITIAL_RSCA;
+
+        const optimized = optimizeStrategy(reports, currentProjection);
+        setReports(optimized);
+    };
+
+
     return (
         <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm h-full flex flex-col">
-            <div className="flex justify-between items-start mb-4 flex-shrink-0">
-                {/* Controls (same) */}
-                <div>
-                    <div className="flex space-x-1 bg-slate-100 p-1 rounded-lg w-fit mb-3">
+            {/* Header: Jump to Now on LEFT, Toggles on RIGHT */}
+            <div className="flex justify-between items-center mb-4 flex-shrink-0">
+
+                {/* Left: Jump to Now & Optimize */}
+                <div className="flex items-center space-x-2">
+                    <button
+                        onClick={handleJumpToNow}
+                        className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-colors border border-slate-200"
+                        title="Jump to Current Month"
+                    >
+                        <Target size={20} />
+                    </button>
+                    <button
+                        onClick={handleOptimize}
+                        className="flex items-center space-x-2 px-3 py-1.5 bg-purple-50 text-purple-600 hover:bg-purple-100 rounded-full transition-colors border border-purple-200"
+                        title="Auto-Optimize Strategy (Seniority Based)"
+                    >
+                        <Wand2 size={16} />
+                        <span className="text-xs font-bold">Optimize</span>
+                    </button>
+                </div>
+
+                {/* Right: Controls */}
+                <div className="flex flex-col items-end space-y-2">
+                    <div className="flex space-x-1 bg-slate-100 p-1 rounded-lg w-fit">
                         {(['Wardroom', 'CPO', 'Crew'] as const).map(tier => (
                             <button key={tier} onClick={() => setMacroFilter(tier)} className={`px-4 py-1.5 rounded-md text-xs font-bold transition-all ${macroFilter === tier ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>{tier}</button>
                         ))}
                     </div>
-                    <div className="flex flex-wrap gap-2 text-sm">
+                    <div className="flex flex-wrap gap-2 text-sm justify-end">
                         {availableGroups.length > 0 ? availableGroups.map(group => (
                             <button key={group} onClick={() => setSelectedSummaryGroup(group)} className={`px-3 py-1 rounded-full text-xs font-semibold border transition-colors ${selectedSummaryGroup === group ? 'bg-blue-50 border-blue-200 text-blue-700' : 'bg-white border-slate-200 text-slate-500 hover:border-slate-300'}`}>{group}</button>
                         )) : <span className="text-xs text-slate-400 italic py-1">No summary groups found</span>}
                     </div>
                 </div>
-                <div className="flex space-x-8 pt-1 items-start">
-                    {/* RSCA Flexibility Widget - Context Aware */}
-                    <div className="mr-4">
-                        <RscaFlexibilityWidget
-                            score={84}
-                            max={100}
-                            message={`High flexibility for ${selectedSummaryGroup || 'current group'}.`}
-                            className="w-64 border-none shadow-none bg-transparent p-0"
-                        />
-                    </div>
-
-                    <div className="text-right pt-2">
-                        <p className="text-[10px] text-slate-500 uppercase font-bold tracking-wider">Start RSCA</p>
-                        <p className="text-xl font-mono text-slate-400 font-bold">{INITIAL_RSCA.toFixed(2)}</p>
-                    </div>
-                    <div className="text-right pt-2">
-                        <p className="text-[10px] text-slate-500 uppercase font-bold tracking-wider">Projected</p>
-                        <div className="flex items-center justify-end">
-                            <p className={`text-2xl font-mono font-bold ${projectedRSCAVal >= TARGET_RANGE.min && projectedRSCAVal <= TARGET_RANGE.max ? 'text-green-600' : 'text-blue-600'}`}>
-                                {projectedRSCAVal.toFixed(2)}
-                            </p>
-                            <span className={`ml-2 text-xs font-bold px-1.5 py-0.5 rounded ${projectedRSCAVal > INITIAL_RSCA ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>
-                                {projectedRSCAVal > INITIAL_RSCA ? '+' : ''}{(projectedRSCAVal - INITIAL_RSCA).toFixed(2)}
-                            </span>
-                        </div>
-                    </div>
-                </div>
             </div>
 
-            <div className="relative border border-slate-100 rounded-lg bg-slate-50/50 flex-1 min-h-0 overflow-hidden">
-                <svg
-                    ref={svgRef}
-                    viewBox={`0 0 ${width} ${height}`}
-                    preserveAspectRatio="xMidYMid meet"
-                    className="w-full h-full select-none"
-                    onMouseMove={handleMouseMove}
-                    onMouseUp={handleMouseUp}
-                    onMouseLeave={handleMouseUp}
-                >
-                    {/* Grid & Axes */}
-                    {[1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0].map(val => {
-                        const y = traitToY(val);
-                        return (
-                            <g key={val}>
-                                <line x1={padding.left} y1={y} x2={width - padding.right} y2={y} stroke="#e2e8f0" strokeDasharray="4 4" vectorEffect="non-scaling-stroke" />
+            {/* Main Chart Area with Frozen Y-Axis */}
+            <div className="border border-slate-100 rounded-lg bg-slate-50/50 flex-1 min-h-0 relative flex overflow-hidden">
+
+                {/* Sticky Y-Axis */}
+                <div className="w-[60px] shrink-0 border-r border-slate-200 bg-white/80 backdrop-blur-sm z-20 flex flex-col relative" style={{ height: height }}>
+                    <svg width="100%" height="100%" className="overflow-visible">
+                        {/* Grid Labels */}
+                        {[1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0].map(val => {
+                            const y = traitToY(val);
+                            return (
                                 <text
-                                    x={padding.left - 10}
+                                    key={val}
+                                    x={50}
                                     y={y}
                                     dy="0.3em"
                                     textAnchor="end"
-                                    className="text-xs fill-slate-400 font-mono"
-                                    style={{ fontSize: '10px' }}
+                                    className="text-xs fill-slate-400 font-semibold"
                                 >
                                     {val.toFixed(1)}
                                 </text>
-                            </g>
-                        );
-                    })}
+                            );
+                        })}
+                        {/* NOB Label - Aligned with new 5.5 position */}
+                        <text
+                            x={45}
+                            y={traitToY(NOB_TRAIT_VALUE)}
+                            dy="0.3em"
+                            textAnchor="end"
+                            className="text-xs font-bold fill-slate-400"
+                        >
+                            NOB
+                        </text>
+                    </svg>
+                </div>
 
-                    {/* NOB Line */}
-                    <g>
+                {/* Scrollable Content */}
+                <div
+                    ref={scrollContainerRef}
+                    className="flex-1 min-w-0 overflow-x-auto custom-scrollbar relative"
+                >
+                    <svg
+                        ref={svgRef}
+                        width={CHART_TOTAL_WIDTH}
+                        height={height}
+                        className="block"
+                        onMouseMove={handleMouseMove}
+                        onMouseUp={handleMouseUp}
+                        onMouseLeave={handleMouseUp}
+                    >
+                        {/* Grid Lines */}
+                        {[1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0].map(val => {
+                            const y = traitToY(val);
+                            return (
+                                <line key={val} x1={0} y1={y} x2={CHART_TOTAL_WIDTH} y2={y} stroke="#e2e8f0" strokeDasharray="4 4" />
+                            );
+                        })}
+
+                        {/* NOB Line */}
                         <line
-                            x1={padding.left}
+                            x1={0}
                             y1={traitToY(NOB_TRAIT_VALUE)}
-                            x2={width - padding.right}
+                            x2={CHART_TOTAL_WIDTH}
                             y2={traitToY(NOB_TRAIT_VALUE)}
                             stroke="#94a3b8"
                             strokeWidth={2}
                             strokeDasharray="6 4"
-                            vectorEffect="non-scaling-stroke"
                         />
-                        <text
-                            x={width / 2}
-                            y={traitToY(NOB_TRAIT_VALUE) - 10}
-                            textAnchor="middle"
-                            className="text-sm font-bold fill-slate-400 pointer-events-none tracking-widest"
-                        >
-                            NOB
-                        </text>
-                    </g>
 
-                    {/* Connections */}
-                    {connections.map(line => (
-                        <line
-                            key={line.id}
-                            x1={line.x1} y1={line.y1}
-                            x2={line.x2} y2={line.y2}
-                            stroke="#cbd5e1"
-                            strokeWidth={2}
-                            strokeDasharray="4 4"
-                        />
-                    ))}
+                        {/* Month Vertical Lines */}
+                        {Array.from({ length: NUM_MONTHS }).map((_, i) => (
+                            <line key={i} x1={(i + 1) * COL_WIDTH} y1={0} x2={(i + 1) * COL_WIDTH} y2={height} stroke="#f1f5f9" strokeWidth={1} />
+                        ))}
 
-                    {/* Trend Line */}
-                    <polyline
-                        points={trendPoints.map(p => `${p.x},${p.y}`).join(' ')}
-                        fill="none"
-                        stroke="#3b82f6"
-                        strokeWidth={3}
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        className="drop-shadow-sm pointer-events-none opacity-80"
-                        vectorEffect="non-scaling-stroke"
-                    />
+                        {/* Top X-Axis Labels */}
+                        {TIMELINE_LABELS.map((label, i) => {
+                            const x = monthToX(i);
+                            return (
+                                <text key={i} x={x} y={30} textAnchor="middle" className="text-xs fill-slate-400 font-semibold uppercase">
+                                    {label}
+                                </text>
+                            );
+                        })}
 
-                    {/* Interactive Scatter Points */}
-                    {sortedPoints.map(p => {
-                        const isDragging = activeDragId === p.id;
-                        const isAboveRSCA = p.report.traitAverage >= projectedRSCAVal;
-                        const baseColor = getPointColor(p.report.type);
-                        const radius = isDragging ? 22 : 18;
+                        {/* Connections from Reports to RSCA Impact */}
+                        {impactConnections.map(conn => (
+                            <path
+                                key={`impact-${conn.id}`}
+                                d={`M ${conn.x1} ${conn.y1} L ${conn.x2} ${conn.y1} L ${conn.x2} ${conn.y2}`}
+                                fill="none"
+                                stroke={conn.color}
+                                strokeWidth={1}
+                                strokeDasharray="3 3"
+                                className="opacity-40"
+                            />
+                        ))}
 
-                        if (p.report.type === 'Gain') {
+                        {/* Stepped RSCA Trend Lines */}
+                        {trendLines.map((line, i) => (
+                            <g key={`trend-${i}`}>
+                                <line
+                                    x1={line.x1} y1={line.y}
+                                    x2={line.x2} y2={line.y}
+                                    stroke="#a855f7" // Purple-500
+                                    strokeWidth={3}
+                                    strokeDasharray="6 4" // Dotted
+                                    className="opacity-70"
+                                />
+                                {i < trendLines.length - 1 && Math.abs(trendLines[i + 1].y - line.y) > 0.05 && (
+                                    <line
+                                        x1={line.x2} y1={line.y}
+                                        x2={line.x2} y2={trendLines[i + 1].y}
+                                        stroke="#a855f7"
+                                        strokeWidth={1}
+                                        strokeDasharray="2 2"
+                                        className="opacity-40"
+                                    />
+                                )}
+                            </g>
+                        ))}
+
+                        {/* Interactive Scatter Points */}
+                        {sortedPoints.map(p => {
+                            const isDragging = activeDragId === p.id;
+                            const isAboveRSCA = p.report.traitAverage >= projectedRSCAVal;
+                            const baseColor = getPointColor(p.report.type);
+                            const radius = isDragging ? 22 : 18;
+
+                            if (p.report.type === 'Gain') {
+                                return (
+                                    <g key={p.id}
+                                        transform={`translate(${p.x}, ${p.y})`}
+                                        className="cursor-default"
+                                    >
+                                        <path
+                                            d="M0 -18 V18 M-18 0 H18"
+                                            stroke="#22c55e"
+                                            strokeWidth={4}
+                                            strokeLinecap="round"
+                                        />
+                                        <text y={28} textAnchor="middle" className="text-[9px] fill-slate-500 font-semibold uppercase pointer-events-none whitespace-nowrap">{formatName(p.report.memberName)}</text>
+                                    </g>
+                                );
+                            }
+
                             return (
                                 <g key={p.id}
                                     transform={`translate(${p.x}, ${p.y})`}
-                                    className="cursor-default"
+                                    className="cursor-ns-resize"
+                                    onMouseDown={(e) => handleMouseDown(e, p.id)}
                                 >
-                                    <path
-                                        d="M0 -30 V30 M-30 0 H30"
-                                        stroke="#22c55e"
-                                        strokeWidth={5}
-                                        strokeLinecap="round"
-                                    />
-                                    {/* No text for Gain as requested (implied 'no report') or just minimal marker */}
-                                    <text y={40} textAnchor="middle" className="text-[9px] fill-slate-500 font-semibold uppercase pointer-events-none whitespace-nowrap">{formatName(p.report.memberName)}</text>
+                                    {p.report.type === 'Special' ? (
+                                        <rect x={-radius + 2} y={-radius + 2} width={radius * 1.8} height={radius * 1.8} fill={baseColor} stroke={isAboveRSCA ? '#4ade80' : 'white'} strokeWidth={isAboveRSCA ? 3 : 2} transform="rotate(45)" className={`shadow-md ${isDragging ? 'brightness-110' : ''}`} />
+                                    ) : (
+                                        <circle r={radius} fill={baseColor} stroke={isAboveRSCA ? '#4ade80' : 'white'} strokeWidth={isAboveRSCA ? 3 : 2} className={`shadow-md ${isDragging ? 'brightness-110' : ''}`} />
+                                    )}
+                                    <text dy="0.35em" textAnchor="middle" className="text-[10px] fill-white font-bold pointer-events-none font-mono">
+                                        {p.report.isNOB ? 'NOB' : p.report.traitAverage.toFixed(2)}
+                                    </text>
+                                    <text y={radius + 14} textAnchor="middle" className="text-[9px] fill-slate-500 font-semibold uppercase pointer-events-none whitespace-nowrap">{formatName(p.report.memberName)}</text>
                                 </g>
                             );
-                        }
-
-                        return (
-                            <g key={p.id}
-                                transform={`translate(${p.x}, ${p.y})`}
-                                className="cursor-ns-resize"
-                                onMouseDown={(e) => handleMouseDown(e, p.id)}
-                            >
-                                {p.report.type === 'Special' ? (
-                                    <rect x={-radius + 2} y={-radius + 2} width={radius * 1.8} height={radius * 1.8} fill={baseColor} stroke={isAboveRSCA ? '#4ade80' : 'white'} strokeWidth={isAboveRSCA ? 3 : 2} transform="rotate(45)" className={`shadow-md ${isDragging ? 'brightness-110' : ''}`} />
-                                ) : (
-                                    <circle r={radius} fill={baseColor} stroke={isAboveRSCA ? '#4ade80' : 'white'} strokeWidth={isAboveRSCA ? 3 : 2} className={`shadow-md ${isDragging ? 'brightness-110' : ''}`} />
-                                )}
-                                <text dy="0.35em" textAnchor="middle" className="text-[10px] fill-white font-bold pointer-events-none font-mono">
-                                    {p.report.isNOB ? 'NOB' : p.report.traitAverage.toFixed(2)}
-                                </text>
-                                <text y={radius + 14} textAnchor="middle" className="text-[9px] fill-slate-500 font-semibold uppercase pointer-events-none whitespace-nowrap">{formatName(p.report.memberName)}</text>
-                            </g>
-                        );
-                    })}
-
-                    {/* Static Overlays */}
-                    {/* Time Axis (Fixed Y visually at bottom, but needs to align with chart width) */}
-                    {Array.from({ length: 12 }).map((_, i) => {
-                        const x = monthToX(i);
-                        const date = new Date(MOCK_START_DATE);
-                        date.setMonth(i);
-                        return (
-                            <text key={i} x={x} y={height - 60} textAnchor="middle" className="text-xs fill-slate-400 font-semibold uppercase">
-                                {date.toLocaleDateString('en-US', { month: 'short' })}
-                            </text>
-                        );
-                    })}
-                    <text x={width / 2} y={height - 10} textAnchor="middle" className="text-xs fill-slate-500 font-semibold uppercase tracking-widest">Timeline (Months)</text>
-                </svg>
+                        })}
+                    </svg>
+                </div>
             </div>
 
-            {/* Legend */}
-            <div className="mt-4 flex items-center justify-between text-xs text-slate-500 px-2">
+            {/* Legend - Unchanged */}
+            <div className="mt-4 flex items-center justify-between text-xs text-slate-500 px-2 shrink-0">
                 <div className="flex space-x-4">
                     <div className="flex items-center space-x-1">
                         <div className="w-3 h-3 rounded-full bg-blue-500"></div>

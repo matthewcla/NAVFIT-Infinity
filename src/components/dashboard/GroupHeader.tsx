@@ -9,14 +9,18 @@ interface GroupHeaderProps {
     trendData?: number[]; // Deprecated, use trendPoints
     trendPoints: { monthIndex: number, value: number }[];
     targetRange: { min: number, max: number };
+    timelineMonths: { label: string; monthIndex: number; year: number; index: number }[];
 }
 
-export const GroupHeader = ({ title, count, isExpanded, onToggle, trendPoints, targetRange }: GroupHeaderProps) => {
+export const GroupHeader = ({ title, count, isExpanded, onToggle, trendPoints, targetRange, timelineMonths }: GroupHeaderProps) => {
     // Chart Config
     const CHART_H = 100; // ViewBox Height
-    const CHART_W = 1000; // ViewBox Width
     const Y_MIN = 3.0; // Fixed scale for trait evaluation context (usually 3.0 to 5.0)
     const Y_MAX = 5.0;
+
+    // Width per month column (must match ManningWaterfall header)
+    const COL_WIDTH = 96; // w-24 = 6rem = 96px
+    const CHART_W = timelineMonths.length * COL_WIDTH;
 
     // Helper to map Value to Y coord (inverted, 0 is top)
     const getY = (val: number) => {
@@ -24,24 +28,26 @@ export const GroupHeader = ({ title, count, isExpanded, onToggle, trendPoints, t
         return CHART_H - (pct * CHART_H);
     };
 
-    // Helper to map Month Index (0-11) to X coord
-    const getX = (monthIdx: number) => {
-        // Timeline has 12 columns. 
-        // 0 -> Start of Jan. 11 -> Start of Dec.
-        // We want to center in the month column? Or start? 
-        // TimelineRow months are grid-cols-12. 
-        // So each month is 1/12th of width.
-        // Let's assume point is Middle of month: (MonthIdx + 0.5) * (TotalWidth / 12)
-        return ((monthIdx + 0.5) / 12) * CHART_W;
+    // Helper to map Month Index to X coord relative to the timeline start
+    const getX = (monthIndex: number) => {
+        // Find the index in our timelineMonths array that matches this monthIndex
+        // For simplicity in this demo, we can just use the absolute index if we passed it, 
+        // but let's assume trendPoints.monthIndex is relative to the *start* of the timeline array?
+        // Actually, ManningWaterfall passes "relative to extended timeline" indices in the mock usage:
+        // { monthIndex: 3, ... } -> 3 months from start
+
+        // So we just map 0..N
+        const idx = monthIndex;
+        return (idx * COL_WIDTH) + (COL_WIDTH / 2); // Center of column
     };
 
     return (
         <div
-            className="bg-slate-50 border-y border-slate-200 grid grid-cols-12 gap-4 hover:bg-slate-100 transition-colors group"
+            className="bg-slate-50 border-y border-slate-200 flex hover:bg-slate-100 transition-colors group h-32 items-stretch"
             onClick={onToggle}
         >
-            {/* Left Info Section (Matches "Member / Milestone" col-span-3) */}
-            <div className="col-span-3 pl-4 py-4 flex flex-col justify-start cursor-pointer">
+            {/* Left Info Section (Sticky Column) */}
+            <div className="w-80 px-6 shrink-0 sticky left-0 bg-slate-50 group-hover:bg-slate-100 border-r border-slate-200 z-10 flex flex-col justify-center cursor-pointer shadow-[1px_0_4px_-1px_rgba(0,0,0,0.1)] transition-colors">
                 <div className="flex items-center space-x-2 mb-2">
                     <ChevronDown
                         size={16}
@@ -63,17 +69,17 @@ export const GroupHeader = ({ title, count, isExpanded, onToggle, trendPoints, t
                 </div>
             </div>
 
-            {/* Right Chart Section (Matches "Timeline" col-span-9) */}
-            <div className="col-span-9 relative h-32 pr-4 border-l border-slate-200">
-                <svg width="100%" height="100%" viewBox={`0 0 ${CHART_W} ${CHART_H}`} preserveAspectRatio="none" className="overflow-visible">
+            {/* Right Chart Section (Scrollable Area) */}
+            <div className="flex-1 relative border-l border-slate-200">
+                <svg width={CHART_W} height={CHART_H} viewBox={`0 0 ${CHART_W} ${CHART_H}`} className="overflow-visible block">
 
                     {/* 1. Vertical Grid Lines (Matches Months) */}
-                    {Array.from({ length: 12 }).map((_, i) => (
+                    {timelineMonths.map((_, i) => (
                         <line
                             key={i}
-                            x1={((i + 1) / 12) * CHART_W}
+                            x1={(i + 1) * COL_WIDTH}
                             y1="0"
-                            x2={((i + 1) / 12) * CHART_W}
+                            x2={(i + 1) * COL_WIDTH}
                             y2={CHART_H}
                             stroke="#e2e8f0"
                             strokeWidth="1"

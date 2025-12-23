@@ -16,7 +16,7 @@ function App() {
         return <div className="p-8 text-slate-500">Reports Manager - Coming Soon</div>;
       case 'groups':
         return (
-          <div className="p-8 h-full overflow-y-auto">
+          <div className="p-8 h-full overflow-hidden flex flex-col min-w-0">
             <StrategyScattergram />
           </div>
         );

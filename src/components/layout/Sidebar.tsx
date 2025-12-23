@@ -75,11 +75,8 @@ export function Sidebar({ activeTab, onTabChange, collapsed, onToggleCollapse }:
                 </button>
 
                 {/* Logo - Visible only when expanded */}
-                {!collapsed && (
-                    <div className="flex-1 overflow-hidden transition-opacity duration-300 opacity-100 animate-in fade-in slide-in-from-left-2">
-                        <img src="/navfit-logo-v3.png" alt="NAVFIT Infinity" className="h-10 w-auto object-contain" />
-                    </div>
-                )}
+                {/* Logo - Removed for cleaner look */}
+
             </div>
 
             {/* Navigation */}
