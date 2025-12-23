@@ -2,7 +2,7 @@ import { Calendar, Plus } from 'lucide-react';
 import { CURRENT_YEAR } from '../../lib/constants';
 import { ManningWaterfall } from './ManningWaterfall';
 import { RscaHealthWidget } from './RscaHealthWidget';
-import { OpportunityRadarWidget } from './OpportunityRadarWidget';
+
 import { ActivitySyncBar } from './ActivitySyncBar';
 
 export const StrategicPulseDashboard = () => {
@@ -24,15 +24,8 @@ export const StrategicPulseDashboard = () => {
             </header>
 
             <div className="flex-1 overflow-y-auto p-8 custom-scrollbar">
-                {/* Top Row: Strategy Widgets */}
-                <div className="grid grid-cols-12 gap-6 mb-8">
-                    <div className="col-span-6">
-                        <RscaHealthWidget />
-                    </div>
-                    <div className="col-span-6">
-                        <OpportunityRadarWidget />
-                    </div>
-                </div>
+                {/* Top Row: Strategy Cards */}
+                <RscaHealthWidget />
 
                 {/* Main Row: Manning Waterfall */}
                 <div className="grid grid-cols-12 gap-8">

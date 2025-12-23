@@ -80,7 +80,7 @@ export function ManningWaterfall() {
         <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden h-full flex flex-col">
 
             {/* Waterfall Header Controls */}
-            <div className="p-4 border-b border-slate-200 bg-white sticky top-0 z-10 space-y-3">
+            <div className="p-4 border-b border-slate-200 bg-white sticky top-0 z-10 flex justify-between items-center">
 
                 {/* Toggles */}
                 <div className="flex space-x-1 bg-slate-100 p-1 rounded-lg w-fit">
@@ -104,7 +104,7 @@ export function ManningWaterfall() {
                     </button>
                 </div>
 
-                {/* Legend (Moved Below) */}
+                {/* Legend (Moved Inline) */}
                 <div className="flex items-center space-x-4 text-xs">
                     <div className="flex items-center space-x-1">
                         <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
@@ -115,12 +115,19 @@ export function ManningWaterfall() {
                         <span className="text-slate-600">Loss (Transfer)</span>
                     </div>
                     <div className="flex items-center space-x-1">
-                        <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                        <span className="text-slate-600">Gain</span>
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#22c55e" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round">
+                            <line x1="12" y1="5" x2="12" y2="19"></line>
+                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                        </svg>
+                        <span className="text-slate-600">Gain (No Report)</span>
                     </div>
                     <div className="flex items-center space-x-1">
                         <div className="w-3 h-3 bg-yellow-500 transform rotate-45"></div>
                         <span className="text-slate-600">Special</span>
+                    </div>
+                    <div className="flex items-center space-x-1">
+                        <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                        <span className="text-slate-600">Promotion</span>
                     </div>
                     <div className="flex items-center space-x-1">
                         <div className="w-0.5 h-4 bg-purple-500 border-l border-dashed border-purple-500"></div>

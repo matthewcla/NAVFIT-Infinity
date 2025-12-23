@@ -1,6 +1,6 @@
 import React, { useState, useRef, useMemo, useEffect } from 'react';
 import { projectRSCA } from '../../lib/engines/rsca';
-import { Plus, Minus, RotateCcw } from 'lucide-react';
+import { RscaFlexibilityWidget } from './RscaFlexibilityWidget';
 
 // --- MOCK DATA FOR PROTOTYPING ---
 const MOCK_START_DATE = new Date('2025-01-01');
@@ -127,17 +127,10 @@ export const StrategyScattergram = () => {
     const [macroFilter, setMacroFilter] = useState<'Wardroom' | 'CPO' | 'Crew'>('Wardroom');
     const [selectedSummaryGroup, setSelectedSummaryGroup] = useState<string>('');
 
-    // Zoom/Pan State
-    // We now only zoom Y. k is effectively kY.
-    const [viewport, setViewport] = useState({ x: 0, y: 0, k: 1 });
-    const [isPanning, setIsPanning] = useState(false);
-    const [startPan, setStartPan] = useState({ x: 0, y: 0 });
-
     // Z-Index Management (rendering order)
     const [zOrder, setZOrder] = useState<string[]>([]);
 
     const svgRef = useRef<SVGSVGElement>(null);
-    const containerRef = useRef<HTMLDivElement>(null);
 
     // --- FILTERS ---
     // ... (unchanged)
@@ -177,17 +170,19 @@ export const StrategyScattergram = () => {
     // --- DIMENSIONS & SCALES ---
     const width = 800;
     const height = 500;
-    const padding = { top: 60, right: 40, bottom: 40, left: 60 }; // Increased top padding for NOB
-    const chartWidth = width - padding.left - padding.right;
+    const padding = { top: 60, right: 40, bottom: 80, left: 60 }; // Increased bottom padding for labels
+
+    // Add internal buffer for X axis to prevent overlap with Y axis labels
+    const X_AXIS_BUFFER = 40;
+    const chartWidth = width - padding.left - padding.right - X_AXIS_BUFFER;
     const chartHeight = height - padding.top - padding.bottom;
 
-    // NOB Zone now at Top (negative relative to chart area or just in top padding)
-    const NOB_ZONE_Y_CENTER = padding.top / 2;
+    // NOB Zone now a specific line above 5.0
+    const NOB_TRAIT_VALUE = 5.25;
 
-    // Y-Axis: 1.0 to 5.0
+    // Y-Axis: 1.0 to 5.5 (to include NOB line)
     const MIN_TRAIT = 1.0;
-    const MAX_TRAIT = 5.0;
-    // ADVERSE_THRESHOLD removed
+    const MAX_TRAIT = 5.5;
 
     const traitToY = (trait: number) => {
         const range = MAX_TRAIT - MIN_TRAIT;
@@ -197,14 +192,14 @@ export const StrategyScattergram = () => {
 
     const yToTrait = (y: number) => {
         const relativeY = y - padding.top;
-        const clampedY = relativeY; // Don't clamp here, let logic decide limits
-        const normalized = 1 - (clampedY / chartHeight);
+        const normalized = 1 - (relativeY / chartHeight);
         return MIN_TRAIT + (normalized * (MAX_TRAIT - MIN_TRAIT));
     };
 
     const monthToX = (monthIndex: number) => {
         const step = chartWidth / 11;
-        return padding.left + (monthIndex * step);
+        // Start after the buffer
+        return padding.left + X_AXIS_BUFFER + (monthIndex * step);
     };
 
     // --- DERIVED DATA ---
@@ -220,10 +215,8 @@ export const StrategyScattergram = () => {
             id: r.id,
             originalX: monthToX(r.monthIndex),
             x: monthToX(r.monthIndex),
-            // Dynamically calculate y for NOB points to counteract viewport transform
-            y: r.isNOB
-                ? (NOB_ZONE_Y_CENTER - viewport.y) / viewport.k
-                : traitToY(r.traitAverage),
+            // Dynamically calculate y based on trait value (NOB is just another value now)
+            y: traitToY(r.isNOB ? NOB_TRAIT_VALUE : r.traitAverage),
             report: r
         }));
 
@@ -247,6 +240,7 @@ export const StrategyScattergram = () => {
                     if (Math.abs(p1.y - p2.y) < COLLISION_RADIUS) {
                         // Overlap detected! Shift laterally.
                         const overlap = COLLISION_RADIUS - (p2.x - p1.x);
+                        // Distribute shift
                         const shift = Math.max(0.5, overlap / 2);
 
                         p1.x -= shift;
@@ -257,7 +251,7 @@ export const StrategyScattergram = () => {
         }
 
         return rawPoints;
-    }, [filteredReports, NOB_ZONE_Y_CENTER, viewport]);
+    }, [filteredReports]);
 
     const sortedPoints = useMemo(() => {
         if (zOrder.length === 0) return points;
@@ -280,35 +274,6 @@ export const StrategyScattergram = () => {
         Object.values(memberReports).forEach(pts => {
             pts.sort((a, b) => a.report.monthIndex - b.report.monthIndex);
             for (let i = 0; i < pts.length - 1; i++) {
-                // Determine y1 and y2. If NOB, use NOB center.
-                // Actually they are already in pts.y
-                // However, we need to respect the viewport transform for Y coordinates if we are drawing lines
-                // But wait, the lines are inside the transformed group.
-                // So we just use their local coords.
-                // BUT: If they are NOB (at top), and we zoom deeply into the chart (middle), the NOB points might be way off screen or scaled weirdly?
-                // Wait, if we scale Y, the NOB zone (top) moves away?
-                // NOB zone should be STATIC overlay?
-                // "Place NOB Trait Average assignment distinctly above 5.0."
-                // If it's part of the chart scale, it will zoom away.
-                // The user likely wants it accessible.
-                // Let's make NOB zone fixed at top of SVG, NOT transformed?
-                // But if the user drags a point, and the chart is zoomed, how do we handle the transition?
-                // Easier if NOB is part of the data space (e.g. Trait 5.5).
-                // User said "distinctly above 5.0".
-                // Let's treat NOB as Trait = 5.2 (visually).
-                // And extend Y axis range to include it?
-                // Or keep it fixed overlay.
-                // Drag to NOB: If we drag above the chart top.
-                // Visualizing NOB points: If we zoom in on 2.0-3.0, do we want to see NOB points? Probably yes.
-                // So NOB points should probably be in a STATIC layer on top, or stick to top edge?
-                // Let's go with: NOB Zone is a fixed overlay at the top. NOB Points are rendered in that fixed overlay.
-                // Connections: If one point is NOB (fixed top) and one is normal (transformed), drawing a line is hard because they are in different coordinate spaces.
-                // Solution: Project the transformed point to screen space for the line?
-                // Or, inverse project the NOB point to data space?
-                // Let's keep simpler: Everything in data space. NOB is at Y = traitToY(5.2). 
-                // If we zoom in on the bottom, the top disappears. This is standard zoom behavior.
-                // User can zoom out to see NOB.
-
                 lines.push({
                     id: `${pts[i].id}-${pts[i + 1].id}`,
                     x1: pts[i].x,
@@ -342,23 +307,8 @@ export const StrategyScattergram = () => {
 
     // --- UTILS ---
     const formatName = (memberName: string) => {
-        // Expected format: "Rank Lastname, F." or similar
-        // We want "Lastname F"
-        // The mock data `memberName` is constructed as `${getShortRank(m.rank)} ${m.name}` where m.name is "Mitchell, P."
-        // So memberName is "LT Mitchell, P."
-
-        // Let's parse from the raw parts if possible, but here we just have the string.
-        // Remove rank prefix if it exists
         const parts = memberName.split(' ');
-
-        // If first part is a known rank, remove it? 
-        // Or just look for the comma part.
-        // "Mitchell, P." -> "Mitchell P"
-
         const namePart = parts.slice(1).join(' '); // Remove first token (Rank)
-        // If original was "LT Mitchell, P.", namePart is "Mitchell, P."
-
-        // Remove comma
         return namePart.replace(',', '');
     };
 
@@ -366,65 +316,16 @@ export const StrategyScattergram = () => {
         switch (type) {
             case 'Periodic': return '#3b82f6'; // Blue-500
             case 'Transfer': return '#ef4444'; // Red-500
-            case 'Gain': return '#22c55e'; // Green-500
+            case 'Gain': return '#64748b'; // Slate-500 equivalent color for the stroke
             case 'Special': return '#eab308'; // Yellow-500
+            case 'Promotion': return '#22c55e'; // Green-500
             default: return '#64748b';
         }
     };
 
     // --- HANDLERS ---
-    // --- HANDLERS ---
-    // Helper to Clamp Y
-    const clampY = (y: number, k: number) => {
-        const y5 = traitToY(5.0);
-        const y1 = traitToY(1.0);
 
-        // Allow some buffer or strict clamping
-        const BUFFER = 50;
-
-        // y <= height - y5 * k (Top of chart (5.0) hits bottom of view)
-        // y >= -y1 * k (Bottom of chart (1.0) hits top of view)
-        // Actually, let's keep it simpler: Don't let 5.0 go below padding.bottom?
-        // Or 1.0 go above padding.top?
-
-        const upperLimit = (height - padding.bottom) - y5 * k + BUFFER;
-        const lowerLimit = padding.top - y1 * k - BUFFER;
-
-        return Math.max(lowerLimit, Math.min(upperLimit, y));
-    };
-
-    const handleWheel = (e: React.WheelEvent) => {
-        if (!containerRef.current) return;
-        const scaleBy = 1.1;
-        const direction = e.deltaY < 0 ? 1 : -1;
-        const factor = direction > 0 ? scaleBy : 1 / scaleBy;
-        const newK = Math.max(1, Math.min(10, viewport.k * factor));
-
-        setViewport(prev => {
-            const newY = prev.y * factor + (height / 2) * (1 - factor);
-            return {
-                k: newK,
-                x: 0,
-                y: clampY(newY, newK)
-            };
-        });
-    };
-
-    const handlePanStart = (e: React.MouseEvent) => {
-        if (activeDragId) return;
-        setIsPanning(true);
-        setStartPan({ x: e.clientX, y: e.clientY });
-    };
-
-    const handlePanMove = (e: React.MouseEvent) => {
-        if (!isPanning) return;
-        const dy = e.clientY - startPan.y;
-        setViewport(prev => ({ ...prev, y: clampY(prev.y + dy, prev.k) }));
-        setStartPan({ x: e.clientX, y: e.clientY });
-    };
-
-    const handlePanEnd = () => setIsPanning(false);
-
+    // Simplified Mouse Down for Dragging only (no panning)
     const handleMouseDown = (e: React.MouseEvent, id: string) => {
         e.stopPropagation();
         e.preventDefault();
@@ -436,11 +337,6 @@ export const StrategyScattergram = () => {
     };
 
     const handleMouseMove = (e: React.MouseEvent) => {
-        if (isPanning) {
-            handlePanMove(e);
-            return;
-        }
-
         if (!activeDragId || !svgRef.current) return;
         const CTM = svgRef.current.getScreenCTM();
         if (!CTM) return;
@@ -448,23 +344,19 @@ export const StrategyScattergram = () => {
         const clientY = e.clientY;
         const svgY = (clientY - CTM.f) / CTM.d;
 
-        const chartY = (svgY - viewport.y) / viewport.k;
+        const chartY = svgY;
 
         let newTrait = 0;
         let isNowNOB = false;
 
-        // NOB Logic: Check if cursor visually in top area
-        if (svgY < padding.top) {
+        // NOB Logic: Check if cursor visually in top area (above 5.10)
+        // Map Y back to Trait
+        newTrait = Number(yToTrait(chartY).toFixed(2));
+
+        if (newTrait > 5.10) {
             isNowNOB = true;
         } else {
-            // Map Y back to Trait
-            newTrait = Number(yToTrait(chartY).toFixed(2));
-
-            // Allow dragging anywhere, but clamp for storage/logic
-            // If newTrait > 5.0, check slightly looser threshold for NOB snapping?
-            if (newTrait > 5.05) isNowNOB = true;
-            else isNowNOB = false;
-
+            isNowNOB = false;
             newTrait = Math.max(MIN_TRAIT, Math.min(5.0, newTrait));
         }
 
@@ -479,16 +371,13 @@ export const StrategyScattergram = () => {
 
     const handleMouseUp = () => {
         setActiveDragId(null);
-        handlePanEnd();
     };
 
-    const handleResetView = () => setViewport({ x: 0, y: 0, k: 1 });
-
     useEffect(() => {
-        const globalUp = () => { setActiveDragId(null); setIsPanning(false); };
-        if (activeDragId || isPanning) window.addEventListener('mouseup', globalUp);
+        const globalUp = () => { setActiveDragId(null); };
+        if (activeDragId) window.addEventListener('mouseup', globalUp);
         return () => window.removeEventListener('mouseup', globalUp);
-    }, [activeDragId, isPanning]);
+    }, [activeDragId]);
 
     return (
         <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm h-full flex flex-col">
@@ -506,12 +395,22 @@ export const StrategyScattergram = () => {
                         )) : <span className="text-xs text-slate-400 italic py-1">No summary groups found</span>}
                     </div>
                 </div>
-                <div className="flex space-x-8 pt-1">
-                    <div className="text-right">
+                <div className="flex space-x-8 pt-1 items-start">
+                    {/* RSCA Flexibility Widget - Context Aware */}
+                    <div className="mr-4">
+                        <RscaFlexibilityWidget
+                            score={84}
+                            max={100}
+                            message={`High flexibility for ${selectedSummaryGroup || 'current group'}.`}
+                            className="w-64 border-none shadow-none bg-transparent p-0"
+                        />
+                    </div>
+
+                    <div className="text-right pt-2">
                         <p className="text-[10px] text-slate-500 uppercase font-bold tracking-wider">Start RSCA</p>
                         <p className="text-xl font-mono text-slate-400 font-bold">{INITIAL_RSCA.toFixed(2)}</p>
                     </div>
-                    <div className="text-right">
+                    <div className="text-right pt-2">
                         <p className="text-[10px] text-slate-500 uppercase font-bold tracking-wider">Projected</p>
                         <div className="flex items-center justify-end">
                             <p className={`text-2xl font-mono font-bold ${projectedRSCAVal >= TARGET_RANGE.min && projectedRSCAVal <= TARGET_RANGE.max ? 'text-green-600' : 'text-blue-600'}`}>
@@ -525,132 +424,125 @@ export const StrategyScattergram = () => {
                 </div>
             </div>
 
-            <div className="relative border border-slate-100 rounded-lg bg-slate-50/50 flex-1 min-h-0 overflow-hidden" ref={containerRef} onWheel={handleWheel}>
-                <div className="absolute top-4 right-4 flex flex-col space-y-2 z-10 bg-white shadow-md rounded-lg border border-slate-200 p-1">
-                    <button onClick={() => setViewport(v => ({ ...v, k: Math.min(10, v.k * 1.2) }))} className="p-1 hover:bg-slate-100 rounded text-slate-600"><Plus size={16} /></button>
-                    <button onClick={() => setViewport(v => ({ ...v, k: Math.max(1, v.k / 1.2) }))} className="p-1 hover:bg-slate-100 rounded text-slate-600"><Minus size={16} /></button>
-                    <button onClick={handleResetView} className="p-1 hover:bg-slate-100 rounded text-slate-600 border-t border-slate-100"><RotateCcw size={14} /></button>
-                </div>
-
+            <div className="relative border border-slate-100 rounded-lg bg-slate-50/50 flex-1 min-h-0 overflow-hidden">
                 <svg
                     ref={svgRef}
                     viewBox={`0 0 ${width} ${height}`}
                     preserveAspectRatio="xMidYMid meet"
-                    className={`w-full h-full select-none ${isPanning ? 'cursor-grabbing' : 'cursor-grab'}`}
-                    onMouseDown={handlePanStart}
+                    className="w-full h-full select-none"
                     onMouseMove={handleMouseMove}
                     onMouseUp={handleMouseUp}
                     onMouseLeave={handleMouseUp}
                 >
-                    {/* NOB ZONE (Static Fixed at Top) */}
-                    <rect x={padding.left} y={0} width={chartWidth} height={padding.top - 10} fill="none" stroke="#ddd" strokeDasharray="4 4" rx={4} />
-                    <text x={width / 2} y={padding.top / 2 + 5} textAnchor="middle" className="text-xl font-bold fill-slate-300 pointer-events-none tracking-widest">NOB</text>
+                    {/* Grid & Axes */}
+                    {[1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0].map(val => {
+                        const y = traitToY(val);
+                        return (
+                            <g key={val}>
+                                <line x1={padding.left} y1={y} x2={width - padding.right} y2={y} stroke="#e2e8f0" strokeDasharray="4 4" vectorEffect="non-scaling-stroke" />
+                                <text
+                                    x={padding.left - 10}
+                                    y={y}
+                                    dy="0.3em"
+                                    textAnchor="end"
+                                    className="text-xs fill-slate-400 font-mono"
+                                    style={{ fontSize: '10px' }}
+                                >
+                                    {val.toFixed(1)}
+                                </text>
+                            </g>
+                        );
+                    })}
 
-                    {/* Transformed Group: Only Scale Y, Translate Y */}
-                    {/* To keep X static, we translate(0, y) and scale(1, k). */}
-                    {/* BUT, if we scale(1, k), the entire coordinate system stretches. */}
-                    {/* This means circle(x,y) becomes circle(x, y*k). This is what we want for positioning. */}
-                    {/* But we don't want circle shape to stretch. */}
-                    <g transform={`translate(0, ${viewport.y}) scale(1, ${viewport.k})`}>
-
-                        {/* Adverse Region Shading (1.0 to 3.0) */}
-                        {/* Adverse Region Removed */}
-
-                        {/* Grid & Axes */}
-                        {[1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0].map(val => {
-                            const y = traitToY(val);
-                            return (
-                                <g key={val}>
-                                    <line x1={padding.left} y1={y} x2={width - padding.right} y2={y} stroke="#e2e8f0" strokeDasharray="4 4" vectorEffect="non-scaling-stroke" /> {/* vectorEffect keeps line thin */}
-                                    <text
-                                        x={padding.left - 10}
-                                        y={y}
-                                        dy="0.3em"
-                                        textAnchor="end"
-                                        className="text-xs fill-slate-400 font-mono"
-                                        transform={`scale(1, ${1 / viewport.k})`} // Counter-scale text
-                                        style={{ fontSize: '10px' }} // fixed size
-                                    >
-                                        {val.toFixed(1)}
-                                    </text>
-                                </g>
-                            );
-                        })}
-
-                        {/* Connections */}
-                        {connections.map(line => (
-                            // Logic check: If NOB point is in static overlay (y < padding.top)
-                            // and line is inside scaled group, we have a problem.
-                            // Solution: Render NOB points inside the group too, but effectively at y corresponding to "above 5.0".
-                            // Let's use 5.2 for visual NOB position in data space.
-                            <line
-                                key={line.id}
-                                x1={line.x1} y1={line.y1}
-                                x2={line.x2} y2={line.y2}
-                                stroke="#cbd5e1"
-                                strokeWidth={2 / viewport.k}
-                                strokeDasharray={`${4} ${4 / viewport.k}`} // Adjust dash for stretch
-                            />
-                        ))}
-
-                        {/* Trend Line */}
-                        <polyline
-                            points={trendPoints.map(p => `${p.x},${p.y}`).join(' ')}
-                            fill="none"
-                            stroke="#3b82f6"
-                            strokeWidth={3 / viewport.k}
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            className="drop-shadow-sm pointer-events-none opacity-80"
+                    {/* NOB Line */}
+                    <g>
+                        <line
+                            x1={padding.left}
+                            y1={traitToY(NOB_TRAIT_VALUE)}
+                            x2={width - padding.right}
+                            y2={traitToY(NOB_TRAIT_VALUE)}
+                            stroke="#94a3b8"
+                            strokeWidth={2}
+                            strokeDasharray="6 4"
                             vectorEffect="non-scaling-stroke"
                         />
+                        <text
+                            x={width / 2}
+                            y={traitToY(NOB_TRAIT_VALUE) - 10}
+                            textAnchor="middle"
+                            className="text-sm font-bold fill-slate-400 pointer-events-none tracking-widest"
+                        >
+                            NOB
+                        </text>
+                    </g>
 
-                        {/* Interactive Scatter Points */}
-                        {sortedPoints.map(p => {
-                            const isDragging = activeDragId === p.id;
-                            const isAboveRSCA = p.report.traitAverage >= projectedRSCAVal;
-                            const baseColor = getPointColor(p.report.type);
-                            const radius = isDragging ? 22 : 18;
+                    {/* Connections */}
+                    {connections.map(line => (
+                        <line
+                            key={line.id}
+                            x1={line.x1} y1={line.y1}
+                            x2={line.x2} y2={line.y2}
+                            stroke="#cbd5e1"
+                            strokeWidth={2}
+                            strokeDasharray="4 4"
+                        />
+                    ))}
 
-                            // If NOB, override position to be "above chart" in data space? 
-                            // Or use the static calculated Y (which was NOB_ZONE_Y_CENTER).
-                            // If NOB_ZONE_Y_CENTER is used inside the scaled group, it will be scaled too!
-                            // Scaling 30px by 10x puts it at 300px (middle of chart). Bad.
-                            // We need NOB points to "stick" to the inverse of the transform?
-                            // OR, simpler: Don't render NOB points in the scaled group. Render them in Static overlay.
-                            // BUT: connections need to reach them.
+                    {/* Trend Line */}
+                    <polyline
+                        points={trendPoints.map(p => `${p.x},${p.y}`).join(' ')}
+                        fill="none"
+                        stroke="#3b82f6"
+                        strokeWidth={3}
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        className="drop-shadow-sm pointer-events-none opacity-80"
+                        vectorEffect="non-scaling-stroke"
+                    />
 
-                            // Let's render lines and points in separate layers if needed?
-                            // Complexity spike.
-                            // Simplest: Define NOB Y in data space as maxTrait + buffer.
-                            // traitToY(5.2). 
-                            // Then it scales naturally with the chart.
+                    {/* Interactive Scatter Points */}
+                    {sortedPoints.map(p => {
+                        const isDragging = activeDragId === p.id;
+                        const isAboveRSCA = p.report.traitAverage >= projectedRSCAVal;
+                        const baseColor = getPointColor(p.report.type);
+                        const radius = isDragging ? 22 : 18;
 
-                            // Override Y for NOB to be consistent with data space
-                            const visualY = p.report.isNOB ? traitToY(5.2) : p.y;
-
+                        if (p.report.type === 'Gain') {
                             return (
                                 <g key={p.id}
-                                    transform={`translate(${p.x}, ${visualY})`}
-                                    className="cursor-ns-resize"
-                                    onMouseDown={(e) => handleMouseDown(e, p.id)}
+                                    transform={`translate(${p.x}, ${p.y})`}
+                                    className="cursor-default"
                                 >
-                                    {/* Counter-scale the shape so it stays circular */}
-                                    <g transform={`scale(1, ${1 / viewport.k})`}>
-                                        {p.report.type === 'Special' ? (
-                                            <rect x={-radius + 2} y={-radius + 2} width={radius * 1.8} height={radius * 1.8} fill={baseColor} stroke={isAboveRSCA ? '#4ade80' : 'white'} strokeWidth={isAboveRSCA ? 3 : 2} transform="rotate(45)" className={`shadow-md ${isDragging ? 'brightness-110' : ''}`} />
-                                        ) : (
-                                            <circle r={radius} fill={baseColor} stroke={isAboveRSCA ? '#4ade80' : 'white'} strokeWidth={isAboveRSCA ? 3 : 2} className={`shadow-md ${isDragging ? 'brightness-110' : ''}`} />
-                                        )}
-                                        <text dy="0.35em" textAnchor="middle" className="text-[10px] fill-white font-bold pointer-events-none font-mono">
-                                            {p.report.isNOB ? 'NOB' : p.report.traitAverage.toFixed(2)}
-                                        </text>
-                                        <text y={radius + 14} textAnchor="middle" className="text-[9px] fill-slate-500 font-semibold uppercase pointer-events-none whitespace-nowrap">{formatName(p.report.memberName)}</text>
-                                    </g>
+                                    <path
+                                        d="M0 -30 V30 M-30 0 H30"
+                                        stroke="#22c55e"
+                                        strokeWidth={5}
+                                        strokeLinecap="round"
+                                    />
+                                    {/* No text for Gain as requested (implied 'no report') or just minimal marker */}
+                                    <text y={40} textAnchor="middle" className="text-[9px] fill-slate-500 font-semibold uppercase pointer-events-none whitespace-nowrap">{formatName(p.report.memberName)}</text>
                                 </g>
                             );
-                        })}
-                    </g>
+                        }
+
+                        return (
+                            <g key={p.id}
+                                transform={`translate(${p.x}, ${p.y})`}
+                                className="cursor-ns-resize"
+                                onMouseDown={(e) => handleMouseDown(e, p.id)}
+                            >
+                                {p.report.type === 'Special' ? (
+                                    <rect x={-radius + 2} y={-radius + 2} width={radius * 1.8} height={radius * 1.8} fill={baseColor} stroke={isAboveRSCA ? '#4ade80' : 'white'} strokeWidth={isAboveRSCA ? 3 : 2} transform="rotate(45)" className={`shadow-md ${isDragging ? 'brightness-110' : ''}`} />
+                                ) : (
+                                    <circle r={radius} fill={baseColor} stroke={isAboveRSCA ? '#4ade80' : 'white'} strokeWidth={isAboveRSCA ? 3 : 2} className={`shadow-md ${isDragging ? 'brightness-110' : ''}`} />
+                                )}
+                                <text dy="0.35em" textAnchor="middle" className="text-[10px] fill-white font-bold pointer-events-none font-mono">
+                                    {p.report.isNOB ? 'NOB' : p.report.traitAverage.toFixed(2)}
+                                </text>
+                                <text y={radius + 14} textAnchor="middle" className="text-[9px] fill-slate-500 font-semibold uppercase pointer-events-none whitespace-nowrap">{formatName(p.report.memberName)}</text>
+                            </g>
+                        );
+                    })}
 
                     {/* Static Overlays */}
                     {/* Time Axis (Fixed Y visually at bottom, but needs to align with chart width) */}
@@ -659,12 +551,12 @@ export const StrategyScattergram = () => {
                         const date = new Date(MOCK_START_DATE);
                         date.setMonth(i);
                         return (
-                            <text key={i} x={x} y={height - padding.bottom + 20} textAnchor="middle" className="text-xs fill-slate-400 font-semibold uppercase">
+                            <text key={i} x={x} y={height - 60} textAnchor="middle" className="text-xs fill-slate-400 font-semibold uppercase">
                                 {date.toLocaleDateString('en-US', { month: 'short' })}
                             </text>
                         );
                     })}
-                    <text x={width / 2} y={height - 20} textAnchor="middle" className="text-xs fill-slate-500 font-semibold uppercase tracking-widest">Timeline (Months)</text>
+                    <text x={width / 2} y={height - 10} textAnchor="middle" className="text-xs fill-slate-500 font-semibold uppercase tracking-widest">Timeline (Months)</text>
                 </svg>
             </div>
 
@@ -680,12 +572,19 @@ export const StrategyScattergram = () => {
                         <span>Transfer</span>
                     </div>
                     <div className="flex items-center space-x-1">
-                        <div className="w-3 h-3 rounded-full bg-green-500"></div>
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#22c55e" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round">
+                            <line x1="12" y1="5" x2="12" y2="19"></line>
+                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                        </svg>
                         <span>Gain</span>
                     </div>
                     <div className="flex items-center space-x-1">
                         <div className="w-3 h-3 rounded-md transform rotate-45 bg-yellow-500"></div>
                         <span>Special</span>
+                    </div>
+                    <div className="flex items-center space-x-1">
+                        <div className="w-3 h-3 rounded-full bg-green-500"></div>
+                        <span>Promotion</span>
                     </div>
                 </div>
                 <div className="flex items-center space-x-2">

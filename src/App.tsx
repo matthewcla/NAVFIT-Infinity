@@ -6,6 +6,7 @@ import type { Tab } from './components/layout/Sidebar';
 
 function App() {
   const [activeTab, setActiveTab] = useState<Tab>('dashboard');
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   const renderContent = () => {
     switch (activeTab) {
@@ -19,15 +20,24 @@ function App() {
             <StrategyScattergram />
           </div>
         );
+      case 'profiles':
+        return <div className="p-8 text-slate-500">Sailor Profiles - Coming Soon</div>;
       case 'schedule':
-        return <div className="p-8 text-slate-500">Board Schedule - Coming Soon</div>;
+        return <div className="p-8 text-slate-500">Selection Boards - Coming Soon</div>;
+      case 'admin':
+        return <div className="p-8 text-slate-500">Command Admin - Coming Soon</div>;
       default:
         return <StrategicPulseDashboard />;
     }
   };
 
   return (
-    <AppLayout activeTab={activeTab} onTabChange={setActiveTab}>
+    <AppLayout
+      activeTab={activeTab}
+      onTabChange={setActiveTab}
+      collapsed={sidebarCollapsed}
+      onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
+    >
       {renderContent()}
     </AppLayout>
   );
