@@ -274,28 +274,7 @@ export const StrategyScattergram = () => {
         });
     }, [points, zOrder]);
 
-    const globalConnections = useMemo(() => {
-        const memberReports: Record<string, ScatterPoint[]> = {};
-        points.forEach(p => {
-            if (!memberReports[p.report.memberId]) memberReports[p.report.memberId] = [];
-            memberReports[p.report.memberId].push(p);
-        });
 
-        const lines: { x1: number, y1: number, x2: number, y2: number, id: string }[] = [];
-        Object.values(memberReports).forEach(pts => {
-            pts.sort((a, b) => a.report.monthIndex - b.report.monthIndex);
-            for (let i = 0; i < pts.length - 1; i++) {
-                lines.push({
-                    id: `${pts[i].id}-${pts[i + 1].id}`,
-                    x1: pts[i].x,
-                    y1: pts[i].y,
-                    x2: pts[i + 1].x,
-                    y2: pts[i + 1].y
-                });
-            }
-        });
-        return lines;
-    }, [points]);
 
     // Stepped RSCA Trend Lines & Connections
     const { trendLines, impactConnections } = useMemo(() => {
@@ -317,7 +296,7 @@ export const StrategyScattergram = () => {
         });
 
         // Find all "Change Events" (months where RSCA changes)
-        const changeEvents = Array.from(impacts.keys()).sort((a, b) => a - b);
+
 
         let lastX = 0;
 
