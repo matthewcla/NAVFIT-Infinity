@@ -11,13 +11,18 @@ interface TimelineRowProps {
     coDetachDate: string;
     avgRSCA: number;
     onReportClick?: () => void;
-    onReportDoubleClick?: () => void;
+    onOpenReport?: (reportId: string) => void;
     timelineMonths: { label: string; monthIndex: number; year: number; index: number }[];
 }
 
-export const TimelineRow = ({ member, coDetachDate, avgRSCA, onReportClick, onReportDoubleClick, timelineMonths }: TimelineRowProps) => {
+export const TimelineRow = ({ member, coDetachDate, avgRSCA, onReportClick, onOpenReport, timelineMonths }: TimelineRowProps) => {
     // Width per month column (must match ManningWaterfall header)
     const COL_WIDTH = 96; // w-24 = 6rem = 96px
+
+    // --- Helper to Generate Mock Report IDs for Demo Navigation ---
+    const getReportId = (type: 'periodic' | 'transfer' | 'promo' | 'special') => {
+        return `r-mw-${member.id}-${type}`;
+    };
 
     // Helper to calculate pixel position based on date
     const getPosPx = (targetMonthIndex: number, day = 15, targetYear: number) => {
@@ -99,7 +104,7 @@ export const TimelineRow = ({ member, coDetachDate, avgRSCA, onReportClick, onRe
                             }`}
                         style={{ left: `${periodicPos}px` }}
                         onClick={onReportClick}
-                        onDoubleClick={onReportDoubleClick}
+                        onDoubleClick={() => onOpenReport && onOpenReport(getReportId('periodic'))}
                     >
                         <span className="text-[10px] font-bold text-white">
                             {member.nextPlan === 'NOB' || !member.nextPlan ? 'NOB' : (member.nextPlan as number).toFixed(2)}
@@ -126,7 +131,7 @@ export const TimelineRow = ({ member, coDetachDate, avgRSCA, onReportClick, onRe
                             }`}
                         style={{ left: `${transferPos}px` }}
                         onClick={onReportClick}
-                        onDoubleClick={onReportDoubleClick}
+                        onDoubleClick={() => onOpenReport && onOpenReport(getReportId('transfer'))}
                     >
                         <span className="text-[10px] font-bold text-white">
                             {member.target ? member.target.toFixed(2) : 'N/A'}

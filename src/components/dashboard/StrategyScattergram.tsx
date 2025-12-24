@@ -2,6 +2,7 @@ import React, { useState, useRef, useMemo, useEffect } from 'react';
 import { Target, Wand2 } from 'lucide-react';
 import { projectRSCA } from '../../lib/engines/rsca';
 import { optimizeStrategy } from '../../lib/engines/strategy';
+import type { RosterMember } from '../../types/roster';
 
 // --- MOCK DATA FOR PROTOTYPING ---
 const MOCK_START_DATE = new Date('2025-01-01');
@@ -11,114 +12,111 @@ const INITIAL_SIGNED_COUNT = 45;
 // const TARGET_RANGE = { min: 3.80, max: 4.00 };
 
 // Types for detailed member info
-interface MemberProfile {
-    name: string;
-    rank: string;
-    designator?: string;
-    rating?: string;
-}
+// --- MOCK DATA FOR PROTOTYPING (Must match ReportsManager for navigation) ---
+const INITIAL_REPORTS: RSCAReport[] = [
+    // Member 0 (Mitchell equivalent for Strategy)
+    { id: 'r-0-0', memberId: 'm-0', memberName: 'LT Mitchell, P.', rawName: 'Mitchell, P.', rank: 'O-3', summaryGroup: 'URL O-3', date: '2025-01-15', monthIndex: 0, type: 'Periodic' as const, traitAverage: 3.8, isNOB: false, initialTraitAverage: 3.8 },
+    { id: 'r-0-1', memberId: 'm-0', memberName: 'LT Mitchell, P.', rawName: 'Mitchell, P.', rank: 'O-3', summaryGroup: 'URL O-3', date: '2025-06-15', monthIndex: 5, type: 'Promotion' as const, traitAverage: 4.0, isNOB: false, initialTraitAverage: 4.0 },
 
-const MEMBERS: MemberProfile[] = [
-    { name: "Mitchell, P.", rank: "O-3", designator: "1310" }, // URL
-    { name: "Kazansky, T.", rank: "O-3", designator: "1310" }, // URL
-    { name: "Bradshaw, N.", rank: "O-3", designator: "1310" }, // URL
-    { name: "Metcalf, M.", rank: "O-4", designator: "1110" }, // URL
-    { name: "Seresin, J.", rank: "O-2", designator: "1310" }, // URL
-    { name: "Floyd, B.", rank: "E-6", rating: "OS" },          // Crew
-    { name: "Trace, R.", rank: "E-6", rating: "BM" },          // Crew
-    { name: "Connection, S.", rank: "O-3", designator: "1200" }, // HR (RL)
-    { name: "Fanboy, M.", rank: "O-2", designator: "1310" },   // URL
-    { name: "Payback, R.", rank: "O-3", designator: "1310" }, // URL
-    { name: "Phoenix, N.", rank: "O-3", designator: "1310" },  // URL
-    { name: "Bob, F.", rank: "O-3", designator: "1310" },      // URL
-    { name: "Cates, B.", rank: "E-7", rating: "QMC" },         // CPO
-    { name: "Singer, A.", rank: "E-8", rating: "BMCS" },       // CPO
+    // Member 1 (Kazansky equivalent)
+    { id: 'r-1-0', memberId: 'm-1', memberName: 'LT Kazansky, T.', rawName: 'Kazansky, T.', rank: 'O-3', summaryGroup: 'URL O-3', date: '2025-02-15', monthIndex: 1, type: 'Periodic' as const, traitAverage: 4.2, isNOB: false, initialTraitAverage: 4.2 },
+    { id: 'r-1-1', memberId: 'm-1', memberName: 'LT Kazansky, T.', rawName: 'Kazansky, T.', rank: 'O-3', summaryGroup: 'URL O-3', date: '2025-09-15', monthIndex: 8, type: 'Transfer' as const, traitAverage: 4.5, isNOB: false, initialTraitAverage: 4.5 },
+
+    // Member 2 (Bradshaw)
+    { id: 'r-2-0', memberId: 'm-2', memberName: 'LT Bradshaw, N.', rawName: 'Bradshaw, N.', rank: 'O-3', summaryGroup: 'URL O-3', date: '2025-03-01', monthIndex: 2, type: 'Periodic' as const, traitAverage: 3.6, isNOB: false, initialTraitAverage: 3.6 },
+
+    // Member 3 (Special)
+    { id: 'r-3-1', memberId: 'm-3', memberName: 'LCDR Metcalf, M.', rawName: 'Metcalf, M.', rank: 'O-4', summaryGroup: 'URL O-4', date: '2025-07-01', monthIndex: 6, type: 'Special' as const, traitAverage: 3.9, isNOB: true, initialTraitAverage: 3.9 },
 ];
-
-// Helper to determine summary group
-const getSummaryGroup = (m: MemberProfile): string => {
-    if (m.designator) {
-        if (['1110', '1120', '1310', '1320'].includes(m.designator)) return `URL ${m.rank}`;
-        if (['1200', '1810', '1830'].includes(m.designator)) return `RL ${m.rank}`;
-        if (m.designator.startsWith('3')) return `SC ${m.rank}`;
-        return `OFF ${m.rank}`;
-    }
-    // Enlisted
-    if (['E-7', 'E-8', 'E-9'].includes(m.rank)) return `CPO ${m.rank}`; // Simplified
-    return `ENL ${m.rank}`;
-};
-
-const getShortRank = (rank: string) => {
-    const map: Record<string, string> = {
-        'O-1': 'ENS', 'O-2': 'LTJG', 'O-3': 'LT', 'O-4': 'LCDR', 'O-5': 'CDR', 'O-6': 'CAPT',
-        'E-4': 'PO3', 'E-5': 'PO2', 'E-6': 'PO1', 'E-7': 'CPO', 'E-8': 'SCPO', 'E-9': 'MCPO'
-    };
-    return map[rank] || rank;
-};
-
-// Generate reports linked to specific members for consistency
-const generateMockReports = () => {
-    const reports = [];
-    // Generate 2-3 reports per member to show connections
-    for (let i = 0; i < MEMBERS.length; i++) {
-        const m = MEMBERS[i];
-        const numReports = 1 + Math.floor(Math.random() * 2); // 1 or 2 reports
-
-        let lastDate = new Date(MOCK_START_DATE);
-        // Randomize start slightly
-        lastDate.setMonth(lastDate.getMonth() + Math.floor(Math.random() * 3));
-
-        for (let r = 0; r < numReports; r++) {
-            const monthOffset = r === 0 ? 0 : 4 + Math.floor(Math.random() * 4); // Gap between reports
-            const date = new Date(lastDate);
-            date.setMonth(date.getMonth() + monthOffset);
-
-            if (date.getMonth() > 11) continue; // Keep within year for demo
-
-
-            let type: 'Periodic' | 'Transfer' | 'Gain' | 'Special' = 'Periodic';
-            const rand = Math.random();
-            if (r === 0 && rand > 0.85) type = 'Gain'; // First might be gain
-            else if (r === numReports - 1 && rand > 0.85) type = 'Transfer'; // Last might be transfer
-            else if (rand > 0.95) type = 'Special'; // Occasional special
-
-            reports.push({
-                id: `r-${i}-${r}`,
-                memberId: `m-${i}`,
-                memberName: `${getShortRank(m.rank)} ${m.name}`,
-                rawName: m.name,
-                rank: m.rank,
-                summaryGroup: getSummaryGroup(m),
-                date: date.toISOString().split('T')[0],
-                monthIndex: date.getMonth(),
-                type: type,
-                traitAverage: 3.5 + (Math.random() * 1.5), // 3.5 to 5.0
-                initialTraitAverage: 0 // set later
-            });
-            lastDate = date;
-        }
-    }
-    // Sort by date/member for ensuring lines draw correctly logic (though mapping by ID is better)
-    return reports.map(r => ({ ...r, initialTraitAverage: r.traitAverage, isNOB: false }));
-};
-
-const INITIAL_REPORTS = generateMockReports();
-type RSCAReport = typeof INITIAL_REPORTS[0];
+// const generateMockReports = () => { ... } // Removed random generation
+interface RSCAReport {
+    id: string;
+    memberId: string;
+    memberName: string;
+    rawName: string;
+    rank: string;
+    summaryGroup: string;
+    date: string;
+    monthIndex: number;
+    type: 'Periodic' | 'Promotion' | 'Transfer' | 'Special' | 'Gain';
+    traitAverage: number;
+    isNOB: boolean;
+    initialTraitAverage: number;
+}
 
 interface ScatterPoint {
     id: string;
     x: number; // pixel (render)
     y: number; // pixel (render)
-    report: typeof INITIAL_REPORTS[0];
+    report: RSCAReport;
 }
+
+import type { SummaryGroup } from '../../types';
 
 interface StrategyScattergramProps {
-    onOpenReport?: (memberId: string, name: string, rank?: string) => void;
+    summaryGroups?: SummaryGroup[];
+    roster?: RosterMember[];
+    onOpenReport?: (memberId: string, name: string, rank?: string, reportId?: string) => void;
 }
 
-export const StrategyScattergram = ({ onOpenReport }: StrategyScattergramProps) => {
+export function StrategyScattergram({ summaryGroups = [], roster = [], onOpenReport }: StrategyScattergramProps) {
     // --- STATE ---
-    const [reports, setReports] = useState(INITIAL_REPORTS);
+    const [reports, setReports] = useState<RSCAReport[]>(() => {
+        // If summaryGroups passed, flatten them to RSCAReport[]
+        if (summaryGroups && summaryGroups.length > 0) {
+            return summaryGroups.flatMap(group =>
+                group.reports.map(r => ({
+                    id: r.id,
+                    memberId: r.memberId,
+                    memberName: r.memberId, // Ideally get name from Roster, but we only have ID here. 
+                    // Wait, report object in SummaryGroup might not have name. 
+                    // We probably need Roster passed to this component too to resolve names!
+                    // For now, let's assume memberId is the name or just use ID.
+                    // Actually, we can just use "Member " + r.memberId as fallback.
+                    rawName: "Unknown",
+                    rank: group.name.split(' ')[0], // Infer rank from Group Name "O-3 URL"?
+                    summaryGroup: group.name,
+                    date: r.periodEndDate,
+                    monthIndex: new Date(r.periodEndDate).getMonth(),
+                    type: (r.type === 'Detachment' ? 'Transfer' : r.type) as 'Periodic' | 'Promotion' | 'Transfer' | 'Special' | 'Gain', // Cast
+                    traitAverage: r.traitAverage || 3.0,
+                    isNOB: r.promotionRecommendation === 'NOB',
+                    initialTraitAverage: r.traitAverage || 3.0
+                }))
+            );
+        }
+        return INITIAL_REPORTS;
+    });
+
+    // If props change, update state
+    // If props change, update state
+    useEffect(() => {
+        if (summaryGroups && summaryGroups.length > 0) {
+            const mapped = summaryGroups.flatMap(group =>
+                group.reports.map(r => {
+                    const member = roster.find(m => m.id === r.memberId);
+                    const name = member ? `${member.rank} ${member.lastName}, ${member.firstName}` : r.memberId;
+                    const rawName = member ? `${member.lastName}, ${member.firstName}` : "Unknown";
+
+                    return {
+                        id: r.id,
+                        memberId: r.memberId,
+                        memberName: name,
+                        rawName: rawName,
+                        rank: group.name.split(' ')[0],
+                        summaryGroup: group.name,
+                        date: r.periodEndDate,
+                        monthIndex: new Date(r.periodEndDate).getMonth(),
+                        type: (r.type === 'Detachment' ? 'Transfer' : r.type) as 'Periodic' | 'Promotion' | 'Transfer' | 'Special' | 'Gain',
+                        traitAverage: r.traitAverage || 3.0,
+                        isNOB: r.promotionRecommendation === 'NOB',
+                        initialTraitAverage: r.traitAverage || 3.0
+                    };
+                })
+            );
+            setReports(mapped);
+        }
+    }, [summaryGroups, roster]);
     const [activeDragId, setActiveDragId] = useState<string | null>(null);
 
     // Toggle State
@@ -393,7 +391,7 @@ export const StrategyScattergram = ({ onOpenReport }: StrategyScattergramProps) 
     // --- HANDLERS ---
     const handleReportDoubleClick = (report: RSCAReport) => {
         if (onOpenReport) {
-            onOpenReport(report.memberId || report.id, report.name || "Unknown Member", report.rank);
+            onOpenReport(report.memberId || report.id, report.memberName || "Unknown Member", report.rank, report.id);
         }
     };
 

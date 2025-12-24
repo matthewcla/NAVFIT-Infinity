@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import type { SummaryGroup, Report } from '../../types';
 import { ReportEditor } from './ReportEditor.tsx';
+import { CompetitiveGroupSidebar } from './CompetitiveGroupSidebar.tsx';
 import { cn } from '../../lib/utils';
 import { FileText, Plus, ChevronRight, LayoutGrid, List as ListIcon, Calendar, CheckCircle2, AlertCircle, Clock, Users } from 'lucide-react';
 
@@ -63,52 +64,126 @@ const MOCK_SUMMARY_GROUPS: SummaryGroup[] = [
                 traitAverage: 0,
                 promotionRecommendation: 'NOB',
                 narrative: "",
-                draftStatus: 'Submitted'  // Rejected group, so this should be editable
+                draftStatus: 'Submitted'
             }
+        ]
+    },
+    // --- Mock Data Payload for Manning Waterfall & RSCA Modeler Navigation ---
+    // Mapping:
+    // Member 1 (Mitchell): Periodic, Promotion
+    // Member 2 (Kazansky): Periodic, Transfer (Detach)
+    // Member 3 (Bradshaw): Periodic
+    // Member 4 (Metcalf): Periodic
+    // Member 5 (Seresin): Gain (No Report yet, maybe Special?)
+    // Member 6 (Floyd): Periodic
+    // Member 7 (Trace): Periodic, Transfer
+    {
+        id: 'sg-mw-1',
+        name: 'Manning Waterfall Demo',
+        periodEndDate: '2025-01-31',
+        status: 'Pending',
+        reports: [
+            // Member 1: LT Mitchell
+            { id: 'r-mw-1-periodic', memberId: '1', periodEndDate: '2025-01-31', type: 'Periodic', traitAverage: 3.8, promotionRecommendation: 'EP', draftStatus: 'Draft', traitGrades: {} },
+            { id: 'r-mw-1-promo', memberId: '1', periodEndDate: '2025-06-01', type: 'Promotion', traitAverage: 4.0, promotionRecommendation: 'EP', draftStatus: 'Draft', traitGrades: {} }, // Promotion
+
+            // Member 2: LT Kazansky
+            { id: 'r-mw-2-periodic', memberId: '2', periodEndDate: '2025-01-31', type: 'Periodic', traitAverage: 4.2, promotionRecommendation: 'EP', draftStatus: 'Draft', traitGrades: {} },
+            { id: 'r-mw-2-transfer', memberId: '2', periodEndDate: '2025-08-15', type: 'Detachment', traitAverage: 4.3, promotionRecommendation: 'EP', draftStatus: 'Draft', traitGrades: {} }, // Transfer
+
+            // Member 3: LT Bradshaw
+            { id: 'r-mw-3-periodic', memberId: '3', periodEndDate: '2025-01-31', type: 'Periodic', traitAverage: 3.6, promotionRecommendation: 'MP', draftStatus: 'Draft', traitGrades: {} },
+
+            // Member 4: LCDR Metcalf
+            { id: 'r-mw-4-periodic', memberId: '4', periodEndDate: '2025-10-31', type: 'Periodic', traitAverage: 4.5, promotionRecommendation: 'EP', draftStatus: 'Draft', traitGrades: {} },
+
+            // Member 6: PO1 Floyd
+            { id: 'r-mw-6-periodic', memberId: '6', periodEndDate: '2025-03-15', type: 'Periodic', traitAverage: 3.8, promotionRecommendation: 'EP', draftStatus: 'Draft', traitGrades: {} },
+
+            // Member 7: PO1 Trace
+            { id: 'r-mw-7-periodic', memberId: '7', periodEndDate: '2025-03-15', type: 'Periodic', traitAverage: 4.0, promotionRecommendation: 'EP', draftStatus: 'Draft', traitGrades: {} },
+            { id: 'r-mw-7-transfer', memberId: '7', periodEndDate: '2025-11-30', type: 'Detachment', traitAverage: 4.2, promotionRecommendation: 'EP', draftStatus: 'Draft', traitGrades: {} },
+
+            // Test Case: Special Report & RS Detach
+            { id: 'r-mw-1-special', memberId: '1', periodEndDate: '2025-04-15', type: 'Special', traitAverage: 3.9, promotionRecommendation: 'NOB', draftStatus: 'Draft', traitGrades: {}, narrative: "Special report for meritorious service." },
+            { id: 'r-mw-1-rs-detach', memberId: '1', periodEndDate: '2025-09-01', type: 'Special', traitAverage: 0, promotionRecommendation: 'NOB', draftStatus: 'Draft', traitGrades: {}, narrative: "Concurrent / RS Detach placeholder" },
+        ]
+    },
+    {
+        id: 'sg-rs-1',
+        name: 'Strategy Simulation (RSCA)',
+        periodEndDate: '2025-12-31',
+        status: 'Pending',
+        reports: [
+            // Strategy Scattergram IDs (r-0-0, r-0-1, etc mapped to real members if possible or just test data)
+            // Member 0 (Mitchell, again?) StrategyScattergram uses its own ID generation "m-0", "r-0-0".
+            // I will add reports that MATCH the StrategyScattergram generation logic (r-i-j)
+            { id: 'r-0-0', memberId: 'm-0', periodEndDate: '2025-01-15', type: 'Periodic', traitAverage: 3.8, promotionRecommendation: 'EP', draftStatus: 'Draft', traitGrades: {} },
+            { id: 'r-0-1', memberId: 'm-0', periodEndDate: '2025-06-15', type: 'Promotion', traitAverage: 4.0, promotionRecommendation: 'EP', draftStatus: 'Draft', traitGrades: {} },
+
+            { id: 'r-1-0', memberId: 'm-1', periodEndDate: '2025-02-15', type: 'Periodic', traitAverage: 4.2, promotionRecommendation: 'EP', draftStatus: 'Draft', traitGrades: {} },
+            { id: 'r-1-1', memberId: 'm-1', periodEndDate: '2025-09-15', type: 'Detachment', traitAverage: 4.5, promotionRecommendation: 'EP', draftStatus: 'Draft', traitGrades: {} }, // Transfer
+
+            { id: 'r-2-0', memberId: 'm-2', periodEndDate: '2025-03-01', type: 'Periodic', traitAverage: 3.6, promotionRecommendation: 'MP', draftStatus: 'Draft', traitGrades: {} },
+
+            // Special
+            { id: 'r-3-1', memberId: 'm-3', periodEndDate: '2025-07-01', type: 'Special', traitAverage: 3.9, promotionRecommendation: 'NOB', draftStatus: 'Draft', traitGrades: {} },
         ]
     }
 ];
 
-interface ReportsManagerProps {
-    pendingRequest?: { memberId: string; name: string; rank?: string } | null;
+export interface ReportsManagerProps {
+    summaryGroups?: SummaryGroup[]; // Optional for now, but will override internal state
+    pendingRequest?: { memberId: string; name: string; rank?: string; reportId?: string } | null;
     onClearRequest?: () => void;
 }
 
-export function ReportsManager({ pendingRequest, onClearRequest }: ReportsManagerProps) {
-    const [summaryGroups, setSummaryGroups] = useState<SummaryGroup[]>(MOCK_SUMMARY_GROUPS);
+export function ReportsManager({ summaryGroups: propsSummaryGroups, pendingRequest, onClearRequest }: ReportsManagerProps) {
+    // Use passed props or fallback to internal mock (though we should deprecate internal mock)
+    // For transition, merging or preferring props
+    const summaryGroups = useMemo(() => {
+        if (propsSummaryGroups && propsSummaryGroups.length > 0) return propsSummaryGroups;
+        return MOCK_SUMMARY_GROUPS;
+    }, [propsSummaryGroups]);
+
     const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
     const [selectedReportId, setSelectedReportId] = useState<string | null>(null);
     const [dashboardView, setDashboardView] = useState<'grid' | 'list'>('grid');
     const [viewMode, setViewMode] = useState<'dashboard' | 'group_detail' | 'report_edit'>('dashboard');
 
     // Sidebar State
-    const [selectedGroupName, setSelectedGroupName] = useState<string | null>(null);
+    const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
-    // Extract unique competitive group names for the sidebar
-    // We use a Set to get unique names, then sort them
-    const competitiveGroupNames = Array.from(new Set(summaryGroups.map(g => g.name))).sort();
-
-    // Filter groups based on sidebar selection
-    const filteredGroups = selectedGroupName
-        ? summaryGroups.filter(g => g.name === selectedGroupName)
-        : summaryGroups;
-
+    // Extract unique competitive group names for the sidebar (for filtering logic only, display is handled by sidebar)
+    // Note: The Sidebar component now handles the display logic, but we still need valid selection state in parent.
 
     // Handle Pending Request (Deep Linking)
     useEffect(() => {
         if (pendingRequest) {
-            const { memberId, name, rank } = pendingRequest;
-            console.log(`[ReportsManager] Processing request for ${name} (${memberId})`);
+            // Updated to support reportId
+            const { memberId, name, rank, reportId } = pendingRequest as { memberId: string; name: string; rank?: string; reportId?: string };
+            console.log(`[ReportsManager] Processing request for ${name} (${memberId}) - ReportID: ${reportId}`);
 
             let foundGroupId = '';
             let foundReportId = '';
 
             for (const group of summaryGroups) {
-                const report = group.reports.find(r => r.memberId === memberId || r.memberId === name);
-                if (report) {
-                    foundGroupId = group.id;
-                    foundReportId = report.id;
-                    break;
+                // If specific report ID requested, find exact match
+                if (reportId) {
+                    const report = group.reports.find(r => r.id === reportId);
+                    if (report) {
+                        foundGroupId = group.id;
+                        foundReportId = report.id;
+                        break;
+                    }
+                } else {
+                    // Fallback to member lookup (finds first report for member)
+                    const report = group.reports.find(r => r.memberId === memberId || r.memberId === name);
+                    if (report) {
+                        foundGroupId = group.id;
+                        foundReportId = report.id;
+                        break;
+                    }
                 }
             }
 
@@ -116,10 +191,6 @@ export function ReportsManager({ pendingRequest, onClearRequest }: ReportsManage
                 setSelectedGroupId(foundGroupId);
                 setSelectedReportId(foundReportId);
                 setViewMode('report_edit');
-                // Ensure the sidebar selects the correct group name if filtered
-                const group = summaryGroups.find(g => g.id === foundGroupId);
-                if (group) setSelectedGroupName(group.name);
-
             } else {
                 // Create new report logic would go here
                 // For now, simplify to just selecting the first group if no match found
@@ -182,6 +253,21 @@ export function ReportsManager({ pendingRequest, onClearRequest }: ReportsManage
         setViewMode('report_edit');
     };
 
+    // Callback for Sidebar Selection
+    const handleSidebarSelectGroup = (groupId: string) => {
+        handleGroupClick(groupId);
+    };
+
+    const handleSidebarSelectReport = (reportId: string) => {
+        // Find the group needed for this report
+        const group = summaryGroups.find(g => g.reports.some(r => r.id === reportId));
+        if (group) {
+            setSelectedGroupId(group.id);
+            setSelectedReportId(reportId);
+            setViewMode('report_edit');
+        }
+    };
+
     // Permission Logic
     const isReportEditable = (report: Report, groupStatus: string | undefined): boolean => {
         if (report.draftStatus === 'Draft') return true;
@@ -193,6 +279,22 @@ export function ReportsManager({ pendingRequest, onClearRequest }: ReportsManage
     const selectedGroup = summaryGroups.find(sg => sg.id === selectedGroupId);
     const selectedReport = selectedGroup?.reports.find(r => r.id === selectedReportId);
 
+    // Determine the view title based on current selection
+    // If a group is selected, we might want to filter the dashboard view or show the group view.
+    // However, the requested sidebar behavior implies navigation.
+    // If the user clicks a specific Group in sidebar, we go to 'group_detail' mode for that group.
+
+    // We need to filter the `filteredGroups` for the DASHBOARD view (Grid of cards).
+    // The previous implementation filtered by `selectedGroupName`.
+    // The new sidebar implies direct navigation. 
+
+    // Let's decide: If we are in 'dashboard' mode, show ALL groups (or we could add a filter top bar later).
+    // For now, let's keep `filteredGroups` simply as `summaryGroups` or if the user wanted to filter by category, 
+    // they might expect that. 
+    // BUT the requirement was "Selecting a Competitive Group expands... Selecting a Summary Group expands..."
+    // This implies the Sidebar IS the filter/navigation.
+
+    const filteredGroups = summaryGroups; // Show all on main dashboard for now unless a filter is applied
 
     // Render Helpers
     const renderStatusBadge = (status: string | undefined) => {
@@ -208,47 +310,16 @@ export function ReportsManager({ pendingRequest, onClearRequest }: ReportsManage
 
     return (
         <div className="flex h-full bg-slate-50 overflow-hidden">
-            {/* Secondary Sidebar - List of Competitive Groups */}
-            <div className="w-64 bg-white border-r border-slate-200 flex flex-col shrink-0 z-10">
-                <div className="p-4 border-b border-slate-200 flex items-center justify-between">
-                    <h2 className="font-semibold text-slate-800">Competitive Groups</h2>
-                    {/* Could add a 'New Group' type button here in the future */}
-                </div>
-                <div className="flex-1 overflow-y-auto p-2 space-y-1">
-                    <button
-                        onClick={() => setSelectedGroupName(null)}
-                        className={cn(
-                            "w-full text-left px-3 py-2 rounded-md text-sm font-medium transition-colors flex items-center gap-2",
-                            selectedGroupName === null
-                                ? "bg-indigo-50 text-indigo-700"
-                                : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
-                        )}
-                    >
-                        <LayoutGrid className="w-4 h-4" />
-                        All Groups
-                    </button>
-
-                    <div className="pt-2 pb-1 px-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">
-                        Categories
-                    </div>
-
-                    {competitiveGroupNames.map(name => (
-                        <button
-                            key={name}
-                            onClick={() => setSelectedGroupName(name)}
-                            className={cn(
-                                "w-full text-left px-3 py-2 rounded-md text-sm font-medium transition-colors flex items-center gap-2",
-                                selectedGroupName === name
-                                    ? "bg-indigo-50 text-indigo-700"
-                                    : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
-                            )}
-                        >
-                            <Users className="w-4 h-4" />
-                            {name}
-                        </button>
-                    ))}
-                </div>
-            </div>
+            {/* Hierarchical Sidebar */}
+            <CompetitiveGroupSidebar
+                summaryGroups={summaryGroups}
+                selectedGroupId={selectedGroupId}
+                selectedReportId={selectedReportId}
+                onSelectGroup={handleSidebarSelectGroup}
+                onSelectReport={handleSidebarSelectReport}
+                collapsed={sidebarCollapsed}
+                onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
+            />
 
             {/* Main Content Area */}
             <div className="flex-1 flex flex-col overflow-hidden">
@@ -257,7 +328,7 @@ export function ReportsManager({ pendingRequest, onClearRequest }: ReportsManage
                     <div className="bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between shrink-0">
                         <div>
                             <h1 className="text-2xl font-bold text-slate-900 tracking-tight">
-                                {selectedGroupName ? `${selectedGroupName} Dashboard` : "All Competitive Groups"}
+                                All Competitive Groups
                             </h1>
                             <p className="text-sm text-slate-500 mt-1">Manage, finalize, and track your summary groups.</p>
                         </div>
@@ -285,15 +356,9 @@ export function ReportsManager({ pendingRequest, onClearRequest }: ReportsManage
                             <button
                                 onClick={() => {
                                     // Placeholder for creating a new group
-                                    // If a group name is selected, default to that name?
-                                    const newGroup: SummaryGroup = {
-                                        id: `sg-${Date.now()}`,
-                                        name: selectedGroupName || 'New Group',
-                                        periodEndDate: new Date().toISOString().split('T')[0],
-                                        status: 'Pending',
-                                        reports: []
-                                    };
-                                    setSummaryGroups([...summaryGroups, newGroup]);
+                                    // In automated mode, groups are generated from Roster/Config.
+                                    // Manual overrides to be implemented.
+                                    console.log("New Group clicked - Manual creation not yet implemented.");
                                 }}
                                 className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg shadow-sm transition-colors flex items-center gap-2"
                             >
@@ -310,17 +375,10 @@ export function ReportsManager({ pendingRequest, onClearRequest }: ReportsManage
                         {filteredGroups.length === 0 ? (
                             <div className="flex flex-col items-center justify-center h-64 text-slate-400 border-2 border-dashed border-slate-200 rounded-xl bg-slate-50/50">
                                 <Users className="w-12 h-12 mb-3 opacity-20" />
-                                <p>No summary groups found for {selectedGroupName}.</p>
+                                <p>No summary groups found.</p>
                                 <button
                                     onClick={() => {
-                                        const newGroup: SummaryGroup = {
-                                            id: `sg-${Date.now()}`,
-                                            name: selectedGroupName || 'New Group',
-                                            periodEndDate: new Date().toISOString().split('T')[0],
-                                            status: 'Pending',
-                                            reports: []
-                                        };
-                                        setSummaryGroups([...summaryGroups, newGroup]);
+                                        console.log("Create Group not supported in automated mode yet.");
                                     }}
                                     className="mt-4 px-4 py-2 text-indigo-600 font-medium hover:bg-indigo-50 rounded-md transition-colors"
                                 >
