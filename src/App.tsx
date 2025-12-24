@@ -3,6 +3,7 @@ import { AppLayout } from './components/layout/AppLayout';
 import { StrategicPulseDashboard } from './components/dashboard/StrategicPulseDashboard';
 import { StrategyScattergram } from './components/dashboard/StrategyScattergram';
 import { ReportsManager } from './components/reports/ReportsManager';
+import { SelectionBoardsManager } from './components/boards/SelectionBoardsManager';
 import type { Tab } from './components/layout/Sidebar';
 
 function App() {
@@ -37,7 +38,7 @@ function App() {
       case 'profiles':
         return <div className="p-8 text-slate-500">Sailor Profiles - Coming Soon</div>;
       case 'schedule':
-        return <div className="p-8 text-slate-500">Selection Boards - Coming Soon</div>;
+        return <SelectionBoardsManager />;
       case 'admin':
         return <div className="p-8 text-slate-500">Command Admin - Coming Soon</div>;
       default:

@@ -38,6 +38,7 @@ export interface Report {
     // New Fields for Reports Manager
     draftStatus?: 'Draft' | 'Review' | 'Final';
     isAdverse?: boolean;
+    boardId?: string; // Link to a Selection Board
 
     // Administrative Data
     grade?: string; // Block 2
@@ -86,4 +87,37 @@ export interface SummaryGroup {
     name: string; // e.g., "O-3 SWO"
     reports: Report[];
     periodEndDate: string;
+}
+
+export interface Board {
+    id: string;
+    name: string;
+    type: 'Statutory' | 'Administrative' | 'Screening' | 'Custom';
+    conveningDate: string; // YYYY-MM-DD
+    zones?: {
+        aboveZone: string[]; // List of Member IDs
+        inZone: string[];
+        belowZone: string[];
+    };
+    eligibles?: string[]; // For non-zone boards, list of eligible Member IDs
+}
+
+export interface BoardSchedule {
+    year: number;
+    boards: Board[];
+}
+
+export interface RosterEntry {
+    memberId: string;
+    fullName: string;
+    rank: string;
+    designator: string;
+    dateReported: string;
+    prd: string;
+    uic: string;
+    // Extended admin data from feed
+    gender?: string;
+    activeDutyBaseDate?: string;
+    payEntryBaseDate?: string;
+    address?: string;
 }

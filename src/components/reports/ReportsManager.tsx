@@ -2,7 +2,10 @@ import { useState, useEffect } from 'react';
 import type { SummaryGroup } from '../../types';
 import { ReportEditor } from './ReportEditor.tsx';
 import { cn } from '../../lib/utils';
-import { FileText, Users, Plus, ChevronRight } from 'lucide-react';
+import { FileText, Users, Plus, ChevronRight, Wand2 } from 'lucide-react';
+import { RosterService } from '../../lib/services/rosterService';
+import { SummaryGroupGenerator } from '../../lib/services/summaryGroupGenerator';
+import { BoardService } from '../../lib/services/boardService';
 
 // Mock Data for Development
 const MOCK_SUMMARY_GROUPS: SummaryGroup[] = [
@@ -136,17 +139,50 @@ export function ReportsManager({ pendingRequest, onClearRequest }: ReportsManage
         setViewMode('list');
     };
 
+    const handleAutoGenerate = async () => {
+        // Trigger the generator service
+        try {
+            const roster = await RosterService.getRoster();
+            const year = new Date().getFullYear();
+            const schedule = await BoardService.getSchedule(year);
+            const suggestions = await SummaryGroupGenerator.generateSuggestions(roster, schedule);
+
+            // For prototype, simply add them if they don't exist
+            setSummaryGroups(prev => {
+                const existingIds = new Set(prev.map(g => g.id));
+                const newGroups = suggestions.filter(g => !existingIds.has(g.id));
+
+                if (newGroups.length > 0) {
+                    // In a real app we might show a toast
+                    console.log(`Added ${newGroups.length} new summary groups.`);
+                }
+                return [...prev, ...newGroups];
+            });
+        } catch (e) {
+            console.error("Auto-generate failed", e);
+        }
+    };
+
     return (
         <div className="flex h-full bg-slate-100 overflow-hidden">
             {/* Sidebar: Summary Groups */}
             <div className="w-64 bg-white border-r border-slate-200 flex flex-col">
-                <div className="p-4 border-b border-slate-100 flex items-center justify-between">
-                    <h2 className="font-semibold text-slate-800 flex items-center gap-2">
-                        <Users className="w-4 h-4 text-indigo-600" />
-                        Summary Groups
-                    </h2>
-                    <button className="p-1 hover:bg-slate-100 rounded text-slate-500 transition-colors">
-                        <Plus className="w-4 h-4" />
+                <div className="p-4 border-b border-slate-100">
+                    <div className="flex items-center justify-between mb-2">
+                        <h2 className="font-semibold text-slate-800 flex items-center gap-2">
+                            <Users className="w-4 h-4 text-indigo-600" />
+                            Summary Groups
+                        </h2>
+                        <button className="p-1 hover:bg-slate-100 rounded text-slate-500 transition-colors">
+                            <Plus className="w-4 h-4" />
+                        </button>
+                    </div>
+                    <button
+                        onClick={handleAutoGenerate}
+                        className="w-full flex items-center justify-center gap-2 px-2 py-1.5 bg-indigo-50 text-indigo-700 text-xs font-medium rounded hover:bg-indigo-100 transition-colors"
+                    >
+                        <Wand2 className="w-3 h-3" />
+                        Auto-Generate Groups
                     </button>
                 </div>
                 <div className="overflow-y-auto flex-1 p-2 space-y-1">
