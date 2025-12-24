@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import type { Report } from '../../types';
 import { ArrowLeft, ChevronDown, ChevronUp, Save, FileOutput } from 'lucide-react';
-import { cn } from '../../lib/utils';
+
 
 interface ReportEditorProps {
     report: Report;
@@ -214,16 +214,16 @@ export function ReportEditor({ report, onBack }: ReportEditorProps) {
                                 </div>
 
                                 {/* Row 3: Occasion (10-13) and Period (14-15) */}
-                                <div className="mt-4 flex flex-wrap gap-x-8 gap-y-4 items-end">
+                                <div className="mt-4 flex flex-wrap gap-x-8 gap-y-4">
 
                                     {/* Group: Occasion for Report */}
-                                    <div className="space-y-1.5">
+                                    <div className="flex flex-col space-y-1.5">
                                         <h3 className="text-sm font-medium text-slate-700">
                                             Occasion for Report
                                         </h3>
-                                        <div className="flex gap-6 items-end">
+                                        <div className="flex gap-6 items-end mt-auto">
                                             {/* Block 10: Periodic */}
-                                            <div className="flex items-center gap-2">
+                                            <div className="flex items-end gap-2">
                                                 <div className="text-[10px] font-bold text-slate-500 uppercase leading-tight text-right">
                                                     <div className="block">10. Periodic</div>
                                                 </div>
@@ -236,7 +236,7 @@ export function ReportEditor({ report, onBack }: ReportEditorProps) {
                                             </div>
 
                                             {/* Block 11: Detach of Individual */}
-                                            <div className="flex items-center gap-2">
+                                            <div className="flex items-end gap-2">
                                                 <div className="text-[10px] font-bold text-slate-500 uppercase leading-tight text-right">
                                                     <div className="block">11. Detach of</div>
                                                     <div className="block">Individual</div>
@@ -250,7 +250,7 @@ export function ReportEditor({ report, onBack }: ReportEditorProps) {
                                             </div>
 
                                             {/* Block 12: Detach of Reporting Senior */}
-                                            <div className="flex items-center gap-2">
+                                            <div className="flex items-end gap-2">
                                                 <div className="text-[10px] font-bold text-slate-500 uppercase leading-tight text-right">
                                                     <div className="block">12. Detach of</div>
                                                     <div className="block">Reporting Senior</div>
@@ -264,7 +264,7 @@ export function ReportEditor({ report, onBack }: ReportEditorProps) {
                                             </div>
 
                                             {/* Block 13: Special */}
-                                            <div className="flex items-center gap-2">
+                                            <div className="flex items-end gap-2">
                                                 <div className="text-[10px] font-bold text-slate-500 uppercase leading-tight text-right">
                                                     <div className="block">13. Special</div>
                                                 </div>
@@ -279,14 +279,14 @@ export function ReportEditor({ report, onBack }: ReportEditorProps) {
                                     </div>
 
                                     {/* Group: Period Covered */}
-                                    <div className="space-y-1.5 ">
+                                    <div className="flex flex-col space-y-1.5">
                                         <h3 className="text-sm font-medium text-slate-700">
                                             Period Covered
                                         </h3>
-                                        <div className="flex items-end gap-6">
+                                        <div className="flex items-end gap-6 mt-auto">
                                             {/* Block 14: From */}
-                                            <div className="flex items-center gap-2">
-                                                <label className="text-[10px] font-bold text-slate-500 uppercase">14. From</label>
+                                            <div className="flex items-end gap-2">
+                                                <label className="text-[10px] font-bold text-slate-500 uppercase mb-2">14. From</label>
                                                 <input
                                                     type="date"
                                                     className="w-32 px-2 py-2 bg-white border border-slate-300 rounded-lg text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
@@ -296,8 +296,8 @@ export function ReportEditor({ report, onBack }: ReportEditorProps) {
                                             </div>
 
                                             {/* Block 15: To */}
-                                            <div className="flex items-center gap-2">
-                                                <label className="text-[10px] font-bold text-slate-500 uppercase">15. To</label>
+                                            <div className="flex items-end gap-2">
+                                                <label className="text-[10px] font-bold text-slate-500 uppercase mb-2">15. To</label>
                                                 <input
                                                     type="date"
                                                     className="w-32 px-2 py-2 bg-white border border-slate-300 rounded-lg text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
@@ -306,6 +306,208 @@ export function ReportEditor({ report, onBack }: ReportEditorProps) {
                                                 />
                                             </div>
                                         </div>
+                                    </div>
+                                </div>
+
+                                {/* Row 4: Blocks 16-21 */}
+                                <div className="mt-4 flex flex-wrap gap-x-8 gap-y-4">
+
+                                    {/* Block 16: Not Observed */}
+                                    <div className="flex h-full gap-2 relative">
+                                        <div className="text-[10px] font-bold text-slate-500 uppercase leading-tight text-right self-start pt-1">
+                                            <div className="block">16. Not Observed</div>
+                                            <div className="block">Report</div>
+                                        </div>
+                                        <input
+                                            type="checkbox"
+                                            className="w-6 h-6 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 transition-colors cursor-pointer self-end mb-1"
+                                            checked={formData.notObservedReport || false}
+                                            onChange={() => setFormData({ ...formData, notObservedReport: true, isRegular: false, isConcurrent: false, isOpsCdr: false })}
+                                        />
+                                    </div>
+
+                                    {/* Group: Type of Report (17-19) */}
+                                    <div className="flex flex-col space-y-1.5">
+                                        <h3 className="text-sm font-medium text-slate-700">
+                                            Type of Report
+                                        </h3>
+                                        <div className="flex gap-6 items-end mt-auto">
+                                            {/* Block 17: Regular */}
+                                            <div className="flex items-center gap-2">
+                                                <div className="text-[10px] font-bold text-slate-500 uppercase leading-tight text-right">
+                                                    <div className="block">17. Regular</div>
+                                                </div>
+                                                <input
+                                                    type="checkbox"
+                                                    className="w-6 h-6 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 transition-colors cursor-pointer"
+                                                    checked={formData.isRegular || false}
+                                                    onChange={() => setFormData({ ...formData, notObservedReport: false, isRegular: true, isConcurrent: false, isOpsCdr: false })}
+                                                />
+                                            </div>
+
+                                            {/* Block 18: Concurrent */}
+                                            <div className="flex items-center gap-2">
+                                                <div className="text-[10px] font-bold text-slate-500 uppercase leading-tight text-right">
+                                                    <div className="block">18. Concurrent</div>
+                                                </div>
+                                                <input
+                                                    type="checkbox"
+                                                    className="w-6 h-6 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 transition-colors cursor-pointer"
+                                                    checked={formData.isConcurrent || false}
+                                                    onChange={() => setFormData({ ...formData, notObservedReport: false, isRegular: false, isConcurrent: true, isOpsCdr: false })}
+                                                />
+                                            </div>
+
+                                            {/* Block 19: Ops Cdr */}
+                                            <div className="flex items-center gap-2">
+                                                <div className="text-[10px] font-bold text-slate-500 uppercase leading-tight text-right">
+                                                    <div className="block">19. Ops Cdr</div>
+                                                </div>
+                                                <input
+                                                    type="checkbox"
+                                                    className="w-6 h-6 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 transition-colors cursor-pointer"
+                                                    checked={formData.isOpsCdr || false}
+                                                    onChange={() => setFormData({ ...formData, notObservedReport: false, isRegular: false, isConcurrent: false, isOpsCdr: true })}
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Block 20: Physical Readiness */}
+                                    <div className="flex flex-col space-y-1.5">
+                                        <label className="block text-sm font-medium text-slate-700">
+                                            20. Physical Readiness
+                                        </label>
+                                        <input
+                                            type="text"
+                                            className="w-32 px-3 py-2 bg-white border border-slate-300 rounded-lg text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 uppercase mt-auto"
+                                            value={formData.physicalReadiness || ''}
+                                            onChange={(e) => setFormData({ ...formData, physicalReadiness: e.target.value.toUpperCase() })}
+                                            placeholder="PSEP"
+                                        />
+                                    </div>
+
+                                    {/* Block 21: Billet Subcategory */}
+                                    <div className="flex flex-col space-y-1.5 grow min-w-[150px]">
+                                        <label className="block text-sm font-medium text-slate-700">
+                                            21. Billet Subcategory
+                                        </label>
+                                        <select
+                                            className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 mt-auto"
+                                            value={formData.billetSubcategory || 'NA'}
+                                            onChange={(e) => setFormData({ ...formData, billetSubcategory: e.target.value })}
+                                        >
+                                            <option value="NA">NA</option>
+                                            <option value="CO AFLOAT">CO AFLOAT</option>
+                                            <option value="CO ASHORE">CO ASHORE</option>
+                                            <option value="INDIV AUG">INDIV AUG</option>
+                                            <option value="RESAC1">RESAC1</option>
+                                            <option value="RESAC6">RESAC6</option>
+                                            <option value="APPROVED">APPROVED</option>
+                                            <option value="SCREENED">SCREENED</option>
+                                            <option value="BASIC">BASIC</option>
+                                            <option value="OIC">OIC</option>
+                                            <option value="SEA COMP">SEA COMP</option>
+                                            <option value="CRF">CRF</option>
+                                            <option value="CANVASSER">CANVASSER</option>
+                                            <option value="RESIDENT">RESIDENT</option>
+                                            <option value="INTERN">INTERN</option>
+                                            <option value="INSTRUCTOR">INSTRUCTOR</option>
+                                            <option value="STUDENT">STUDENT</option>
+                                            {Array.from({ length: 20 }, (_, i) => (
+                                                <option key={i} value={`SPECIAL${String(i + 1).padStart(2, '0')}`}>
+                                                    {`SPECIAL${String(i + 1).padStart(2, '0')}`}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                </div>
+
+                                {/* Row 5: Reporting Senior (Blocks 22-27) */}
+                                <div className="mt-6 flex flex-wrap gap-4 items-start justify-between">
+                                    {/* Block 22: Reporting Senior Name */}
+                                    <div className="w-[23%] space-y-1.5 flex-none">
+                                        <label className="block text-sm font-medium text-slate-700">
+                                            22. Reporting Senior <span className="text-slate-400 font-normal">(Last, FI MI)</span>
+                                        </label>
+                                        <input
+                                            type="text"
+                                            className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-shadow uppercase"
+                                            value={formData.reportingSeniorName || ''}
+                                            onChange={(e) => setFormData({ ...formData, reportingSeniorName: e.target.value.toUpperCase() })}
+                                            placeholder="LAST, FI MI"
+                                        />
+                                    </div>
+
+                                    {/* Block 23: Grade */}
+                                    <div className="w-[15%] space-y-1.5 flex-none">
+                                        <label className="block text-sm font-medium text-slate-700">
+                                            23. Grade
+                                        </label>
+                                        <input
+                                            type="text"
+                                            className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-shadow uppercase"
+                                            value={formData.reportingSeniorGrade || ''}
+                                            onChange={(e) => setFormData({ ...formData, reportingSeniorGrade: e.target.value.toUpperCase() })}
+                                            placeholder="CAPT"
+                                        />
+                                    </div>
+
+                                    {/* Block 24: Desig */}
+                                    <div className="w-[8%] space-y-1.5 flex-none">
+                                        <label className="block text-sm font-medium text-slate-700">
+                                            24. Desig
+                                        </label>
+                                        <input
+                                            type="text"
+                                            className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-shadow uppercase"
+                                            value={formData.reportingSeniorDesig || ''}
+                                            onChange={(e) => setFormData({ ...formData, reportingSeniorDesig: e.target.value.toUpperCase() })}
+                                            placeholder="1110"
+                                        />
+                                    </div>
+
+                                    {/* Block 25: Title */}
+                                    <div className="flex-1 space-y-1.5 min-w-[200px]">
+                                        <label className="block text-sm font-medium text-slate-700">
+                                            25. Title
+                                        </label>
+                                        <input
+                                            type="text"
+                                            className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-shadow uppercase"
+                                            value={formData.reportingSeniorTitle || ''}
+                                            onChange={(e) => setFormData({ ...formData, reportingSeniorTitle: e.target.value.toUpperCase() })}
+                                            placeholder="COMMANDING OFFICER"
+                                        />
+                                    </div>
+
+                                    {/* Block 26: UIC */}
+                                    <div className="w-[8%] space-y-1.5 flex-none">
+                                        <label className="block text-sm font-medium text-slate-700">
+                                            26. UIC
+                                        </label>
+                                        <input
+                                            type="text"
+                                            maxLength={5}
+                                            className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-shadow uppercase font-mono tracking-wider"
+                                            value={formData.reportingSeniorUic || ''}
+                                            onChange={(e) => setFormData({ ...formData, reportingSeniorUic: e.target.value.toUpperCase() })}
+                                            placeholder="55555"
+                                        />
+                                    </div>
+
+                                    {/* Block 27: SSN */}
+                                    <div className="w-[14%] space-y-1.5 flex-none">
+                                        <label className="block text-sm font-medium text-slate-700">
+                                            27. SSN
+                                        </label>
+                                        <input
+                                            type="text"
+                                            className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-shadow"
+                                            value={formData.reportingSeniorSsn || ''}
+                                            onChange={(e) => setFormData({ ...formData, reportingSeniorSsn: e.target.value })}
+                                            placeholder="***-**-****"
+                                        />
                                     </div>
                                 </div>
 
