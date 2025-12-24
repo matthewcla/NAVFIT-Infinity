@@ -1,14 +1,16 @@
 import { useState } from 'react';
 import type { Report } from '../../types';
 import { ArrowLeft, ChevronDown, ChevronUp, Save, FileOutput } from 'lucide-react';
+import { cn } from '../../lib/utils';
 
 
 interface ReportEditorProps {
     report: Report;
     onBack: () => void;
+    readOnly?: boolean;
 }
 
-export function ReportEditor({ report, onBack }: ReportEditorProps) {
+export function ReportEditor({ report, onBack, readOnly = false }: ReportEditorProps) {
     const [isHeaderCollapsed, setIsHeaderCollapsed] = useState(false);
     const [formData, setFormData] = useState<Report>(report);
 
@@ -32,7 +34,15 @@ export function ReportEditor({ report, onBack }: ReportEditorProps) {
                 </div>
 
                 <div className="flex items-center gap-3">
-                    <button className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-slate-600 hover:bg-slate-50 rounded-md border border-slate-200 shadow-sm transition-all">
+                    <button
+                        disabled={readOnly}
+                        className={cn(
+                            "flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-md border shadow-sm transition-all",
+                            readOnly
+                                ? "bg-slate-50 text-slate-400 border-slate-200 cursor-not-allowed"
+                                : "text-slate-600 hover:bg-slate-50 border-slate-200"
+                        )}
+                    >
                         <Save className="w-4 h-4" />
                         Save Draft
                     </button>
@@ -71,7 +81,8 @@ export function ReportEditor({ report, onBack }: ReportEditorProps) {
                                     </label>
                                     <input
                                         type="text"
-                                        className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-shadow uppercase"
+                                        disabled={readOnly}
+                                        className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-shadow uppercase disabled:bg-slate-50 disabled:text-slate-500"
                                         value={formData.memberId}
                                         onChange={(e) => setFormData({ ...formData, memberId: e.target.value.toUpperCase() })}
                                         placeholder="Enter name..."
@@ -85,7 +96,8 @@ export function ReportEditor({ report, onBack }: ReportEditorProps) {
                                     </label>
                                     <input
                                         type="text"
-                                        className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-shadow uppercase"
+                                        disabled={readOnly}
+                                        className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-shadow uppercase disabled:bg-slate-50 disabled:text-slate-500"
                                         value={formData.grade || ''}
                                         onChange={(e) => setFormData({ ...formData, grade: e.target.value.toUpperCase() })}
                                         placeholder="e.g. LCDR"
@@ -99,7 +111,8 @@ export function ReportEditor({ report, onBack }: ReportEditorProps) {
                                     </label>
                                     <input
                                         type="text"
-                                        className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-shadow"
+                                        disabled={readOnly}
+                                        className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-shadow disabled:bg-slate-50 disabled:text-slate-500"
                                         value={formData.designator || ''}
                                         onChange={(e) => setFormData({ ...formData, designator: e.target.value })}
                                         placeholder="e.g. 1110"
@@ -113,7 +126,8 @@ export function ReportEditor({ report, onBack }: ReportEditorProps) {
                                     </label>
                                     <input
                                         type="text"
-                                        className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-shadow"
+                                        disabled={readOnly}
+                                        className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-shadow disabled:bg-slate-50 disabled:text-slate-500"
                                         value={formData.ssn || ''}
                                         onChange={(e) => setFormData({ ...formData, ssn: e.target.value })}
                                         placeholder="***-**-****"
@@ -187,7 +201,8 @@ export function ReportEditor({ report, onBack }: ReportEditorProps) {
                                             8. Prom Status
                                         </label>
                                         <select
-                                            className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                                            disabled={readOnly}
+                                            className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 disabled:bg-slate-50 disabled:text-slate-500 disabled:cursor-not-allowed"
                                             value={formData.promotionStatus || ""}
                                             onChange={(e) => setFormData({ ...formData, promotionStatus: e.target.value })}
                                         >
@@ -206,7 +221,8 @@ export function ReportEditor({ report, onBack }: ReportEditorProps) {
                                         </label>
                                         <input
                                             type="date"
-                                            className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                                            disabled={readOnly}
+                                            className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 disabled:bg-slate-50 disabled:text-slate-500"
                                             value={formData.dateReported || ''}
                                             onChange={(e) => setFormData({ ...formData, dateReported: e.target.value })}
                                         />
@@ -229,7 +245,8 @@ export function ReportEditor({ report, onBack }: ReportEditorProps) {
                                                 </div>
                                                 <input
                                                     type="checkbox"
-                                                    className="w-6 h-6 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 transition-colors cursor-pointer"
+                                                    disabled={readOnly}
+                                                    className="w-6 h-6 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 transition-colors cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
                                                     checked={formData.type === 'Periodic'}
                                                     onChange={() => setFormData({ ...formData, type: 'Periodic', detachmentOfIndividual: undefined })}
                                                 />
@@ -243,7 +260,8 @@ export function ReportEditor({ report, onBack }: ReportEditorProps) {
                                                 </div>
                                                 <input
                                                     type="checkbox"
-                                                    className="w-6 h-6 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 transition-colors cursor-pointer"
+                                                    disabled={readOnly}
+                                                    className="w-6 h-6 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 transition-colors cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
                                                     checked={formData.type === 'Detachment' && formData.detachmentOfIndividual}
                                                     onChange={() => setFormData({ ...formData, type: 'Detachment', detachmentOfIndividual: true })}
                                                 />
@@ -257,7 +275,8 @@ export function ReportEditor({ report, onBack }: ReportEditorProps) {
                                                 </div>
                                                 <input
                                                     type="checkbox"
-                                                    className="w-6 h-6 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 transition-colors cursor-pointer"
+                                                    disabled={readOnly}
+                                                    className="w-6 h-6 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 transition-colors cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
                                                     checked={formData.type === 'Detachment' && !formData.detachmentOfIndividual}
                                                     onChange={() => setFormData({ ...formData, type: 'Detachment', detachmentOfIndividual: false })}
                                                 />
@@ -270,7 +289,8 @@ export function ReportEditor({ report, onBack }: ReportEditorProps) {
                                                 </div>
                                                 <input
                                                     type="checkbox"
-                                                    className="w-6 h-6 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 transition-colors cursor-pointer"
+                                                    disabled={readOnly}
+                                                    className="w-6 h-6 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 transition-colors cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
                                                     checked={formData.type === 'Special'}
                                                     onChange={() => setFormData({ ...formData, type: 'Special', detachmentOfIndividual: undefined })}
                                                 />
@@ -289,7 +309,8 @@ export function ReportEditor({ report, onBack }: ReportEditorProps) {
                                                 <label className="text-[10px] font-bold text-slate-500 uppercase mb-2">14. From</label>
                                                 <input
                                                     type="date"
-                                                    className="w-32 px-2 py-2 bg-white border border-slate-300 rounded-lg text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                                                    disabled={readOnly}
+                                                    className="w-32 px-2 py-2 bg-white border border-slate-300 rounded-lg text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 disabled:bg-slate-50 disabled:text-slate-500"
                                                     value={formData.periodStartDate || ''}
                                                     onChange={(e) => setFormData({ ...formData, periodStartDate: e.target.value })}
                                                 />
@@ -300,7 +321,8 @@ export function ReportEditor({ report, onBack }: ReportEditorProps) {
                                                 <label className="text-[10px] font-bold text-slate-500 uppercase mb-2">15. To</label>
                                                 <input
                                                     type="date"
-                                                    className="w-32 px-2 py-2 bg-white border border-slate-300 rounded-lg text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                                                    disabled={readOnly}
+                                                    className="w-32 px-2 py-2 bg-white border border-slate-300 rounded-lg text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 disabled:bg-slate-50 disabled:text-slate-500"
                                                     value={formData.periodEndDate || ''}
                                                     onChange={(e) => setFormData({ ...formData, periodEndDate: e.target.value })}
                                                 />
@@ -320,7 +342,8 @@ export function ReportEditor({ report, onBack }: ReportEditorProps) {
                                         </div>
                                         <input
                                             type="checkbox"
-                                            className="w-6 h-6 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 transition-colors cursor-pointer self-end mb-1"
+                                            disabled={readOnly}
+                                            className="w-6 h-6 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 transition-colors cursor-pointer self-end mb-1 disabled:cursor-not-allowed disabled:opacity-50"
                                             checked={formData.notObservedReport || false}
                                             onChange={() => setFormData({ ...formData, notObservedReport: true, isRegular: false, isConcurrent: false, isOpsCdr: false })}
                                         />
@@ -339,7 +362,8 @@ export function ReportEditor({ report, onBack }: ReportEditorProps) {
                                                 </div>
                                                 <input
                                                     type="checkbox"
-                                                    className="w-6 h-6 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 transition-colors cursor-pointer"
+                                                    disabled={readOnly}
+                                                    className="w-6 h-6 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 transition-colors cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
                                                     checked={formData.isRegular || false}
                                                     onChange={() => setFormData({ ...formData, notObservedReport: false, isRegular: true, isConcurrent: false, isOpsCdr: false })}
                                                 />
@@ -352,7 +376,8 @@ export function ReportEditor({ report, onBack }: ReportEditorProps) {
                                                 </div>
                                                 <input
                                                     type="checkbox"
-                                                    className="w-6 h-6 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 transition-colors cursor-pointer"
+                                                    disabled={readOnly}
+                                                    className="w-6 h-6 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 transition-colors cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
                                                     checked={formData.isConcurrent || false}
                                                     onChange={() => setFormData({ ...formData, notObservedReport: false, isRegular: false, isConcurrent: true, isOpsCdr: false })}
                                                 />
@@ -365,7 +390,8 @@ export function ReportEditor({ report, onBack }: ReportEditorProps) {
                                                 </div>
                                                 <input
                                                     type="checkbox"
-                                                    className="w-6 h-6 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 transition-colors cursor-pointer"
+                                                    disabled={readOnly}
+                                                    className="w-6 h-6 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 transition-colors cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
                                                     checked={formData.isOpsCdr || false}
                                                     onChange={() => setFormData({ ...formData, notObservedReport: false, isRegular: false, isConcurrent: false, isOpsCdr: true })}
                                                 />
@@ -380,7 +406,8 @@ export function ReportEditor({ report, onBack }: ReportEditorProps) {
                                         </label>
                                         <input
                                             type="text"
-                                            className="w-32 px-3 py-2 bg-white border border-slate-300 rounded-lg text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 uppercase mt-auto"
+                                            disabled={readOnly}
+                                            className="w-32 px-3 py-2 bg-white border border-slate-300 rounded-lg text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 uppercase mt-auto disabled:bg-slate-50 disabled:text-slate-500"
                                             value={formData.physicalReadiness || ''}
                                             onChange={(e) => setFormData({ ...formData, physicalReadiness: e.target.value.toUpperCase() })}
                                             placeholder="PSEP"
@@ -393,7 +420,8 @@ export function ReportEditor({ report, onBack }: ReportEditorProps) {
                                             21. Billet Subcategory
                                         </label>
                                         <select
-                                            className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 mt-auto"
+                                            disabled={readOnly}
+                                            className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 mt-auto disabled:bg-slate-50 disabled:text-slate-500 disabled:cursor-not-allowed"
                                             value={formData.billetSubcategory || 'NA'}
                                             onChange={(e) => setFormData({ ...formData, billetSubcategory: e.target.value })}
                                         >
@@ -432,7 +460,8 @@ export function ReportEditor({ report, onBack }: ReportEditorProps) {
                                         </label>
                                         <input
                                             type="text"
-                                            className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-shadow uppercase"
+                                            disabled={readOnly}
+                                            className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-shadow uppercase disabled:bg-slate-50 disabled:text-slate-500"
                                             value={formData.reportingSeniorName || ''}
                                             onChange={(e) => setFormData({ ...formData, reportingSeniorName: e.target.value.toUpperCase() })}
                                             placeholder="LAST, FI MI"
@@ -446,7 +475,8 @@ export function ReportEditor({ report, onBack }: ReportEditorProps) {
                                         </label>
                                         <input
                                             type="text"
-                                            className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-shadow uppercase"
+                                            disabled={readOnly}
+                                            className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-shadow uppercase disabled:bg-slate-50 disabled:text-slate-500"
                                             value={formData.reportingSeniorGrade || ''}
                                             onChange={(e) => setFormData({ ...formData, reportingSeniorGrade: e.target.value.toUpperCase() })}
                                             placeholder="CAPT"
@@ -460,7 +490,8 @@ export function ReportEditor({ report, onBack }: ReportEditorProps) {
                                         </label>
                                         <input
                                             type="text"
-                                            className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-shadow uppercase"
+                                            disabled={readOnly}
+                                            className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-shadow uppercase disabled:bg-slate-50 disabled:text-slate-500"
                                             value={formData.reportingSeniorDesig || ''}
                                             onChange={(e) => setFormData({ ...formData, reportingSeniorDesig: e.target.value.toUpperCase() })}
                                             placeholder="1110"
@@ -474,7 +505,8 @@ export function ReportEditor({ report, onBack }: ReportEditorProps) {
                                         </label>
                                         <input
                                             type="text"
-                                            className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-shadow uppercase"
+                                            disabled={readOnly}
+                                            className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-shadow uppercase disabled:bg-slate-50 disabled:text-slate-500"
                                             value={formData.reportingSeniorTitle || ''}
                                             onChange={(e) => setFormData({ ...formData, reportingSeniorTitle: e.target.value.toUpperCase() })}
                                             placeholder="COMMANDING OFFICER"
@@ -488,8 +520,9 @@ export function ReportEditor({ report, onBack }: ReportEditorProps) {
                                         </label>
                                         <input
                                             type="text"
+                                            disabled={readOnly}
                                             maxLength={5}
-                                            className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-shadow uppercase font-mono tracking-wider"
+                                            className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-shadow uppercase font-mono tracking-wider disabled:bg-slate-50 disabled:text-slate-500"
                                             value={formData.reportingSeniorUic || ''}
                                             onChange={(e) => setFormData({ ...formData, reportingSeniorUic: e.target.value.toUpperCase() })}
                                             placeholder="55555"
@@ -503,7 +536,8 @@ export function ReportEditor({ report, onBack }: ReportEditorProps) {
                                         </label>
                                         <input
                                             type="text"
-                                            className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-shadow"
+                                            disabled={readOnly}
+                                            className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-shadow disabled:bg-slate-50 disabled:text-slate-500"
                                             value={formData.reportingSeniorSsn || ''}
                                             onChange={(e) => setFormData({ ...formData, reportingSeniorSsn: e.target.value })}
                                             placeholder="***-**-****"
