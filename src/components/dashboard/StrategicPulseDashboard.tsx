@@ -6,7 +6,11 @@ import { RscaHealthScoreboard } from './RscaHealthScoreboard';
 
 import { ActivitySyncBar } from './ActivitySyncBar';
 
-export const StrategicPulseDashboard = () => {
+interface StrategicPulseDashboardProps {
+    onOpenReport?: (memberId: string, name: string, rank?: string) => void;
+}
+
+export const StrategicPulseDashboard = ({ onOpenReport }: StrategicPulseDashboardProps) => {
     return (
         <div className="flex flex-col h-full bg-slate-50">
             {/* Header */}
@@ -23,7 +27,7 @@ export const StrategicPulseDashboard = () => {
             <div className="flex-1 overflow-hidden p-4 flex flex-col">
                 {/* Main Row: Manning Waterfall */}
                 <div className="flex-1 w-full min-h-0">
-                    <ManningWaterfall />
+                    <ManningWaterfall onOpenReport={onOpenReport} />
                 </div>
             </div>
 

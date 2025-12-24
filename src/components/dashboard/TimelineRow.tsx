@@ -10,11 +10,12 @@ interface TimelineRowProps {
     member: Member;
     coDetachDate: string;
     avgRSCA: number;
-    onReportClick: () => void;
+    onReportClick?: () => void;
+    onReportDoubleClick?: () => void;
     timelineMonths: { label: string; monthIndex: number; year: number; index: number }[];
 }
 
-export const TimelineRow = ({ member, coDetachDate, avgRSCA, onReportClick, timelineMonths }: TimelineRowProps) => {
+export const TimelineRow = ({ member, coDetachDate, avgRSCA, onReportClick, onReportDoubleClick, timelineMonths }: TimelineRowProps) => {
     // Width per month column (must match ManningWaterfall header)
     const COL_WIDTH = 96; // w-24 = 6rem = 96px
 
@@ -98,6 +99,7 @@ export const TimelineRow = ({ member, coDetachDate, avgRSCA, onReportClick, time
                             }`}
                         style={{ left: `${periodicPos}px` }}
                         onClick={onReportClick}
+                        onDoubleClick={onReportDoubleClick}
                     >
                         <span className="text-[10px] font-bold text-white">
                             {member.nextPlan === 'NOB' || !member.nextPlan ? 'NOB' : (member.nextPlan as number).toFixed(2)}
@@ -124,6 +126,7 @@ export const TimelineRow = ({ member, coDetachDate, avgRSCA, onReportClick, time
                             }`}
                         style={{ left: `${transferPos}px` }}
                         onClick={onReportClick}
+                        onDoubleClick={onReportDoubleClick}
                     >
                         <span className="text-[10px] font-bold text-white">
                             {member.target ? member.target.toFixed(2) : 'N/A'}
