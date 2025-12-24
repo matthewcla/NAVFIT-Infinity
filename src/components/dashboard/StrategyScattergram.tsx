@@ -237,7 +237,7 @@ export const StrategyScattergram = () => {
             id: r.id,
             // Shift +3 months to align with display timeline start (which starts 3 months before mock start)
             x: monthToX(r.monthIndex + 3),
-            y: traitToY(r.isNOB ? NOB_TRAIT_VALUE : r.traitAverage),
+            y: traitToY((r.isNOB || r.type === 'Gain') ? NOB_TRAIT_VALUE : r.traitAverage),
             report: r
         }));
 
@@ -686,6 +686,10 @@ export const StrategyScattergram = () => {
                     <div className="flex items-center space-x-1">
                         <div className="w-3 h-3 rounded-full bg-green-500"></div>
                         <span>Promotion</span>
+                    </div>
+                    <div className="flex items-center space-x-1">
+                        <div className="w-0.5 h-4 bg-purple-500 border-l border-dashed border-purple-500"></div>
+                        <span>RS Detach</span>
                     </div>
                 </div>
                 <div className="flex items-center space-x-2">

@@ -270,22 +270,21 @@ export function ManningWaterfall() {
 
             {/* Footer with Legend */}
             <div className="p-3 border-t border-slate-200 bg-slate-50 flex items-center justify-between text-xs shrink-0">
-                <span className="font-semibold text-slate-500 uppercase tracking-wider">Legend</span>
-                <div className="flex items-center space-x-6">
+                <div className="flex items-center space-x-4">
                     <div className="flex items-center space-x-1.5">
                         <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
                         <span className="text-slate-600">Periodic</span>
                     </div>
                     <div className="flex items-center space-x-1.5">
                         <div className="w-3 h-3 bg-red-500 rounded-full"></div>
-                        <span className="text-slate-600">Loss (Transfer)</span>
+                        <span className="text-slate-600">Transfer</span>
                     </div>
                     <div className="flex items-center space-x-1.5">
                         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#22c55e" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round">
                             <line x1="12" y1="5" x2="12" y2="19"></line>
                             <line x1="5" y1="12" x2="19" y2="12"></line>
                         </svg>
-                        <span className="text-slate-600">Gain (No Report)</span>
+                        <span className="text-slate-600">Gain</span>
                     </div>
                     <div className="flex items-center space-x-1.5">
                         <div className="w-3 h-3 bg-yellow-500 transform rotate-45"></div>
@@ -297,8 +296,12 @@ export function ManningWaterfall() {
                     </div>
                     <div className="flex items-center space-x-1.5">
                         <div className="w-0.5 h-4 bg-purple-500 border-l border-dashed border-purple-500"></div>
-                        <span className="text-slate-600">CO Detach</span>
+                        <span className="text-slate-600">RS Detach</span>
                     </div>
+                </div>
+                <div className="flex items-center space-x-2">
+                    <span className="w-3 h-3 rounded-full bg-slate-400 border-[3px] border-green-400"></span>
+                    <span className="text-slate-600">Above RSCA</span>
                 </div>
             </div>
         </div>
