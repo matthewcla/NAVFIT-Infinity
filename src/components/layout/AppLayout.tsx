@@ -1,17 +1,30 @@
-import React from 'react';
+import { type ReactNode } from 'react';
 import { Sidebar, type Tab } from './Sidebar';
+import { cn } from '../../lib/utils';
 
 interface AppLayoutProps {
-    children: React.ReactNode;
+    children: ReactNode;
     activeTab: Tab;
     onTabChange: (tab: Tab) => void;
+    collapsed: boolean;
+    onToggleCollapse: () => void;
 }
 
-export function AppLayout({ children, activeTab, onTabChange }: AppLayoutProps) {
+export function AppLayout({ children, activeTab, onTabChange, collapsed, onToggleCollapse }: AppLayoutProps) {
     return (
-        <div className="min-h-screen bg-slate-50 flex font-sans text-slate-900">
-            <Sidebar activeTab={activeTab} onTabChange={onTabChange} />
-            <div className="ml-64 flex-1 flex flex-col">
+        <div className="h-screen overflow-hidden bg-slate-50 flex font-sans text-slate-900">
+            <Sidebar
+                activeTab={activeTab}
+                onTabChange={onTabChange}
+                collapsed={collapsed}
+                onToggleCollapse={onToggleCollapse}
+            />
+            <div
+                className={cn(
+                    "flex-1 flex flex-col h-full overflow-hidden transition-all duration-300 ease-in-out min-w-0",
+                    collapsed ? "ml-20" : "ml-64"
+                )}
+            >
                 {children}
             </div>
         </div>

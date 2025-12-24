@@ -1,10 +1,12 @@
-import { useState } from 'react';
-import { Calendar, Plus } from 'lucide-react';
-import { KPICard } from './KPICard';
+import { useState, useRef, useEffect } from 'react';
+import { Target, ChevronsDown, ChevronsUp } from 'lucide-react';
+// import { Calendar, Plus } from 'lucide-react'; // Removed as this is handled in Dashboard now
+
+
 import { GroupHeader } from './GroupHeader';
 import { TimelineRow } from './TimelineRow';
 import type { Member } from '../../types';
-import { MONTHS, CURRENT_YEAR, CO_DETACH_DATE } from '../../lib/constants';
+import { CO_DETACH_DATE } from '../../lib/constants';
 
 const INITIAL_MEMBERS: Member[] = [
     // O-3 1110 (SWO)
@@ -23,13 +25,97 @@ const INITIAL_MEMBERS: Member[] = [
     { id: '7', name: 'PO1 Trace, R.', rank: 'E-6', rating: 'BM', milestone: 'LPO', prd: '2025-11-30', lastTrait: 4.0, nextPlan: 4.2, target: 4.3, status: 'Onboard', history: [] },
 ];
 
+const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const generateTimeline = () => {
+    const today = new Date();
+    const currentYear = today.getFullYear();
+    const currentMonth = today.getMonth();
+
+    const months = [];
+    // Start 3 months back
+    for (let i = -3; i < 21; i++) { // Total 24 months (3 back, 21 forward)
+        const date = new Date(currentYear, currentMonth + i, 1);
+        months.push({
+            label: MONTH_NAMES[date.getMonth()],
+            monthIndex: date.getMonth(),
+            year: date.getFullYear(),
+            index: i + 3 // 0-based index for array mapping
+        });
+    }
+    return months;
+};
+
+const TIMELINE_MONTHS = generateTimeline();
+
 export function ManningWaterfall() {
-    const [activeTab, setActiveTab] = useState<'officer' | 'enlisted'>('officer');
+    const [activeFilter, setActiveFilter] = useState<'wardroom' | 'cpo' | 'crew'>('wardroom');
     const [members] = useState<Member[]>(INITIAL_MEMBERS);
 
-    // Filter members based on tab
-    const officerMembers = members.filter(m => m.rank.startsWith('O') || m.rank.startsWith('W'));
-    const enlistedMembers = members.filter(m => m.rank.startsWith('E'));
+    const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+    // Auto-Scroll Logic
+    const handleJumpToNow = () => {
+        if (scrollContainerRef.current) {
+            // Current Month is always Index 3 (based on TIMELINE_MONTHS generation being 3 months back)
+            // 96px per column (w-24)
+            // We want to center the 4th column (index 3)
+            const COL_WIDTH = 96;
+            const currentMonthIndex = 3;
+            // Center logic: (targetX) - (viewport / 2) + (col / 2)
+            const scrollX = (currentMonthIndex * COL_WIDTH) - (scrollContainerRef.current.clientWidth / 2) + (COL_WIDTH / 2);
+
+            scrollContainerRef.current.scrollTo({
+                left: Math.max(0, scrollX),
+                behavior: 'smooth'
+            });
+        }
+    };
+
+    // Initial Scroll
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            handleJumpToNow();
+        }, 100);
+        return () => clearTimeout(timer);
+    }, [activeFilter]); // Re-run if filter changes cause layout shift? Maybe not needed but safe.
+
+    // State for expanded groups
+    const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
+
+    // Global Expand/Collapse
+    const [allExpanded, setAllExpanded] = useState(true);
+    const toggleAllGroups = () => {
+        const newState = !allExpanded;
+        setAllExpanded(newState);
+        // Force all to this state
+        const newGroupState: Record<string, boolean> = {};
+        Object.keys(groups).forEach(k => {
+            newGroupState[k] = newState;
+        });
+        setExpandedGroups(newGroupState);
+    };
+
+    // Toggle Handler
+    const toggleGroup = (groupKey: string) => {
+        setExpandedGroups(prev => ({
+            ...prev,
+            [groupKey]: prev[groupKey] === undefined ?
+                (allExpanded ? false : true) // If undefined, it follows the global state, so toggle the opposite of current global? No, it follows "All Expanded" state
+                : !prev[groupKey]
+        }));
+    };
+
+    // Filter members based on split
+    // Wardroom: O-?, W-?
+    // CPO Mess: E-7, E-8, E-9
+    // Crew: E-1 to E-6
+    const wardroomMembers = members.filter(m => m.rank.startsWith('O') || m.rank.startsWith('W'));
+    const cpoMembers = members.filter(m => ['E-7', 'E-8', 'E-9'].includes(m.rank));
+    const crewMembers = members.filter(m => {
+        if (!m.rank.startsWith('E')) return false;
+        // Check if NOT cpo
+        return !['E-7', 'E-8', 'E-9'].includes(m.rank);
+    });
 
     // Grouping Logic
     const groupMembers = (list: Member[]) => {
@@ -43,119 +129,181 @@ export function ManningWaterfall() {
         return groups;
     };
 
-    const currentList = activeTab === 'officer' ? officerMembers : enlistedMembers;
+    let currentList: Member[] = [];
+    if (activeFilter === 'wardroom') currentList = wardroomMembers;
+    else if (activeFilter === 'cpo') currentList = cpoMembers;
+    else currentList = crewMembers;
+
     const groups = groupMembers(currentList);
 
+    // Initialize expanded state for new groups if needed (optional, or just treat undefined as open)
+    // Treating undefined as OPEN by default in the render loop logic below if needed, 
+    // but better to initialize.
+    // actually, let's just treat undefined as TRUE in the render check.
+
+
     return (
-        <>
-            {/* Top Header inside Dashboard or Main Layout? 
-            Note: Prototype put it in Main Content.
-        */}
-            <header className="h-16 bg-white border-b border-slate-200 flex justify-between items-center px-8 shadow-sm">
-                <h2 className="text-xl font-bold text-slate-800">Command Manning & RSCA Projection</h2>
+        <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden h-full flex flex-col">
+
+            {/* Waterfall Header Controls - Updated Layout */}
+            <div className="p-4 border-b border-slate-200 bg-white sticky top-0 z-20 flex justify-between items-center shrink-0">
+
+                {/* Left: Toggles & Global Expand */}
                 <div className="flex items-center space-x-4">
-                    <div className="flex items-center space-x-2 text-sm text-slate-600 bg-slate-100 px-3 py-1.5 rounded-lg border border-slate-200">
-                        <Calendar size={14} />
-                        <span>Year: {CURRENT_YEAR}</span>
+                    {/* Macro Toggles */}
+                    <div className="flex space-x-1 bg-slate-100 p-1 rounded-lg w-fit">
+                        <button
+                            onClick={() => setActiveFilter('wardroom')}
+                            className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${activeFilter === 'wardroom' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                        >
+                            Wardroom
+                        </button>
+                        <button
+                            onClick={() => setActiveFilter('cpo')}
+                            className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${activeFilter === 'cpo' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                        >
+                            CPO Mess
+                        </button>
+                        <button
+                            onClick={() => setActiveFilter('crew')}
+                            className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${activeFilter === 'crew' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                        >
+                            CREW
+                        </button>
                     </div>
-                    <button className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center">
-                        <Plus size={16} className="mr-2" />
-                        New Report
+
+                    {/* Expand/Collapse All */}
+                    <button
+                        onClick={toggleAllGroups}
+                        className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-slate-50 rounded-md transition-colors border border-slate-200"
+                        title={allExpanded ? "Collapse All Groups" : "Expand All Groups"}
+                    >
+                        {allExpanded ? <ChevronsUp size={18} /> : <ChevronsDown size={18} />}
                     </button>
                 </div>
-            </header>
 
-            {/* Dashboard Content */}
-            <div className="p-8">
+                {/* Right: Jump to Now */}
+                <button
+                    onClick={handleJumpToNow}
+                    className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-white rounded-md transition-colors border border-slate-200"
+                    title="Jump to Current Month"
+                >
+                    <Target size={18} />
+                </button>
+            </div>
 
-                {/* KPI Row */}
-                <div className="grid grid-cols-4 gap-6 mb-8">
-                    <KPICard title="Pending Reports" value="12" subtext="3 require signature" color="blue" />
-                    <KPICard title="Proj. O-3 RSCA" value="3.92" subtext="Current: 3.88 (+0.04)" trend="up" />
-                    <KPICard title="Proj. E-6 RSCA" value="4.15" subtext="Current: 4.18 (-0.03)" trend="down" />
-                    <KPICard title="Board Eligibility" value="8" subtext="Members 'In-Zone' next 6mo" color="red" />
-                </div>
-
-                {/* Waterfall Card */}
-                <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden min-h-[600px]">
-
-                    {/* Waterfall Header Controls */}
-                    <div className="p-4 border-b border-slate-200 flex justify-between items-center">
-                        {/* Tabs */}
-                        <div className="flex space-x-1 bg-slate-100 p-1 rounded-lg">
-                            <button
-                                onClick={() => setActiveTab('officer')}
-                                className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${activeTab === 'officer' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
-                            >
-                                Officers (WARDROOM)
-                            </button>
-                            <button
-                                onClick={() => setActiveTab('enlisted')}
-                                className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${activeTab === 'enlisted' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
-                            >
-                                Enlisted (CPO MESS / CREW)
-                            </button>
-                        </div>
-
-                        {/* Legend */}
-                        <div className="flex items-center space-x-4 text-xs">
-                            <div className="flex items-center space-x-1">
-                                <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
-                                <span className="text-slate-600">Periodic</span>
-                            </div>
-                            <div className="flex items-center space-x-1">
-                                <div className="w-3 h-3 bg-red-500 rounded-full"></div>
-                                <span className="text-slate-600">Loss (Transfer)</span>
-                            </div>
-                            <div className="flex items-center space-x-1">
-                                <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                                <span className="text-slate-600">Gain</span>
-                            </div>
-                            <div className="flex items-center space-x-1">
-                                <div className="w-0.5 h-4 bg-purple-500 border-l border-dashed border-purple-500"></div>
-                                <span className="text-slate-600">CO Detach (Sep 15)</span>
-                            </div>
-                        </div>
-                    </div>
+            {/* Scrollable Container */}
+            <div
+                ref={scrollContainerRef}
+                className="flex-1 overflow-auto custom-scrollbar relative"
+            >
+                <div className="min-w-max"> {/* Container to force width */}
 
                     {/* Timeline Header (Months) */}
-                    <div className="grid grid-cols-12 gap-4 bg-slate-50 py-2 border-b border-slate-200 text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                        <div className="col-span-3 pl-6">Member / Milestone</div>
-                        <div className="col-span-2 text-center border-l border-r border-slate-200">Trait Trajectory</div>
-                        <div className="col-span-7 grid grid-cols-12 text-center">
-                            {MONTHS.map(m => (
-                                <div key={m} className="col-span-1">{m}</div>
+                    <div className="flex bg-slate-50 border-b border-slate-200 sticky top-0 z-30 text-xs font-semibold text-slate-500 uppercase tracking-wider h-10 items-center">
+                        <div className="w-80 px-6 shrink-0 sticky left-0 bg-slate-50 border-r border-slate-200 z-40 h-full flex items-center justify-end shadow-[1px_0_4px_-1px_rgba(0,0,0,0.1)] text-right">
+                            Member / Milestone
+                        </div>
+                        <div className="flex flex-1">
+                            {TIMELINE_MONTHS.map((m, i) => (
+                                <div key={i} className="w-24 px-2 text-center shrink-0 border-r border-slate-100 last:border-0">
+                                    {m.label} <span className="text-[10px] text-slate-400 block font-normal">{m.year}</span>
+                                </div>
                             ))}
                         </div>
                     </div>
 
                     {/* Content Groups */}
-                    <div className="overflow-y-auto max-h-[600px]">
-                        {Object.entries(groups).map(([groupTitle, groupList]) => (
-                            <div key={groupTitle}>
-                                <GroupHeader
-                                    title={groupTitle}
-                                    count={groupList.length}
-                                    avgRSCA={(groupList.reduce((acc, curr) => acc + (curr.lastTrait || 0), 0) / (groupList.filter(m => m.lastTrait).length || 1)).toFixed(2)}
-                                />
-                                {groupList.map(member => (
-                                    <TimelineRow
-                                        key={member.id}
-                                        member={member}
-                                        coDetachDate={CO_DETACH_DATE}
+                    <div>
+                        {Object.entries(groups).map(([groupTitle, groupList]) => {
+                            const isExpanded = expandedGroups[groupTitle] !== undefined ? expandedGroups[groupTitle] : allExpanded; // Use global if undefined
+
+                            // RSCA Trend Calculation
+                            const validMembers = groupList.filter(m => m.lastTrait);
+                            const currentAvg = validMembers.length > 0
+                                ? (validMembers.reduce((acc, curr) => acc + (curr.lastTrait || 0), 0) / validMembers.length)
+                                : 3.50; // Default Seed for groups with no history
+
+                            // 2. Build mock trend points (Month Index: Value)
+                            // Demo: Start Jan (0), dip in Apr (3), recover by Aug (7), end curr
+                            const trendPoints = [
+                                { monthIndex: 3, value: currentAvg - 0.12 }, // Relative to start of extended timeline
+                                { monthIndex: 6, value: currentAvg - 0.05 },
+                                { monthIndex: 10, value: currentAvg + 0.02 },
+                                { monthIndex: 13, value: currentAvg }
+                            ];
+
+                            const mockTargetRange = { min: 3.80, max: 4.00 };
+
+                            return (
+                                <div key={groupTitle}>
+                                    <GroupHeader
+                                        title={groupTitle}
+                                        count={groupList.length}
+                                        isExpanded={isExpanded}
+                                        onToggle={() => toggleGroup(groupTitle)}
+                                        trendPoints={trendPoints}
+                                        targetRange={mockTargetRange}
+                                        timelineMonths={TIMELINE_MONTHS}
                                     />
-                                ))}
-                            </div>
-                        ))}
+                                    {isExpanded && groupList.sort((a, b) => (b.lastTrait || 0) - (a.lastTrait || 0)).map(member => (
+                                        <TimelineRow
+                                            key={member.id}
+                                            member={member}
+                                            coDetachDate={CO_DETACH_DATE}
+                                            avgRSCA={currentAvg}
+                                            onReportClick={() => console.log(`Open report for ${member.name}`)}
+                                            timelineMonths={TIMELINE_MONTHS}
+                                        />
+                                    ))}
+                                </div>
+                            );
+                        })}
                         {Object.keys(groups).length === 0 && (
                             <div className="p-12 text-center text-slate-400">
                                 No members found for this category.
                             </div>
                         )}
                     </div>
-
                 </div>
             </div>
-        </>
+
+            {/* Footer with Legend */}
+            <div className="p-3 border-t border-slate-200 bg-slate-50 flex items-center justify-between text-xs shrink-0">
+                <div className="flex items-center space-x-4">
+                    <div className="flex items-center space-x-1.5">
+                        <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
+                        <span className="text-slate-600">Periodic</span>
+                    </div>
+                    <div className="flex items-center space-x-1.5">
+                        <div className="w-3 h-3 bg-red-500 rounded-full"></div>
+                        <span className="text-slate-600">Transfer</span>
+                    </div>
+                    <div className="flex items-center space-x-1.5">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#22c55e" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round">
+                            <line x1="12" y1="5" x2="12" y2="19"></line>
+                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                        </svg>
+                        <span className="text-slate-600">Gain</span>
+                    </div>
+                    <div className="flex items-center space-x-1.5">
+                        <div className="w-3 h-3 bg-yellow-500 transform rotate-45"></div>
+                        <span className="text-slate-600">Special</span>
+                    </div>
+                    <div className="flex items-center space-x-1.5">
+                        <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                        <span className="text-slate-600">Promotion</span>
+                    </div>
+                    <div className="flex items-center space-x-1.5">
+                        <div className="w-0.5 h-4 bg-purple-500 border-l border-dashed border-purple-500"></div>
+                        <span className="text-slate-600">RS Detach</span>
+                    </div>
+                </div>
+                <div className="flex items-center space-x-2">
+                    <span className="w-3 h-3 rounded-full bg-slate-400 border-[3px] border-green-400"></span>
+                    <span className="text-slate-600">Above RSCA</span>
+                </div>
+            </div>
+        </div>
     );
 }
