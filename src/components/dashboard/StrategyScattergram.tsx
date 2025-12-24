@@ -103,6 +103,7 @@ const generateMockReports = () => {
 };
 
 const INITIAL_REPORTS = generateMockReports();
+type RSCAReport = typeof INITIAL_REPORTS[0];
 
 interface ScatterPoint {
     id: string;
@@ -111,7 +112,11 @@ interface ScatterPoint {
     report: typeof INITIAL_REPORTS[0];
 }
 
-export const StrategyScattergram = () => {
+interface StrategyScattergramProps {
+    onOpenReport?: (memberId: string, name: string, rank?: string) => void;
+}
+
+export const StrategyScattergram = ({ onOpenReport }: StrategyScattergramProps) => {
     // --- STATE ---
     const [reports, setReports] = useState(INITIAL_REPORTS);
     const [activeDragId, setActiveDragId] = useState<string | null>(null);
@@ -386,6 +391,12 @@ export const StrategyScattergram = () => {
     };
 
     // --- HANDLERS ---
+    const handleReportDoubleClick = (report: RSCAReport) => {
+        if (onOpenReport) {
+            onOpenReport(report.memberId || report.id, report.name || "Unknown Member", report.rank);
+        }
+    };
+
     const handleMouseDown = (e: React.MouseEvent, id: string) => {
         e.stopPropagation();
         e.preventDefault();
@@ -644,6 +655,10 @@ export const StrategyScattergram = () => {
                                     transform={`translate(${p.x}, ${p.y})`}
                                     className="cursor-ns-resize"
                                     onMouseDown={(e) => handleMouseDown(e, p.id)}
+                                    onDoubleClick={(e) => {
+                                        e.stopPropagation();
+                                        handleReportDoubleClick(p.report);
+                                    }}
                                 >
                                     {p.report.type === 'Special' ? (
                                         <rect x={-radius + 2} y={-radius + 2} width={radius * 1.8} height={radius * 1.8} fill={baseColor} stroke={isAboveRSCA ? '#4ade80' : 'white'} strokeWidth={isAboveRSCA ? 3 : 2} transform="rotate(45)" className={`shadow-md ${isDragging ? 'brightness-110' : ''}`} />

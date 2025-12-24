@@ -47,7 +47,11 @@ const generateTimeline = () => {
 
 const TIMELINE_MONTHS = generateTimeline();
 
-export function ManningWaterfall() {
+interface ManningWaterfallProps {
+    onOpenReport?: (memberId: string, name: string, rank?: string) => void;
+}
+
+export function ManningWaterfall({ onOpenReport }: ManningWaterfallProps) {
     const [activeFilter, setActiveFilter] = useState<'wardroom' | 'cpo' | 'crew'>('wardroom');
     const [members] = useState<Member[]>(INITIAL_MEMBERS);
 
@@ -252,7 +256,9 @@ export function ManningWaterfall() {
                                             member={member}
                                             coDetachDate={CO_DETACH_DATE}
                                             avgRSCA={currentAvg}
-                                            onReportClick={() => console.log(`Open report for ${member.name}`)}
+                                            onReportDoubleClick={() => {
+                                                if (onOpenReport) onOpenReport(member.id, member.name, member.rank);
+                                            }}
                                             timelineMonths={TIMELINE_MONTHS}
                                         />
                                     ))}

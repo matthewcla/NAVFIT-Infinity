@@ -26,14 +26,59 @@ export interface Member {
 export interface Report {
     id: string;
     memberId: string;
-    periodEndDate: string;
-    type: 'Periodic' | 'Detachment' | 'Promotion' | 'Special';
+    periodEndDate: string; // Block 15
+    type: 'Periodic' | 'Detachment' | 'Promotion' | 'Special'; // Block 10-13 implied
     traitGrades: Record<string, number>; // Block 33-39
     traitAverage: number;
-    promotionRecommendation: 'EP' | 'MP' | 'P' | 'Prog' | 'SP' | 'NOB';
+    promotionRecommendation: 'EP' | 'MP' | 'P' | 'Prog' | 'SP' | 'NOB'; // Block 42
     summaryGroupAvg?: number;
     rscaAtTime?: number;
-    narrative?: string;
+    narrative?: string; // Block 43 (formerly implied, now explicit)
+
+    // New Fields for Reports Manager
+    draftStatus?: 'Draft' | 'Review' | 'Final';
+    isAdverse?: boolean;
+
+    // Administrative Data
+    grade?: string; // Block 2
+    designator?: string; // Block 3
+    ssn?: string; // Block 4
+    dutyStatus?: 'ACT' | 'TAR' | 'INACT' | 'AT/ADSW/265'; // Block 5
+    uic?: string; // Block 6
+    shipStation?: string; // Block 7
+    promotionStatus?: string; // Block 8
+    dateReported?: string; // Block 9
+    detachmentOfIndividual?: boolean; // Block 11
+    periodStartDate?: string; // Block 14
+    notObservedReport?: boolean; // Block 16
+    isRegular?: boolean; // Block 17
+    isConcurrent?: boolean; // Block 18
+    isOpsCdr?: boolean; // Block 19
+    physicalReadiness?: string; // Block 20
+    billetSubcategory?: string; // Block 21
+    reportingSeniorId?: string; // Block 22 (Link)
+
+    // Reporting Senior Snapshot (Blocks 22-27)
+    reportingSeniorName?: string;
+    reportingSeniorGrade?: string;
+    reportingSeniorDesig?: string;
+    reportingSeniorTitle?: string;
+    reportingSeniorUic?: string;
+    reportingSeniorSsn?: string;
+
+    // Duties & Command
+    commandEmployment?: string; // Block 28
+    primaryDuty?: string; // Block 29 (Primary)
+    collateralDuties?: string; // Block 29 (Collateral)
+    watchstandingDuties?: string; // Block 29 (Watchstanding)
+
+    // Counseling
+    counselingDate?: string; // Block 30
+    counselorName?: string; // Block 31
+
+    // Narrative Sections
+    careerRecommendations?: string; // Block 40
+    comments?: string; // Block 41/43 (Main narrative body)
 }
 
 export interface SummaryGroup {
