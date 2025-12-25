@@ -17,6 +17,8 @@ export interface RosterMember {
 
     dateReported: string; // YYYY-MM-DD
     prd: string;          // Projected Rotation Date
+    lastTrait?: number;
+    target?: number;
 }
 
 export interface ReportingSeniorConfig {

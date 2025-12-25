@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import type { RosterMember } from '../../types/roster';
 import type { Report } from '../../types';
-import { User, FileText, History } from 'lucide-react';
+import { User, FileText, History, Search, Users } from 'lucide-react';
 
 interface SailorProfilesProps {
     roster: RosterMember[];
@@ -19,14 +19,17 @@ export function SailorProfiles({ roster, reports }: SailorProfilesProps) {
             {/* Sidebar List */}
             <div className="w-80 border-r border-slate-200 bg-white flex flex-col h-full">
                 <div className="p-4 border-b border-slate-200">
-                    <h2 className="text-lg font-bold text-slate-800">Personnel</h2>
-                    <div className="mt-2 relative">
+                    <div className="flex items-center gap-2 mb-2">
+                        <Users className="w-5 h-5 text-indigo-600" />
+                        <h2 className="text-lg font-bold text-slate-800">Sailor Profiles</h2>
+                    </div>
+                    <div className="relative">
                         <input
                             type="text"
                             placeholder="Search..."
                             className="w-full pl-8 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                         />
-                        <User className="w-4 h-4 text-slate-400 absolute left-2.5 top-2.5" />
+                        <Search className="w-4 h-4 text-slate-400 absolute left-2.5 top-2.5" />
                     </div>
                 </div>
                 <div className="flex-1 overflow-y-auto">

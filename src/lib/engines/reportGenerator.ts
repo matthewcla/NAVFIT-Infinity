@@ -37,16 +37,58 @@ const getCompetitiveGroup = (member: RosterMember): string => {
 
 // --- Logic Engine ---
 
+/**
+ * Calculates a smart starting trait average for a projected report.
+ * Based on:
+ * 1. Seniority (Higher ranks start higher)
+ * 2. Previous Permormance (Last Trait)
+ * 3. Career Milestone (Transfer/PRD gets a boost)
+ * 4. Target Trajectory
+ */
+const calculateStartValue = (
+    member: RosterMember,
+    reportType: string,
+    _rsConfig: ReportingSeniorConfig
+): number => {
+    // 1. Establish Baseline based on Rank (Seniority)
+    // Junior Officers start lower to allow growth; Seniors start competitive.
+    let baseline = 3.40; // Default (P)
+    if (['O-5', 'O-6', 'W-5', 'E-9'].includes(member.rank)) baseline = 4.00; // MP
+    else if (['O-4', 'W-4', 'E-8'].includes(member.rank)) baseline = 3.80;
+    else if (['O-3', 'W-3', 'E-7'].includes(member.rank)) baseline = 3.60;
+
+    // 2. Adjust for History
+    if (member.lastTrait && member.lastTrait > 0) {
+        // If they have a previous ave, start slightly above it (trajectory)
+        // unless it was absurdly high, then maintain.
+        baseline = Math.max(baseline, member.lastTrait);
+
+        // Slight growth factor for projection
+        if (baseline < 4.80) baseline += 0.05;
+    }
+
+    // 3. "Kiss Goodbye" / Transfer Boost
+    // If this report coincides with their PRD, it's a Transfer report.
+    // Transfer reports are typically "One up" calls.
+    if (reportType === 'Detachment' || reportType === 'Transfer') { // We need to detect Transfer intent
+        baseline += 0.10;
+    }
+
+    // 4. Cap at 5.00
+    return Math.min(5.00, Math.round(baseline * 100) / 100);
+};
+
 export const generateSummaryGroups = (
     roster: RosterMember[],
     rsConfig: ReportingSeniorConfig,
-    baseYear: number = 2025
+    baseYear: number = 2025,
+    projections: Record<string, number> = {}
 ): SummaryGroup[] => {
     const groupsMap = new Map<string, SummaryGroup>();
+    const rsEndDate = new Date(rsConfig.changeOfCommandDate); // e.g. 2026-06-01
 
     // Helper to get-or-create Group
     const ensureGroup = (compGroup: string, endDate: string): SummaryGroup => {
-        // ID must be deterministic and URL-safe
         const id = `sg-${compGroup.replace(/\s+/g, '-')}-${endDate}`;
         if (!groupsMap.has(id)) {
             groupsMap.set(id, {
@@ -62,79 +104,130 @@ export const generateSummaryGroups = (
 
     roster.forEach(member => {
         const compGroup = getCompetitiveGroup(member);
+        const memberPRD = new Date(member.prd);
 
-        // 1. Periodic Report Plan
-        // PERIODIC_SCHEDULE keys might need casting if strict strict
-        // rank is 'PayGrade' (e.g. O-3), PERIODIC_SCHEDULE uses string keys.
-        const periodicMonth = PERIODIC_SCHEDULE[member.rank as string];
+        // Loop through years from Base Year until RS Detach Date
+        // We go a bit past base year to cover the full tenure
+        let currentYear = baseYear;
+        const endYear = rsEndDate.getFullYear();
 
-        if (periodicMonth) {
-            const pMonthIndex = periodicMonth - 1; // Convert to 0-based
-            const pDate = new Date(baseYear, pMonthIndex + 1, 0); // Last day of month
-            const pDateStr = formatISODate(baseYear, pMonthIndex, pDate.getDate());
+        // -----------------------------------------------------
+        // 1. ITERATE PERIODIC CYCLES (Long Term Projection)
+        // -----------------------------------------------------
+        while (currentYear <= endYear + 1) { // Look ahead slightly
+            const periodicMonth = PERIODIC_SCHEDULE[member.rank as string];
 
-            const group = ensureGroup(compGroup, pDateStr);
+            if (periodicMonth) {
+                const pMonthIndex = periodicMonth - 1;
+                // Periodic Date for this year
+                const pDate = new Date(currentYear, pMonthIndex + 1, 0); // Last day of month
 
-            // Check if member already in group
-            if (!group.reports.some(r => r.memberId === member.id)) {
+                // Constraints:
+                // 1. Report Date must be BEFORE RS Leaves
+                // 2. Report Date must be BEFORE Member Leaves (PRD)
+                // 3. Member must have reported BEFORE Report Date
+                const memberRepDate = new Date(member.dateReported);
 
-                // Create Base Report
-                const report: Report = {
-                    id: `r-${member.id}-periodic-${baseYear}`,
-                    memberId: member.id,
-                    periodEndDate: pDateStr,
-                    type: 'Periodic',
-                    traitAverage: 0,
-                    promotionRecommendation: 'NOB',
-                    draftStatus: 'Draft',
-                    traitGrades: {},
-                    isAdverse: false,
-                    notObservedReport: false,
+                if (pDate <= rsEndDate && pDate <= memberPRD && pDate >= memberRepDate) {
+                    const pDateStr = formatISODate(currentYear, pMonthIndex, pDate.getDate());
+                    const group = ensureGroup(compGroup, pDateStr);
 
-                    // Admin Data Snapshots
-                    grade: member.rank,
-                    designator: member.designator,
-                    dateReported: member.dateReported,
-                    reportingSeniorId: 'rs-current', // Placeholder linkage
-                    reportingSeniorName: rsConfig.name,
-                    reportingSeniorGrade: rsConfig.rank,
-                    reportingSeniorTitle: rsConfig.title,
-                };
+                    // Avoid duplication
+                    if (!group.reports.some(r => r.memberId === member.id)) {
+                        /* 
+                           Determine Status:
+                           If date is in the past (relative to NOW/Simulation), it's 'Submitted' or 'Final'.
+                           If it's the current active cycle, it's 'Draft'.
+                           If it's future, it's 'Projected'.
+                        */
+                        const today = new Date(); // In real app, this might be injected 'simulationDate'
+                        let status: Report['draftStatus'] = 'Projected';
+                        if (pDate < today) status = 'Final'; // Simplification for demo
+                        // For the immediate upcoming cycle, we might want 'Draft'. 
+                        // For now, let's treat everything > today as 'Projected' defaults, 
+                        // logic elsewhere promotes them to 'Draft'.
 
-                group.reports.push(report);
+                        // "Kiss Goodbye" check for Transfer logic within Periodic? 
+                        // Valid Transfer reports replace Periodics if within 3 months, 
+                        // but here we just project the periodic cycle slots.
+
+                        const reportId = `r-${member.id}-periodic-${currentYear}`;
+                        const calculatedAvg = projections[reportId] ?? calculateStartValue(member, 'Periodic', rsConfig);
+
+                        const report: Report = {
+                            id: reportId,
+                            memberId: member.id,
+                            periodEndDate: pDateStr,
+                            type: 'Periodic',
+                            traitAverage: calculatedAvg,
+                            promotionRecommendation: 'NOB',
+                            draftStatus: status, // <--- KEY CHANGE
+                            traitGrades: {},
+                            isAdverse: false,
+                            notObservedReport: false,
+                            grade: member.rank,
+                            designator: member.designator,
+                            dateReported: member.dateReported,
+                            reportingSeniorName: rsConfig.name,
+                        };
+                        group.reports.push(report);
+                    }
+                }
             }
+            currentYear++;
         }
 
-        // 2. RS Detach Report Plan
-        // Logic: specific date for everyone < that date
-        // Only if they haven't transferred before that date.
-        const rsDate = rsConfig.changeOfCommandDate;
+        // -----------------------------------------------------
+        // 2. MEMBER TRANSFER (PRD) REPORT
+        // -----------------------------------------------------
+        // If Member leaves BEFORE RS leaves, they get a Transfer Report at PRD.
+        if (memberPRD < rsEndDate && memberPRD > new Date(member.dateReported)) {
+            const prdStr = formatISODate(memberPRD.getFullYear(), memberPRD.getMonth(), memberPRD.getDate());
+            const group = ensureGroup(compGroup, prdStr);
 
-        // Simple Logic: If onboard during RS shift
-        if (member.dateReported < rsDate && member.prd > rsDate) {
-            // Eligible for RS Detach Report
-            const group = ensureGroup(compGroup, rsDate);
+            const reportId = `r-${member.id}-transfer-${memberPRD.getFullYear()}`;
+            const calculatedAvg = projections[reportId] ?? calculateStartValue(member, 'Transfer', rsConfig);
+            const report: Report = {
+                id: reportId,
+                memberId: member.id,
+                periodEndDate: prdStr,
+                type: 'Detachment', // Transfer is a Detachment of Individual
+                detachmentOfIndividual: true,
+                traitAverage: calculatedAvg, // Boosted by logic
+                promotionRecommendation: 'EP', // Usually Transfer is EP if good
+                draftStatus: 'Projected',
+                traitGrades: {},
+                grade: member.rank,
+                designator: member.designator,
+                reportingSeniorName: rsConfig.name,
+            };
+            group.reports.push(report);
+        }
 
-            // Avoid duplication just in case
+        // -----------------------------------------------------
+        // 3. RS DETACH REPORT (The "End of Tour" Mass Report)
+        // -----------------------------------------------------
+        // Occurs ON `rsEndDate`.
+        // Member must be Onboard (PRD > RS Date)
+        // Member must have reported before RS Date.
+        if (memberPRD >= rsEndDate && new Date(member.dateReported) < rsEndDate) {
+            const rsDateStr = rsConfig.changeOfCommandDate;
+            const group = ensureGroup(compGroup, rsDateStr);
+
             if (!group.reports.some(r => r.memberId === member.id)) {
+                const reportId = `r-${member.id}-rsdetach-${rsEndDate.getFullYear()}`;
+                const calculatedAvg = projections[reportId] ?? calculateStartValue(member, 'Detachment', rsConfig);
                 const report: Report = {
-                    id: `r-${member.id}-rsdetach-${baseYear}`,
+                    id: reportId,
                     memberId: member.id,
-                    periodEndDate: rsDate,
-                    type: 'Detachment', // "Detachment of Reporting Senior" maps to Detachment type usually or Special?
-                    // Standard FITREP uses 'Detachment of Reporting Senior' as an occasion.
-                    // Our Type Enum has 'Detachment'. We'll use that for now.
-                    traitAverage: 0,
-                    promotionRecommendation: 'NOB',
-                    draftStatus: 'Draft',
+                    periodEndDate: rsDateStr,
+                    type: 'Detachment',
+                    traitAverage: calculatedAvg,
+                    promotionRecommendation: 'NOB', // TBD
+                    draftStatus: 'Projected',
                     traitGrades: {},
-                    isAdverse: false,
-                    notObservedReport: false,
-
-                    // Admin Data Snapshots
                     grade: member.rank,
                     designator: member.designator,
-                    dateReported: member.dateReported,
                     reportingSeniorName: rsConfig.name,
                 };
                 group.reports.push(report);

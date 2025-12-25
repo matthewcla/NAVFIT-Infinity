@@ -3,32 +3,14 @@ import { Target, Wand2 } from 'lucide-react';
 import { projectRSCA } from '../../lib/engines/rsca';
 import { optimizeStrategy } from '../../lib/engines/strategy';
 import type { RosterMember } from '../../types/roster';
+import type { SummaryGroup } from '../../types';
 
 // --- MOCK DATA FOR PROTOTYPING ---
 const MOCK_START_DATE = new Date('2025-01-01');
 
 const INITIAL_RSCA = 3.85;
 const INITIAL_SIGNED_COUNT = 45;
-// const TARGET_RANGE = { min: 3.80, max: 4.00 };
 
-// Types for detailed member info
-// --- MOCK DATA FOR PROTOTYPING (Must match ReportsManager for navigation) ---
-const INITIAL_REPORTS: RSCAReport[] = [
-    // Member 0 (Mitchell equivalent for Strategy)
-    { id: 'r-0-0', memberId: 'm-0', memberName: 'LT Mitchell, P.', rawName: 'Mitchell, P.', rank: 'O-3', summaryGroup: 'URL O-3', date: '2025-01-15', monthIndex: 0, type: 'Periodic' as const, traitAverage: 3.8, isNOB: false, initialTraitAverage: 3.8 },
-    { id: 'r-0-1', memberId: 'm-0', memberName: 'LT Mitchell, P.', rawName: 'Mitchell, P.', rank: 'O-3', summaryGroup: 'URL O-3', date: '2025-06-15', monthIndex: 5, type: 'Promotion' as const, traitAverage: 4.0, isNOB: false, initialTraitAverage: 4.0 },
-
-    // Member 1 (Kazansky equivalent)
-    { id: 'r-1-0', memberId: 'm-1', memberName: 'LT Kazansky, T.', rawName: 'Kazansky, T.', rank: 'O-3', summaryGroup: 'URL O-3', date: '2025-02-15', monthIndex: 1, type: 'Periodic' as const, traitAverage: 4.2, isNOB: false, initialTraitAverage: 4.2 },
-    { id: 'r-1-1', memberId: 'm-1', memberName: 'LT Kazansky, T.', rawName: 'Kazansky, T.', rank: 'O-3', summaryGroup: 'URL O-3', date: '2025-09-15', monthIndex: 8, type: 'Transfer' as const, traitAverage: 4.5, isNOB: false, initialTraitAverage: 4.5 },
-
-    // Member 2 (Bradshaw)
-    { id: 'r-2-0', memberId: 'm-2', memberName: 'LT Bradshaw, N.', rawName: 'Bradshaw, N.', rank: 'O-3', summaryGroup: 'URL O-3', date: '2025-03-01', monthIndex: 2, type: 'Periodic' as const, traitAverage: 3.6, isNOB: false, initialTraitAverage: 3.6 },
-
-    // Member 3 (Special)
-    { id: 'r-3-1', memberId: 'm-3', memberName: 'LCDR Metcalf, M.', rawName: 'Metcalf, M.', rank: 'O-4', summaryGroup: 'URL O-4', date: '2025-07-01', monthIndex: 6, type: 'Special' as const, traitAverage: 3.9, isNOB: true, initialTraitAverage: 3.9 },
-];
-// const generateMockReports = () => { ... } // Removed random generation
 interface RSCAReport {
     id: string;
     memberId: string;
@@ -38,10 +20,11 @@ interface RSCAReport {
     summaryGroup: string;
     date: string;
     monthIndex: number;
-    type: 'Periodic' | 'Promotion' | 'Transfer' | 'Special' | 'Gain';
+    type: 'Periodic' | 'Promotion' | 'Transfer' | 'Special' | 'Gain' | 'Detachment';
     traitAverage: number;
     isNOB: boolean;
     initialTraitAverage: number;
+    draftStatus?: 'Draft' | 'Review' | 'Submitted' | 'Final' | 'Projected';
 }
 
 interface ScatterPoint {
@@ -51,15 +34,16 @@ interface ScatterPoint {
     report: RSCAReport;
 }
 
-import type { SummaryGroup } from '../../types';
-
 interface StrategyScattergramProps {
     summaryGroups?: SummaryGroup[];
     roster?: RosterMember[];
     onOpenReport?: (memberId: string, name: string, rank?: string, reportId?: string) => void;
+    onUpdateReport?: (reportId: string, newAverage: number) => void;
+    minimal?: boolean;
+    height?: number;
 }
 
-export function StrategyScattergram({ summaryGroups = [], roster = [], onOpenReport }: StrategyScattergramProps) {
+export function StrategyScattergram({ summaryGroups = [], roster = [], onOpenReport, onUpdateReport, minimal = false, height: propHeight }: StrategyScattergramProps) {
     // --- STATE ---
     const [reports, setReports] = useState<RSCAReport[]>(() => {
         // If summaryGroups passed, flatten them to RSCAReport[]
@@ -68,30 +52,26 @@ export function StrategyScattergram({ summaryGroups = [], roster = [], onOpenRep
                 group.reports.map(r => ({
                     id: r.id,
                     memberId: r.memberId,
-                    memberName: r.memberId, // Ideally get name from Roster, but we only have ID here. 
-                    // Wait, report object in SummaryGroup might not have name. 
-                    // We probably need Roster passed to this component too to resolve names!
-                    // For now, let's assume memberId is the name or just use ID.
-                    // Actually, we can just use "Member " + r.memberId as fallback.
+                    memberName: r.memberId,
                     rawName: "Unknown",
-                    rank: group.name.split(' ')[0], // Infer rank from Group Name "O-3 URL"?
+                    rank: group.name.split(' ')[0],
                     summaryGroup: group.name,
                     date: r.periodEndDate,
                     monthIndex: new Date(r.periodEndDate).getMonth(),
-                    type: (r.type === 'Detachment' ? 'Transfer' : r.type) as 'Periodic' | 'Promotion' | 'Transfer' | 'Special' | 'Gain', // Cast
+                    type: (r.type === 'Detachment' ? 'Detachment' : r.type) as any,
                     traitAverage: r.traitAverage || 3.0,
                     isNOB: r.promotionRecommendation === 'NOB',
-                    initialTraitAverage: r.traitAverage || 3.0
+                    initialTraitAverage: r.traitAverage || 3.0,
+                    draftStatus: r.draftStatus
                 }))
             );
         }
-        return INITIAL_REPORTS;
+        return [];
     });
 
     // If props change, update state
-    // If props change, update state
     useEffect(() => {
-        if (summaryGroups && summaryGroups.length > 0) {
+        if (summaryGroups) {
             const mapped = summaryGroups.flatMap(group =>
                 group.reports.map(r => {
                     const member = roster.find(m => m.id === r.memberId);
@@ -107,21 +87,19 @@ export function StrategyScattergram({ summaryGroups = [], roster = [], onOpenRep
                         summaryGroup: group.name,
                         date: r.periodEndDate,
                         monthIndex: new Date(r.periodEndDate).getMonth(),
-                        type: (r.type === 'Detachment' ? 'Transfer' : r.type) as 'Periodic' | 'Promotion' | 'Transfer' | 'Special' | 'Gain',
+                        type: (r.type === 'Detachment' ? 'Detachment' : r.type) as any,
                         traitAverage: r.traitAverage || 3.0,
                         isNOB: r.promotionRecommendation === 'NOB',
-                        initialTraitAverage: r.traitAverage || 3.0
+                        initialTraitAverage: r.traitAverage || 3.0,
+                        draftStatus: r.draftStatus
                     };
                 })
             );
             setReports(mapped);
         }
     }, [summaryGroups, roster]);
-    const [activeDragId, setActiveDragId] = useState<string | null>(null);
 
-    // Toggle State
-    const [macroFilter, setMacroFilter] = useState<'Wardroom' | 'CPO' | 'Crew'>('Wardroom');
-    const [selectedSummaryGroup, setSelectedSummaryGroup] = useState<string>('');
+    const [activeDragId, setActiveDragId] = useState<string | null>(null);
 
     // Z-Index Management (rendering order)
     const [zOrder, setZOrder] = useState<string[]>([]);
@@ -130,21 +108,20 @@ export function StrategyScattergram({ summaryGroups = [], roster = [], onOpenRep
     const scrollContainerRef = useRef<HTMLDivElement>(null);
 
     // --- DIMENSIONS & SCALES ---
-    const height = 500;
-    const padding = { top: 60, bottom: 40 }; // Reduced bottom padding as labels moved up
+    const height = propHeight || 500;
+    const padding = minimal ? { top: 40, bottom: 30 } : { top: 60, bottom: 40 };
 
     // Y-Axis Config
     const CHART_H = height - padding.top - padding.bottom;
 
     // X-Axis Config
-    // Extended Timeline: 24 Months
     const NUM_MONTHS = 24;
-    const COL_WIDTH = 96; // match ManningWaterfall
-    const CHART_TOTAL_WIDTH = NUM_MONTHS * COL_WIDTH; // Scrollable Width
+    const COL_WIDTH = 96;
+    const CHART_TOTAL_WIDTH = NUM_MONTHS * COL_WIDTH;
 
-    const NOB_TRAIT_VALUE = 5.5; // Exactly 0.5 above 5.0
+    const NOB_TRAIT_VALUE = 5.5;
     const MIN_TRAIT = 1.0;
-    const MAX_TRAIT = 5.5; // NOB is at the max edge
+    const MAX_TRAIT = 5.5;
 
     const traitToY = (trait: number) => {
         const range = MAX_TRAIT - MIN_TRAIT;
@@ -165,18 +142,11 @@ export function StrategyScattergram({ summaryGroups = [], roster = [], onOpenRep
     // Auto-Scroll Logic
     const handleJumpToNow = () => {
         if (scrollContainerRef.current) {
-            // Calculate months between MOCK_START_DATE and Now
             const now = new Date();
             const start = new Date(MOCK_START_DATE);
-            // Timeline starts 3 months BEFORE Mock Start
-            // So index 0 = MOCK_START - 3 months.
-            // Index of MOCK_START = 3.
-
             const diffYears = now.getFullYear() - start.getFullYear();
             const diffMonths = now.getMonth() - start.getMonth();
             const totalMonthsDiff = (diffYears * 12) + diffMonths;
-
-            // Timeline index for "Now"
             const currentMonthIndex = totalMonthsDiff + 3;
 
             const scrollX = (currentMonthIndex * COL_WIDTH) - (scrollContainerRef.current.clientWidth / 2) + (COL_WIDTH / 2);
@@ -184,59 +154,24 @@ export function StrategyScattergram({ summaryGroups = [], roster = [], onOpenRep
         }
     };
 
-
     // Initial Scroll
     useEffect(() => {
-        // Small timeout to ensure layout is ready
         const timer = setTimeout(() => {
             handleJumpToNow();
         }, 100);
         return () => clearTimeout(timer);
     }, []);
 
-    // --- FILTERS ---
-    // 1. Get available groups for current macro
-    const availableGroups = useMemo(() => {
-        const groups = new Set<string>();
-        reports.forEach(r => {
-            const isOfficer = r.rank.startsWith('O') || r.rank.startsWith('W');
-            const isCPO = ['E-7', 'E-8', 'E-9'].includes(r.rank);
-
-            let match = false;
-            if (macroFilter === 'Wardroom' && isOfficer) match = true;
-            else if (macroFilter === 'CPO' && isCPO) match = true;
-            else if (macroFilter === 'Crew' && !isOfficer && !isCPO) match = true;
-
-            if (match) groups.add(r.summaryGroup);
-        });
-        return Array.from(groups).sort();
-    }, [reports, macroFilter]);
-
-    useEffect(() => {
-        if (!selectedSummaryGroup || !availableGroups.includes(selectedSummaryGroup)) {
-            if (availableGroups.length > 0) {
-                setSelectedSummaryGroup(availableGroups[0]);
-            } else {
-                setSelectedSummaryGroup('');
-            }
-        }
-    }, [availableGroups, selectedSummaryGroup]);
-
-    const filteredReports = useMemo(() => {
-        if (!selectedSummaryGroup) return [];
-        return reports.filter(r => r.summaryGroup === selectedSummaryGroup);
-    }, [reports, selectedSummaryGroup]);
-
-
     // --- DERIVED DATA ---
+    // No more internal filtering. Just use 'reports' directly.
     const projectedRSCAVal = useMemo(() => {
-        const itas = filteredReports.filter(r => !r.isNOB).map(r => r.traitAverage);
+        const itas = reports.filter(r => !r.isNOB).map(r => r.traitAverage);
         if (itas.length === 0) return INITIAL_RSCA;
         return projectRSCA(INITIAL_RSCA, INITIAL_SIGNED_COUNT, itas);
-    }, [filteredReports]);
+    }, [reports]);
 
     const points: ScatterPoint[] = useMemo(() => {
-        let rawPoints = filteredReports.map(r => ({
+        let rawPoints = reports.map(r => ({
             id: r.id,
             // Shift +3 months to align with display timeline start (which starts 3 months before mock start)
             x: monthToX(r.monthIndex + 3),
@@ -265,7 +200,7 @@ export function StrategyScattergram({ summaryGroups = [], roster = [], onOpenRep
             }
         }
         return rawPoints;
-    }, [filteredReports]);
+    }, [reports]);
 
     const sortedPoints = useMemo(() => {
         if (zOrder.length === 0) return points;
@@ -278,39 +213,27 @@ export function StrategyScattergram({ summaryGroups = [], roster = [], onOpenRep
     }, [points, zOrder]);
 
 
-
     // Stepped RSCA Trend Lines & Connections
     const { trendLines, impactConnections } = useMemo(() => {
         const lines: { x1: number, x2: number, y: number, value: number }[] = [];
-
-        // We simulate time flowing.
-        // RSCA holds steady until (Report Date + 3 Months).
-        // At (Report Date + 3 Months), RSCA updates.
         let currentRSCA = INITIAL_RSCA;
         const RSCA_LAG_MONTHS = 3;
 
-        // Create a map of "Impact Months" -> "Trait Averages"
         const impacts = new Map<number, number[]>();
-        filteredReports.forEach(r => {
+        reports.forEach(r => {
             if (r.isNOB) return;
             const impactMonth = r.monthIndex + RSCA_LAG_MONTHS;
             if (!impacts.has(impactMonth)) impacts.set(impactMonth, []);
             impacts.get(impactMonth)?.push(r.traitAverage);
         });
 
-        // Find all "Change Events" (months where RSCA changes)
-
-
         let lastX = 0;
 
         for (let m = 0; m < NUM_MONTHS + RSCA_LAG_MONTHS; m++) {
             const chartMonthIndex = m;
-            const realMonthIndex = chartMonthIndex - 3; // Convert back to data month index
+            const realMonthIndex = chartMonthIndex - 3;
 
-            // Check if there's an impact at this Real Month Index
             if (impacts.has(realMonthIndex)) {
-                // Time to update RSCA
-                // 1. End previous line at this X
                 const thisX = monthToX(chartMonthIndex);
 
                 lines.push({
@@ -320,14 +243,9 @@ export function StrategyScattergram({ summaryGroups = [], roster = [], onOpenRep
                     value: currentRSCA
                 });
 
-                // 2. Calculate new RSCA
-                // Simple weighted average drift for visual demo
                 const newItas = impacts.get(realMonthIndex) || [];
-                // Calculate average of new reports
                 const avgNew = newItas.reduce((a, b) => a + b, 0) / newItas.length;
-
-                // If avg > rsca, it goes up.
-                const diff = (avgNew - currentRSCA) * 0.1; // Damped impact
+                const diff = (avgNew - currentRSCA) * 0.1;
                 const nextRSCA = currentRSCA + diff;
 
                 currentRSCA = nextRSCA;
@@ -335,7 +253,6 @@ export function StrategyScattergram({ summaryGroups = [], roster = [], onOpenRep
             }
         }
 
-        // Final line to end
         lines.push({
             x1: lastX,
             x2: CHART_TOTAL_WIDTH,
@@ -343,14 +260,11 @@ export function StrategyScattergram({ summaryGroups = [], roster = [], onOpenRep
             value: currentRSCA
         });
 
-        const finalConnections = filteredReports.map(r => {
+        const finalConnections = reports.map(r => {
             if (r.isNOB) return null;
-            // Impact is 3 months later
             const impactChartMonth = (r.monthIndex + 3) + RSCA_LAG_MONTHS;
             const impactX = monthToX(impactChartMonth);
 
-            // Find RSCA value at that time (roughly)
-            // We can just look at the lines we generated
             const lineAtImpact = lines.find(l => l.x1 <= impactX && l.x2 >= impactX);
             const impactY = lineAtImpact ? lineAtImpact.y : traitToY(currentRSCA);
 
@@ -363,27 +277,28 @@ export function StrategyScattergram({ summaryGroups = [], roster = [], onOpenRep
                 y1: reportY,
                 x2: impactX,
                 y2: impactY,
-                color: r.traitAverage >= impactY ? '#22c55e' : '#ef4444' // Green if pulling up? Or just neutral
+                color: r.traitAverage >= impactY ? '#22c55e' : '#ef4444'
             };
         }).filter(Boolean) as { id: string, x1: number, y1: number, x2: number, y2: number, color: string }[];
 
         return { trendLines: lines, impactConnections: finalConnections };
-    }, [filteredReports]);
+    }, [reports]);
 
     // --- UTILS ---
     const formatName = (memberName: string) => {
         const parts = memberName.split(' ');
-        const namePart = parts.slice(1).join(' '); // Remove first token (Rank)
+        const namePart = parts.slice(1).join(' ');
         return namePart.replace(',', '');
     };
 
     const getPointColor = (type: string) => {
         switch (type) {
-            case 'Periodic': return '#3b82f6'; // Blue-500
-            case 'Transfer': return '#ef4444'; // Red-500
-            case 'Gain': return '#64748b'; // Slate-500
-            case 'Special': return '#eab308'; // Yellow-500
-            case 'Promotion': return '#22c55e'; // Green-500
+            case 'Periodic': return '#3b82f6';
+            case 'Transfer': return '#ef4444';
+            case 'Detachment': return '#ef4444';
+            case 'Gain': return '#64748b';
+            case 'Special': return '#eab308';
+            case 'Promotion': return '#22c55e';
             default: return '#64748b';
         }
     };
@@ -415,7 +330,7 @@ export function StrategyScattergram({ summaryGroups = [], roster = [], onOpenRep
 
         newTrait = Number(yToTrait(clientY).toFixed(2));
 
-        if (newTrait > 5.10) { // Threshold for snapping to NOB
+        if (newTrait > 5.10) {
             isNowNOB = true;
         } else {
             isNowNOB = false;
@@ -432,6 +347,12 @@ export function StrategyScattergram({ summaryGroups = [], roster = [], onOpenRep
     };
 
     const handleMouseUp = () => {
+        if (activeDragId && onUpdateReport) {
+            const r = reports.find(r => r.id === activeDragId);
+            if (r) {
+                onUpdateReport(r.id, r.traitAverage);
+            }
+        }
         setActiveDragId(null);
     };
 
@@ -445,7 +366,7 @@ export function StrategyScattergram({ summaryGroups = [], roster = [], onOpenRep
     const TIMELINE_LABELS = useMemo(() => {
         const arr = [];
         const start = new Date(MOCK_START_DATE);
-        start.setMonth(start.getMonth() - 3); // Start 3 months back
+        start.setMonth(start.getMonth() - 3);
 
         for (let i = 0; i < NUM_MONTHS; i++) {
             const d = new Date(start);
@@ -455,21 +376,17 @@ export function StrategyScattergram({ summaryGroups = [], roster = [], onOpenRep
         return arr;
     }, []);
 
-    // Optimization Logic
     const handleOptimize = () => {
-        // Run optimization based on current RSCA projection (or initial if not enough data)
         const currentProjection = projectedRSCAVal || INITIAL_RSCA;
-
         const optimized = optimizeStrategy(reports, currentProjection);
         setReports(optimized);
     };
 
 
     return (
-        <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm h-full flex flex-col">
-            {/* Header: Jump to Now on LEFT, Toggles on RIGHT */}
-            <div className="flex justify-between items-center mb-4 flex-shrink-0">
-
+        <div className={`bg-white ${minimal ? 'p-2 border-0' : 'p-6 border border-slate-200 rounded-xl shadow-sm'} h-full flex flex-col`}>
+            {/* Header: Jump to Now on LEFT, Toggles Removed */}
+            <div className={`flex justify-between items-center ${minimal ? 'mb-2' : 'mb-4'} flex-shrink-0`}>
                 {/* Left: Jump to Now & Optimize */}
                 <div className="flex items-center space-x-2">
                     <button
@@ -477,31 +394,19 @@ export function StrategyScattergram({ summaryGroups = [], roster = [], onOpenRep
                         className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-colors border border-slate-200"
                         title="Jump to Current Month"
                     >
-                        <Target size={20} />
+                        <Target size={minimal ? 16 : 20} />
                     </button>
                     <button
                         onClick={handleOptimize}
-                        className="flex items-center space-x-2 px-3 py-1.5 bg-purple-50 text-purple-600 hover:bg-purple-100 rounded-full transition-colors border border-purple-200"
+                        className={`flex items-center space-x-2 px-3 py-1.5 bg-purple-50 text-purple-600 hover:bg-purple-100 rounded-full transition-colors border border-purple-200 ${minimal ? 'text-xs' : ''}`}
                         title="Auto-Optimize Strategy (Seniority Based)"
                     >
-                        <Wand2 size={16} />
+                        <Wand2 size={minimal ? 14 : 16} />
                         <span className="text-xs font-bold">Optimize</span>
                     </button>
                 </div>
 
-                {/* Right: Controls */}
-                <div className="flex flex-col items-end space-y-2">
-                    <div className="flex space-x-1 bg-slate-100 p-1 rounded-lg w-fit">
-                        {(['Wardroom', 'CPO', 'Crew'] as const).map(tier => (
-                            <button key={tier} onClick={() => setMacroFilter(tier)} className={`px-4 py-1.5 rounded-md text-xs font-bold transition-all ${macroFilter === tier ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>{tier}</button>
-                        ))}
-                    </div>
-                    <div className="flex flex-wrap gap-2 text-sm justify-end">
-                        {availableGroups.length > 0 ? availableGroups.map(group => (
-                            <button key={group} onClick={() => setSelectedSummaryGroup(group)} className={`px-3 py-1 rounded-full text-xs font-semibold border transition-colors ${selectedSummaryGroup === group ? 'bg-blue-50 border-blue-200 text-blue-700' : 'bg-white border-slate-200 text-slate-500 hover:border-slate-300'}`}>{group}</button>
-                        )) : <span className="text-xs text-slate-400 italic py-1">No summary groups found</span>}
-                    </div>
-                </div>
+                {/* Right: Controls Removed */}
             </div>
 
             {/* Main Chart Area with Frozen Y-Axis */}
@@ -526,7 +431,7 @@ export function StrategyScattergram({ summaryGroups = [], roster = [], onOpenRep
                                 </text>
                             );
                         })}
-                        {/* NOB Label - Aligned with new 5.5 position */}
+                        {/* NOB Label */}
                         <text
                             x={45}
                             y={traitToY(NOB_TRAIT_VALUE)}
@@ -606,9 +511,9 @@ export function StrategyScattergram({ summaryGroups = [], roster = [], onOpenRep
                                 <line
                                     x1={line.x1} y1={line.y}
                                     x2={line.x2} y2={line.y}
-                                    stroke="#a855f7" // Purple-500
+                                    stroke="#a855f7"
                                     strokeWidth={3}
-                                    strokeDasharray="6 4" // Dotted
+                                    strokeDasharray="6 4"
                                     className="opacity-70"
                                 />
                                 {i < trendLines.length - 1 && Math.abs(trendLines[i + 1].y - line.y) > 0.05 && (
@@ -661,7 +566,15 @@ export function StrategyScattergram({ summaryGroups = [], roster = [], onOpenRep
                                     {p.report.type === 'Special' ? (
                                         <rect x={-radius + 2} y={-radius + 2} width={radius * 1.8} height={radius * 1.8} fill={baseColor} stroke={isAboveRSCA ? '#4ade80' : 'white'} strokeWidth={isAboveRSCA ? 3 : 2} transform="rotate(45)" className={`shadow-md ${isDragging ? 'brightness-110' : ''}`} />
                                     ) : (
-                                        <circle r={radius} fill={baseColor} stroke={isAboveRSCA ? '#4ade80' : 'white'} strokeWidth={isAboveRSCA ? 3 : 2} className={`shadow-md ${isDragging ? 'brightness-110' : ''}`} />
+                                        <circle
+                                            r={radius}
+                                            fill={p.report.draftStatus === 'Projected' ? 'white' : baseColor}
+                                            fillOpacity={p.report.draftStatus === 'Projected' ? 0.3 : 1}
+                                            stroke={p.report.draftStatus === 'Projected' ? baseColor : (isAboveRSCA ? '#4ade80' : 'white')}
+                                            strokeWidth={p.report.draftStatus === 'Projected' ? 2 : (isAboveRSCA ? 3 : 2)}
+                                            strokeDasharray={p.report.draftStatus === 'Projected' ? "3 1" : undefined}
+                                            className={`shadow-md ${isDragging ? 'brightness-110' : ''}`}
+                                        />
                                     )}
                                     <text dy="0.35em" textAnchor="middle" className="text-[10px] fill-white font-bold pointer-events-none font-mono">
                                         {p.report.isNOB ? 'NOB' : p.report.traitAverage.toFixed(2)}

@@ -47,7 +47,7 @@ export function SelectionBoardsManager() {
                         <Calendar size={18} />
                     </div>
                     <div>
-                        <h1 className="text-lg font-bold text-slate-900 leading-tight">Selection Boards</h1>
+                        <h1 className="text-lg font-bold text-slate-900 leading-tight">Board Schedule</h1>
                         <p className="text-xs text-slate-500 font-medium">{year} Schedule</p>
                     </div>
                 </div>

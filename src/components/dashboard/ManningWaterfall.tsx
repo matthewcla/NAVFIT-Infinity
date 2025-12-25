@@ -7,20 +7,23 @@ import type { RosterMember } from '../../types/roster';
 import { CO_DETACH_DATE } from '../../lib/constants';
 
 const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+// Align with StrategyScattergram MOCK_START_DATE for "Same Chart" consistency
+const START_DATE = new Date('2025-01-01');
+
 const generateTimeline = () => {
-    const today = new Date();
-    const currentYear = today.getFullYear();
-    const currentMonth = today.getMonth();
+    // Start 3 months back from Fixed Start Date
+    const startYear = START_DATE.getFullYear();
+    const startMonth = START_DATE.getMonth();
 
     const months = [];
-    // Start 3 months back
-    for (let i = -3; i < 21; i++) { // Total 24 months (3 back, 21 forward)
-        const date = new Date(currentYear, currentMonth + i, 1);
+    for (let i = -3; i < 21; i++) { // Total 24 months
+        const date = new Date(startYear, startMonth + i, 1);
         months.push({
             label: MONTH_NAMES[date.getMonth()],
             monthIndex: date.getMonth(),
             year: date.getFullYear(),
-            index: i + 3 // 0-based index for array mapping
+            index: i + 3
         });
     }
     return months;
@@ -39,29 +42,54 @@ export function ManningWaterfall({ summaryGroups = [], roster = [], onOpenReport
 
     // Derived State: Convert Roster + Reports -> Member[] for Waterfall
     const members = useMemo(() => {
-        if (!roster || roster.length === 0) return [];
+        let effectiveRoster: Member[] = [];
 
-        return roster.map(rMember => {
-            // Find reports for this member
-            const memberReports = summaryGroups.flatMap(g => g.reports).filter(r => r.memberId === rMember.id);
-
-            // Map RosterMember to Member (ViewModel)
-            const member: Member = {
-                id: rMember.id,
-                name: `${rMember.rank} ${rMember.lastName}, ${rMember.firstName}`, // Display Name
-                rank: rMember.rank,
-                designator: rMember.designator,
-                prd: rMember.prd,
-                // Milestones & Status (Mock logic or derived)
-                milestone: 'TRAINING', // Placeholder
+        if (roster && roster.length > 0) {
+            effectiveRoster = roster.map(r => ({
+                id: r.id,
+                name: `${r.rank} ${r.lastName}, ${r.firstName}`,
+                rank: r.rank,
+                designator: r.designator,
+                prd: r.prd,
+                milestone: 'TRAINING',
                 status: 'Onboard',
                 lastTrait: null,
                 nextPlan: null,
-                target: null, // Could infer from history
-                history: memberReports
-            };
-            return member;
+                target: null,
+                history: [] // populated below
+            }));
+        } else {
+            // Derive from Reports
+            const uniqueMembers = new Map<string, Member>();
+            summaryGroups.forEach(g => {
+                g.reports.forEach(r => {
+                    const mId = r.memberId || 'unknown';
+                    if (!uniqueMembers.has(mId)) {
+                        uniqueMembers.set(mId, {
+                            id: mId,
+                            name: `Member ${mId}`,
+                            rank: g.name.split(' ')[0] || 'Unknown',
+                            designator: '1110',
+                            prd: '2026-01-01',
+                            milestone: 'TRAINING',
+                            status: 'Onboard',
+                            lastTrait: null,
+                            nextPlan: null,
+                            target: null,
+                            history: []
+                        });
+                    }
+                });
+            });
+            effectiveRoster = Array.from(uniqueMembers.values());
+        }
+
+        return effectiveRoster.map(m => {
+            // Attach Reports
+            const memberReports = summaryGroups.flatMap(g => g.reports).filter(r => r.memberId === m.id);
+            return { ...m, history: memberReports };
         });
+
     }, [roster, summaryGroups]);
 
     // Filter members based on split
@@ -78,7 +106,6 @@ export function ManningWaterfall({ summaryGroups = [], roster = [], onOpenReport
     const groups = useMemo(() => {
         const g: Record<string, Member[]> = {};
         filteredMembers.forEach(m => {
-            // Group Key: Rank (simple) or Rank + Desig
             const key = m.rank === 'E-7' || m.rank === 'E-8' || m.rank === 'E-9' ? `${m.rank} CPO` : `${m.rank} ${m.designator || ''}`;
             if (!g[key]) g[key] = [];
             g[key].push(m);
@@ -91,7 +118,7 @@ export function ManningWaterfall({ summaryGroups = [], roster = [], onOpenReport
     const handleJumpToNow = () => {
         if (scrollContainerRef.current) {
             const COL_WIDTH = 96;
-            const currentMonthIndex = 3; // Index 3 is 'Now' in our timeline gen
+            const currentMonthIndex = 3;
             const scrollX = (currentMonthIndex * COL_WIDTH) - (scrollContainerRef.current.clientWidth / 2) + (COL_WIDTH / 2);
             scrollContainerRef.current.scrollTo({ left: Math.max(0, scrollX), behavior: 'smooth' });
         }
@@ -122,56 +149,52 @@ export function ManningWaterfall({ summaryGroups = [], roster = [], onOpenReport
     };
 
     return (
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden h-full flex flex-col">
-            {/* Header */}
-            <div className="p-4 border-b border-slate-200 bg-white sticky top-0 z-20 flex justify-between items-center shrink-0">
+        <div className="bg-white border-t border-slate-200 h-full flex flex-col min-h-0">
+            {/* Header Controls (Filter etc.) */}
+            <div className="px-6 py-2 border-b border-slate-200 bg-white flex justify-between items-center shrink-0">
                 <div className="flex items-center space-x-4">
-                    <div className="flex space-x-1 bg-slate-100 p-1 rounded-lg w-fit">
+                    <h3 className="text-sm font-bold text-slate-700 uppercase tracking-wider">Manning & Projections</h3>
+                    <div className="flex space-x-1 bg-slate-100 p-0.5 rounded-lg w-fit">
                         {['wardroom', 'cpo', 'crew'].map((filter) => (
                             <button
                                 key={filter}
                                 onClick={() => setActiveFilter(filter as any)}
-                                className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${activeFilter === filter ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'} capitalize`}
+                                className={`px-3 py-1 rounded-md text-xs font-medium transition-all ${activeFilter === filter ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'} capitalize`}
                             >
                                 {filter === 'cpo' ? 'CPO Mess' : filter}
                             </button>
                         ))}
                     </div>
+                </div>
+                <div className="flex gap-2">
                     <button onClick={toggleAllGroups} className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-slate-50 rounded-md transition-colors border border-slate-200">
-                        {allExpanded ? <ChevronsUp size={18} /> : <ChevronsDown size={18} />}
+                        {allExpanded ? <ChevronsUp size={16} /> : <ChevronsDown size={16} />}
+                    </button>
+                    <button onClick={handleJumpToNow} className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-white rounded-md transition-colors border border-slate-200">
+                        <Target size={16} />
                     </button>
                 </div>
-                <button onClick={handleJumpToNow} className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-white rounded-md transition-colors border border-slate-200">
-                    <Target size={18} />
-                </button>
             </div>
 
             {/* Scrollable Content */}
             <div ref={scrollContainerRef} className="flex-1 overflow-auto custom-scrollbar relative">
                 <div className="min-w-max">
-                    <div className="flex bg-slate-50 border-b border-slate-200 sticky top-0 z-30 text-xs font-semibold text-slate-500 uppercase tracking-wider h-10 items-center">
+                    <div className="flex bg-slate-50 border-b border-slate-200 sticky top-0 z-30 text-xs font-semibold text-slate-500 uppercase tracking-wider h-8 items-center">
                         <div className="w-80 px-6 shrink-0 sticky left-0 bg-slate-50 border-r border-slate-200 z-40 h-full flex items-center justify-end shadow-[1px_0_4px_-1px_rgba(0,0,0,0.1)] text-right">
-                            Member / Milestone
+                            Member
                         </div>
                         <div className="flex flex-1">
                             {TIMELINE_MONTHS.map((m, i) => (
-                                <div key={i} className="w-24 px-2 text-center shrink-0 border-r border-slate-100 last:border-0">
-                                    {m.label} <span className="text-[10px] text-slate-400 block font-normal">{m.year}</span>
+                                <div key={i} className="w-24 px-2 text-center shrink-0 border-r border-slate-100 last:border-0 text-[10px]">
+                                    {m.label} '{m.year.toString().slice(2)}
                                 </div>
                             ))}
                         </div>
                     </div>
 
-                    <div>
+                    <div className="bg-slate-50/30">
                         {Object.entries(groups).map(([groupTitle, groupList]) => {
                             const isExpanded = expandedGroups[groupTitle] !== undefined ? expandedGroups[groupTitle] : allExpanded;
-
-                            // Mock Trend Points (Placeholder logic)
-                            const trendPoints = [
-                                { monthIndex: 3, value: 3.5 },
-                                { monthIndex: 6, value: 3.6 },
-                                { monthIndex: 13, value: 3.8 }
-                            ];
 
                             return (
                                 <div key={groupTitle}>
@@ -180,7 +203,7 @@ export function ManningWaterfall({ summaryGroups = [], roster = [], onOpenReport
                                         count={groupList.length}
                                         isExpanded={isExpanded}
                                         onToggle={() => toggleGroup(groupTitle)}
-                                        trendPoints={trendPoints}
+                                        trendPoints={[]}
                                         targetRange={{ min: 3.8, max: 4.0 }}
                                         timelineMonths={TIMELINE_MONTHS}
                                     />
@@ -205,15 +228,6 @@ export function ManningWaterfall({ summaryGroups = [], roster = [], onOpenReport
                             </div>
                         )}
                     </div>
-                </div>
-            </div>
-            {/* Footer with Legend */}
-            <div className="p-3 border-t border-slate-200 bg-slate-50 flex items-center justify-between text-xs shrink-0">
-                <div className="flex items-center space-x-4">
-                    <div className="flex items-center space-x-1.5"><div className="w-3 h-3 bg-blue-500 rounded-full"></div><span>Periodic</span></div>
-                    <div className="flex items-center space-x-1.5"><div className="w-3 h-3 bg-red-500 rounded-full"></div><span>Transfer</span></div>
-                    <div className="flex items-center space-x-1.5"><div className="w-3 h-3 bg-green-500 rounded-full"></div><span>Promotion</span></div>
-                    <div className="flex items-center space-x-1.5"><div className="w-0.5 h-4 bg-purple-500 border-l border-dashed border-purple-500"></div><span>RS Detach</span></div>
                 </div>
             </div>
         </div>

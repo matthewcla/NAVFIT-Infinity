@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import type { RosterMember, ReportingSeniorConfig } from '../../types/roster';
-import { Calendar, Users, Settings, Plus } from 'lucide-react';
+import { Calendar, Users, Settings, Plus, Shield } from 'lucide-react';
 
 interface CommandAdminProps {
     roster: RosterMember[];
@@ -37,9 +37,14 @@ export const CommandAdmin: React.FC<CommandAdminProps> = ({
         <div className="p-6 max-w-7xl mx-auto space-y-8">
 
             {/* Header */}
-            <div>
-                <h1 className="text-2xl font-bold text-slate-900">Command Administration</h1>
-                <p className="text-slate-500 mt-1">Manage unit personnel and reporting senior details.</p>
+            <div className="flex items-center gap-4">
+                <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-indigo-600 text-white shadow-sm">
+                    <Shield size={24} />
+                </div>
+                <div>
+                    <h1 className="text-2xl font-bold text-slate-900">Command Settings</h1>
+                    <p className="text-slate-500">Manage unit personnel and reporting senior details.</p>
+                </div>
             </div>
 
             {/* Reporting Senior Card */}
