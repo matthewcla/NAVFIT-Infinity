@@ -87,7 +87,7 @@ export interface SummaryGroup {
     name: string; // e.g., "O-3 SWO"
     reports: Report[];
     periodEndDate: string;
-    status?: 'Pending' | 'Accepted' | 'Rejected';
+    status?: 'Pending' | 'Accepted' | 'Rejected' | 'Projected' | 'Planned' | 'Draft' | 'Submitted' | 'Review' | 'Final';
     dateFinalized?: string;
     dateAcceptedOrRejected?: string;
 }

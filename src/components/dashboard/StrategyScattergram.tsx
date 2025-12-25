@@ -1,9 +1,8 @@
 import React, { useState, useRef, useMemo, useEffect } from 'react';
-import { Target, Wand2 } from 'lucide-react';
 import { projectRSCA } from '../../lib/engines/rsca';
-import { optimizeStrategy } from '../../lib/engines/strategy';
 import type { RosterMember } from '../../types/roster';
 import type { SummaryGroup } from '../../types';
+import { Lock } from 'lucide-react';
 
 // --- MOCK DATA FOR PROTOTYPING ---
 const MOCK_START_DATE = new Date('2025-01-01');
@@ -41,9 +40,10 @@ interface StrategyScattergramProps {
     onUpdateReport?: (reportId: string, newAverage: number) => void;
     minimal?: boolean;
     height?: number;
+    focusDate?: string;
 }
 
-export function StrategyScattergram({ summaryGroups = [], roster = [], onOpenReport, onUpdateReport, minimal = false, height: propHeight }: StrategyScattergramProps) {
+export function StrategyScattergram({ summaryGroups = [], roster = [], onOpenReport, onUpdateReport, minimal = false, height: propHeight, focusDate }: StrategyScattergramProps) {
     // --- STATE ---
     const [reports, setReports] = useState<RSCAReport[]>(() => {
         // If summaryGroups passed, flatten them to RSCAReport[]
@@ -68,6 +68,93 @@ export function StrategyScattergram({ summaryGroups = [], roster = [], onOpenRep
         }
         return [];
     });
+
+    const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+    // --- DIMENSIONS & SCALES ---
+    const containerHeight = propHeight || 320;
+
+    // VISUAL CONSTANTS
+    const HEADER_HEIGHT = 40; // Sticky header
+    const ICON_RADIUS = 22;   // Max radius for collision/vis
+    const TOP_BUFFER = 20;    // Margin below header for NOB line
+    const BOTTOM_BUFFER = 30; // Margin at bottom for 3.0 line visibility inside container
+
+    // Start Y for NOB Line (Visually)
+    // Needs to clear sticky header (40) + Top Buffer + Radius/Half-element
+    // Actually relative to the Scroll Container content flow.
+    // The "Sticky Header" visually overlays.
+    // If we want NOB line at visual Y = HEADER_HEIGHT + TOP_BUFFER (+ Radius roughly), then:
+    const VISIBLE_TOP_Y = HEADER_HEIGHT + TOP_BUFFER + ICON_RADIUS;
+
+    // Target Bottom Y for 3.0 Line (Visually) within container
+    const VISIBLE_BOTTOM_Y = containerHeight - BOTTOM_BUFFER;
+
+    // Available Height for Range (NOB to 3.0)
+    const VISIBLE_PIXEL_HEIGHT = VISIBLE_BOTTOM_Y - VISIBLE_TOP_Y;
+
+    const NOB_VALUE = 5.5;
+    const TARGET_BOTTOM_TRAIT = 3.0;
+    const VISIBLE_TRAIT_RANGE = NOB_VALUE - TARGET_BOTTOM_TRAIT; // 2.5 units
+
+    const pixelsPerTrait = VISIBLE_PIXEL_HEIGHT / VISIBLE_TRAIT_RANGE;
+
+    // Helper: Trait -> Y Coordinate (relative to Scroll Container Top 0)
+    const traitToY = (trait: number) => {
+        // NOB (5.5) is at VISIBLE_TOP_Y
+        const valFromTop = NOB_VALUE - trait;
+        return VISIBLE_TOP_Y + (valFromTop * pixelsPerTrait);
+    };
+
+    const yToTrait = (y: number) => {
+        const relativeY = y - VISIBLE_TOP_Y;
+        const valFromTop = relativeY / pixelsPerTrait;
+        return NOB_VALUE - valFromTop;
+    };
+
+    // Total content height required to reach 1.0 (plus buffer)
+    const MIN_TRAIT = 1.0;
+    const CHART_BOTTOM_Y = traitToY(MIN_TRAIT) + BOTTOM_BUFFER;
+    const TOTAL_SCROLL_HEIGHT = Math.max(containerHeight, CHART_BOTTOM_Y);
+
+
+    // Helper to map date string to X coordinate
+    const dateToX = (dateStr: string) => {
+        const d = new Date(dateStr);
+        const start = new Date(MOCK_START_DATE);
+        // Visual timeline starts 3 months before MOCK_START_DATE
+        const diffTime = d.getTime() - start.getTime();
+        const diffDays = diffTime / (1000 * 3600 * 24);
+        const diffMonths = diffDays / 30.44;
+
+        // Add 3 months offset for visual alignment, and center in column
+        const visualMonthIndex = diffMonths + 3;
+
+        return (visualMonthIndex * 96) + 48; // 96 is COL_WIDTH
+    };
+
+    // Auto-scroll to focusDate (Horizontal)
+    useEffect(() => {
+        if (focusDate && scrollContainerRef.current) {
+            const timer = setTimeout(() => {
+                const x = dateToX(focusDate);
+                if (scrollContainerRef.current) {
+                    const containerWidth = scrollContainerRef.current.clientWidth;
+                    scrollContainerRef.current.scrollTo({
+                        left: Math.max(0, x - (containerWidth / 2)),
+                        top: 0, // Reset to top (Default view) on focus? Or preserve? User said magnetic snap to Default View.
+                        behavior: 'smooth'
+                    });
+                }
+            }, 100);
+            return () => clearTimeout(timer);
+        }
+    }, [focusDate]);
+
+    // Initial Scroll / Magnetic Logic
+    // Default View: Top of container (0) corresponds to NOB visible at top.
+    // So scrollTop 0 IS the default view.
+    // We add a snap point at 0.
 
     // If props change, update state
     useEffect(() => {
@@ -99,71 +186,25 @@ export function StrategyScattergram({ summaryGroups = [], roster = [], onOpenRep
         }
     }, [summaryGroups, roster]);
 
+
     const [activeDragId, setActiveDragId] = useState<string | null>(null);
-
-    // Z-Index Management (rendering order)
     const [zOrder, setZOrder] = useState<string[]>([]);
-
     const svgRef = useRef<SVGSVGElement>(null);
-    const scrollContainerRef = useRef<HTMLDivElement>(null);
-
-    // --- DIMENSIONS & SCALES ---
-    const height = propHeight || 500;
-    const padding = minimal ? { top: 40, bottom: 30 } : { top: 60, bottom: 40 };
-
-    // Y-Axis Config
-    const CHART_H = height - padding.top - padding.bottom;
 
     // X-Axis Config
     const NUM_MONTHS = 24;
     const COL_WIDTH = 96;
     const CHART_TOTAL_WIDTH = NUM_MONTHS * COL_WIDTH;
 
-    const NOB_TRAIT_VALUE = 5.5;
-    const MIN_TRAIT = 1.0;
-    const MAX_TRAIT = 5.5;
-
-    const traitToY = (trait: number) => {
-        const range = MAX_TRAIT - MIN_TRAIT;
-        const normalized = (trait - MIN_TRAIT) / range;
-        return CHART_H - (normalized * CHART_H) + padding.top;
-    };
-
-    const yToTrait = (y: number) => {
-        const relativeY = y - padding.top;
-        const normalized = 1 - (relativeY / CHART_H);
-        return MIN_TRAIT + (normalized * (MAX_TRAIT - MIN_TRAIT));
-    };
+    // Ideal RSCA Range
+    const IDEAL_RSCA_MIN = 3.8;
+    const IDEAL_RSCA_MAX = 4.0;
 
     const monthToX = (monthIndex: number) => {
         return (monthIndex * COL_WIDTH) + (COL_WIDTH / 2);
     };
 
-    // Auto-Scroll Logic
-    const handleJumpToNow = () => {
-        if (scrollContainerRef.current) {
-            const now = new Date();
-            const start = new Date(MOCK_START_DATE);
-            const diffYears = now.getFullYear() - start.getFullYear();
-            const diffMonths = now.getMonth() - start.getMonth();
-            const totalMonthsDiff = (diffYears * 12) + diffMonths;
-            const currentMonthIndex = totalMonthsDiff + 3;
-
-            const scrollX = (currentMonthIndex * COL_WIDTH) - (scrollContainerRef.current.clientWidth / 2) + (COL_WIDTH / 2);
-            scrollContainerRef.current.scrollTo({ left: Math.max(0, scrollX), behavior: 'smooth' });
-        }
-    };
-
-    // Initial Scroll
-    useEffect(() => {
-        const timer = setTimeout(() => {
-            handleJumpToNow();
-        }, 100);
-        return () => clearTimeout(timer);
-    }, []);
-
     // --- DERIVED DATA ---
-    // No more internal filtering. Just use 'reports' directly.
     const projectedRSCAVal = useMemo(() => {
         const itas = reports.filter(r => !r.isNOB).map(r => r.traitAverage);
         if (itas.length === 0) return INITIAL_RSCA;
@@ -173,22 +214,22 @@ export function StrategyScattergram({ summaryGroups = [], roster = [], onOpenRep
     const points: ScatterPoint[] = useMemo(() => {
         let rawPoints = reports.map(r => ({
             id: r.id,
-            // Shift +3 months to align with display timeline start (which starts 3 months before mock start)
+            // Shift +3 months to align with display timeline start
             x: monthToX(r.monthIndex + 3),
-            y: traitToY((r.isNOB || r.type === 'Gain') ? NOB_TRAIT_VALUE : r.traitAverage),
+            y: traitToY((r.isNOB || r.type === 'Gain') ? NOB_VALUE : r.traitAverage),
             report: r
         }));
 
         // Collision Handling
         const COLLISION_RADIUS = 22;
-        const ITERATIONS = 3;
 
-        for (let iter = 0; iter < ITERATIONS; iter++) {
-            rawPoints.sort((a, b) => a.x - b.x);
-            for (let i = 0; i < rawPoints.length; i++) {
-                const p1 = rawPoints[i];
-                for (let j = i + 1; j < rawPoints.length; j++) {
-                    const p2 = rawPoints[j];
+        const sortedPointsRaw = [...rawPoints].sort((a, b) => a.x - b.x);
+
+        for (let iter = 0; iter < 3; iter++) {
+            for (let i = 0; i < sortedPointsRaw.length; i++) {
+                const p1 = sortedPointsRaw[i];
+                for (let j = i + 1; j < sortedPointsRaw.length; j++) {
+                    const p2 = sortedPointsRaw[j];
                     if (p2.x - p1.x > COLLISION_RADIUS) break;
                     if (Math.abs(p1.y - p2.y) < COLLISION_RADIUS) {
                         const overlap = COLLISION_RADIUS - (p2.x - p1.x);
@@ -199,8 +240,8 @@ export function StrategyScattergram({ summaryGroups = [], roster = [], onOpenRep
                 }
             }
         }
-        return rawPoints;
-    }, [reports]);
+        return sortedPointsRaw;
+    }, [reports, pixelsPerTrait]);
 
     const sortedPoints = useMemo(() => {
         if (zOrder.length === 0) return points;
@@ -282,7 +323,7 @@ export function StrategyScattergram({ summaryGroups = [], roster = [], onOpenRep
         }).filter(Boolean) as { id: string, x1: number, y1: number, x2: number, y2: number, color: string }[];
 
         return { trendLines: lines, impactConnections: finalConnections };
-    }, [reports]);
+    }, [reports, pixelsPerTrait]);
 
     // --- UTILS ---
     const formatName = (memberName: string) => {
@@ -323,7 +364,16 @@ export function StrategyScattergram({ summaryGroups = [], roster = [], onOpenRep
     const handleMouseMove = (e: React.MouseEvent) => {
         if (!activeDragId || !svgRef.current) return;
         const rect = svgRef.current.getBoundingClientRect();
+
+        // Y Calculation inverse
+        // MouseY within SVG
         const clientY = e.clientY - rect.top;
+
+        // We need to account for scroll?
+        // No, rect corresponds to the SVG element which is usually inside the scroll container.
+        // If SVG is full height in scroll container, clientY is relative to SVG top (0).
+        // traitToY returns Y relative to SVG top (0).
+        // So this logic holds.
 
         let newTrait = 0;
         let isNowNOB = false;
@@ -376,214 +426,251 @@ export function StrategyScattergram({ summaryGroups = [], roster = [], onOpenRep
         return arr;
     }, []);
 
-    const handleOptimize = () => {
-        const currentProjection = projectedRSCAVal || INITIAL_RSCA;
-        const optimized = optimizeStrategy(reports, currentProjection);
-        setReports(optimized);
-    };
 
 
     return (
-        <div className={`bg-white ${minimal ? 'p-2 border-0' : 'p-6 border border-slate-200 rounded-xl shadow-sm'} h-full flex flex-col`}>
-            {/* Header: Jump to Now on LEFT, Toggles Removed */}
-            <div className={`flex justify-between items-center ${minimal ? 'mb-2' : 'mb-4'} flex-shrink-0`}>
-                {/* Left: Jump to Now & Optimize */}
-                <div className="flex items-center space-x-2">
-                    <button
-                        onClick={handleJumpToNow}
-                        className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-colors border border-slate-200"
-                        title="Jump to Current Month"
-                    >
-                        <Target size={minimal ? 16 : 20} />
-                    </button>
-                    <button
-                        onClick={handleOptimize}
-                        className={`flex items-center space-x-2 px-3 py-1.5 bg-purple-50 text-purple-600 hover:bg-purple-100 rounded-full transition-colors border border-purple-200 ${minimal ? 'text-xs' : ''}`}
-                        title="Auto-Optimize Strategy (Seniority Based)"
-                    >
-                        <Wand2 size={minimal ? 14 : 16} />
-                        <span className="text-xs font-bold">Optimize</span>
-                    </button>
-                </div>
+        <div className={`bg-white ${minimal ? 'p-2 border-0' : 'p-4 border border-slate-200 rounded-xl shadow-sm'} flex flex-col`}
+            style={{ height: minimal ? 'auto' : (containerHeight + 100) }}
+        >
 
-                {/* Right: Controls Removed */}
-            </div>
+            {/* Main Chart Area with 2D Scroll */}
+            <div
+                ref={scrollContainerRef}
+                className="border border-slate-100 rounded-lg bg-slate-50/50 flex-1 min-h-0 relative overflow-auto custom-scrollbar scroll-smooth"
+                style={{
+                    height: containerHeight,
+                    scrollSnapType: 'y proximity'
+                }}
+            >
+                {/* Scroll Snap Point: To Default View (0) */}
+                <div style={{ position: 'absolute', top: 0, left: 0, width: 1, height: 1, scrollSnapAlign: 'start' }} />
 
-            {/* Main Chart Area with Frozen Y-Axis */}
-            <div className="border border-slate-100 rounded-lg bg-slate-50/50 flex-1 min-h-0 relative flex overflow-hidden">
+                <div
+                    className="relative"
+                    style={{
+                        width: Math.max(900, CHART_TOTAL_WIDTH + 60),
+                        height: TOTAL_SCROLL_HEIGHT
+                    }}
+                >
+                    {/* Sticky Top: Timeline Labels (X-Axis) */}
+                    <div className="sticky top-0 left-0 right-0 h-[40px] z-30 bg-white/95 backdrop-blur-sm border-b border-slate-200 flex">
+                        <div className="w-[60px] h-full shrink-0 border-r border-slate-200 bg-white"></div>
+                        <div className="flex-1 relative overflow-hidden">
+                            <svg width={CHART_TOTAL_WIDTH} height={40} className="absolute left-0 top-0">
+                                {TIMELINE_LABELS.map((label, i) => {
+                                    const x = monthToX(i);
+                                    return (
+                                        <text key={i} x={x} y={25} textAnchor="middle" className="text-xs fill-slate-400 font-semibold uppercase">
+                                            {label}
+                                        </text>
+                                    );
+                                })}
+                            </svg>
+                        </div>
+                    </div>
 
-                {/* Sticky Y-Axis */}
-                <div className="w-[60px] shrink-0 border-r border-slate-200 bg-white/80 backdrop-blur-sm z-20 flex flex-col relative" style={{ height: height }}>
-                    <svg width="100%" height="100%" className="overflow-visible">
-                        {/* Grid Labels */}
-                        {[1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0].map(val => {
-                            const y = traitToY(val);
-                            return (
+                    {/* Main Content Area: Y-Axis + Chart */}
+                    <div className="flex" style={{ height: TOTAL_SCROLL_HEIGHT - 40 }}> {/* Subtract header height */}
+
+                        {/* Sticky Left: Y-Axis */}
+                        <div className="sticky left-0 w-[60px] shrink-0 border-r border-slate-200 bg-white/80 backdrop-blur-sm z-20 h-full">
+                            <svg width="100%" height="100%" className="overflow-visible">
+                                {/* Grid Labels */}
+                                {[1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0].map(val => {
+                                    const y = traitToY(val) - HEADER_HEIGHT; // Local to container below header
+                                    return (
+                                        <text
+                                            key={val}
+                                            x={50}
+                                            y={y}
+                                            dy="0.3em"
+                                            textAnchor="end"
+                                            className="text-xs fill-slate-400 font-semibold"
+                                        >
+                                            {val.toFixed(1)}
+                                        </text>
+                                    );
+                                })}
+                                {/* NOB Label */}
                                 <text
-                                    key={val}
-                                    x={50}
-                                    y={y}
+                                    x={45}
+                                    y={traitToY(NOB_VALUE) - HEADER_HEIGHT}
                                     dy="0.3em"
                                     textAnchor="end"
-                                    className="text-xs fill-slate-400 font-semibold"
+                                    className="text-xs font-bold fill-slate-400"
                                 >
-                                    {val.toFixed(1)}
+                                    NOB
                                 </text>
-                            );
-                        })}
-                        {/* NOB Label */}
-                        <text
-                            x={45}
-                            y={traitToY(NOB_TRAIT_VALUE)}
-                            dy="0.3em"
-                            textAnchor="end"
-                            className="text-xs font-bold fill-slate-400"
-                        >
-                            NOB
-                        </text>
-                    </svg>
-                </div>
+                            </svg>
+                        </div>
 
-                {/* Scrollable Content */}
-                <div
-                    ref={scrollContainerRef}
-                    className="flex-1 min-w-0 overflow-x-auto custom-scrollbar relative"
-                >
-                    <svg
-                        ref={svgRef}
-                        width={CHART_TOTAL_WIDTH}
-                        height={height}
-                        className="block"
-                        onMouseMove={handleMouseMove}
-                        onMouseUp={handleMouseUp}
-                        onMouseLeave={handleMouseUp}
-                    >
-                        {/* Grid Lines */}
-                        {[1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0].map(val => {
-                            const y = traitToY(val);
-                            return (
-                                <line key={val} x1={0} y1={y} x2={CHART_TOTAL_WIDTH} y2={y} stroke="#e2e8f0" strokeDasharray="4 4" />
-                            );
-                        })}
+                        {/* Chart Body */}
+                        <div className="relative flex-1">
+                            <svg
+                                ref={svgRef}
+                                width={CHART_TOTAL_WIDTH}
+                                height={TOTAL_SCROLL_HEIGHT - HEADER_HEIGHT}
+                                className="block"
+                                onMouseMove={handleMouseMove}
+                                onMouseUp={handleMouseUp}
+                                onMouseLeave={handleMouseUp}
+                            >
+                                <g transform={`translate(0, -${HEADER_HEIGHT})`}>
 
-                        {/* NOB Line */}
-                        <line
-                            x1={0}
-                            y1={traitToY(NOB_TRAIT_VALUE)}
-                            x2={CHART_TOTAL_WIDTH}
-                            y2={traitToY(NOB_TRAIT_VALUE)}
-                            stroke="#94a3b8"
-                            strokeWidth={2}
-                            strokeDasharray="6 4"
-                        />
+                                    {/* Grid Lines */}
+                                    {[1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0].map(val => {
+                                        const y = traitToY(val);
+                                        return (
+                                            <line key={val} x1={0} y1={y} x2={CHART_TOTAL_WIDTH} y2={y} stroke="#e2e8f0" strokeDasharray="4 4" />
+                                        );
+                                    })}
 
-                        {/* Month Vertical Lines */}
-                        {Array.from({ length: NUM_MONTHS }).map((_, i) => (
-                            <line key={i} x1={(i + 1) * COL_WIDTH} y1={0} x2={(i + 1) * COL_WIDTH} y2={height} stroke="#f1f5f9" strokeWidth={1} />
-                        ))}
-
-                        {/* Top X-Axis Labels */}
-                        {TIMELINE_LABELS.map((label, i) => {
-                            const x = monthToX(i);
-                            return (
-                                <text key={i} x={x} y={30} textAnchor="middle" className="text-xs fill-slate-400 font-semibold uppercase">
-                                    {label}
-                                </text>
-                            );
-                        })}
-
-                        {/* Connections from Reports to RSCA Impact */}
-                        {impactConnections.map(conn => (
-                            <path
-                                key={`impact-${conn.id}`}
-                                d={`M ${conn.x1} ${conn.y1} L ${conn.x2} ${conn.y1} L ${conn.x2} ${conn.y2}`}
-                                fill="none"
-                                stroke={conn.color}
-                                strokeWidth={1}
-                                strokeDasharray="3 3"
-                                className="opacity-40"
-                            />
-                        ))}
-
-                        {/* Stepped RSCA Trend Lines */}
-                        {trendLines.map((line, i) => (
-                            <g key={`trend-${i}`}>
-                                <line
-                                    x1={line.x1} y1={line.y}
-                                    x2={line.x2} y2={line.y}
-                                    stroke="#a855f7"
-                                    strokeWidth={3}
-                                    strokeDasharray="6 4"
-                                    className="opacity-70"
-                                />
-                                {i < trendLines.length - 1 && Math.abs(trendLines[i + 1].y - line.y) > 0.05 && (
-                                    <line
-                                        x1={line.x2} y1={line.y}
-                                        x2={line.x2} y2={trendLines[i + 1].y}
-                                        stroke="#a855f7"
-                                        strokeWidth={1}
-                                        strokeDasharray="2 2"
-                                        className="opacity-40"
+                                    {/* Ideal RSCA Range Band */}
+                                    <rect
+                                        x="0"
+                                        y={traitToY(IDEAL_RSCA_MAX)}
+                                        width={CHART_TOTAL_WIDTH}
+                                        height={traitToY(IDEAL_RSCA_MIN) - traitToY(IDEAL_RSCA_MAX)}
+                                        fill="#10b981"
+                                        fillOpacity="0.1"
                                     />
-                                )}
-                            </g>
-                        ))}
+                                    <line
+                                        x1={0} y1={traitToY(IDEAL_RSCA_MAX)}
+                                        x2={CHART_TOTAL_WIDTH} y2={traitToY(IDEAL_RSCA_MAX)}
+                                        stroke="#10b981" strokeWidth={1} strokeDasharray="4 4" strokeOpacity="0.5"
+                                    />
+                                    <line
+                                        x1={0} y1={traitToY(IDEAL_RSCA_MIN)}
+                                        x2={CHART_TOTAL_WIDTH} y2={traitToY(IDEAL_RSCA_MIN)}
+                                        stroke="#10b981" strokeWidth={1} strokeDasharray="4 4" strokeOpacity="0.5"
+                                    />
 
-                        {/* Interactive Scatter Points */}
-                        {sortedPoints.map(p => {
-                            const isDragging = activeDragId === p.id;
-                            const isAboveRSCA = p.report.traitAverage >= projectedRSCAVal;
-                            const baseColor = getPointColor(p.report.type);
-                            const radius = isDragging ? 22 : 18;
+                                    {/* NOB Line */}
+                                    <line
+                                        x1={0}
+                                        y1={traitToY(NOB_VALUE)}
+                                        x2={CHART_TOTAL_WIDTH}
+                                        y2={traitToY(NOB_VALUE)}
+                                        stroke="#94a3b8"
+                                        strokeWidth={2}
+                                        strokeDasharray="6 4"
+                                    />
 
-                            if (p.report.type === 'Gain') {
-                                return (
-                                    <g key={p.id}
-                                        transform={`translate(${p.x}, ${p.y})`}
-                                        className="cursor-default"
-                                    >
+                                    {/* Month Vertical Lines */}
+                                    {Array.from({ length: NUM_MONTHS }).map((_, i) => (
+                                        <line key={i} x1={(i + 1) * COL_WIDTH} y1={0} x2={(i + 1) * COL_WIDTH} y2={TOTAL_SCROLL_HEIGHT} stroke="#f1f5f9" strokeWidth={1} />
+                                    ))}
+
+                                    {/* Connections & Trends */}
+                                    {impactConnections.map(conn => (
                                         <path
-                                            d="M0 -18 V18 M-18 0 H18"
-                                            stroke="#22c55e"
-                                            strokeWidth={4}
-                                            strokeLinecap="round"
+                                            key={`impact-${conn.id}`}
+                                            d={`M ${conn.x1} ${conn.y1} L ${conn.x2} ${conn.y1} L ${conn.x2} ${conn.y2}`}
+                                            fill="none"
+                                            stroke={conn.color}
+                                            strokeWidth={1}
+                                            strokeDasharray="3 3"
+                                            className="opacity-40"
                                         />
-                                        <text y={28} textAnchor="middle" className="text-[9px] fill-slate-500 font-semibold uppercase pointer-events-none whitespace-nowrap">{formatName(p.report.memberName)}</text>
-                                    </g>
-                                );
-                            }
+                                    ))}
 
-                            return (
-                                <g key={p.id}
-                                    transform={`translate(${p.x}, ${p.y})`}
-                                    className="cursor-ns-resize"
-                                    onMouseDown={(e) => handleMouseDown(e, p.id)}
-                                    onDoubleClick={(e) => {
-                                        e.stopPropagation();
-                                        handleReportDoubleClick(p.report);
-                                    }}
-                                >
-                                    {p.report.type === 'Special' ? (
-                                        <rect x={-radius + 2} y={-radius + 2} width={radius * 1.8} height={radius * 1.8} fill={baseColor} stroke={isAboveRSCA ? '#4ade80' : 'white'} strokeWidth={isAboveRSCA ? 3 : 2} transform="rotate(45)" className={`shadow-md ${isDragging ? 'brightness-110' : ''}`} />
-                                    ) : (
-                                        <circle
-                                            r={radius}
-                                            fill={p.report.draftStatus === 'Projected' ? 'white' : baseColor}
-                                            fillOpacity={p.report.draftStatus === 'Projected' ? 0.3 : 1}
-                                            stroke={p.report.draftStatus === 'Projected' ? baseColor : (isAboveRSCA ? '#4ade80' : 'white')}
-                                            strokeWidth={p.report.draftStatus === 'Projected' ? 2 : (isAboveRSCA ? 3 : 2)}
-                                            strokeDasharray={p.report.draftStatus === 'Projected' ? "3 1" : undefined}
-                                            className={`shadow-md ${isDragging ? 'brightness-110' : ''}`}
-                                        />
-                                    )}
-                                    <text dy="0.35em" textAnchor="middle" className="text-[10px] fill-white font-bold pointer-events-none font-mono">
-                                        {p.report.isNOB ? 'NOB' : p.report.traitAverage.toFixed(2)}
-                                    </text>
-                                    <text y={radius + 14} textAnchor="middle" className="text-[9px] fill-slate-500 font-semibold uppercase pointer-events-none whitespace-nowrap">{formatName(p.report.memberName)}</text>
+                                    {trendLines.map((line, i) => (
+                                        <g key={`trend-${i}`}>
+                                            <line
+                                                x1={line.x1} y1={line.y}
+                                                x2={line.x2} y2={line.y}
+                                                stroke="#a855f7"
+                                                strokeWidth={3}
+                                                strokeDasharray="6 4"
+                                                className="opacity-70"
+                                            />
+                                            {i < trendLines.length - 1 && Math.abs(trendLines[i + 1].y - line.y) > 0.05 && (
+                                                <line
+                                                    x1={line.x2} y1={line.y}
+                                                    x2={line.x2} y2={trendLines[i + 1].y}
+                                                    stroke="#a855f7"
+                                                    strokeWidth={1}
+                                                    strokeDasharray="2 2"
+                                                    className="opacity-40"
+                                                />
+                                            )}
+                                        </g>
+                                    ))}
+
+                                    {/* Interactive Scatter Points */}
+                                    {sortedPoints.map(p => {
+                                        const isDragging = activeDragId === p.id;
+                                        const isAboveRSCA = !p.report.isNOB && p.report.traitAverage >= projectedRSCAVal;
+                                        const baseColor = getPointColor(p.report.type);
+                                        const radius = isDragging ? 22 : 18;
+                                        const isFinal = p.report.draftStatus === 'Final';
+
+                                        if (p.report.type === 'Gain') {
+                                            return (
+                                                <g key={p.id}
+                                                    transform={`translate(${p.x}, ${p.y})`}
+                                                    className="cursor-default"
+                                                >
+                                                    <path
+                                                        d="M0 -18 V18 M-18 0 H18"
+                                                        stroke="#22c55e"
+                                                        strokeWidth={4}
+                                                        strokeLinecap="round"
+                                                    />
+                                                    <text y={28} textAnchor="middle" className="text-[9px] fill-slate-500 font-semibold uppercase pointer-events-none whitespace-nowrap">{formatName(p.report.memberName)}</text>
+                                                </g>
+                                            );
+                                        }
+
+                                        return (
+                                            <g key={p.id}
+                                                transform={`translate(${p.x}, ${p.y})`}
+                                                className="cursor-ns-resize"
+                                                onMouseDown={(e) => handleMouseDown(e, p.id)}
+                                                onDoubleClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleReportDoubleClick(p.report);
+                                                }}
+                                            >
+                                                {p.report.type === 'Special' ? (
+                                                    <rect x={-radius + 2} y={-radius + 2} width={radius * 1.8} height={radius * 1.8}
+                                                        fill={baseColor}
+                                                        stroke={isAboveRSCA ? '#4ade80' : 'white'}
+                                                        strokeWidth={isAboveRSCA ? 3 : 2}
+                                                        transform="rotate(45)"
+                                                        className={`shadow-md ${isDragging ? 'brightness-110' : ''}`} />
+                                                ) : (
+                                                    <circle
+                                                        r={radius}
+                                                        fill={baseColor}
+                                                        fillOpacity={1}
+                                                        stroke={isAboveRSCA ? '#4ade80' : 'white'}
+                                                        strokeWidth={isAboveRSCA ? 3 : 2}
+                                                        className={`shadow-md ${isDragging ? 'brightness-110' : ''}`}
+                                                    />
+                                                )}
+
+                                                <text dy="0.35em" textAnchor="middle" className="text-[10px] fill-white font-bold pointer-events-none font-mono">
+                                                    {p.report.isNOB ? 'NOB' : p.report.traitAverage.toFixed(2)}
+                                                </text>
+
+                                                {isFinal && (
+                                                    <g transform="translate(10, -14)">
+                                                        <circle r="8" fill="white" stroke="#64748b" strokeWidth="1" />
+                                                        <Lock size={10} className="text-slate-600" x={-5} y={-5} />
+                                                        <path d="M5.5 5.5v-1a2.5 2.5 0 0 0-5 0v1" transform="translate(-1.5, -4)" fill="none" stroke="#64748b" strokeWidth="1.5" strokeLinecap="round" />
+                                                        <rect x="-3" y="1" width="6" height="5" rx="1" fill="#64748b" />
+                                                    </g>
+                                                )}
+
+                                                <text y={radius + 14} textAnchor="middle" className="text-[9px] fill-slate-500 font-semibold uppercase pointer-events-none whitespace-nowrap">{formatName(p.report.memberName)}</text>
+                                            </g>
+                                        );
+                                    })}
                                 </g>
-                            );
-                        })}
-                    </svg>
+                            </svg>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -625,4 +712,4 @@ export function StrategyScattergram({ summaryGroups = [], roster = [], onOpenRep
             </div>
         </div>
     );
-};
+}
