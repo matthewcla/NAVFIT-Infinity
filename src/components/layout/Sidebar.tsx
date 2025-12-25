@@ -4,8 +4,8 @@ import {
     Calendar,
     FileText,
     Shield,
-    Menu,
-    Users
+    Users,
+    Menu
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 
