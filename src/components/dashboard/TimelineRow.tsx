@@ -200,6 +200,14 @@ export const TimelineRow = ({
         const isPeriodic = draggingReport.id.includes('periodic');
         const baseColor = isPeriodic ? 'bg-blue-500' : 'bg-red-500';
 
+        // Border Color Logic
+        let borderColor = 'border-yellow-400';
+        if (currentVal === 'NOB') {
+            borderColor = 'border-white';
+        } else if (typeof currentVal === 'number' && currentVal > avgRSCA) {
+            borderColor = 'border-green-500';
+        }
+
         // Layout Constants (Must match calculateDragValue)
         const NOB_HEIGHT = 36; // h-9
         const MARGIN = 8; // mb-2
@@ -257,27 +265,27 @@ export const TimelineRow = ({
             >
                 {/* 1. The Vertical Scale Track (Behind) */}
                 <div
-                    className="absolute w-28 bg-slate-800/95 backdrop-blur-sm rounded-2xl shadow-2xl border border-slate-700/50 flex flex-col items-center py-6"
+                    className="absolute w-28 bg-white/95 backdrop-blur-sm rounded-2xl shadow-2xl border border-slate-200 flex flex-col items-center py-6"
                     style={{
                         left: draggingReport.initialClientX - 56, // Center 112px (w-28) container on mouse X. 28*4 = 112. 112/2 = 56.
                         top: scaleTopY
                     }}
                 >
                     {/* NOB Parking Lot */}
-                    <div className={`w-16 h-9 border-2 border-dashed ${currentVal === 'NOB' ? 'border-white bg-slate-700/50' : 'border-slate-700 bg-slate-800/30'} rounded flex items-center justify-center mb-2 transition-colors`}>
-                        <span className={`text-xs font-bold ${currentVal === 'NOB' ? 'text-white' : 'text-slate-500'}`}>NOB</span>
+                    <div className={`w-16 h-9 border-2 border-dashed ${currentVal === 'NOB' ? 'border-slate-400 bg-slate-50' : 'border-slate-300 bg-slate-50/50'} rounded flex items-center justify-center mb-2 transition-colors`}>
+                        <span className={`text-xs font-bold ${currentVal === 'NOB' ? 'text-slate-900' : 'text-slate-400'}`}>NOB</span>
                     </div>
 
                     {/* The Rail */}
-                    <div className="w-2 bg-slate-700 rounded-full relative" style={{ height: `${SCALE_HEIGHT}px` }}>
+                    <div className="w-2 bg-slate-300 rounded-full relative" style={{ height: `${SCALE_HEIGHT}px` }}>
                         {/* Ticks */}
                         {[5, 4, 3, 2, 1].map(tick => (
                             <div
                                 key={tick}
-                                className="absolute w-8 h-1 bg-slate-600 -left-3 flex items-center rounded-sm"
+                                className="absolute w-8 h-1 bg-slate-400 -left-3 flex items-center rounded-sm"
                                 style={{ top: `${(5 - tick) * PX_PER_POINT}px` }}
                             >
-                                <span className="absolute -left-8 text-xs font-bold font-mono text-slate-300">{tick.toFixed(1)}</span>
+                                <span className="absolute -left-8 text-xs font-bold font-mono text-slate-700">{tick.toFixed(1)}</span>
                             </div>
                         ))}
 
@@ -286,14 +294,14 @@ export const TimelineRow = ({
                             className="absolute w-12 h-1 bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.6)] z-10 -left-5 flex items-center rounded-sm"
                             style={{ top: `${(5 - avgRSCA) * PX_PER_POINT}px` }}
                         >
-                            <span className="absolute -right-14 text-[10px] font-bold text-red-400 tracking-wider">RSCA</span>
+                            <span className="absolute -right-14 text-[11px] font-black text-red-600 tracking-wider">RSCA</span>
                         </div>
                     </div>
                 </div>
 
                 {/* 2. The Ghost Icon (Draggable) */}
                 <div
-                    className={`absolute w-9 h-9 rounded-full border-2 shadow-xl flex items-center justify-center z-50 transition-transform ${baseColor} border-white ring-2 ring-blue-200/50`}
+                    className={`absolute w-9 h-9 rounded-full border-2 shadow-xl flex items-center justify-center z-50 transition-transform ${baseColor} ${borderColor} ring-2 ring-blue-200/50`}
                     style={{
                         left: draggingReport.initialClientX - 18,
                         top: visualY - 18, // Use calculated visualY for snap effect
@@ -304,8 +312,16 @@ export const TimelineRow = ({
                     </span>
 
                     {/* Side Tooltip */}
-                    <div className="absolute left-full ml-3 bg-slate-800 text-white text-xs px-2 py-1 rounded whitespace-nowrap">
-                        {currentVal === 'NOB' ? 'NOB' : currentVal.toFixed(2)}
+                    <div className="absolute left-full ml-3 bg-slate-800 text-white text-xs px-3 py-2 rounded shadow-lg whitespace-nowrap flex flex-col items-center z-[9999]">
+                        <div className="font-bold flex items-center gap-1 mb-1">
+                            {currentVal === 'NOB' ? 'NOB' : currentVal.toFixed(2)}
+                            <span className="text-[10px] font-normal text-slate-400">Avg</span>
+                        </div>
+                        {(typeof currentVal === 'number') && (
+                            <div className={`text-xl font-black leading-none ${currentVal - avgRSCA > 0 ? 'text-green-400' : 'text-red-400'}`}>
+                                {currentVal - avgRSCA > 0 ? '+' : ''}{(currentVal - avgRSCA).toFixed(2)}
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>
@@ -421,7 +437,12 @@ export const TimelineRow = ({
                 {!isGaining && periodicPos > 0 && (periodicPos <= coDetachPos || coDetachPos === -1) && (
                     <div
                         key="periodic"
-                        className="absolute w-9 h-9 -ml-4.5 -mt-4.5 rounded-full bg-blue-500 border-2 border-white shadow-sm flex items-center justify-center hover:scale-110 active:scale-95 transition-transform z-10 cursor-ns-resize"
+                        className={`absolute w-9 h-9 -ml-4.5 -mt-4.5 rounded-full bg-blue-500 border-2 shadow-sm flex items-center justify-center hover:scale-110 active:scale-95 transition-transform z-10 cursor-ns-resize ${(() => {
+                            const val = member.nextPlan;
+                            if (val === 'NOB' || !val) return 'border-white';
+                            return val > avgRSCA ? 'border-green-500' : 'border-yellow-400';
+                        })()
+                            }`}
                         style={{ left: `${periodicPos}px` }}
                         onClick={onReportClick}
                         onDoubleClick={() => onOpenReport && onOpenReport(getReportId('periodic'))}
@@ -455,7 +476,12 @@ export const TimelineRow = ({
                 {transferPos > 0 && (
                     <div
                         key="transfer"
-                        className="absolute w-9 h-9 -ml-4.5 -mt-4.5 rounded-full bg-red-500 border-2 border-white shadow-sm flex items-center justify-center hover:scale-110 active:scale-95 transition-transform z-10 cursor-ns-resize"
+                        className={`absolute w-9 h-9 -ml-4.5 -mt-4.5 rounded-full bg-red-500 border-2 shadow-sm flex items-center justify-center hover:scale-110 active:scale-95 transition-transform z-10 cursor-ns-resize ${(() => {
+                            const val = member.target;
+                            if (val === 'NOB' || !val) return 'border-white';
+                            return val > avgRSCA ? 'border-green-500' : 'border-yellow-400';
+                        })()
+                            }`}
                         style={{ left: `${transferPos}px` }}
                         onClick={onReportClick}
                         onDoubleClick={() => onOpenReport && onOpenReport(getReportId('transfer'))}

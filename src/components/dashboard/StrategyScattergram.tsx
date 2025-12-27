@@ -428,7 +428,7 @@ export function StrategyScattergram({ summaryGroups = EMPTY_SUMMARY_GROUPS, rost
             {/* Main Chart Area with 2D Scroll */}
             <div
                 ref={scrollContainerRef}
-                className="border border-slate-100 rounded-lg bg-slate-50/50 flex-1 min-h-0 relative overflow-auto custom-scrollbar scroll-smooth"
+                className="border border-slate-300 rounded-lg bg-slate-200 flex-1 min-h-0 relative overflow-auto custom-scrollbar scroll-smooth"
                 style={{
                     height: containerHeight,
                     scrollSnapType: 'y proximity'
@@ -452,7 +452,7 @@ export function StrategyScattergram({ summaryGroups = EMPTY_SUMMARY_GROUPS, rost
                                 {TIMELINE_LABELS.map((label, i) => {
                                     const x = monthToX(i);
                                     return (
-                                        <text key={i} x={x} y={25} textAnchor="middle" className="text-xs fill-slate-400 font-semibold uppercase">
+                                        <text key={i} x={x} y={25} textAnchor="middle" className="text-xs fill-slate-900 font-bold uppercase">
                                             {label}
                                         </text>
                                     );
@@ -465,7 +465,7 @@ export function StrategyScattergram({ summaryGroups = EMPTY_SUMMARY_GROUPS, rost
                     <div className="flex" style={{ height: TOTAL_SCROLL_HEIGHT - 40 }}> {/* Subtract header height */}
 
                         {/* Sticky Left: Y-Axis */}
-                        <div className="sticky left-0 w-[60px] shrink-0 border-r border-slate-200 bg-white/80 backdrop-blur-sm z-20 h-full">
+                        <div className="sticky left-0 w-[60px] shrink-0 border-r border-slate-500 bg-slate-200/95 backdrop-blur-sm z-20 h-full">
                             <svg width="100%" height="100%" className="overflow-visible">
                                 {/* Grid Labels */}
                                 {[1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0].map(val => {
@@ -477,7 +477,7 @@ export function StrategyScattergram({ summaryGroups = EMPTY_SUMMARY_GROUPS, rost
                                             y={y}
                                             dy="0.3em"
                                             textAnchor="end"
-                                            className="text-xs fill-slate-400 font-semibold"
+                                            className="text-xs fill-slate-900 font-bold"
                                         >
                                             {val.toFixed(1)}
                                         </text>
@@ -489,7 +489,7 @@ export function StrategyScattergram({ summaryGroups = EMPTY_SUMMARY_GROUPS, rost
                                     y={traitToY(NOB_VALUE) - HEADER_HEIGHT}
                                     dy="0.3em"
                                     textAnchor="end"
-                                    className="text-xs font-bold fill-slate-400"
+                                    className="text-xs font-black fill-slate-900"
                                 >
                                     NOB
                                 </text>
@@ -513,7 +513,7 @@ export function StrategyScattergram({ summaryGroups = EMPTY_SUMMARY_GROUPS, rost
                                     {[1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0].map(val => {
                                         const y = traitToY(val);
                                         return (
-                                            <line key={val} x1={0} y1={y} x2={CHART_TOTAL_WIDTH} y2={y} stroke="#e2e8f0" strokeDasharray="4 4" />
+                                            <line key={val} x1={0} y1={y} x2={CHART_TOTAL_WIDTH} y2={y} stroke="#94a3b8" strokeDasharray="4 4" />
                                         );
                                     })}
 
@@ -592,7 +592,17 @@ export function StrategyScattergram({ summaryGroups = EMPTY_SUMMARY_GROUPS, rost
                                     {/* Interactive Scatter Points */}
                                     {sortedPoints.map(p => {
                                         const isDragging = activeDragId === p.id;
-                                        const isAboveRSCA = !p.report.isNOB && p.report.traitAverage >= projectedRSCAVal;
+                                        // Border Logic:
+                                        // NOB -> White
+                                        // > RSCA -> Green
+                                        // Else (<= RSCA) -> Yellow
+                                        let strokeColor = '#eab308';
+                                        if (p.report.isNOB) {
+                                            strokeColor = 'white';
+                                        } else if (p.report.traitAverage > projectedRSCAVal) {
+                                            strokeColor = '#22c55e';
+                                        }
+
                                         const baseColor = getPointColor(p.report.type);
                                         const radius = isDragging ? 22 : 18;
                                         const isFinal = p.report.draftStatus === 'Final';
@@ -627,8 +637,8 @@ export function StrategyScattergram({ summaryGroups = EMPTY_SUMMARY_GROUPS, rost
                                                 {p.report.type === 'Special' ? (
                                                     <rect x={-radius + 2} y={-radius + 2} width={radius * 1.8} height={radius * 1.8}
                                                         fill={baseColor}
-                                                        stroke={isAboveRSCA ? '#4ade80' : 'white'}
-                                                        strokeWidth={isAboveRSCA ? 3 : 2}
+                                                        stroke={strokeColor}
+                                                        strokeWidth={3}
                                                         transform="rotate(45)"
                                                         className={`shadow-md ${isDragging ? 'brightness-110' : ''}`} />
                                                 ) : (
@@ -636,8 +646,8 @@ export function StrategyScattergram({ summaryGroups = EMPTY_SUMMARY_GROUPS, rost
                                                         r={radius}
                                                         fill={baseColor}
                                                         fillOpacity={1}
-                                                        stroke={isAboveRSCA ? '#4ade80' : 'white'}
-                                                        strokeWidth={isAboveRSCA ? 3 : 2}
+                                                        stroke={strokeColor}
+                                                        strokeWidth={3}
                                                         className={`shadow-md ${isDragging ? 'brightness-110' : ''}`}
                                                     />
                                                 )}
