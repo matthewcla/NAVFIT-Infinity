@@ -95,9 +95,11 @@ export const TimelineRow = ({
     // --- Vertical Drag Logic for Report Adjustment ---
     const [draggingReport, setDraggingReport] = React.useState<{
         id: string;
-        initialY: number; // Screen Y
-        initialClientX: number; // Screen X (for fixed overlay alignment)
-        currentY: number; // Screen Y
+        initialCenterY: number; // Center of the icon at start
+        initialCenterX: number; // Center of the visual icon X
+        startMouseY: number;    // Mouse Y at start
+        currentMouseY: number;  // Current Mouse Y
+        initialClientX: number; // Screen X (mouse status)
         startValue: number | 'NOB';
     } | null>(null);
 
@@ -108,18 +110,25 @@ export const TimelineRow = ({
         // Only draggable if onReportUpdate is present
         if (!onReportUpdate) return;
 
+        // Calculate Icon Center
+        const rect = e.currentTarget.getBoundingClientRect();
+        const centerY = rect.top + (rect.height / 2);
+        const centerX = rect.left + (rect.width / 2);
+
         // Fix: Explicitly check for 0 to handle "NOB" correctly when it comes from DB as 0
         const startVal = (currentValue === null || currentValue === 0) ? 'NOB' : currentValue;
         setDraggingReport({
             id: reportId,
-            initialY: e.clientY,
+            initialCenterY: centerY,
+            initialCenterX: centerX,
+            startMouseY: e.clientY,
+            currentMouseY: e.clientY,
             initialClientX: e.clientX,
-            currentY: e.clientY,
             startValue: startVal
         });
     };
 
-    const calculateDragValue = (startVal: number | 'NOB', startY: number, currentY: number): number | 'NOB' => {
+    const calculateDragValue = (startVal: number | 'NOB', startCenterY: number, currentCenterY: number): number | 'NOB' => {
         // Constants for layout
         const NOB_CENTER_Y = 18; // 36px height / 2
         const RAIL_TOP_Y = 44; // 36px (NOB) + 8px (mb-2)
@@ -134,9 +143,9 @@ export const TimelineRow = ({
         }
 
         // 2. Calculate "Virtual" position relative to the Scale Container Top
-        // ScaleTop would be at (DraggingReport.initialY - startOffset)
-        // So RelativeY = currentY - (startY - startOffset)
-        const relativeY = currentY - (startY - startOffset);
+        // ScaleTop would be at (startCenterY - startOffset)
+        // So RelativeY = currentCenterY - (startCenterY - startOffset)
+        const relativeY = currentCenterY - (startCenterY - startOffset);
 
         // 3. Logic for Value
         // Midpoint between NOB (18) and 5.0 (44) is 31
@@ -167,12 +176,15 @@ export const TimelineRow = ({
         if (!draggingReport) return;
 
         const handleMouseMove = (e: MouseEvent) => {
-            setDraggingReport(prev => prev ? { ...prev, currentY: e.clientY } : null);
+            setDraggingReport(prev => prev ? { ...prev, currentMouseY: e.clientY } : null);
         };
 
         const handleMouseUp = (e: MouseEvent) => {
-            // Calculate final value
-            const val = calculateDragValue(draggingReport.startValue, draggingReport.initialY, e.clientY);
+            // Calculate final value using derived currentCenterY
+            const deltaY = e.clientY - draggingReport.startMouseY;
+            const currentCenterY = draggingReport.initialCenterY + deltaY;
+
+            const val = calculateDragValue(draggingReport.startValue, draggingReport.initialCenterY, currentCenterY);
 
             if (onReportUpdate && val !== draggingReport.startValue) {
                 onReportUpdate(draggingReport.id, val === 'NOB' ? 0 : val);
@@ -196,7 +208,10 @@ export const TimelineRow = ({
     const renderDragOverlay = () => {
         if (!draggingReport) return null;
 
-        const currentVal = calculateDragValue(draggingReport.startValue, draggingReport.initialY, draggingReport.currentY);
+        const deltaY = draggingReport.currentMouseY - draggingReport.startMouseY;
+        const currentCenterY = draggingReport.initialCenterY + deltaY;
+
+        const currentVal = calculateDragValue(draggingReport.startValue, draggingReport.initialCenterY, currentCenterY);
         const isPeriodic = draggingReport.id.includes('periodic');
         const baseColor = isPeriodic ? 'bg-blue-500' : 'bg-red-500';
 
@@ -211,7 +226,7 @@ export const TimelineRow = ({
         // Layout Constants (Must match calculateDragValue)
         const NOB_HEIGHT = 36; // h-9
         const MARGIN = 8; // mb-2
-        const RAIL_PADDING_Y = 16; /* Padding for the new container */
+        const RAIL_PADDING_Y = 24; /* Adjusted to match py-6 (24px) */
 
         // Revised Layout Logic:
         // The container adds padding. So the "Top" of the rail content is shifted down by RAIL_PADDING_Y.
@@ -223,7 +238,7 @@ export const TimelineRow = ({
         const SCALE_HEIGHT = PX_PER_POINT * 4; // 160px
 
         // 1. Calculate Scale Top Position to align exactly with Start Value
-        // We need to position the *Container* such that the Value Point aligns with draggingReport.initialY
+        // We need to position the *Container* such that the Value Point aligns with draggingReport.initialCenterY
         let valueOffsetFromContentTop = 0;
 
         if (draggingReport.startValue === 'NOB') {
@@ -235,24 +250,18 @@ export const TimelineRow = ({
         // Total offset includes the container padding
         const totalOffsetFromContainerTop = valueOffsetFromContentTop + RAIL_PADDING_Y;
 
-        const scaleTopY = draggingReport.initialY - totalOffsetFromContainerTop;
+        const scaleTopY = draggingReport.initialCenterY - totalOffsetFromContainerTop;
 
         // 2. Calculate Visual Icon Y (Snapped)
-        let visualY = draggingReport.currentY;
+        let visualY = currentCenterY;
         // Optional: Apply magnetic snap to visual position for NOB/5.0
         if (currentVal === 'NOB') {
             visualY = scaleTopY + RAIL_PADDING_Y + NOB_CENTER_Y_RAW;
         } else if (currentVal === 5.0) {
             // If strictly 5.0, snap to tick?
-            // Only if we want to force it. Let's let it float if the user is pulling down?
-            // For "Magnetic" feel, if calculation returned 5.0 because of the buffer zone, we snap visual.
-            // In calculateDragValue, we return 5.0 if relativeY is in [31, 54].
-            // So we can re-derive relativeY or just snap it.
-            // Let's snap it to 5.0 tick to feel solid.
             visualY = scaleTopY + RAIL_PADDING_Y + RAIL_TOP_Y_RAW;
         }
         // Else, let it follow mouse (or stick to rail track x-axis, but Y follows value)
-        // Actually, for value < 5.0, visualY should correspond to the value to be accurate?
         if (typeof currentVal === 'number' && currentVal < 5.0) {
             // To make it look like it's ON the value:
             visualY = scaleTopY + RAIL_PADDING_Y + RAIL_TOP_Y_RAW + ((5.0 - currentVal) * PX_PER_POINT);
@@ -267,7 +276,7 @@ export const TimelineRow = ({
                 <div
                     className="absolute w-28 bg-white/95 backdrop-blur-sm rounded-2xl shadow-2xl border border-slate-200 flex flex-col items-center py-6"
                     style={{
-                        left: draggingReport.initialClientX - 56, // Center 112px (w-28) container on mouse X. 28*4 = 112. 112/2 = 56.
+                        left: draggingReport.initialCenterX - 56, // Center 112px (w-28) container on mouse X. 28*4 = 112. 112/2 = 56.
                         top: scaleTopY
                     }}
                 >
@@ -301,21 +310,20 @@ export const TimelineRow = ({
 
                 {/* 2. The Ghost Icon (Draggable) */}
                 <div
-                    className={`absolute w-9 h-9 rounded-full border-2 shadow-xl flex items-center justify-center z-50 transition-transform ${baseColor} ${borderColor} ring-2 ring-blue-200/50`}
+                    className={`absolute w-9 h-9 rounded-full border-4 shadow-xl flex items-center justify-center z-50 transition-transform ${baseColor} ${borderColor} ring-2 ring-blue-200/50`}
                     style={{
-                        left: draggingReport.initialClientX - 18,
+                        left: draggingReport.initialCenterX - 18,
                         top: visualY - 18, // Use calculated visualY for snap effect
                     }}
                 >
                     <span className="text-[10px] font-bold text-white">
-                        {currentVal === 'NOB' ? 'NOB' : (typeof currentVal === 'number' ? currentVal.toFixed(2) : '')}
+                        {/* Blank during drag, per user request */}
                     </span>
 
                     {/* Side Tooltip */}
                     <div className="absolute left-full ml-3 bg-slate-800 text-white text-xs px-3 py-2 rounded shadow-lg whitespace-nowrap flex flex-col items-center z-[9999]">
-                        <div className="font-bold flex items-center gap-1 mb-1">
+                        <div className="font-bold mb-1">
                             {currentVal === 'NOB' ? 'NOB' : currentVal.toFixed(2)}
-                            <span className="text-[10px] font-normal text-slate-400">Avg</span>
                         </div>
                         {(typeof currentVal === 'number') && (
                             <div className={`text-xl font-black leading-none ${currentVal - avgRSCA > 0 ? 'text-green-400' : 'text-red-400'}`}>
@@ -391,8 +399,8 @@ export const TimelineRow = ({
                     <div
                         className="absolute bg-slate-900/80 text-white px-3 py-2 rounded-r-md shadow-lg pointer-events-none flex flex-col items-center gap-1"
                         style={{
-                            top: draggingReport.initialY - 100, // Anchor the visual scale relative to START Y
-                            left: 40 // Offset from cursor? No, we don't have cursor X here easily without state.
+                            top: draggingReport.initialCenterY - 100, // Anchor relative to start center
+                            left: 40
                         }}
                     >
                     </div>
@@ -437,16 +445,24 @@ export const TimelineRow = ({
                 {!isGaining && periodicPos > 0 && (periodicPos <= coDetachPos || coDetachPos === -1) && (
                     <div
                         key="periodic"
-                        className={`absolute w-9 h-9 -ml-4.5 -mt-4.5 rounded-full bg-blue-500 border-2 shadow-sm flex items-center justify-center hover:scale-110 active:scale-95 transition-transform z-10 cursor-ns-resize ${(() => {
-                            const val = member.nextPlan;
-                            if (val === 'NOB' || !val) return 'border-white';
+                        className={`absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-9 h-9 rounded-full bg-blue-500 border-4 shadow-sm flex items-center justify-center hover:scale-110 active:scale-95 transition-transform z-10 cursor-ns-resize ${(() => {
+                            const pid = getReportId('periodic');
+                            const proj = projections[pid];
+                            const val = proj !== undefined ? proj : member.nextPlan;
+
+                            if ((val as any) === 'NOB' || !val) return 'border-white';
                             return val > avgRSCA ? 'border-green-500' : 'border-yellow-400';
                         })()
                             }`}
                         style={{ left: `${periodicPos}px` }}
                         onClick={onReportClick}
                         onDoubleClick={() => onOpenReport && onOpenReport(getReportId('periodic'))}
-                        onMouseDown={(e) => handleReportMouseDown(e, getReportId('periodic'), member.nextPlan ?? null)}
+                        onMouseDown={(e) => {
+                            const pid = getReportId('periodic');
+                            const proj = projections[pid];
+                            const val = proj !== undefined ? proj : (member.nextPlan ?? null);
+                            handleReportMouseDown(e, pid, val);
+                        }}
                     >
                         <span className="text-[10px] font-bold text-white">
                             {(() => {
@@ -460,11 +476,20 @@ export const TimelineRow = ({
                         {!draggingReport && (
                             <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 bg-slate-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover/marker:opacity-100 whitespace-nowrap z-20 pointer-events-none text-center">
                                 <div>Periodic Report</div>
-                                {typeof member.nextPlan === 'number' && (
-                                    <div className={member.nextPlan >= avgRSCA ? 'text-green-300' : 'text-yellow-300'}>
-                                        {member.nextPlan >= avgRSCA ? '+' : ''}{(member.nextPlan - avgRSCA).toFixed(2)} vs RSCA
-                                    </div>
-                                )}
+                                {(() => {
+                                    const pid = getReportId('periodic');
+                                    const proj = projections[pid];
+                                    const val = proj !== undefined ? proj : member.nextPlan;
+
+                                    if (typeof val === 'number' && val !== 0) {
+                                        return (
+                                            <div className={val >= avgRSCA ? 'text-green-300' : 'text-yellow-300'}>
+                                                {val >= avgRSCA ? '+' : ''}{(val - avgRSCA).toFixed(2)} vs RSCA
+                                            </div>
+                                        );
+                                    }
+                                    return null;
+                                })()}
                                 <div className="text-slate-400 mt-1 italic text-[10px]">Drag Vertically to Adjust</div>
                             </div>
                         )}
@@ -476,16 +501,25 @@ export const TimelineRow = ({
                 {transferPos > 0 && (
                     <div
                         key="transfer"
-                        className={`absolute w-9 h-9 -ml-4.5 -mt-4.5 rounded-full bg-red-500 border-2 shadow-sm flex items-center justify-center hover:scale-110 active:scale-95 transition-transform z-10 cursor-ns-resize ${(() => {
-                            const val = member.target;
-                            if (val === 'NOB' || !val) return 'border-white';
+                        className={`absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-9 h-9 rounded-full bg-red-500 border-4 shadow-sm flex items-center justify-center hover:scale-110 active:scale-95 transition-transform z-10 cursor-ns-resize ${(() => {
+                            const tid = getReportId('transfer');
+                            const proj = projections[tid];
+                            const val = proj !== undefined ? proj : member.target;
+
+                            // Fix TS error: val is number | null, comparison to 'NOB' is invalid without cast
+                            if ((val as any) === 'NOB' || !val) return 'border-white';
                             return val > avgRSCA ? 'border-green-500' : 'border-yellow-400';
                         })()
                             }`}
                         style={{ left: `${transferPos}px` }}
                         onClick={onReportClick}
                         onDoubleClick={() => onOpenReport && onOpenReport(getReportId('transfer'))}
-                        onMouseDown={(e) => handleReportMouseDown(e, getReportId('transfer'), member.target ?? null)}
+                        onMouseDown={(e) => {
+                            const tid = getReportId('transfer');
+                            const proj = projections[tid];
+                            const val = proj !== undefined ? proj : (member.target ?? null);
+                            handleReportMouseDown(e, tid, val);
+                        }}
                     >
                         <span className="text-[10px] font-bold text-white">
                             {(() => {
@@ -499,11 +533,20 @@ export const TimelineRow = ({
                         {!draggingReport && (
                             <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 bg-slate-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover/marker:opacity-100 whitespace-nowrap z-20 pointer-events-none text-center">
                                 <div>Transfer PRD</div>
-                                {typeof member.target === 'number' && (
-                                    <div className={member.target >= avgRSCA ? 'text-green-300' : 'text-yellow-300'}>
-                                        {member.target >= avgRSCA ? '+' : ''}{(member.target - avgRSCA).toFixed(2)} vs RSCA
-                                    </div>
-                                )}
+                                {(() => {
+                                    const tid = getReportId('transfer');
+                                    const proj = projections[tid];
+                                    const val = proj !== undefined ? proj : member.target;
+
+                                    if (typeof val === 'number' && val !== 0) {
+                                        return (
+                                            <div className={val >= avgRSCA ? 'text-green-300' : 'text-yellow-300'}>
+                                                {val >= avgRSCA ? '+' : ''}{(val - avgRSCA).toFixed(2)} vs RSCA
+                                            </div>
+                                        );
+                                    }
+                                    return null;
+                                })()}
                                 <div className="text-slate-400 mt-1 italic text-[10px]">Drag Vertically to Adjust</div>
                             </div>
                         )}
@@ -515,7 +558,7 @@ export const TimelineRow = ({
                 {
                     gainPos > 0 && (
                         <div
-                            className="absolute top-1/2 -translate-y-1/2 w-6 h-6 bg-green-500 rounded-full border-2 border-white shadow-sm flex items-center justify-center z-10 group/marker cursor-pointer"
+                            className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-6 h-6 bg-green-500 rounded-full border-2 border-white shadow-sm flex items-center justify-center z-10 group/marker cursor-pointer"
                             style={{ left: `${gainPos}px` }}
                         >
                             <Plus size={12} className="text-white" />
