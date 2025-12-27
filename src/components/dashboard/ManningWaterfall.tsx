@@ -148,6 +148,98 @@ export function ManningWaterfall({ summaryGroups = [], roster = [], onOpenReport
         }));
     };
 
+    // --- Drag and Drop Logic ---
+    const [groupOrder, setGroupOrder] = useState<Record<string, string[]>>({});
+
+    // Initialize/Sync groupOrder with current groups
+    useEffect(() => {
+        setGroupOrder(prev => {
+            const newOrder = { ...prev };
+            let hasChanges = false;
+
+            Object.entries(groups).forEach(([key, list]) => {
+                if (!newOrder[key]) {
+                    // Initial sort alphabetical
+                    newOrder[key] = list
+                        .sort((a, b) => a.name.localeCompare(b.name))
+                        .map(m => m.id);
+                    hasChanges = true;
+                } else {
+                    // Check for new members not in order list
+                    const existingIds = new Set(newOrder[key]);
+                    const newMembers = list.filter(m => !existingIds.has(m.id));
+                    if (newMembers.length > 0) {
+                        newOrder[key] = [...newOrder[key], ...newMembers.map(m => m.id)];
+                        hasChanges = true;
+                    }
+                }
+            });
+
+            return hasChanges ? newOrder : prev;
+        });
+    }, [groups]);
+
+    const handleDragStart = (e: React.DragEvent, memberId: string, groupKey: string) => {
+        e.dataTransfer.setData('text/plain', JSON.stringify({ memberId, groupKey }));
+        e.dataTransfer.effectAllowed = 'move';
+    };
+
+    const handleDragOver = (e: React.DragEvent) => {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+    };
+
+    const handleDrop = (e: React.DragEvent, targetMemberId: string, targetGroupKey: string) => {
+        e.preventDefault();
+        const data = e.dataTransfer.getData('text/plain');
+        if (!data) return;
+
+        try {
+            const { memberId: draggedId, groupKey: sourceGroupKey } = JSON.parse(data);
+
+            if (sourceGroupKey !== targetGroupKey) return; // Constraint: Only same group
+            if (draggedId === targetMemberId) return;
+
+            setGroupOrder(prev => {
+                const currentOrder = prev[targetGroupKey] ? [...prev[targetGroupKey]] : [];
+                const fromIndex = currentOrder.indexOf(draggedId);
+                const toIndex = currentOrder.indexOf(targetMemberId);
+
+                if (fromIndex === -1 || toIndex === -1) return prev;
+
+                // Move item
+                currentOrder.splice(fromIndex, 1);
+                currentOrder.splice(toIndex, 0, draggedId);
+
+                return {
+                    ...prev,
+                    [targetGroupKey]: currentOrder
+                };
+            });
+
+        } catch (err) {
+            console.error("Drop failed", err);
+        }
+    };
+
+    // Helper to get sorted list for rendering
+    const getSortedGroupList = (key: string, list: Member[]) => {
+        const order = groupOrder[key];
+        if (!order) return list.sort((a, b) => a.name.localeCompare(b.name));
+
+        // Create map for fast lookup
+        const map = new Map(list.map(m => [m.id, m]));
+
+        // Return ordered list, filter out any missing ids (safety)
+        const sorted = order.map(id => map.get(id)).filter(Boolean) as Member[];
+
+        // Append any potentially missing members (safety)
+        const returnedIds = new Set(sorted.map(m => m.id));
+        const missing = list.filter(m => !returnedIds.has(m.id));
+
+        return [...sorted, ...missing];
+    };
+
     return (
         <div className="bg-white border-t border-slate-200 h-full flex flex-col min-h-0">
             {/* Header Controls (Filter etc.) */}
@@ -180,8 +272,9 @@ export function ManningWaterfall({ summaryGroups = [], roster = [], onOpenReport
             <div ref={scrollContainerRef} className="flex-1 overflow-auto custom-scrollbar relative">
                 <div className="min-w-max">
                     <div className="flex bg-slate-50 border-b border-slate-200 sticky top-0 z-30 text-xs font-semibold text-slate-500 uppercase tracking-wider h-8 items-center">
-                        <div className="w-80 px-6 shrink-0 sticky left-0 bg-slate-50 border-r border-slate-200 z-40 h-full flex items-center justify-end shadow-[1px_0_4px_-1px_rgba(0,0,0,0.1)] text-right">
-                            Member
+                        <div className="w-80 px-6 shrink-0 sticky left-0 bg-slate-50 border-r border-slate-200 z-40 h-full flex items-center shadow-[1px_0_4px_-1px_rgba(0,0,0,0.1)]">
+                            <div className="w-8 text-center text-slate-400 mr-2 shrink-0">#</div>
+                            <div className="text-right flex-1">Member</div>
                         </div>
                         <div className="flex flex-1">
                             {TIMELINE_MONTHS.map((m, i) => (
@@ -207,7 +300,7 @@ export function ManningWaterfall({ summaryGroups = [], roster = [], onOpenReport
                                         targetRange={{ min: 3.8, max: 4.0 }}
                                         timelineMonths={TIMELINE_MONTHS}
                                     />
-                                    {isExpanded && groupList.sort((a, b) => a.name.localeCompare(b.name)).map(member => (
+                                    {isExpanded && getSortedGroupList(groupTitle, groupList).map((member, idx) => (
                                         <TimelineRow
                                             key={member.id}
                                             member={member}
@@ -217,6 +310,11 @@ export function ManningWaterfall({ summaryGroups = [], roster = [], onOpenReport
                                             onOpenReport={(reportId) => {
                                                 if (onOpenReport) onOpenReport(member.id, member.name, member.rank, reportId);
                                             }}
+                                            rankIndex={idx + 1}
+                                            isDraggable={true}
+                                            onDragStart={(e: React.DragEvent) => handleDragStart(e, member.id, groupTitle)}
+                                            onDragOver={handleDragOver}
+                                            onDrop={(e: React.DragEvent) => handleDrop(e, member.id, groupTitle)}
                                         />
                                     ))}
                                 </div>

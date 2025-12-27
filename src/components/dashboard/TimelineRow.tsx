@@ -13,9 +13,26 @@ interface TimelineRowProps {
     onReportClick?: () => void;
     onOpenReport?: (reportId: string) => void;
     timelineMonths: { label: string; monthIndex: number; year: number; index: number }[];
+    rankIndex?: number;
+    onDragStart?: (e: React.DragEvent) => void;
+    onDragOver?: (e: React.DragEvent) => void;
+    onDrop?: (e: React.DragEvent) => void;
+    isDraggable?: boolean;
 }
 
-export const TimelineRow = ({ member, coDetachDate, avgRSCA, onReportClick, onOpenReport, timelineMonths }: TimelineRowProps) => {
+export const TimelineRow = ({
+    member,
+    coDetachDate,
+    avgRSCA,
+    onReportClick,
+    onOpenReport,
+    timelineMonths,
+    rankIndex,
+    onDragStart,
+    onDragOver,
+    onDrop,
+    isDraggable
+}: TimelineRowProps) => {
     // Width per month column (must match ManningWaterfall header)
     const COL_WIDTH = 96; // w-24 = 6rem = 96px
 
@@ -72,14 +89,28 @@ export const TimelineRow = ({ member, coDetachDate, avgRSCA, onReportClick, onOp
     const gainPos = gainDate ? getPosPxSimple(gainDate) : -1;
 
     return (
-        <div className="flex border-b border-slate-100 hover:bg-slate-50 items-center h-16 group transition-colors">
+        <div
+            className={`flex border-b border-slate-100 items-center h-16 group transition-colors ${isDraggable ? 'cursor-grab active:cursor-grabbing hover:bg-slate-50' : ''}`}
+            draggable={isDraggable}
+            onDragStart={onDragStart}
+            onDragOver={onDragOver}
+            onDrop={onDrop}
+        >
             {/* Member Info (Sticky Column) */}
-            <div className="w-80 px-6 shrink-0 sticky left-0 bg-white group-hover:bg-slate-50 border-r border-slate-200 z-20 flex flex-col justify-center items-end shadow-[1px_0_4px_-1px_rgba(0,0,0,0.1)] transition-colors text-right">
-                <div className="font-bold text-slate-800 text-sm truncate">{member.name}</div>
-                <div className="text-xs text-slate-500 flex items-center space-x-2">
-                    <span className="bg-slate-200 px-1.5 rounded text-slate-700 font-mono">{member.rank}</span>
-                    <span>{member.designator || member.rating}</span>
-                    <span className="text-blue-600 font-semibold truncate">• {member.milestone}</span>
+            <div className="w-80 px-6 shrink-0 sticky left-0 bg-white group-hover:bg-slate-50 border-r border-slate-200 z-20 flex items-center shadow-[1px_0_4px_-1px_rgba(0,0,0,0.1)] transition-colors">
+
+                {/* Rank # Column */}
+                <div className="w-8 mr-2 shrink-0 text-center font-bold text-slate-400 text-xs">
+                    {rankIndex}
+                </div>
+
+                <div className="flex-1 flex flex-col justify-center items-end text-right">
+                    <div className="font-bold text-slate-800 text-sm truncate">{member.name}</div>
+                    <div className="text-xs text-slate-500 flex items-center space-x-2">
+                        <span className="bg-slate-200 px-1.5 rounded text-slate-700 font-mono">{member.rank}</span>
+                        <span>{member.designator || member.rating}</span>
+                        <span className="text-blue-600 font-semibold truncate">• {member.milestone}</span>
+                    </div>
                 </div>
             </div>
 

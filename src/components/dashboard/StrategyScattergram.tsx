@@ -43,7 +43,11 @@ interface StrategyScattergramProps {
     focusDate?: string;
 }
 
-export function StrategyScattergram({ summaryGroups = [], roster = [], onOpenReport, onUpdateReport, minimal = false, height: propHeight, focusDate }: StrategyScattergramProps) {
+// --- STABLE CONSTANTS ---
+const EMPTY_SUMMARY_GROUPS: SummaryGroup[] = [];
+const EMPTY_ROSTER: RosterMember[] = [];
+
+export function StrategyScattergram({ summaryGroups = EMPTY_SUMMARY_GROUPS, roster = EMPTY_ROSTER, onOpenReport, onUpdateReport, minimal = false, height: propHeight, focusDate }: StrategyScattergramProps) {
     // --- STATE ---
     const [reports, setReports] = useState<RSCAReport[]>(() => {
         // If summaryGroups passed, flatten them to RSCAReport[]
