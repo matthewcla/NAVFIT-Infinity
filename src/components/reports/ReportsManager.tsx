@@ -57,11 +57,7 @@ export function ReportsManager({ summaryGroups: propsSummaryGroups, pendingReque
                     let currentStatus: any = 'Pending';
                     if (i % 3 === 0) currentStatus = 'Submitted';
 
-                    const reportsWithScores = g.reports.map(r => ({
-                        ...r,
-                        traitAverage: 3.0 + Math.random() * 2.0,
-                        promotionRecommendation: Math.random() > 0.8 ? 'EP' : (Math.random() > 0.5 ? 'MP' : 'P') as any
-                    }));
+                    const reportsWithScores = g.reports; // Use generated values directly
 
                     variants.push({ ...g, status: currentStatus, reports: reportsWithScores });
 

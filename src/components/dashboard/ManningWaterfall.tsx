@@ -35,9 +35,12 @@ interface ManningWaterfallProps {
     summaryGroups?: SummaryGroup[];
     roster?: RosterMember[];
     onOpenReport?: (memberId: string, name: string, rank?: string, reportId?: string) => void;
+
+    onReportUpdate?: (reportId: string, newAverage: number) => void;
+    projections?: Record<string, number>;
 }
 
-export function ManningWaterfall({ summaryGroups = [], roster = [], onOpenReport }: ManningWaterfallProps) {
+export function ManningWaterfall({ summaryGroups = [], roster = [], onOpenReport, onReportUpdate, projections }: ManningWaterfallProps) {
     const [activeFilter, setActiveFilter] = useState<'wardroom' | 'cpo' | 'crew'>('wardroom');
 
     // Derived State: Convert Roster + Reports -> Member[] for Waterfall
@@ -85,9 +88,19 @@ export function ManningWaterfall({ summaryGroups = [], roster = [], onOpenReport
         }
 
         return effectiveRoster.map(m => {
-            // Attach Reports
+            // Attach Reports & Derive Viz Props
             const memberReports = summaryGroups.flatMap(g => g.reports).filter(r => r.memberId === m.id);
-            return { ...m, history: memberReports };
+
+            // Derive nextPlan (Periodic) and target (Transfer/Detachment) from reports
+            const periodic = memberReports.find(r => r.type === 'Periodic');
+            const detachment = memberReports.find(r => r.type === 'Detachment');
+
+            return {
+                ...m,
+                history: memberReports,
+                nextPlan: periodic ? periodic.traitAverage : null,
+                target: detachment ? detachment.traitAverage : null
+            };
         });
 
     }, [roster, summaryGroups]);
@@ -289,6 +302,40 @@ export function ManningWaterfall({ summaryGroups = [], roster = [], onOpenReport
                         {Object.entries(groups).map(([groupTitle, groupList]) => {
                             const isExpanded = expandedGroups[groupTitle] !== undefined ? expandedGroups[groupTitle] : allExpanded;
 
+                            // Calculate Trend Points for this Group
+                            const groupReports = groupList.flatMap(m => m.history);
+                            const trendPoints: { monthIndex: number, value: number }[] = [];
+
+                            // Group by Month (0-23 relative to timeline start?) 
+                            // Actually StrategyScattergram maps monthIndex 0..23.
+                            // Let's simple-avg by monthIndex
+                            const dataByMonth = new Map<number, number[]>();
+                            groupReports.forEach(r => {
+                                if (r.traitAverage && r.traitAverage > 0 && r.promotionRecommendation !== 'NOB') {
+                                    const d = new Date(r.periodEndDate);
+                                    // Calculate relative month index to START_DATE - 3 months
+                                    const start = new Date(START_DATE);
+                                    start.setMonth(start.getMonth() - 3);
+                                    const diffMonth = (d.getFullYear() - start.getFullYear()) * 12 + (d.getMonth() - start.getMonth());
+
+                                    if (diffMonth >= 0 && diffMonth < 24) {
+                                        if (!dataByMonth.has(diffMonth)) dataByMonth.set(diffMonth, []);
+                                        dataByMonth.get(diffMonth)!.push(r.traitAverage);
+                                    }
+                                }
+                            });
+
+                            // Convert to trend points (Linear sort)
+                            const sortedMonths = Array.from(dataByMonth.keys()).sort((a, b) => a - b);
+                            sortedMonths.forEach(m => {
+                                const vals = dataByMonth.get(m)!;
+                                const avg = vals.reduce((a, b) => a + b, 0) / vals.length;
+                                trendPoints.push({ monthIndex: m, value: avg });
+                            });
+
+                            // Calculate Current RSCA (Last Point or avg of last few?)
+                            const currentRSCA = trendPoints.length > 0 ? trendPoints[trendPoints.length - 1].value : 3.5;
+
                             return (
                                 <div key={groupTitle}>
                                     <GroupHeader
@@ -296,27 +343,35 @@ export function ManningWaterfall({ summaryGroups = [], roster = [], onOpenReport
                                         count={groupList.length}
                                         isExpanded={isExpanded}
                                         onToggle={() => toggleGroup(groupTitle)}
-                                        trendPoints={[]}
+                                        trendPoints={trendPoints}
                                         targetRange={{ min: 3.8, max: 4.0 }}
                                         timelineMonths={TIMELINE_MONTHS}
                                     />
-                                    {isExpanded && getSortedGroupList(groupTitle, groupList).map((member, idx) => (
-                                        <TimelineRow
-                                            key={member.id}
-                                            member={member}
-                                            coDetachDate={CO_DETACH_DATE}
-                                            avgRSCA={3.5}
-                                            timelineMonths={TIMELINE_MONTHS}
-                                            onOpenReport={(reportId) => {
-                                                if (onOpenReport) onOpenReport(member.id, member.name, member.rank, reportId);
-                                            }}
-                                            rankIndex={idx + 1}
-                                            isDraggable={true}
-                                            onDragStart={(e: React.DragEvent) => handleDragStart(e, member.id, groupTitle)}
-                                            onDragOver={handleDragOver}
-                                            onDrop={(e: React.DragEvent) => handleDrop(e, member.id, groupTitle)}
-                                        />
-                                    ))}
+                                    {isExpanded && getSortedGroupList(groupTitle, groupList).map((member, idx) => {
+                                        // Periodic Report ID Logic? TimelineRow handles checks.
+                                        // Just pass standard props.
+                                        const hasReport = true; // Simplified for now, or check real logic
+
+                                        return (
+                                            <TimelineRow
+                                                key={member.id}
+                                                member={member}
+                                                coDetachDate={CO_DETACH_DATE}
+                                                avgRSCA={currentRSCA}
+                                                timelineMonths={TIMELINE_MONTHS}
+                                                onOpenReport={(reportId) => {
+                                                    if (onOpenReport) onOpenReport(member.id, member.name, member.rank, reportId);
+                                                }}
+                                                rankIndex={idx + 1}
+                                                onDragStart={(e: React.DragEvent) => handleDragStart(e, member.id, groupTitle)}
+                                                onDragOver={handleDragOver}
+                                                onDrop={(e: React.DragEvent) => handleDrop(e, member.id, groupTitle)}
+                                                isDraggable={hasReport}
+                                                onReportUpdate={onReportUpdate}
+                                                projections={projections}
+                                            />
+                                        );
+                                    })}
                                 </div>
                             );
                         })}

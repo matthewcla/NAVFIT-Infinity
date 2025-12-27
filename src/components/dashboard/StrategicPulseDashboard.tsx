@@ -13,9 +13,11 @@ interface StrategicPulseDashboardProps {
     summaryGroups?: SummaryGroup[];
     roster?: RosterMember[];
     onOpenReport?: (memberId: string, name: string, rank?: string, reportId?: string) => void;
+    onReportUpdate?: (reportId: string, newAverage: number) => void;
+    projections?: Record<string, number>;
 }
 
-export function StrategicPulseDashboard({ summaryGroups = [], roster = [], onOpenReport }: StrategicPulseDashboardProps) {
+export function StrategicPulseDashboard({ summaryGroups = [], roster = [], onOpenReport, onReportUpdate, projections }: StrategicPulseDashboardProps) {
     return (
         <div className="flex flex-col h-full bg-slate-50">
             {/* Header */}
@@ -36,6 +38,8 @@ export function StrategicPulseDashboard({ summaryGroups = [], roster = [], onOpe
                         summaryGroups={summaryGroups}
                         roster={roster}
                         onOpenReport={onOpenReport}
+                        onReportUpdate={onReportUpdate}
+                        projections={projections}
                     />
                 </div>
             </div>

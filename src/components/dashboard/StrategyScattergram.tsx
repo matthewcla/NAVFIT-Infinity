@@ -49,29 +49,10 @@ const EMPTY_ROSTER: RosterMember[] = [];
 
 export function StrategyScattergram({ summaryGroups = EMPTY_SUMMARY_GROUPS, roster = EMPTY_ROSTER, onOpenReport, onUpdateReport, minimal = false, height: propHeight, focusDate }: StrategyScattergramProps) {
     // --- STATE ---
-    const [reports, setReports] = useState<RSCAReport[]>(() => {
-        // If summaryGroups passed, flatten them to RSCAReport[]
-        if (summaryGroups && summaryGroups.length > 0) {
-            return summaryGroups.flatMap(group =>
-                group.reports.map(r => ({
-                    id: r.id,
-                    memberId: r.memberId,
-                    memberName: r.memberId,
-                    rawName: "Unknown",
-                    rank: group.name.split(' ')[0],
-                    summaryGroup: group.name,
-                    date: r.periodEndDate,
-                    monthIndex: new Date(r.periodEndDate).getMonth(),
-                    type: (r.type === 'Detachment' ? 'Detachment' : r.type) as any,
-                    traitAverage: r.traitAverage || 3.0,
-                    isNOB: r.promotionRecommendation === 'NOB',
-                    initialTraitAverage: r.traitAverage || 3.0,
-                    draftStatus: r.draftStatus
-                }))
-            );
-        }
-        return [];
-    });
+    // --- STATE ---
+    // Removed local reports state to avoid synchronization issues.
+    // We derive reports from props and apply local drag overrides.
+
 
     const scrollContainerRef = useRef<HTMLDivElement>(null);
 
@@ -104,17 +85,17 @@ export function StrategyScattergram({ summaryGroups = EMPTY_SUMMARY_GROUPS, rost
     const pixelsPerTrait = VISIBLE_PIXEL_HEIGHT / VISIBLE_TRAIT_RANGE;
 
     // Helper: Trait -> Y Coordinate (relative to Scroll Container Top 0)
-    const traitToY = (trait: number) => {
+    const traitToY = React.useCallback((trait: number) => {
         // NOB (5.5) is at VISIBLE_TOP_Y
         const valFromTop = NOB_VALUE - trait;
         return VISIBLE_TOP_Y + (valFromTop * pixelsPerTrait);
-    };
+    }, [VISIBLE_TOP_Y, pixelsPerTrait, NOB_VALUE]);
 
-    const yToTrait = (y: number) => {
+    const yToTrait = React.useCallback((y: number) => {
         const relativeY = y - VISIBLE_TOP_Y;
         const valFromTop = relativeY / pixelsPerTrait;
         return NOB_VALUE - valFromTop;
-    };
+    }, [VISIBLE_TOP_Y, pixelsPerTrait, NOB_VALUE]);
 
     // Total content height required to reach 1.0 (plus buffer)
     const MIN_TRAIT = 1.0;
@@ -161,39 +142,50 @@ export function StrategyScattergram({ summaryGroups = EMPTY_SUMMARY_GROUPS, rost
     // We add a snap point at 0.
 
     // If props change, update state
-    useEffect(() => {
-        if (summaryGroups) {
-            const mapped = summaryGroups.flatMap(group =>
-                group.reports.map(r => {
-                    const member = roster.find(m => m.id === r.memberId);
-                    const name = member ? `${member.rank} ${member.lastName}, ${member.firstName}` : r.memberId;
-                    const rawName = member ? `${member.lastName}, ${member.firstName}` : "Unknown";
+    // --- DERIVED DATA ---
+    const reports = useMemo(() => {
+        if (!summaryGroups) return [];
+        return summaryGroups.flatMap(group =>
+            group.reports.map(r => {
+                const member = roster.find(m => m.id === r.memberId);
+                const name = member ? `${member.rank} ${member.lastName}, ${member.firstName}` : r.memberId;
+                const rawName = member ? `${member.lastName}, ${member.firstName}` : "Unknown";
 
-                    return {
-                        id: r.id,
-                        memberId: r.memberId,
-                        memberName: name,
-                        rawName: rawName,
-                        rank: group.name.split(' ')[0],
-                        summaryGroup: group.name,
-                        date: r.periodEndDate,
-                        monthIndex: new Date(r.periodEndDate).getMonth(),
-                        type: (r.type === 'Detachment' ? 'Detachment' : r.type) as any,
-                        traitAverage: r.traitAverage || 3.0,
-                        isNOB: r.promotionRecommendation === 'NOB',
-                        initialTraitAverage: r.traitAverage || 3.0,
-                        draftStatus: r.draftStatus
-                    };
-                })
-            );
-            setReports(mapped);
-        }
+                return {
+                    id: r.id,
+                    memberId: r.memberId,
+                    memberName: name,
+                    rawName: rawName,
+                    rank: group.name.split(' ')[0],
+                    summaryGroup: group.name,
+                    date: r.periodEndDate,
+                    monthIndex: new Date(r.periodEndDate).getMonth(),
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    type: (r.type === 'Detachment' ? 'Detachment' : r.type) as any,
+                    traitAverage: r.traitAverage || 3.0,
+                    isNOB: r.promotionRecommendation === 'NOB',
+                    initialTraitAverage: r.traitAverage || 3.0,
+                    draftStatus: r.draftStatus
+                };
+            })
+        );
     }, [summaryGroups, roster]);
 
-
     const [activeDragId, setActiveDragId] = useState<string | null>(null);
+    const [dragOverride, setDragOverride] = useState<{ id: string, val: number, isNOB: boolean } | null>(null);
     const [zOrder, setZOrder] = useState<string[]>([]);
     const svgRef = useRef<SVGSVGElement>(null);
+
+    // Merge Override
+    const displayReports = useMemo(() => {
+        if (!dragOverride) return reports;
+        return reports.map(r => {
+            if (r.id === dragOverride.id) {
+                return { ...r, traitAverage: dragOverride.val, isNOB: dragOverride.isNOB };
+            }
+            return r;
+        });
+    }, [reports, dragOverride]);
 
     // X-Axis Config
     const NUM_MONTHS = 24;
@@ -210,13 +202,13 @@ export function StrategyScattergram({ summaryGroups = EMPTY_SUMMARY_GROUPS, rost
 
     // --- DERIVED DATA ---
     const projectedRSCAVal = useMemo(() => {
-        const itas = reports.filter(r => !r.isNOB).map(r => r.traitAverage);
+        const itas = displayReports.filter(r => !r.isNOB).map(r => r.traitAverage);
         if (itas.length === 0) return INITIAL_RSCA;
         return projectRSCA(INITIAL_RSCA, INITIAL_SIGNED_COUNT, itas);
-    }, [reports]);
+    }, [displayReports]);
 
     const points: ScatterPoint[] = useMemo(() => {
-        let rawPoints = reports.map(r => ({
+        const rawPoints = displayReports.map(r => ({
             id: r.id,
             // Shift +3 months to align with display timeline start
             x: monthToX(r.monthIndex + 3),
@@ -245,7 +237,7 @@ export function StrategyScattergram({ summaryGroups = EMPTY_SUMMARY_GROUPS, rost
             }
         }
         return sortedPointsRaw;
-    }, [reports, pixelsPerTrait]);
+    }, [displayReports, traitToY]);
 
     const sortedPoints = useMemo(() => {
         if (zOrder.length === 0) return points;
@@ -265,7 +257,7 @@ export function StrategyScattergram({ summaryGroups = EMPTY_SUMMARY_GROUPS, rost
         const RSCA_LAG_MONTHS = 3;
 
         const impacts = new Map<number, number[]>();
-        reports.forEach(r => {
+        displayReports.forEach(r => {
             if (r.isNOB) return;
             const impactMonth = r.monthIndex + RSCA_LAG_MONTHS;
             if (!impacts.has(impactMonth)) impacts.set(impactMonth, []);
@@ -305,7 +297,7 @@ export function StrategyScattergram({ summaryGroups = EMPTY_SUMMARY_GROUPS, rost
             value: currentRSCA
         });
 
-        const finalConnections = reports.map(r => {
+        const finalConnections = displayReports.map(r => {
             if (r.isNOB) return null;
             const impactChartMonth = (r.monthIndex + 3) + RSCA_LAG_MONTHS;
             const impactX = monthToX(impactChartMonth);
@@ -327,7 +319,7 @@ export function StrategyScattergram({ summaryGroups = EMPTY_SUMMARY_GROUPS, rost
         }).filter(Boolean) as { id: string, x1: number, y1: number, x2: number, y2: number, color: string }[];
 
         return { trendLines: lines, impactConnections: finalConnections };
-    }, [reports, pixelsPerTrait]);
+    }, [displayReports, traitToY, CHART_TOTAL_WIDTH]);
 
     // --- UTILS ---
     const formatName = (memberName: string) => {
@@ -391,23 +383,19 @@ export function StrategyScattergram({ summaryGroups = EMPTY_SUMMARY_GROUPS, rost
             newTrait = Math.max(MIN_TRAIT, Math.min(5.0, newTrait));
         }
 
-        setReports(prev => prev.map(r =>
-            r.id === activeDragId ? {
-                ...r,
-                traitAverage: isNowNOB ? 0 : newTrait,
-                isNOB: isNowNOB
-            } : r
-        ));
+        setDragOverride({
+            id: activeDragId,
+            val: isNowNOB ? 0 : newTrait,
+            isNOB: isNowNOB
+        });
     };
 
     const handleMouseUp = () => {
-        if (activeDragId && onUpdateReport) {
-            const r = reports.find(r => r.id === activeDragId);
-            if (r) {
-                onUpdateReport(r.id, r.traitAverage);
-            }
+        if (activeDragId && onUpdateReport && dragOverride) {
+            onUpdateReport(activeDragId, dragOverride.val);
         }
         setActiveDragId(null);
+        setDragOverride(null);
     };
 
     useEffect(() => {

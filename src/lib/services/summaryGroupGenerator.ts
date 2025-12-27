@@ -113,14 +113,19 @@ export const SummaryGroupGenerator = {
 };
 
 function createDraftReport(member: RosterEntry, type: 'Periodic' | 'Detachment of Individual', date: Date): Report {
+    // Random Trait Average for Demo: 3.0 to 5.0, or occasional NOB
+    const isNOB = Math.random() > 0.9;
+    const rawTrait = 3.0 + (Math.random() * 2.0);
+    const traitAverage = isNOB ? 0 : Number(rawTrait.toFixed(2));
+
     return {
         id: `r-auto-${member.memberId}-${type}`,
         memberId: member.memberId,
         periodEndDate: date.toISOString().split('T')[0],
         type: type === 'Detachment of Individual' ? 'Detachment' : type,
         traitGrades: {},
-        traitAverage: 0,
-        promotionRecommendation: 'NOB' as 'NOB',
+        traitAverage: traitAverage,
+        promotionRecommendation: isNOB ? 'NOB' : (traitAverage > 4.5 ? 'EP' : (traitAverage > 3.8 ? 'MP' : 'P')),
         narrative: "",
         draftStatus: 'Draft' as const,
         grade: member.rank,

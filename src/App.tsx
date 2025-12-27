@@ -49,6 +49,8 @@ function App() {
             summaryGroups={summaryGroups}
             roster={roster}
             onOpenReport={handleOpenReport}
+            onReportUpdate={handleUpdateProjection}
+            projections={projections}
           />
         );
       case 'reports':
@@ -79,6 +81,7 @@ function App() {
             summaryGroups={summaryGroups}
             roster={roster}
             onOpenReport={handleOpenReport}
+            onReportUpdate={handleUpdateProjection}
           />
         );
     }
