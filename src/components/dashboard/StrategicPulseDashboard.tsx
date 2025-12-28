@@ -6,11 +6,18 @@ import { RscaHealthScoreboard } from './RscaHealthScoreboard';
 
 import { ActivitySyncBar } from './ActivitySyncBar';
 
+import type { SummaryGroup } from '../../types';
+import type { RosterMember } from '../../types/roster';
+
 interface StrategicPulseDashboardProps {
-    onOpenReport?: (memberId: string, name: string, rank?: string) => void;
+    summaryGroups?: SummaryGroup[];
+    roster?: RosterMember[];
+    onOpenReport?: (memberId: string, name: string, rank?: string, reportId?: string) => void;
+    onReportUpdate?: (reportId: string, newAverage: number) => void;
+    projections?: Record<string, number>;
 }
 
-export const StrategicPulseDashboard = ({ onOpenReport }: StrategicPulseDashboardProps) => {
+export function StrategicPulseDashboard({ summaryGroups = [], roster = [], onOpenReport, onReportUpdate, projections }: StrategicPulseDashboardProps) {
     return (
         <div className="flex flex-col h-full bg-slate-50">
             {/* Header */}
@@ -25,9 +32,15 @@ export const StrategicPulseDashboard = ({ onOpenReport }: StrategicPulseDashboar
             </header>
 
             <div className="flex-1 overflow-hidden p-4 flex flex-col">
-                {/* Main Row: Manning Waterfall */}
-                <div className="flex-1 w-full min-h-0">
-                    <ManningWaterfall onOpenReport={onOpenReport} />
+                {/* Manning Waterfall Section */}
+                <div className="flex-1 min-h-0 relative">
+                    <ManningWaterfall
+                        summaryGroups={summaryGroups}
+                        roster={roster}
+                        onOpenReport={onOpenReport}
+                        onReportUpdate={onReportUpdate}
+                        projections={projections}
+                    />
                 </div>
             </div>
 

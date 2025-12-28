@@ -1,17 +1,16 @@
 import React from 'react';
 import {
-    Users,
     TrendingUp,
     Calendar,
     FileText,
     Shield,
-    Menu,
-    User
+    Users,
+    Menu
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 
 // Define the tab type locally or import from a shared type file if needed
-export type Tab = 'dashboard' | 'reports' | 'groups' | 'schedule' | 'profiles' | 'admin';
+export type Tab = 'dashboard' | 'reports' | 'schedule' | 'profiles' | 'admin';
 
 interface SidebarItemProps {
     icon: React.ElementType;
@@ -83,20 +82,13 @@ export function Sidebar({ activeTab, onTabChange, collapsed, onToggleCollapse }:
             <div className="flex-1 py-6 space-y-1 overflow-y-auto overflow-x-hidden scrollbar-thin scrollbar-thumb-slate-700">
                 <SidebarItem
                     icon={TrendingUp}
-                    label="Strategic Overview"
+                    label="Strategic Pulse"
                     active={activeTab === 'dashboard'}
                     onClick={() => onTabChange('dashboard')}
                     collapsed={collapsed}
                 />
                 <SidebarItem
                     icon={Users}
-                    label="RSCA Strategy"
-                    active={activeTab === 'groups'}
-                    onClick={() => onTabChange('groups')}
-                    collapsed={collapsed}
-                />
-                <SidebarItem
-                    icon={User}
                     label="Sailor Profiles"
                     active={activeTab === 'profiles'}
                     onClick={() => onTabChange('profiles')}
@@ -112,7 +104,7 @@ export function Sidebar({ activeTab, onTabChange, collapsed, onToggleCollapse }:
                 />
                 <SidebarItem
                     icon={Calendar}
-                    label="Selection Boards"
+                    label="Board Schedule"
                     active={activeTab === 'schedule'}
                     onClick={() => onTabChange('schedule')}
                     collapsed={collapsed}
@@ -120,7 +112,7 @@ export function Sidebar({ activeTab, onTabChange, collapsed, onToggleCollapse }:
                 <div className="my-2 border-t border-slate-800/50 mx-4"></div>
                 <SidebarItem
                     icon={Shield}
-                    label="Command Admin"
+                    label="Command Settings"
                     active={activeTab === 'admin'}
                     onClick={() => onTabChange('admin')}
                     collapsed={collapsed}

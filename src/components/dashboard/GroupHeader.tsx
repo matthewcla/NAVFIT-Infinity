@@ -7,7 +7,7 @@ interface GroupHeaderProps {
     isExpanded: boolean;
     onToggle: () => void;
     trendData?: number[]; // Deprecated, use trendPoints
-    trendPoints: { monthIndex: number, value: number }[];
+    trendPoints: { monthIndex: number, value: number, isProjected?: boolean }[];
     targetRange: { min: number, max: number };
     timelineMonths: { label: string; monthIndex: number; year: number; index: number }[];
 }
@@ -57,14 +57,32 @@ export const GroupHeader = ({ title, count, isExpanded, onToggle, trendPoints, t
                     <span className="bg-slate-200 text-slate-600 px-2 py-0.5 rounded-full text-xs font-bold">{count}</span>
                 </div>
 
-                <div className="text-xs text-slate-500 pl-6">
-                    <div className="flex justify-between w-32 mb-1">
-                        <span>Target Range:</span>
-                        <span className="font-mono font-bold text-slate-700">{targetRange.min.toFixed(2)} - {targetRange.max.toFixed(2)}</span>
-                    </div>
-                    <div className="flex justify-between w-32">
-                        <span>Current RSCA:</span>
-                        <span className="font-mono font-bold text-blue-600">{trendPoints.length > 0 ? trendPoints[trendPoints.length - 1].value.toFixed(2) : 'N/A'}</span>
+                <div className="flex flex-col gap-2 pl-6 mt-1 w-full pr-2">
+                    {/* KPI Grid */}
+                    <div className="grid grid-cols-2 gap-y-2 gap-x-4">
+                        {/* Current RSCA */}
+                        <div className="flex flex-col">
+                            <span className="text-[10px] uppercase text-slate-400 font-bold tracking-wider">Current</span>
+                            <div className="flex items-baseline gap-1">
+                                <span className="text-xl font-bold text-slate-800">
+                                    {trendPoints.length > 0 ? trendPoints[trendPoints.length - 1].value.toFixed(2) : 'N/A'}
+                                </span>
+                                {trendPoints.length > 0 && (
+                                    <span className={`text-xs font-bold ${(trendPoints[trendPoints.length - 1].value - targetRange.max) > 0 ? 'text-red-500' : 'text-emerald-500'}`}>
+                                        {(trendPoints[trendPoints.length - 1].value - targetRange.max) > 0 ? '+' : ''}
+                                        {(trendPoints[trendPoints.length - 1].value - targetRange.max).toFixed(2)}
+                                    </span>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Target Range */}
+                        <div className="flex flex-col">
+                            <span className="text-[10px] uppercase text-slate-400 font-bold tracking-wider">Target</span>
+                            <span className="text-sm font-bold text-slate-600 font-mono">
+                                {targetRange.min.toFixed(2)}-{targetRange.max.toFixed(2)}
+                            </span>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -100,29 +118,51 @@ export const GroupHeader = ({ title, count, isExpanded, onToggle, trendPoints, t
                     <line x1="0" y1={getY(targetRange.min)} x2={CHART_W} y2={getY(targetRange.min)} stroke="#10b981" strokeWidth="1" strokeDasharray="4 4" strokeOpacity="0.5" />
 
                     {/* 3. Trend Line */}
-                    <polyline
-                        points={trendPoints.map(p => `${getX(p.monthIndex)},${getY(p.value)}`).join(' ')}
-                        fill="none"
-                        stroke="#3b82f6"
-                        strokeWidth="3"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        className="drop-shadow-sm"
-                    />
+                    {/* 3. Trend Line (Segments for dashed support) */}
+                    {trendPoints.map((p, i) => {
+                        if (i === 0) return null;
+                        const prev = trendPoints[i - 1];
+                        return (
+                            <line
+                                key={`line-${i}`}
+                                x1={getX(prev.monthIndex)}
+                                y1={getY(prev.value)}
+                                x2={getX(p.monthIndex)}
+                                y2={getY(p.value)}
+                                stroke="#3b82f6"
+                                strokeWidth="3"
+                                strokeLinecap="round"
+                                strokeDasharray={p.isProjected ? "4 4" : ""}
+                                strokeOpacity={p.isProjected ? "0.5" : "1"}
+                            />
+                        );
+                    })}
 
                     {/* 4. Data Points & Labels */}
                     {trendPoints.map((p, i) => (
                         <g key={i}>
-                            <circle cx={getX(p.monthIndex)} cy={getY(p.value)} r="4" fill="#3b82f6" stroke="white" strokeWidth="2" />
-                            <text
-                                x={getX(p.monthIndex)}
-                                y={getY(p.value) - 10}
-                                textAnchor="middle"
-                                className="text-[10px] font-bold fill-slate-600"
-                                style={{ fontSize: '12px' }}
-                            >
-                                {p.value.toFixed(2)}
-                            </text>
+                            {/* Only show dots for real changes, or the very end */}
+                            {(!p.isProjected || i === trendPoints.length - 1) && (
+                                <>
+                                    <circle
+                                        cx={getX(p.monthIndex)}
+                                        cy={getY(p.value)}
+                                        r={p.isProjected ? 3 : 4}
+                                        fill={p.isProjected ? "white" : "#3b82f6"}
+                                        stroke="#3b82f6"
+                                        strokeWidth="2"
+                                    />
+                                    <text
+                                        x={getX(p.monthIndex)}
+                                        y={getY(p.value) - 10}
+                                        textAnchor="middle"
+                                        className="text-[10px] font-bold fill-slate-600"
+                                        style={{ fontSize: '12px' }}
+                                    >
+                                        {p.value.toFixed(2)}
+                                    </text>
+                                </>
+                            )}
                         </g>
                     ))}
 

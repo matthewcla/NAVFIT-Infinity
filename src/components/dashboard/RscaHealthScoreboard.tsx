@@ -59,7 +59,7 @@ export const RscaHealthScoreboard = () => {
     return (
         <div className="flex items-center space-x-4 overflow-x-auto pb-1 no-scrollbar flex-1 ml-6">
             <div className="flex items-center space-x-4 pr-4">
-                <span className="text-xs font-bold text-slate-400 uppercase tracking-wider whitespace-nowrap">RSCA Health</span>
+                <span className="text-xs font-bold text-slate-400 uppercase tracking-wider whitespace-nowrap">Strategic Pulse</span>
                 <div className="h-8 w-px bg-slate-200"></div>
             </div>
 
@@ -91,7 +91,7 @@ export const RscaHealthScoreboard = () => {
                             <div className="flex items-center justify-between mb-1">
                                 <span className="text-[10px] text-slate-400 uppercase tracking-wider">Sequencing Efficiency</span>
                                 <span className={`text-[10px] font-bold ${item.sequencing === 'Optimal' ? 'text-green-400' :
-                                        item.sequencing === 'Inverted' ? 'text-red-400' : 'text-yellow-400'
+                                    item.sequencing === 'Inverted' ? 'text-red-400' : 'text-yellow-400'
                                     }`}>{item.sequencing}</span>
                             </div>
                             <p className="text-[10px] text-slate-400 leading-relaxed">

@@ -2,19 +2,19 @@ import type { RosterEntry, BoardSchedule, SummaryGroup, Report } from '../../typ
 
 // Periodic Cycles (Month index 0-11)
 const PERIODIC_CYCLES: Record<string, number> = {
-    'CAPT': 6, // July
-    'CDR': 6,  // July
-    'LCDR': 9, // Oct
-    'LT': 0,   // Jan
-    'LTJG': 1, // Feb
-    'ENS': 4,  // May
-    'CWO': 8,  // Sept
-    'E9': 3,   // Apr
-    'E8': 8,   // Sept
-    'E7': 8,   // Sept
-    'E6': 10,  // Nov
-    'E5': 2,   // Mar
-    'E4': 5,   // June
+    'CAPT': 6, 'O-6': 6,
+    'CDR': 6, 'O-5': 6,
+    'LCDR': 9, 'O-4': 9,
+    'LT': 0, 'O-3': 0,
+    'LTJG': 1, 'O-2': 1,
+    'ENS': 4, 'O-1': 4,
+    'CWO': 8, 'W-2': 8, 'W-3': 8, 'W-4': 8, 'W-5': 8,
+    'E9': 3, 'E-9': 3,
+    'E8': 8, 'E-8': 8,
+    'E7': 8, 'E-7': 8,
+    'E6': 10, 'E-6': 10,
+    'E5': 2, 'E-5': 2,
+    'E4': 5, 'E-4': 5,
 };
 
 const mapRankToKey = (rank: string): string | null => {
@@ -55,20 +55,37 @@ export const SummaryGroupGenerator = {
             return true;
         });
 
-        // Grouping logic (simplified)
-        const ranks = Array.from(new Set(periodicCandidates.map(c => c.rank)));
-        ranks.forEach(rank => {
+        // Grouping logic
+        // Key format: "RANK|DESIGNATOR" (e.g. "O-4|1110" or "E-6|")
+        // Officers grouped by Rank + Designator
+        // Enlisted grouped by Rank (or Rating if needed, but per request Paygrade/Rank is main)
+        const candidatesByGroup = new Map<string, RosterEntry[]>();
+
+        periodicCandidates.forEach(m => {
+            const isOfficer = m.rank.startsWith('O') || m.rank.startsWith('W');
+            const key = isOfficer ? `${m.rank}|${m.designator}` : `${m.rank}|Enlisted`;
+
+            if (!candidatesByGroup.has(key)) candidatesByGroup.set(key, []);
+            candidatesByGroup.get(key)!.push(m);
+        });
+
+        Array.from(candidatesByGroup.entries()).forEach(([key, members]) => {
+            if (members.length === 0) return;
+
+            const [rank, designatorContext] = key.split('|');
             const cycleMonth = PERIODIC_CYCLES[mapRankToKey(rank) || ''];
-            // Only create if we know the cycle
+
             if (cycleMonth !== undefined) {
-                const members = periodicCandidates.filter(m => m.rank === rank);
                 // Determine date (current year or next)
                 const year = currentMonth > cycleMonth ? targetDate.getFullYear() + 1 : targetDate.getFullYear();
                 const closeoutDate = new Date(year, cycleMonth + 1, 0); // Last day of month
 
+                // Name format: "O-4 1310 Periodic" or "E-6 Periodic"
+                const groupName = designatorContext === 'Enlisted' ? `${rank} Periodic` : `${rank} ${designatorContext} Periodic`;
+
                 groups.push({
-                    id: `sg-auto-periodic-${rank}-${year}`,
-                    name: `${rank} Periodic`,
+                    id: `sg-auto-periodic-${rank}-${designatorContext}-${year}`,
+                    name: groupName,
                     periodEndDate: closeoutDate.toISOString().split('T')[0],
                     reports: members.map(m => createDraftReport(m, 'Periodic', closeoutDate))
                 });
@@ -96,14 +113,19 @@ export const SummaryGroupGenerator = {
 };
 
 function createDraftReport(member: RosterEntry, type: 'Periodic' | 'Detachment of Individual', date: Date): Report {
+    // Random Trait Average for Demo: 3.0 to 5.0, or occasional NOB
+    const isNOB = Math.random() > 0.9;
+    const rawTrait = 3.0 + (Math.random() * 2.0);
+    const traitAverage = isNOB ? 0 : Number(rawTrait.toFixed(2));
+
     return {
         id: `r-auto-${member.memberId}-${type}`,
         memberId: member.memberId,
         periodEndDate: date.toISOString().split('T')[0],
         type: type === 'Detachment of Individual' ? 'Detachment' : type,
         traitGrades: {},
-        traitAverage: 0,
-        promotionRecommendation: 'NOB' as 'NOB',
+        traitAverage: traitAverage,
+        promotionRecommendation: isNOB ? 'NOB' : (traitAverage > 4.5 ? 'EP' : (traitAverage > 3.8 ? 'MP' : 'P')),
         narrative: "",
         draftStatus: 'Draft' as const,
         grade: member.rank,

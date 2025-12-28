@@ -36,7 +36,7 @@ export interface Report {
     narrative?: string; // Block 43 (formerly implied, now explicit)
 
     // New Fields for Reports Manager
-    draftStatus?: 'Draft' | 'Review' | 'Submitted' | 'Final';
+    draftStatus?: 'Draft' | 'Review' | 'Submitted' | 'Final' | 'Projected';
     isAdverse?: boolean;
     boardId?: string; // Link to a Selection Board
 
@@ -87,7 +87,7 @@ export interface SummaryGroup {
     name: string; // e.g., "O-3 SWO"
     reports: Report[];
     periodEndDate: string;
-    status?: 'Pending' | 'Accepted' | 'Rejected';
+    status?: 'Pending' | 'Accepted' | 'Rejected' | 'Projected' | 'Planned' | 'Draft' | 'Submitted' | 'Review' | 'Final';
     dateFinalized?: string;
     dateAcceptedOrRejected?: string;
 }
