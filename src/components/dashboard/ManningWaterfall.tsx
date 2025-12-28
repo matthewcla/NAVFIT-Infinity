@@ -99,7 +99,9 @@ export function ManningWaterfall({ summaryGroups = [], roster = [], onOpenReport
                 ...m,
                 history: memberReports,
                 nextPlan: periodic ? periodic.traitAverage : null,
-                target: detachment ? detachment.traitAverage : null
+                periodicReportId: periodic ? periodic.id : undefined,
+                target: detachment ? detachment.traitAverage : null,
+                transferReportId: detachment ? detachment.id : undefined
             };
         });
 
@@ -302,38 +304,77 @@ export function ManningWaterfall({ summaryGroups = [], roster = [], onOpenReport
                         {Object.entries(groups).map(([groupTitle, groupList]) => {
                             const isExpanded = expandedGroups[groupTitle] !== undefined ? expandedGroups[groupTitle] : allExpanded;
 
-                            // Calculate Trend Points for this Group
-                            const groupReports = groupList.flatMap(m => m.history);
-                            const trendPoints: { monthIndex: number, value: number }[] = [];
+                            // Calculate Trend Points (RSCA - Running Cumulative Average)
+                            // 1. Flatten and Apply Projections
+                            const allReports = groupList.flatMap(m => {
+                                return m.history.map(r => ({
+                                    ...r,
+                                    // Use projection if available, else original
+                                    effectiveAverage: (projections && projections[r.id] !== undefined)
+                                        ? projections[r.id]
+                                        : r.traitAverage
+                                }));
+                            });
 
-                            // Group by Month (0-23 relative to timeline start?) 
-                            // Actually StrategyScattergram maps monthIndex 0..23.
-                            // Let's simple-avg by monthIndex
-                            const dataByMonth = new Map<number, number[]>();
-                            groupReports.forEach(r => {
-                                if (r.traitAverage && r.traitAverage > 0 && r.promotionRecommendation !== 'NOB') {
-                                    const d = new Date(r.periodEndDate);
-                                    // Calculate relative month index to START_DATE - 3 months
-                                    const start = new Date(START_DATE);
-                                    start.setMonth(start.getMonth() - 3);
-                                    const diffMonth = (d.getFullYear() - start.getFullYear()) * 12 + (d.getMonth() - start.getMonth());
+                            // 2. Filter Valid & Sort by Date
+                            const validReports = allReports.filter(r =>
+                                r.effectiveAverage !== null &&
+                                r.effectiveAverage !== undefined &&
+                                (typeof r.effectiveAverage === 'number' ? r.effectiveAverage > 0 : false)
+                            ).sort((a, b) => new Date(a.periodEndDate).getTime() - new Date(b.periodEndDate).getTime());
 
-                                    if (diffMonth >= 0 && diffMonth < 24) {
-                                        if (!dataByMonth.has(diffMonth)) dataByMonth.set(diffMonth, []);
-                                        dataByMonth.get(diffMonth)!.push(r.traitAverage);
-                                    }
+                            // 3. Calculate Cumulative Average over Time
+                            // We need to map this to "Month Indices" relative to Start Date
+                            const timelineStart = new Date(START_DATE);
+                            timelineStart.setMonth(timelineStart.getMonth() - 3); // Timeline starts -3 months
+
+                            const trendPoints: { monthIndex: number, value: number, isProjected?: boolean }[] = [];
+                            let runningSum = 0;
+                            let runningCount = 0;
+
+                            // We'll track the last value per month to simplify the chart (one point per month max)
+                            const monthlyValues = new Map<number, number>();
+
+                            validReports.forEach(r => {
+                                const val = typeof r.effectiveAverage === 'number' ? r.effectiveAverage : 0;
+                                runningSum += val;
+                                runningCount++;
+                                const currentRSCA = runningSum / runningCount;
+
+                                const d = new Date(r.periodEndDate);
+                                const diffMonth = (d.getFullYear() - timelineStart.getFullYear()) * 12 + (d.getMonth() - timelineStart.getMonth());
+
+                                // Only plot if within visible range (or slightly before to start line?)
+                                // We'll store all, then filter for chart
+                                monthlyValues.set(diffMonth, currentRSCA);
+                            });
+
+                            // Convert Map to sorted array
+                            const sortedMonths = Array.from(monthlyValues.keys()).sort((a, b) => a - b);
+
+                            sortedMonths.forEach(m => {
+                                if (m >= -3 && m < 24) { // Keep within reasonable bounds relative to view
+                                    trendPoints.push({
+                                        monthIndex: m,
+                                        value: monthlyValues.get(m)!
+                                    });
                                 }
                             });
 
-                            // Convert to trend points (Linear sort)
-                            const sortedMonths = Array.from(dataByMonth.keys()).sort((a, b) => a - b);
-                            sortedMonths.forEach(m => {
-                                const vals = dataByMonth.get(m)!;
-                                const avg = vals.reduce((a, b) => a + b, 0) / vals.length;
-                                trendPoints.push({ monthIndex: m, value: avg });
-                            });
+                            // 4. "Covers the full timeline": Extend last known value to the end if exists
+                            if (trendPoints.length > 0) {
+                                const lastPt = trendPoints[trendPoints.length - 1];
+                                if (lastPt.monthIndex < 23) {
+                                    trendPoints.push({
+                                        monthIndex: 23,
+                                        value: lastPt.value,
+                                        isProjected: true // Mark as extension
+                                    });
+                                }
+                            }
 
-                            // Calculate Current RSCA (Last Point or avg of last few?)
+                            // Calculate Current RSCA (Last Real Point)
+                            // If we added a projection point, the "Current" is the value of that point (which is the last real point value)
                             const currentRSCA = trendPoints.length > 0 ? trendPoints[trendPoints.length - 1].value : 3.5;
 
                             return (
@@ -344,7 +385,7 @@ export function ManningWaterfall({ summaryGroups = [], roster = [], onOpenReport
                                         isExpanded={isExpanded}
                                         onToggle={() => toggleGroup(groupTitle)}
                                         trendPoints={trendPoints}
-                                        targetRange={{ min: 3.8, max: 4.0 }}
+                                        targetRange={{ min: 3.8, max: 4.2 }}
                                         timelineMonths={TIMELINE_MONTHS}
                                     />
                                     {isExpanded && getSortedGroupList(groupTitle, groupList).map((member, idx) => {
@@ -369,6 +410,8 @@ export function ManningWaterfall({ summaryGroups = [], roster = [], onOpenReport
                                                 isDraggable={hasReport}
                                                 onReportUpdate={onReportUpdate}
                                                 projections={projections}
+                                                periodicReportId={(member as any).periodicReportId}
+                                                transferReportId={(member as any).transferReportId}
                                             />
                                         );
                                     })}

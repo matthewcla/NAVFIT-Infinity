@@ -20,6 +20,8 @@ interface TimelineRowProps {
     isDraggable?: boolean;
     onReportUpdate?: (reportId: string, newAverage: number) => void;
     projections?: Record<string, number>;
+    periodicReportId?: string;
+    transferReportId?: string;
 }
 
 export const TimelineRow = ({
@@ -35,13 +37,17 @@ export const TimelineRow = ({
     onDrop,
     isDraggable,
     onReportUpdate,
-    projections = {}
+    projections = {},
+    periodicReportId,
+    transferReportId
 }: TimelineRowProps) => {
     // Width per month column (must match ManningWaterfall header)
     const COL_WIDTH = 96; // w-24 = 6rem = 96px
 
     // --- Helper to Generate Mock Report IDs for Demo Navigation ---
     const getReportId = (type: 'periodic' | 'transfer' | 'promo' | 'special') => {
+        if (type === 'periodic' && periodicReportId) return periodicReportId;
+        if (type === 'transfer' && transferReportId) return transferReportId;
         return `r-mw-${member.id}-${type}`;
     };
 
@@ -420,11 +426,11 @@ export const TimelineRow = ({
                 </div>
 
                 <div className="flex-1 flex flex-col justify-center items-end text-right">
-                    <div className="font-bold text-slate-800 text-sm truncate">{member.name}</div>
+                    <div className="font-bold text-slate-800 text-sm truncate">
+                        {member.name.startsWith(member.rank) ? member.name.substring(member.rank.length).trim() : member.name}
+                    </div>
                     <div className="text-xs text-slate-500 flex items-center space-x-2">
-                        <span className="bg-slate-200 px-1.5 rounded text-slate-700 font-mono">{member.rank}</span>
-                        <span>{member.designator || member.rating}</span>
-                        <span className="text-blue-600 font-semibold truncate">• {member.milestone}</span>
+                        <span className="text-blue-600 font-semibold truncate">{member.milestone}</span>
                     </div>
                 </div>
             </div>
@@ -451,7 +457,7 @@ export const TimelineRow = ({
                             const val = proj !== undefined ? proj : member.nextPlan;
 
                             if ((val as any) === 'NOB' || !val) return 'border-white';
-                            return val > avgRSCA ? 'border-green-500' : 'border-yellow-400';
+                            return (val as number) > avgRSCA ? 'border-green-500' : 'border-yellow-400';
                         })()
                             }`}
                         style={{ left: `${periodicPos}px` }}
@@ -508,7 +514,7 @@ export const TimelineRow = ({
 
                             // Fix TS error: val is number | null, comparison to 'NOB' is invalid without cast
                             if ((val as any) === 'NOB' || !val) return 'border-white';
-                            return val > avgRSCA ? 'border-green-500' : 'border-yellow-400';
+                            return (val as number) > avgRSCA ? 'border-green-500' : 'border-yellow-400';
                         })()
                             }`}
                         style={{ left: `${transferPos}px` }}
