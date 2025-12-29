@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import { Activity, AlertTriangle, CheckCircle, TrendingUp } from 'lucide-react';
 import { Tooltip } from '../ui/Tooltip';
 import type { SummaryGroup } from '../../types';
-import type { RosterMember } from '../../types/roster';
+
 
 interface RscaGroup {
     rank: string;
