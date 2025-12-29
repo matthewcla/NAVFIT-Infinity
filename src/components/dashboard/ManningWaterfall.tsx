@@ -1,5 +1,4 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
-import { Target, ChevronsDown, ChevronsUp } from 'lucide-react';
 import { GroupHeader } from './GroupHeader';
 import { TimelineRow } from './TimelineRow';
 import type { SummaryGroup, Member } from '../../types';
@@ -41,8 +40,6 @@ interface ManningWaterfallProps {
 }
 
 export function ManningWaterfall({ summaryGroups = [], roster = [], onOpenReport, onReportUpdate, projections }: ManningWaterfallProps) {
-    const [activeFilter, setActiveFilter] = useState<'wardroom' | 'cpo' | 'crew'>('wardroom');
-
     // Derived State: Convert Roster + Reports -> Member[] for Waterfall
     const members = useMemo(() => {
         let effectiveRoster: Member[] = [];
@@ -107,26 +104,16 @@ export function ManningWaterfall({ summaryGroups = [], roster = [], onOpenReport
 
     }, [roster, summaryGroups]);
 
-    // Filter members based on split
-    const filteredMembers = useMemo(() => {
-        return members.filter(m => {
-            if (activeFilter === 'wardroom') return m.rank.startsWith('O') || m.rank.startsWith('W');
-            if (activeFilter === 'cpo') return ['E-7', 'E-8', 'E-9'].includes(m.rank);
-            if (activeFilter === 'crew') return m.rank.startsWith('E') && !['E-7', 'E-8', 'E-9'].includes(m.rank);
-            return false;
-        });
-    }, [members, activeFilter]);
-
     // Grouping Logic
     const groups = useMemo(() => {
         const g: Record<string, Member[]> = {};
-        filteredMembers.forEach(m => {
+        members.forEach(m => {
             const key = m.rank === 'E-7' || m.rank === 'E-8' || m.rank === 'E-9' ? `${m.rank} CPO` : `${m.rank} ${m.designator || ''}`;
             if (!g[key]) g[key] = [];
             g[key].push(m);
         });
         return g;
-    }, [filteredMembers]);
+    }, [members]);
 
     // Scroll Logic
     const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -142,24 +129,17 @@ export function ManningWaterfall({ summaryGroups = [], roster = [], onOpenReport
     useEffect(() => {
         const timer = setTimeout(() => handleJumpToNow(), 100);
         return () => clearTimeout(timer);
-    }, [activeFilter]);
+    }, []);
 
     // Expand/Collapse State
     const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
-    const [allExpanded, setAllExpanded] = useState(true);
-
-    const toggleAllGroups = () => {
-        const newState = !allExpanded;
-        setAllExpanded(newState);
-        const newGroupState: Record<string, boolean> = {};
-        Object.keys(groups).forEach(k => { newGroupState[k] = newState; });
-        setExpandedGroups(newGroupState);
-    };
+    // Default allExpanded is effectively true conceptually, but we removed the toggle.
+    // So distinct state is just expandedGroups overrides.
 
     const toggleGroup = (groupKey: string) => {
         setExpandedGroups(prev => ({
             ...prev,
-            [groupKey]: prev[groupKey] === undefined ? !allExpanded : !prev[groupKey]
+            [groupKey]: prev[groupKey] === undefined ? false : !prev[groupKey]
         }));
     };
 
@@ -257,32 +237,6 @@ export function ManningWaterfall({ summaryGroups = [], roster = [], onOpenReport
 
     return (
         <div className="bg-white border-t border-slate-200 h-full flex flex-col min-h-0">
-            {/* Header Controls (Filter etc.) */}
-            <div className="px-6 py-2 border-b border-slate-200 bg-white flex justify-between items-center shrink-0">
-                <div className="flex items-center space-x-4">
-                    <h3 className="text-sm font-bold text-slate-700 uppercase tracking-wider">Manning & Projections</h3>
-                    <div className="flex space-x-1 bg-slate-100 p-0.5 rounded-lg w-fit">
-                        {['wardroom', 'cpo', 'crew'].map((filter) => (
-                            <button
-                                key={filter}
-                                onClick={() => setActiveFilter(filter as any)}
-                                className={`px-3 py-1 rounded-md text-xs font-medium transition-all ${activeFilter === filter ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'} capitalize`}
-                            >
-                                {filter === 'cpo' ? 'CPO Mess' : filter}
-                            </button>
-                        ))}
-                    </div>
-                </div>
-                <div className="flex gap-2">
-                    <button onClick={toggleAllGroups} className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-slate-50 rounded-md transition-colors border border-slate-200">
-                        {allExpanded ? <ChevronsUp size={16} /> : <ChevronsDown size={16} />}
-                    </button>
-                    <button onClick={handleJumpToNow} className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-white rounded-md transition-colors border border-slate-200">
-                        <Target size={16} />
-                    </button>
-                </div>
-            </div>
-
             {/* Scrollable Content */}
             <div ref={scrollContainerRef} className="flex-1 overflow-auto custom-scrollbar relative">
                 <div className="min-w-max">
@@ -302,7 +256,7 @@ export function ManningWaterfall({ summaryGroups = [], roster = [], onOpenReport
 
                     <div className="bg-slate-50/30">
                         {Object.entries(groups).map(([groupTitle, groupList]) => {
-                            const isExpanded = expandedGroups[groupTitle] !== undefined ? expandedGroups[groupTitle] : allExpanded;
+                            const isExpanded = expandedGroups[groupTitle] !== undefined ? expandedGroups[groupTitle] : true;
 
                             // Calculate Trend Points (RSCA - Running Cumulative Average)
                             // 1. Flatten and Apply Projections
@@ -323,52 +277,102 @@ export function ManningWaterfall({ summaryGroups = [], roster = [], onOpenReport
                                 (typeof r.effectiveAverage === 'number' ? r.effectiveAverage > 0 : false)
                             ).sort((a, b) => new Date(a.periodEndDate).getTime() - new Date(b.periodEndDate).getTime());
 
-                            // 3. Calculate Cumulative Average over Time
+                            // 3. Calculate Cumulative Average over Time with 90-Day Delay & Batching
                             // We need to map this to "Month Indices" relative to Start Date
                             const timelineStart = new Date(START_DATE);
                             timelineStart.setMonth(timelineStart.getMonth() - 3); // Timeline starts -3 months
 
+                            // Group reports by Date (Batch Logic)
+                            const reportsByDate = new Map<string, typeof validReports>();
+                            validReports.forEach(r => {
+                                const dKey = r.periodEndDate;
+                                if (!reportsByDate.has(dKey)) reportsByDate.set(dKey, []);
+                                reportsByDate.get(dKey)!.push(r);
+                            });
+
+                            // Sort batches by date
+                            const sortedDates = Array.from(reportsByDate.keys()).sort((a, b) => new Date(a).getTime() - new Date(b).getTime());
+
                             const trendPoints: { monthIndex: number, value: number, isProjected?: boolean }[] = [];
+
+                            // Initialize running stats
                             let runningSum = 0;
                             let runningCount = 0;
+                            // Initialize "Current" RSCA before any visible timeline points if possible, 
+                            // but for simplicity, we start plotting from the first update or 0.
+                            // Better: Calculate the state *before* the timeline window starts if history exists.
 
-                            // We'll track the last value per month to simplify the chart (one point per month max)
-                            const monthlyValues = new Map<number, number>();
+                            // We need to process ALL history to get accurate running averages,
+                            // then plot them with the delay.
 
-                            validReports.forEach(r => {
-                                const val = typeof r.effectiveAverage === 'number' ? r.effectiveAverage : 0;
-                                runningSum += val;
-                                runningCount++;
-                                const currentRSCA = runningSum / runningCount;
+                            // Helper to get month index relative to timeline start
+                            const getMonthIndex = (d: Date) => (d.getFullYear() - timelineStart.getFullYear()) * 12 + (d.getMonth() - timelineStart.getMonth());
 
-                                const d = new Date(r.periodEndDate);
-                                const diffMonth = (d.getFullYear() - timelineStart.getFullYear()) * 12 + (d.getMonth() - timelineStart.getMonth());
+                            sortedDates.forEach(dateStr => {
+                                const batch = reportsByDate.get(dateStr)!;
 
-                                // Only plot if within visible range (or slightly before to start line?)
-                                // We'll store all, then filter for chart
-                                monthlyValues.set(diffMonth, currentRSCA);
+                                // 1. Calculate new RSCA for this batch
+                                batch.forEach(r => {
+                                    const val = typeof r.effectiveAverage === 'number' ? r.effectiveAverage : 0;
+                                    runningSum += val;
+                                    runningCount++;
+                                });
+                                const newRSCA = runningCount > 0 ? runningSum / runningCount : 0;
+
+                                // 2. Determine WHEN this update applies (90 day delay)
+                                const reportDate = new Date(dateStr);
+                                const updateDate = new Date(reportDate);
+                                updateDate.setDate(updateDate.getDate() + 90); // +90 Days
+
+                                // 3. Plot this point
+                                const mIndex = getMonthIndex(updateDate);
+
+                                trendPoints.push({
+                                    monthIndex: mIndex,
+                                    value: newRSCA
+                                });
                             });
 
-                            // Convert Map to sorted array
-                            const sortedMonths = Array.from(monthlyValues.keys()).sort((a, b) => a - b);
+                            // Ensure points are sorted by month index (just in case)
+                            trendPoints.sort((a, b) => a.monthIndex - b.monthIndex);
 
-                            sortedMonths.forEach(m => {
-                                if (m >= -3 && m < 24) { // Keep within reasonable bounds relative to view
-                                    trendPoints.push({
-                                        monthIndex: m,
-                                        value: monthlyValues.get(m)!
+                            // "Fill gaps" / Hold value until next change?
+                            // actually the visualizer (Recharts or SVG line) usually connects points.
+                            // But for "Step" changes, we might want a point immediately before the new one?
+                            // For this specific visuals, simple line connection is usually fine, 
+                            // OR we want a "step" look. The requirement says "RSCA calculation is based on the batch submission".
+                            // The trend line usually just connects points. 
+
+                            // CRITIAL: Ensure we have a starting point at -3 if there was history *before* the first visible update.
+                            // If the first update is at month 5, what was the value at month 0?
+                            // We should probably inject a start point.
+                            if (trendPoints.length > 0) {
+                                const firstPt = trendPoints[0];
+                                if (firstPt.monthIndex > -3) {
+                                    // If we have a first point later, we need to know the "pre-existing" average?
+                                    // But since we calculate running average from scratch here, 
+                                    // the "previous" was theoretical 0 or whatever the default baseline is, 
+                                    // which might look weird dropping from 0 to 3.5.
+                                    // Let's assume the FIRST batch establishes the baseline, and we extend it backwards 
+                                    // if it's the very first data point we have.
+                                    trendPoints.unshift({
+                                        monthIndex: -3,
+                                        value: firstPt.value
                                     });
                                 }
-                            });
+                            }
 
-                            // 4. "Covers the full timeline": Extend last known value to the end if exists
+                            // Filter to visible range (optional, but good for perf) - actually we need off-screen points for lines to draw correctly in/out
+                            // We kept -3 to 24 logic essentially.
+
+                            // 4. "Covers the full timeline": Extend last known value to the end
                             if (trendPoints.length > 0) {
                                 const lastPt = trendPoints[trendPoints.length - 1];
                                 if (lastPt.monthIndex < 23) {
                                     trendPoints.push({
                                         monthIndex: 23,
                                         value: lastPt.value,
-                                        isProjected: true // Mark as extension
+                                        isProjected: true
                                     });
                                 }
                             }
@@ -418,9 +422,9 @@ export function ManningWaterfall({ summaryGroups = [], roster = [], onOpenReport
                                 </div>
                             );
                         })}
-                        {filteredMembers.length === 0 && (
+                        {members.length === 0 && (
                             <div className="p-12 text-center text-slate-400">
-                                No members found for this filter.
+                                No members found.
                             </div>
                         )}
                     </div>

@@ -30,7 +30,7 @@ function App() {
 
   // --- Logic Engine: Report Generation ---
   const summaryGroups = useMemo(() => {
-    return generateSummaryGroups(roster, rsConfig, 2025, projections);
+    return generateSummaryGroups(roster, rsConfig, 2023, projections);
   }, [roster, rsConfig, projections]);
 
   // Navigation State: Request to open a specific report/member
