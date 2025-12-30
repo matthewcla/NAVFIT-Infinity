@@ -13,6 +13,10 @@ interface NavfitStore {
     setSidebarCollapsed: (collapsed: boolean) => void;
     toggleSidebar: () => void;
 
+    contextRailCollapsed: boolean;
+    setContextRailCollapsed: (collapsed: boolean) => void;
+    toggleContextRail: () => void;
+
     // Data State
     roster: RosterMember[];
     setRoster: (roster: RosterMember[]) => void;
@@ -33,6 +37,12 @@ interface NavfitStore {
     } | null;
     setPendingReportRequest: (request: NavfitStore['pendingReportRequest']) => void;
     clearPendingReportRequest: () => void;
+
+    // Context Rail State
+    selectedReportId: string | null;
+    setSelectedReportId: (id: string | null) => void;
+    selectedMemberId: string | null;
+    setSelectedMemberId: (id: string | null) => void;
 }
 
 export const useNavfitStore = create<NavfitStore>((set) => ({
@@ -44,6 +54,10 @@ export const useNavfitStore = create<NavfitStore>((set) => ({
     sidebarCollapsed: true,
     setSidebarCollapsed: (collapsed) => set({ sidebarCollapsed: collapsed }),
     toggleSidebar: () => set((state) => ({ sidebarCollapsed: !state.sidebarCollapsed })),
+
+    contextRailCollapsed: false,
+    setContextRailCollapsed: (collapsed) => set({ contextRailCollapsed: collapsed }),
+    toggleContextRail: () => set((state) => ({ contextRailCollapsed: !state.contextRailCollapsed })),
 
     // Data
     roster: INITIAL_ROSTER,
@@ -66,4 +80,10 @@ export const useNavfitStore = create<NavfitStore>((set) => ({
     pendingReportRequest: null,
     setPendingReportRequest: (request) => set({ pendingReportRequest: request }),
     clearPendingReportRequest: () => set({ pendingReportRequest: null }),
+
+    // Context Rail State
+    selectedReportId: null,
+    setSelectedReportId: (id) => set({ selectedReportId: id }),
+    selectedMemberId: null,
+    setSelectedMemberId: (id) => set({ selectedMemberId: id }),
 }));

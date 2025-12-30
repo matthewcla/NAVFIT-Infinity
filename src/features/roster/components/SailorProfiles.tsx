@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavfitStore } from '@/store/useNavfitStore';
-import { useSummaryGroups } from '@/features/dashboard/hooks/useSummaryGroups';
+import { useSummaryGroups } from '@/features/strategy/hooks/useSummaryGroups';
 import { User, FileText, History, Search, Users } from 'lucide-react';
 
 export function SailorProfiles() {

@@ -1,15 +1,14 @@
 // import { Calendar, Plus } from 'lucide-react'; 
 // import { CURRENT_YEAR } from '@/lib/constants';
 import { ManningWaterfall } from './ManningWaterfall';
-// import { RscaHealthScoreboard } from './RscaHealthScoreboard';
 // import { OpportunityRadarWidget } from './OpportunityRadarWidget';
 
 import { ActivitySyncBar } from './ActivitySyncBar';
 
 import { useNavfitStore } from '@/store/useNavfitStore';
-import { useSummaryGroups } from '@/features/dashboard/hooks/useSummaryGroups';
+import { useSummaryGroups } from '@/features/strategy/hooks/useSummaryGroups';
 
-export function StrategicPulseDashboard() {
+export function StrategyWorkspace() {
     const {
         roster,
         projections,

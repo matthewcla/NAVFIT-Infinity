@@ -1,6 +1,6 @@
 import { AppLayout } from './components/layout/AppLayout';
-import { StrategicPulseDashboard } from '@/features/dashboard/components/StrategicPulseDashboard';
-import { ReportsManager } from '@/features/reports/components/ReportsManager';
+import { StrategyWorkspace } from '@/features/strategy/components/StrategyWorkspace';
+import { ReportsManager } from '@/features/strategy/components/ReportsManager';
 import { SelectionBoardsManager } from '@/features/boards/components/SelectionBoardsManager';
 import { CommandAdmin } from '@/features/admin/components/CommandAdmin';
 import { SailorProfiles } from '@/features/roster/components/SailorProfiles';
@@ -17,7 +17,7 @@ function App() {
   const renderContent = () => {
     switch (activeTab) {
       case 'dashboard':
-        return <StrategicPulseDashboard />;
+        return <StrategyWorkspace />;
       case 'reports':
         return <ReportsManager />;
       case 'profiles':
@@ -27,7 +27,7 @@ function App() {
       case 'admin':
         return <CommandAdmin />;
       default:
-        return <StrategicPulseDashboard />;
+        return <StrategyWorkspace />;
     }
   };
 

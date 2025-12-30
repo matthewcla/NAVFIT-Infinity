@@ -1,5 +1,7 @@
 import { type ReactNode } from 'react';
 import { Sidebar, type Tab } from './Sidebar';
+import { RscaHealthScoreboard } from './RscaHealthScoreboard';
+import { ContextRail } from './ContextRail';
 import { cn } from '@/lib/utils';
 
 interface AppLayoutProps {
@@ -25,7 +27,13 @@ export function AppLayout({ children, activeTab, onTabChange, collapsed, onToggl
                     collapsed ? "ml-20" : "ml-64"
                 )}
             >
-                {children}
+                <RscaHealthScoreboard />
+                <div className="flex-1 overflow-hidden flex flex-row min-h-0">
+                    <div className="flex-1 overflow-hidden flex flex-col min-h-0">
+                        {children}
+                    </div>
+                    <ContextRail />
+                </div>
             </div>
         </div>
     );
