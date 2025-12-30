@@ -1,4 +1,5 @@
-import type { RosterEntry, BoardSchedule, SummaryGroup, Report } from '@/types';
+import type { BoardSchedule, SummaryGroup, Report } from '@/types';
+import type { RosterMember } from '@/types/roster';
 
 // Periodic Cycles (Month index 0-11)
 const PERIODIC_CYCLES: Record<string, number> = {
@@ -30,7 +31,7 @@ export const SummaryGroupGenerator = {
      * Scans the roster and board schedule to propose summary groups
      */
     generateSuggestions: async (
-        roster: RosterEntry[],
+        roster: RosterMember[],
         _boards: BoardSchedule | null,
         targetDate: Date = new Date()
     ): Promise<SummaryGroup[]> => {
@@ -41,12 +42,10 @@ export const SummaryGroupGenerator = {
         // 1. Identification of Periodic Reports
         // Group by Rank
         const periodicCandidates = roster.filter(m => {
-            // const rankBase = m.rank.split(' ')[0]; // Handle "LT JG" etc if needed, simplified here
             // Map common ranks
             const simpleRank = mapRankToKey(m.rank);
             if (!simpleRank) return false;
 
-            // const pMonth = PERIODIC_CYCLES[simpleRank];
             // Logic: Is the periodic month "soon"? (e.g., within 3 months) or "now"?
             // For demo, let's just say we look for cycles landing in next 3 months
             // For this specific User Request, let's hardcode a "match" logic to demo data
@@ -59,7 +58,7 @@ export const SummaryGroupGenerator = {
         // Key format: "RANK|DESIGNATOR" (e.g. "O-4|1110" or "E-6|")
         // Officers grouped by Rank + Designator
         // Enlisted grouped by Rank (or Rating if needed, but per request Paygrade/Rank is main)
-        const candidatesByGroup = new Map<string, RosterEntry[]>();
+        const candidatesByGroup = new Map<string, RosterMember[]>();
 
         periodicCandidates.forEach(m => {
             const isOfficer = m.rank.startsWith('O') || m.rank.startsWith('W');
@@ -101,8 +100,8 @@ export const SummaryGroupGenerator = {
 
         detachers.forEach(m => {
             groups.push({
-                id: `sg-auto-det-${m.memberId}`,
-                name: `Detachment of Individual - ${m.fullName}`,
+                id: `sg-auto-det-${m.id}`,
+                name: `Detachment of Individual - ${m.lastName}, ${m.firstName}`,
                 periodEndDate: m.prd,
                 reports: [createDraftReport(m, 'Detachment of Individual', new Date(m.prd))]
             });
@@ -112,15 +111,15 @@ export const SummaryGroupGenerator = {
     }
 };
 
-function createDraftReport(member: RosterEntry, type: 'Periodic' | 'Detachment of Individual', date: Date): Report {
+function createDraftReport(member: RosterMember, type: 'Periodic' | 'Detachment of Individual', date: Date): Report {
     // Random Trait Average for Demo: 3.0 to 5.0, or occasional NOB
     const isNOB = Math.random() > 0.9;
     const rawTrait = 3.0 + (Math.random() * 2.0);
     const traitAverage = isNOB ? 0 : Number(rawTrait.toFixed(2));
 
     return {
-        id: `r-auto-${member.memberId}-${type}`,
-        memberId: member.memberId,
+        id: `r-auto-${member.id}-${type}`,
+        memberId: member.id,
         periodEndDate: date.toISOString().split('T')[0],
         type: type === 'Detachment of Individual' ? 'Detachment' : type,
         traitGrades: {},
@@ -132,3 +131,4 @@ function createDraftReport(member: RosterEntry, type: 'Periodic' | 'Detachment o
         shipStation: 'USS MOCK SHIP'
     };
 }
+
