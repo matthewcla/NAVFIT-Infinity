@@ -76,13 +76,6 @@ export const GroupHeader = ({ title, count, isExpanded, onToggle, trendPoints, t
                             </div>
                         </div>
 
-                        {/* Target Range */}
-                        <div className="flex flex-col">
-                            <span className="text-[10px] uppercase text-slate-400 font-bold tracking-wider">Target</span>
-                            <span className="text-sm font-bold text-slate-600 font-mono">
-                                {targetRange.min.toFixed(2)}-{targetRange.max.toFixed(2)}
-                            </span>
-                        </div>
                     </div>
                 </div>
             </div>

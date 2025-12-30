@@ -24,7 +24,7 @@ export function StrategicPulseDashboard({ summaryGroups = [], roster = [], onOpe
             <header className="h-16 bg-white border-b border-slate-200 flex justify-between items-center px-8 shadow-sm flex-shrink-0 z-10">
                 {/* Replaced Title with Scoreboard */}
                 <div className="flex-1 overflow-hidden flex items-center">
-                    <RscaHealthScoreboard />
+                    <RscaHealthScoreboard summaryGroups={summaryGroups} />
                 </div>
                 <div className="flex items-center space-x-4">
                     {/* Controls removed as requested */}
