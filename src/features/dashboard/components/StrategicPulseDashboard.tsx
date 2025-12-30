@@ -1,30 +1,37 @@
 // import { Calendar, Plus } from 'lucide-react'; 
-// import { CURRENT_YEAR } from '../../lib/constants';
+// import { CURRENT_YEAR } from '@/lib/constants';
 import { ManningWaterfall } from './ManningWaterfall';
-import { RscaHealthScoreboard } from './RscaHealthScoreboard';
+// import { RscaHealthScoreboard } from './RscaHealthScoreboard';
 // import { OpportunityRadarWidget } from './OpportunityRadarWidget';
 
 import { ActivitySyncBar } from './ActivitySyncBar';
 
-import type { SummaryGroup } from '../../types';
-import type { RosterMember } from '../../types/roster';
+import { useNavfitStore } from '@/store/useNavfitStore';
+import { useSummaryGroups } from '@/features/dashboard/hooks/useSummaryGroups';
 
-interface StrategicPulseDashboardProps {
-    summaryGroups?: SummaryGroup[];
-    roster?: RosterMember[];
-    onOpenReport?: (memberId: string, name: string, rank?: string, reportId?: string) => void;
-    onReportUpdate?: (reportId: string, newAverage: number) => void;
-    projections?: Record<string, number>;
-}
+export function StrategicPulseDashboard() {
+    const {
+        roster,
+        projections,
+        updateProjection,
+        setPendingReportRequest,
+        setActiveTab
+    } = useNavfitStore();
 
-export function StrategicPulseDashboard({ summaryGroups = [], roster = [], onOpenReport, onReportUpdate, projections }: StrategicPulseDashboardProps) {
+    const summaryGroups = useSummaryGroups();
+
+    const handleOpenReport = (memberId: string, name: string, rank?: string, reportId?: string) => {
+        setPendingReportRequest({ memberId, name, rank, reportId });
+        setActiveTab('reports');
+    };
+
     return (
         <div className="flex flex-col h-full bg-slate-50">
             {/* Header */}
             <header className="h-16 bg-white border-b border-slate-200 flex justify-between items-center px-8 shadow-sm flex-shrink-0 z-10">
-                {/* Replaced Title with Scoreboard */}
-                <div className="flex-1 overflow-hidden flex items-center">
-                    <RscaHealthScoreboard summaryGroups={summaryGroups} />
+                <div className="flex items-center space-x-4">
+                    <span className="text-sm font-bold text-slate-400 uppercase tracking-wider">Strategic Pulse</span>
+                    <div className="h-6 w-px bg-slate-200"></div>
                 </div>
                 <div className="flex items-center space-x-4">
                     {/* Controls removed as requested */}
@@ -37,8 +44,8 @@ export function StrategicPulseDashboard({ summaryGroups = [], roster = [], onOpe
                     <ManningWaterfall
                         summaryGroups={summaryGroups}
                         roster={roster}
-                        onOpenReport={onOpenReport}
-                        onReportUpdate={onReportUpdate}
+                        onOpenReport={handleOpenReport}
+                        onReportUpdate={updateProjection}
                         projections={projections}
                     />
                 </div>
@@ -49,3 +56,4 @@ export function StrategicPulseDashboard({ summaryGroups = [], roster = [], onOpe
         </div>
     );
 };
+

@@ -7,7 +7,7 @@ import {
     Users,
     Menu
 } from 'lucide-react';
-import { cn } from '../../lib/utils';
+import { cn } from '@/lib/utils';
 
 // Define the tab type locally or import from a shared type file if needed
 export type Tab = 'dashboard' | 'reports' | 'schedule' | 'profiles' | 'admin';

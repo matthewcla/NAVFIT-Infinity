@@ -1,4 +1,4 @@
-import type { Member, Report, ReportingSenior } from '../types';
+import type { Member, Report, ReportingSenior } from '@/types';
 
 /**
  * Report Logic Engines

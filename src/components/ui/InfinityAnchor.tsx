@@ -1,4 +1,3 @@
-import React from 'react';
 import { Infinity } from 'lucide-react';
 
 interface InfinityAnchorProps {

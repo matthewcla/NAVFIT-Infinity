@@ -1,4 +1,4 @@
-import type { Board, BoardSchedule } from '../../types';
+import type { Board, BoardSchedule } from '@/types';
 
 // Mock Data
 const MOCK_BOARDS: Board[] = [

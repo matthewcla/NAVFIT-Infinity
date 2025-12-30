@@ -1,7 +1,7 @@
 import React, { useState, useRef, useMemo, useEffect } from 'react';
-import { projectRSCA } from '../../lib/engines/rsca';
-import type { RosterMember } from '../../types/roster';
-import type { SummaryGroup } from '../../types';
+import { projectRSCA } from '@/features/strategy/logic/rsca';
+import type { RosterMember } from '@/types/roster';
+import type { SummaryGroup } from '@/types';
 import { Lock } from 'lucide-react';
 
 // --- MOCK DATA FOR PROTOTYPING ---

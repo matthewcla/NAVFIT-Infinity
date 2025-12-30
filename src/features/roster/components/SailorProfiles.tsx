@@ -1,14 +1,15 @@
 import { useState } from 'react';
-import type { RosterMember } from '../../types/roster';
-import type { Report } from '../../types';
+import { useNavfitStore } from '@/store/useNavfitStore';
+import { useSummaryGroups } from '@/features/dashboard/hooks/useSummaryGroups';
 import { User, FileText, History, Search, Users } from 'lucide-react';
 
-interface SailorProfilesProps {
-    roster: RosterMember[];
-    reports: Report[];
-}
+export function SailorProfiles() {
+    const { roster } = useNavfitStore();
+    const summaryGroups = useSummaryGroups();
 
-export function SailorProfiles({ roster, reports }: SailorProfilesProps) {
+    // Flatten reports from summary groups to match previous behavior
+    const reports = summaryGroups.flatMap(g => g.reports);
+
     const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null);
 
     const selectedMember = selectedMemberId ? roster.find(m => m.id === selectedMemberId) : null;
@@ -159,3 +160,4 @@ export function SailorProfiles({ roster, reports }: SailorProfilesProps) {
         </div>
     );
 }
+
