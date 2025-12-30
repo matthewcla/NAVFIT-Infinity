@@ -8,14 +8,17 @@ interface NavfitStore {
     activeTab: Tab;
     setActiveTab: (tab: Tab) => void;
 
+    // View State
+    viewMode: 'timeline' | 'list';
+    setViewMode: (mode: 'timeline' | 'list') => void;
+
     // Layout State
     sidebarCollapsed: boolean;
     setSidebarCollapsed: (collapsed: boolean) => void;
     toggleSidebar: () => void;
 
-    contextRailCollapsed: boolean;
-    setContextRailCollapsed: (collapsed: boolean) => void;
-    toggleContextRail: () => void;
+    isContextRailOpen: boolean;
+    toggleContextRail: () => void; // Toggles open/closed state
 
     // Data State
     roster: RosterMember[];
@@ -38,26 +41,34 @@ interface NavfitStore {
     setPendingReportRequest: (request: NavfitStore['pendingReportRequest']) => void;
     clearPendingReportRequest: () => void;
 
-    // Context Rail State
+    // Context Rail State (Selection)
     selectedReportId: string | null;
-    setSelectedReportId: (id: string | null) => void;
+    selectReport: (id: string | null) => void;
+
     selectedMemberId: string | null;
-    setSelectedMemberId: (id: string | null) => void;
+    selectMember: (id: string | null) => void;
+
+    // Modal State
+    isEditingReport: boolean;
+    setEditingReport: (isEditing: boolean) => void;
 }
 
 export const useNavfitStore = create<NavfitStore>((set) => ({
     // Navigation
-    activeTab: 'dashboard',
+    activeTab: 'strategy',
     setActiveTab: (tab) => set({ activeTab: tab }),
+
+    // View State
+    viewMode: 'timeline',
+    setViewMode: (mode) => set({ viewMode: mode }),
 
     // Layout
     sidebarCollapsed: true,
     setSidebarCollapsed: (collapsed) => set({ sidebarCollapsed: collapsed }),
     toggleSidebar: () => set((state) => ({ sidebarCollapsed: !state.sidebarCollapsed })),
 
-    contextRailCollapsed: false,
-    setContextRailCollapsed: (collapsed) => set({ contextRailCollapsed: collapsed }),
-    toggleContextRail: () => set((state) => ({ contextRailCollapsed: !state.contextRailCollapsed })),
+    isContextRailOpen: true, // Default open as requested
+    toggleContextRail: () => set((state) => ({ isContextRailOpen: !state.isContextRailOpen })),
 
     // Data
     roster: INITIAL_ROSTER,
@@ -81,9 +92,36 @@ export const useNavfitStore = create<NavfitStore>((set) => ({
     setPendingReportRequest: (request) => set({ pendingReportRequest: request }),
     clearPendingReportRequest: () => set({ pendingReportRequest: null }),
 
-    // Context Rail State
+    // Context Rail State (Selection)
     selectedReportId: null,
-    setSelectedReportId: (id) => set({ selectedReportId: id }),
+    selectReport: (id) => set(() => {
+        // If selecting a report (id is not null), clear member selection and open rail
+        if (id) {
+            return {
+                selectedReportId: id,
+                selectedMemberId: null,
+                isContextRailOpen: true
+            };
+        }
+        // If clearing, just clear it (optionally keep rail open or closed? request just says "selectReport should open context rail")
+        return { selectedReportId: null };
+    }),
+
     selectedMemberId: null,
-    setSelectedMemberId: (id) => set({ selectedMemberId: id }),
+    selectMember: (id) => set(() => {
+        // If selecting a member, clear report selection and open rail
+        if (id) {
+            return {
+                selectedMemberId: id,
+                selectedReportId: null,
+                isContextRailOpen: true
+            };
+        }
+        return { selectedMemberId: null };
+    }),
+
+
+    // Modal State
+    isEditingReport: false,
+    setEditingReport: (isEditing) => set({ isEditingReport: isEditing }),
 }));

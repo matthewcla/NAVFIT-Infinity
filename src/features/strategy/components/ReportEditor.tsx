@@ -6,11 +6,11 @@ import { cn } from '@/lib/utils';
 
 interface ReportEditorProps {
     report: Report;
-    onBack: () => void;
+    onClose: () => void;
     readOnly?: boolean;
 }
 
-export function ReportEditor({ report, onBack, readOnly = false }: ReportEditorProps) {
+export function ReportEditor({ report, onClose, readOnly = false }: ReportEditorProps) {
     const [isHeaderCollapsed, setIsHeaderCollapsed] = useState(false);
     const [formData, setFormData] = useState<Report>(report);
 
@@ -20,7 +20,7 @@ export function ReportEditor({ report, onBack, readOnly = false }: ReportEditorP
             <div className="bg-white border-b border-slate-200 px-8 py-4 flex items-center justify-between shrink-0 z-30">
                 <div className="flex items-center gap-6">
                     <button
-                        onClick={onBack}
+                        onClick={onClose}
                         className="text-slate-500 hover:text-slate-800 transition-colors flex items-center gap-2 text-sm font-medium"
                     >
                         <ArrowLeft className="w-4 h-4" />

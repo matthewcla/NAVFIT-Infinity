@@ -1,6 +1,6 @@
 import { AppLayout } from './components/layout/AppLayout';
 import { StrategyWorkspace } from '@/features/strategy/components/StrategyWorkspace';
-import { ReportsManager } from '@/features/strategy/components/ReportsManager';
+
 import { SelectionBoardsManager } from '@/features/boards/components/SelectionBoardsManager';
 import { CommandAdmin } from '@/features/admin/components/CommandAdmin';
 import { SailorProfiles } from '@/features/roster/components/SailorProfiles';
@@ -16,10 +16,8 @@ function App() {
 
   const renderContent = () => {
     switch (activeTab) {
-      case 'dashboard':
+      case 'strategy':
         return <StrategyWorkspace />;
-      case 'reports':
-        return <ReportsManager />;
       case 'profiles':
         return <SailorProfiles />;
       case 'schedule':
