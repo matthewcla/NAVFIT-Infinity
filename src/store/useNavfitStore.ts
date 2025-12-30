@@ -105,7 +105,7 @@ export const useNavfitStore = create<NavfitStore>((set) => ({
 
         // 4. Calculate Grades
         // Use RSCA from config or default to 4.20 if missing
-        const rscaTarget = 4.20; // TODO: Pull from rsConfig if available, e.g. state.rsConfig.targetRsca
+        const rscaTarget = state.rsConfig.targetRsca || 4.20;
         // Note: We might want strategy config from state later
 
         const calculatedResults = calculateOutcomeBasedGrades(autoPlanInput, rscaTarget);

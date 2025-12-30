@@ -232,7 +232,7 @@ export function StrategyScattergram({ summaryGroups = EMPTY_SUMMARY_GROUPS, rost
         // Max grade allowed today without hitting 5.00 before PRD.
         // Formula: 5.00 - ((ReportsRemaining - 1) * Increment)
         // Default increment 0.10 for meaningful progression
-        const reportsRemaining = member.reportsRemaining || 1;
+        const reportsRemaining = member.reportsRemaining !== undefined ? member.reportsRemaining : 1;
         const PROGRESSION_STEP = 0.10;
 
         let maxGradeToday = 5.00;
@@ -244,7 +244,8 @@ export function StrategyScattergram({ summaryGroups = EMPTY_SUMMARY_GROUPS, rost
 
         const upperBoundY = traitToY(maxGradeToday);
 
-        const isOverLimit = currentGrade > maxGradeToday + 0.001; // epsilon
+        // Check if grade exceeds MAX POSSIBLE today
+        const isOverLimit = currentGrade > (maxGradeToday + 0.001); // epsilon
 
         return {
             currentReport,
@@ -422,18 +423,18 @@ export function StrategyScattergram({ summaryGroups = EMPTY_SUMMARY_GROUPS, rost
 
         // Y Calculation inverse
         // MouseY within SVG
-        const clientY = e.clientY - rect.top;
+        // clientY is relative to the SVG top (which is rendered AFTER the headers)
+        // traitToY returns Y relative to the SCROLL CONTAINER TOP (0).
+        // The SVG starts at Y = HEADER_HEIGHT relative to the scroll container.
+        const svgRelativeY = e.clientY - rect.top;
 
-        // We need to account for scroll?
-        // No, rect corresponds to the SVG element which is usually inside the scroll container.
-        // If SVG is full height in scroll container, clientY is relative to SVG top (0).
-        // traitToY returns Y relative to SVG top (0).
-        // So this logic holds.
+        // Convert to Scroll Container Y
+        const scrollContainerY = svgRelativeY + HEADER_HEIGHT;
 
         let newTrait = 0;
         let isNowNOB = false;
 
-        newTrait = Number(yToTrait(clientY).toFixed(2));
+        newTrait = Number(yToTrait(scrollContainerY).toFixed(2));
 
         if (newTrait > 5.10) {
             isNowNOB = true;
@@ -487,7 +488,7 @@ export function StrategyScattergram({ summaryGroups = EMPTY_SUMMARY_GROUPS, rost
             {/* Main Chart Area with 2D Scroll */}
             <div
                 ref={scrollContainerRef}
-                className="border border-slate-300 rounded-lg bg-slate-200 flex-1 min-h-0 relative overflow-auto custom-scrollbar scroll-smooth"
+                className="border border-slate-300 rounded-lg bg-white flex-1 min-h-0 relative overflow-auto custom-scrollbar scroll-smooth"
                 style={{
                     height: containerHeight,
                     scrollSnapType: 'y proximity'
@@ -630,9 +631,6 @@ export function StrategyScattergram({ summaryGroups = EMPTY_SUMMARY_GROUPS, rost
                                                 strokeDasharray="4 2"
                                             />
                                             {/* Upper Bound Line (Max Headroom) */}
-                                            {/* This connects Calculated Max Start to Result (PRD 5.0) OR just visualizes the ceiling from current X? */}
-                                            {/* Prompt: "Upper Bound Line: The mathematical max grade they can receive today..." */}
-                                            {/* We draw the line from (CurrentX, UpperStartY) to (PrdX, PrdY) to show the limit slope? */}
                                             <line
                                                 x1={flightPathData.currentX} y1={flightPathData.upperStartY}
                                                 x2={flightPathData.prdX} y2={flightPathData.prdY}
@@ -696,6 +694,10 @@ export function StrategyScattergram({ summaryGroups = EMPTY_SUMMARY_GROUPS, rost
                                         // Flight Path Override: Red if Over Limit
                                         let strokeColor = '#eab308';
 
+                                        // Highlight Selected Member if in Flight Path Mode
+                                        const isSelected = selectedMemberId === p.report.memberId;
+                                        const opacity = (flightPathData && !isSelected) ? 0.3 : 1; // Dim others in Flight Mode
+
                                         // Default Logic
                                         if (p.report.isNOB) {
                                             strokeColor = 'white';
@@ -717,6 +719,7 @@ export function StrategyScattergram({ summaryGroups = EMPTY_SUMMARY_GROUPS, rost
                                                 <g key={p.id}
                                                     transform={`translate(${p.x}, ${p.y})`}
                                                     className="cursor-default"
+                                                    opacity={opacity}
                                                 >
                                                     <path
                                                         d="M0 -18 V18 M-18 0 H18"
@@ -724,7 +727,10 @@ export function StrategyScattergram({ summaryGroups = EMPTY_SUMMARY_GROUPS, rost
                                                         strokeWidth={4}
                                                         strokeLinecap="round"
                                                     />
-                                                    <text y={28} textAnchor="middle" className="text-[9px] fill-slate-500 font-semibold uppercase pointer-events-none whitespace-nowrap">{formatName(p.report.memberName)}</text>
+                                                    <g className="opacity-0 hover:opacity-100 transition-opacity">
+                                                        <rect x="-60" y="20" width="120" height="20" rx="4" fill="rgba(0,0,0,0.8)" />
+                                                        <text y={34} textAnchor="middle" className="text-[10px] fill-white font-semibold uppercase pointer-events-none whitespace-nowrap">{formatName(p.report.memberName)}</text>
+                                                    </g>
                                                 </g>
                                             );
                                         }
@@ -732,8 +738,17 @@ export function StrategyScattergram({ summaryGroups = EMPTY_SUMMARY_GROUPS, rost
                                         return (
                                             <g key={p.id}
                                                 transform={`translate(${p.x}, ${p.y})`}
-                                                className="cursor-ns-resize"
+                                                className="cursor-ns-resize group"
+                                                opacity={opacity}
                                                 onMouseDown={(e) => handleMouseDown(e, p.id)}
+                                                onClick={(e) => {
+                                                    // Single click selects member for Cone View
+                                                    e.stopPropagation();
+                                                    // This was missing!
+                                                    if (useNavfitStore.getState().selectMember) {
+                                                        useNavfitStore.getState().selectMember(p.report.memberId);
+                                                    }
+                                                }}
                                                 onDoubleClick={(e) => {
                                                     e.stopPropagation();
                                                     handleReportDoubleClick(p.report);
@@ -777,7 +792,11 @@ export function StrategyScattergram({ summaryGroups = EMPTY_SUMMARY_GROUPS, rost
                                                     </g>
                                                 )}
 
-                                                <text y={radius + 14} textAnchor="middle" className="text-[9px] fill-slate-500 font-semibold uppercase pointer-events-none whitespace-nowrap">{formatName(p.report.memberName)}</text>
+                                                {/* Text Label - Hover Only or Selected */}
+                                                <g className={`transition-opacity ${isSelected || isDragging ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
+                                                    <rect x="-60" y={radius + 8} width="120" height="18" rx="4" fill="rgba(255,255,255,0.9)" stroke="#cbd5e1" strokeWidth="1" />
+                                                    <text y={radius + 20} textAnchor="middle" className="text-[10px] fill-slate-700 font-bold uppercase pointer-events-none whitespace-nowrap">{formatName(p.report.memberName)}</text>
+                                                </g>
                                             </g>
                                         );
                                     })}

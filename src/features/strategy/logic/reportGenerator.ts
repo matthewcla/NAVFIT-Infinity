@@ -160,7 +160,7 @@ export const generateSummaryGroups = (
                             periodEndDate: pDateStr,
                             type: 'Periodic',
                             traitAverage: calculatedAvg,
-                            promotionRecommendation: 'NOB',
+                            promotionRecommendation: calculatedAvg > 0 ? 'P' : 'NOB',
                             draftStatus: status, // <--- KEY CHANGE
                             traitGrades: {},
                             isAdverse: false,
@@ -223,7 +223,7 @@ export const generateSummaryGroups = (
                     periodEndDate: rsDateStr,
                     type: 'Detachment',
                     traitAverage: calculatedAvg,
-                    promotionRecommendation: 'NOB', // TBD
+                    promotionRecommendation: calculatedAvg > 0 ? 'P' : 'NOB',
                     draftStatus: 'Projected',
                     traitGrades: {},
                     grade: member.rank,

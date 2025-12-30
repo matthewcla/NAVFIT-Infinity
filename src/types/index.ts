@@ -34,6 +34,7 @@ export interface Report {
     summaryGroupAvg?: number;
     rscaAtTime?: number;
     narrative?: string; // Block 43 (formerly implied, now explicit)
+    openingStatement?: string; // Block 43 Opening Statement
 
     // New Fields for Reports Manager
     draftStatus?: 'Draft' | 'Review' | 'Submitted' | 'Final' | 'Projected';

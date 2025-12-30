@@ -4,7 +4,9 @@ export const INITIAL_RS_CONFIG: ReportingSeniorConfig = {
     name: "VADM Kazansky, T.",
     rank: "O-9",
     title: "CO",
-    changeOfCommandDate: "2025-06-01" // This will trigger the MASS RS DETACH event mid-year
+    changeOfCommandDate: "2025-06-01", // This will trigger the MASS RS DETACH event mid-year
+    targetRsca: 4.20,
+    totalReports: 0 // Simulating a new RS for Ghost Baseline testing
 };
 
 export const INITIAL_ROSTER: RosterMember[] = [
@@ -20,7 +22,20 @@ export const INITIAL_ROSTER: RosterMember[] = [
         prd: '2026-06-01',
         status: 'Promotable',
         reportsRemaining: 1,
-        rankOrder: 1
+        rankOrder: 1,
+        // Mock History for Ghost Baseline Testing
+        history: [
+            {
+                id: 'r-prev-101',
+                memberId: 'm-101',
+                traitAverage: 5.00, // Previous high grade
+                periodEndDate: '2022-10-31',
+                type: 'Periodic',
+                traitGrades: { 'Performance': 5.0 }, // Minimal mock
+                promotionRecommendation: 'EP',
+                reportingSeniorId: 'rs-old'
+            } as any // Cast to any to avoid filling all 50+ fields for this mock
+        ]
     },
 
     // --- O-4 (LCDR) ---
