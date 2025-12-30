@@ -1,27 +1,16 @@
 import React, { useState } from 'react';
-import type { RosterMember, ReportingSeniorConfig } from '../../types/roster';
+import { useNavfitStore } from '@/store/useNavfitStore';
 import { Calendar, Users, Settings, Plus, Shield } from 'lucide-react';
 
-interface CommandAdminProps {
-    roster: RosterMember[];
-    rsConfig: ReportingSeniorConfig;
-    onUpdateRsConfig: (config: ReportingSeniorConfig) => void;
-    // onUpdateRoster?: (roster: RosterMember[]) => void;
-}
-
-export const CommandAdmin: React.FC<CommandAdminProps> = ({
-    roster,
-    rsConfig,
-    onUpdateRsConfig,
-
-}) => {
+export const CommandAdmin: React.FC = () => {
+    const { roster, rsConfig, setRsConfig } = useNavfitStore();
 
     // --- State ---
     const [searchTerm, setSearchTerm] = useState('');
 
     // --- Handlers ---
     const handleRsDateChange = (date: string) => {
-        onUpdateRsConfig({
+        setRsConfig({
             ...rsConfig,
             changeOfCommandDate: date
         });

@@ -1,9 +1,9 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
 import { GroupHeader } from './GroupHeader';
 import { TimelineRow } from './TimelineRow';
-import type { SummaryGroup, Member } from '../../types';
-import type { RosterMember } from '../../types/roster';
-import { CO_DETACH_DATE } from '../../lib/constants';
+import type { SummaryGroup, Member } from '@/types';
+import type { RosterMember } from '@/types/roster';
+import { CO_DETACH_DATE } from '@/lib/constants';
 
 const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
@@ -379,7 +379,26 @@ export function ManningWaterfall({ summaryGroups = [], roster = [], onOpenReport
 
                             // Calculate Current RSCA (Last Real Point)
                             // If we added a projection point, the "Current" is the value of that point (which is the last real point value)
-                            const currentRSCA = trendPoints.length > 0 ? trendPoints[trendPoints.length - 1].value : 3.5;
+                            const currentRSCA = trendPoints.length > 0 ? trendPoints[trendPoints.length - 1].value : 0;
+
+                            // --- KPI Calculation Logic (Moved from RscaHealthScoreboard) ---
+                            const valueGap = 5.00 - currentRSCA;
+
+                            // Logic for Status
+                            let status: 'Safe' | 'Risk' | 'Developing' | 'Stabilized' = 'Safe';
+                            if (currentRSCA > 4.10) status = 'Risk';
+                            else if (currentRSCA < 3.60) status = 'Developing';
+                            else status = 'Stabilized';
+
+                            // Description logic
+                            let description = 'Stable performance';
+                            if (status === 'Risk') description = 'Average too high; limits EP value';
+                            if (status === 'Developing') description = 'Room for growth';
+
+                            // Sequencing Logic (stubbed for now as "Optimal" unless Risk)
+                            let sequencing: 'Optimal' | 'Concern' | 'Inverted' = 'Optimal';
+                            if (status === 'Risk') sequencing = 'Inverted';
+                            // ----------------------------------------------------------------
 
                             return (
                                 <div key={groupTitle}>
@@ -391,6 +410,11 @@ export function ManningWaterfall({ summaryGroups = [], roster = [], onOpenReport
                                         trendPoints={trendPoints}
                                         targetRange={{ min: 3.8, max: 4.2 }}
                                         timelineMonths={TIMELINE_MONTHS}
+                                        // New KPI Props
+                                        status={status}
+                                        valueGap={valueGap}
+                                        sequencing={sequencing}
+                                        description={description}
                                     />
                                     {isExpanded && getSortedGroupList(groupTitle, groupList).map((member, idx) => {
                                         // Periodic Report ID Logic? TimelineRow handles checks.

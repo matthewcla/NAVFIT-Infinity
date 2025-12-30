@@ -1,100 +1,21 @@
 import { useState, useEffect, useMemo } from 'react';
-import type { SummaryGroup, Report, RosterEntry } from '../../types';
+import type { SummaryGroup, Report } from '@/types';
 import { ReportEditor } from './ReportEditor.tsx';
 import { CompetitiveGroupHeader } from './CompetitiveGroupHeader.tsx';
-import { cn } from '../../lib/utils';
+import { cn } from '@/lib/utils';
 import { ChevronRight, FileText, AlertCircle, CheckCircle } from 'lucide-react';
-import { StrategyScattergram } from '../dashboard/StrategyScattergram';
-import { INITIAL_ROSTER } from '../../data/initialRoster';
-import { SummaryGroupGenerator } from '../../lib/services/summaryGroupGenerator';
+import { StrategyScattergram } from '@/features/dashboard/components/StrategyScattergram';
+import { useNavfitStore } from '@/store/useNavfitStore';
+import { useSummaryGroups } from '@/features/dashboard/hooks/useSummaryGroups';
 
-// --- ROSTER ADAPTER ---
-// Convert 'RosterMember' from initialRoster to 'RosterEntry' expected by Generator
-const ADAPTED_ROSTER: RosterEntry[] = [
-    ...INITIAL_ROSTER.map(m => ({
-        memberId: m.id,
-        fullName: `${m.lastName}, ${m.firstName}`,
-        rank: m.rank,
-        designator: m.designator,
-        dateReported: m.dateReported,
-        prd: m.prd,
-        uic: '55555'
-    })),
-    // Mixed Designator Test Case: Two O-4s with different designators
-    {
-        memberId: 'm-test-1110', fullName: 'Surface, O-4', rank: 'O-4', designator: '1110', dateReported: '2023-01-01', prd: '2026-01-01', uic: '55555'
-    },
-    {
-        memberId: 'm-test-3100', fullName: 'Supply, O-4', rank: 'O-4', designator: '3100', dateReported: '2023-01-01', prd: '2026-01-01', uic: '55555'
-    }
-];
+export function ReportsManager() {
+    const {
+        pendingReportRequest,
+        clearPendingReportRequest,
+        updateProjection
+    } = useNavfitStore();
 
-export interface ReportsManagerProps {
-    summaryGroups?: SummaryGroup[];
-    pendingRequest?: { memberId: string; name: string; rank?: string; reportId?: string } | null;
-    onClearRequest?: () => void;
-    onUpdateReport?: (reportId: string, newAverage: number) => void;
-}
-
-export function ReportsManager({ summaryGroups: propsSummaryGroups, pendingRequest, onClearRequest, onUpdateReport }: ReportsManagerProps) {
-    // Shared State for Reports
-    const [summaryGroups, setSummaryGroups] = useState<SummaryGroup[]>([]);
-
-    // Initialize Data (Wire Test Data)
-    useEffect(() => {
-        const initData = async () => {
-            if (propsSummaryGroups && propsSummaryGroups.length > 0) {
-                setSummaryGroups(propsSummaryGroups);
-            } else {
-                // Generate from Test Data
-                const generated = await SummaryGroupGenerator.generateSuggestions(ADAPTED_ROSTER, null);
-
-                // Add some manual status variety for demo
-                const enriched = generated.flatMap((g, i) => {
-                    const variants: SummaryGroup[] = [];
-
-                    // 1. The Real/Current Group (Draft/Submitted)
-                    let currentStatus: any = 'Pending';
-                    if (i % 3 === 0) currentStatus = 'Submitted';
-
-                    const reportsWithScores = g.reports; // Use generated values directly
-
-                    variants.push({ ...g, status: currentStatus, reports: reportsWithScores });
-
-                    // 2. Historic Group (Archived) - Previous Year
-                    // Clone/modify ID and date
-                    const prevYearDate = new Date(g.periodEndDate);
-                    prevYearDate.setFullYear(prevYearDate.getFullYear() - 1);
-
-                    variants.push({
-                        ...g,
-                        id: `${g.id}-prev`,
-                        periodEndDate: prevYearDate.toISOString().split('T')[0],
-                        status: 'Accepted',
-                        reports: reportsWithScores.map(r => ({ ...r, id: `${r.id}-prev` })) // Clone reports too
-                    });
-
-                    // 3. Future Group (Projected) - Next Year
-                    // Clone/modify ID and date
-                    const nextYearDate = new Date(g.periodEndDate);
-                    nextYearDate.setFullYear(nextYearDate.getFullYear() + 1);
-
-                    variants.push({
-                        ...g,
-                        id: `${g.id}-next`,
-                        periodEndDate: nextYearDate.toISOString().split('T')[0],
-                        status: 'Projected',
-                        reports: [] // Future usually has no reports yet
-                    });
-
-                    return variants;
-                });
-
-                setSummaryGroups(enriched);
-            }
-        };
-        initData();
-    }, [propsSummaryGroups]);
+    const summaryGroups = useSummaryGroups();
 
     const [selectedCompGroupName, setSelectedCompGroupName] = useState<string | null>(null);
     const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
@@ -116,20 +37,14 @@ export function ReportsManager({ summaryGroups: propsSummaryGroups, pendingReque
 
     // Update Handler
     const handleUpdateReport = (reportId: string, newAverage: number) => {
-        setSummaryGroups(prev => prev.map(group => ({
-            ...group,
-            reports: group.reports.map(r =>
-                r.id === reportId ? { ...r, traitAverage: newAverage } : r
-            )
-        })));
-
-        if (onUpdateReport) onUpdateReport(reportId, newAverage);
+        updateProjection(reportId, newAverage);
     };
+
 
     // Deep Linking
     useEffect(() => {
-        if (pendingRequest) {
-            const { memberId, name, reportId } = pendingRequest;
+        if (pendingReportRequest) {
+            const { memberId, name, reportId } = pendingReportRequest;
             for (const group of summaryGroups) {
                 const report = group.reports.find(r => r.id === reportId || r.memberId === memberId || r.memberId === name);
                 if (report) {
@@ -139,9 +54,9 @@ export function ReportsManager({ summaryGroups: propsSummaryGroups, pendingReque
                     break;
                 }
             }
-            if (onClearRequest) onClearRequest();
+            clearPendingReportRequest();
         }
-    }, [pendingRequest, summaryGroups, onClearRequest]);
+    }, [pendingReportRequest, summaryGroups, clearPendingReportRequest]);
 
     // Handlers
     const handleCompGroupSelect = (name: string) => {

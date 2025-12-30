@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
-import type { SummaryGroup } from '../../types';
-import { cn } from '../../lib/utils';
+import type { SummaryGroup } from '@/types';
+import { cn } from '@/lib/utils';
 // import { LayoutGrid } from 'lucide-react'; // Removed unused icon
 
 interface CompetitiveGroupHeaderProps {

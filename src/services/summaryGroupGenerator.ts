@@ -1,4 +1,4 @@
-import type { RosterEntry, BoardSchedule, SummaryGroup, Report } from '../../types';
+import type { RosterEntry, BoardSchedule, SummaryGroup, Report } from '@/types';
 
 // Periodic Cycles (Month index 0-11)
 const PERIODIC_CYCLES: Record<string, number> = {

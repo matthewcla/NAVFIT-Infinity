@@ -3,8 +3,8 @@ import {
     Plus,
     Users,
 } from 'lucide-react';
-import type { Member } from '../../types';
-import { PERIODIC_SCHEDULE } from '../../lib/constants';
+import type { Member } from '@/types';
+import { PERIODIC_SCHEDULE } from '@/lib/constants';
 
 interface TimelineRowProps {
     member: Member;

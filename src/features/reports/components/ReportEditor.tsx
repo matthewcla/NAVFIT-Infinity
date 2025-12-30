@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import type { Report } from '../../types';
+import type { Report } from '@/types';
 import { ArrowLeft, ChevronDown, ChevronUp, Save, FileOutput } from 'lucide-react';
-import { cn } from '../../lib/utils';
+import { cn } from '@/lib/utils';
 
 
 interface ReportEditorProps {

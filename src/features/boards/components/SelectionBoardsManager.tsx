@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
-import type { Board } from '../../types';
-import { cn } from '../../lib/utils';
+import type { Board } from '@/types';
+import { cn } from '@/lib/utils';
 import { RefreshCw, Calendar, Users, Plus, ChevronRight, Filter } from 'lucide-react';
-import { BoardService } from '../../lib/services/boardService';
+import { BoardService } from '@/services/boardService';
 
 export function SelectionBoardsManager() {
     const [boards, setBoards] = useState<Board[]>([]);

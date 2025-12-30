@@ -1,4 +1,4 @@
-import type { RosterMember, ReportingSeniorConfig } from '../types/roster';
+import type { RosterMember, ReportingSeniorConfig } from '@/types/roster';
 
 export const INITIAL_RS_CONFIG: ReportingSeniorConfig = {
     name: "VADM Kazansky, T.",

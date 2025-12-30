@@ -1,4 +1,4 @@
-import type { RosterEntry } from '../../types';
+import type { RosterEntry } from '@/types';
 
 // Mock Roster Data
 const MOCK_ROSTER: RosterEntry[] = [

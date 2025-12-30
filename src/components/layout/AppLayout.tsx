@@ -1,6 +1,6 @@
 import { type ReactNode } from 'react';
 import { Sidebar, type Tab } from './Sidebar';
-import { cn } from '../../lib/utils';
+import { cn } from '@/lib/utils';
 
 interface AppLayoutProps {
     children: ReactNode;

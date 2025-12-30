@@ -1,4 +1,5 @@
-import { ChevronDown } from 'lucide-react';
+import { ChevronDown, Activity, AlertTriangle, CheckCircle, TrendingUp } from 'lucide-react';
+import { Tooltip } from '@/components/ui/Tooltip';
 
 interface GroupHeaderProps {
     title: string;
@@ -10,9 +11,27 @@ interface GroupHeaderProps {
     trendPoints: { monthIndex: number, value: number, isProjected?: boolean }[];
     targetRange: { min: number, max: number };
     timelineMonths: { label: string; monthIndex: number; year: number; index: number }[];
+
+    // New KPI Props
+    status?: 'Safe' | 'Risk' | 'Developing' | 'Stabilized';
+    valueGap?: number;
+    sequencing?: 'Optimal' | 'Concern' | 'Inverted';
+    description?: string;
 }
 
-export const GroupHeader = ({ title, count, isExpanded, onToggle, trendPoints, targetRange, timelineMonths }: GroupHeaderProps) => {
+export const GroupHeader = ({
+    title,
+    count,
+    isExpanded,
+    onToggle,
+    trendPoints,
+    targetRange,
+    timelineMonths,
+    status = 'Safe',
+    valueGap = 0,
+    sequencing = 'Optimal',
+    description = ''
+}: GroupHeaderProps) => {
     // Chart Config
     const CHART_H = 100; // ViewBox Height
     const Y_MIN = 3.0; // Fixed scale for trait evaluation context (usually 3.0 to 5.0)
@@ -41,6 +60,8 @@ export const GroupHeader = ({ title, count, isExpanded, onToggle, trendPoints, t
         return (idx * COL_WIDTH) + (COL_WIDTH / 2); // Center of column
     };
 
+    const currentRSCA = trendPoints.length > 0 ? trendPoints[trendPoints.length - 1].value : 0;
+
     return (
         <div
             className="bg-slate-50 border-y border-slate-200 flex hover:bg-slate-100 transition-colors group h-32 items-stretch"
@@ -48,7 +69,7 @@ export const GroupHeader = ({ title, count, isExpanded, onToggle, trendPoints, t
         >
             {/* Left Info Section (Sticky Column) */}
             <div className="w-80 px-6 shrink-0 sticky left-0 bg-slate-50 group-hover:bg-slate-100 border-r border-slate-200 z-10 flex flex-col justify-center cursor-pointer shadow-[1px_0_4px_-1px_rgba(0,0,0,0.1)] transition-colors">
-                <div className="flex items-center space-x-2 mb-2">
+                <div className="flex items-center space-x-2 mb-3">
                     <ChevronDown
                         size={16}
                         className={`text-slate-500 transition-transform duration-200 ${isExpanded ? '' : '-rotate-90'}`}
@@ -57,25 +78,58 @@ export const GroupHeader = ({ title, count, isExpanded, onToggle, trendPoints, t
                     <span className="bg-slate-200 text-slate-600 px-2 py-0.5 rounded-full text-xs font-bold">{count}</span>
                 </div>
 
-                <div className="flex flex-col gap-2 pl-6 mt-1 w-full pr-2">
-                    {/* KPI Grid */}
-                    <div className="grid grid-cols-2 gap-y-2 gap-x-4">
-                        {/* Current RSCA */}
-                        <div className="flex flex-col">
-                            <span className="text-[10px] uppercase text-slate-400 font-bold tracking-wider">Current</span>
-                            <div className="flex items-baseline gap-1">
-                                <span className="text-xl font-bold text-slate-800">
-                                    {trendPoints.length > 0 ? trendPoints[trendPoints.length - 1].value.toFixed(2) : 'N/A'}
-                                </span>
-                                {trendPoints.length > 0 && (
-                                    <span className={`text-xs font-bold ${(trendPoints[trendPoints.length - 1].value - targetRange.max) > 0 ? 'text-red-500' : 'text-emerald-500'}`}>
-                                        {(trendPoints[trendPoints.length - 1].value - targetRange.max) > 0 ? '+' : ''}
-                                        {(trendPoints[trendPoints.length - 1].value - targetRange.max).toFixed(2)}
-                                    </span>
-                                )}
+                <div className="grid grid-cols-2 gap-x-2 gap-y-1 pl-6">
+                    {/* KPI 1: Status Icon & RSCA */}
+                    <div className="flex flex-col">
+                        <span className="text-[10px] uppercase text-slate-400 font-bold tracking-wider mb-0.5">Current RSCA</span>
+                        <div className="flex items-center space-x-2">
+                            <div className={`p-1 rounded-full ${status === 'Risk' ? 'bg-red-100 text-red-600' :
+                                    status === 'Safe' ? 'bg-green-100 text-green-600' :
+                                        'bg-blue-100 text-blue-600'
+                                }`}>
+                                {status === 'Risk' ? <AlertTriangle size={12} /> :
+                                    status === 'Safe' ? <Activity size={12} /> :
+                                        <CheckCircle size={12} />}
                             </div>
+                            <span className="text-lg font-bold text-slate-800">
+                                {currentRSCA > 0 ? currentRSCA.toFixed(2) : 'N/A'}
+                            </span>
                         </div>
+                    </div>
 
+                    {/* KPI 2: Value Gap */}
+                    <div className="flex flex-col">
+                        <span className="text-[10px] uppercase text-slate-400 font-bold tracking-wider mb-0.5">Value Gap</span>
+                        <Tooltip content={
+                            <div>
+                                <div className="font-bold mb-1 text-slate-200">Value Gap</div>
+                                <div className="text-xs text-slate-300">Difference between 5.00 and current RSCA. Higher is better for Members.</div>
+                            </div>
+                        }>
+                            <div className="flex items-center space-x-1">
+                                <span className={`text-lg font-bold ${valueGap >= 1.0 ? 'text-green-600' : 'text-yellow-600'}`}>
+                                    {valueGap.toFixed(2)}
+                                </span>
+                                <span className="text-[10px] text-slate-400">Val</span>
+                            </div>
+                        </Tooltip>
+                    </div>
+
+                    {/* KPI 3: Sequencing */}
+                    <div className="col-span-2 mt-1 border-t border-slate-200 pt-1 flex items-center justify-between">
+                        <div className="flex items-center space-x-1">
+                            <TrendingUp size={12} className={sequencing === 'Optimal' ? 'text-green-500' : 'text-slate-400'} />
+                            <span className={`text-[10px] font-bold ${sequencing === 'Optimal' ? 'text-green-600' :
+                                    sequencing === 'Inverted' ? 'text-red-500' : 'text-yellow-600'
+                                }`}>
+                                {sequencing} Seq
+                            </span>
+                        </div>
+                        {description && (
+                            <span className="text-[9px] text-slate-400 truncate max-w-[120px]" title={description}>
+                                {description}
+                            </span>
+                        )}
                     </div>
                 </div>
             </div>
