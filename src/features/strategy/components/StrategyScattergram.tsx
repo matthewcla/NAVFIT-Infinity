@@ -2,7 +2,8 @@ import React, { useState, useRef, useMemo, useEffect } from 'react';
 import { projectRSCA } from '@/features/strategy/logic/rsca';
 import type { RosterMember } from '@/types/roster';
 import type { SummaryGroup } from '@/types';
-import { Lock } from 'lucide-react';
+import { Lock, AlertCircle } from 'lucide-react';
+import { useNavfitStore } from '@/store/useNavfitStore';
 
 // --- MOCK DATA FOR PROTOTYPING ---
 const MOCK_START_DATE = new Date('2025-01-01');
@@ -41,18 +42,20 @@ interface StrategyScattergramProps {
     minimal?: boolean;
     height?: number;
     focusDate?: string;
+    flightPathMode?: boolean;
 }
 
 // --- STABLE CONSTANTS ---
 const EMPTY_SUMMARY_GROUPS: SummaryGroup[] = [];
 const EMPTY_ROSTER: RosterMember[] = [];
 
-export function StrategyScattergram({ summaryGroups = EMPTY_SUMMARY_GROUPS, roster = EMPTY_ROSTER, onOpenReport, onUpdateReport, minimal = false, height: propHeight, focusDate }: StrategyScattergramProps) {
+export function StrategyScattergram({ summaryGroups = EMPTY_SUMMARY_GROUPS, roster: propRoster = EMPTY_ROSTER, onOpenReport, onUpdateReport, minimal = false, height: propHeight, focusDate, flightPathMode = false }: StrategyScattergramProps) {
     // --- STATE ---
-    // --- STATE ---
-    // Removed local reports state to avoid synchronization issues.
-    // We derive reports from props and apply local drag overrides.
+    // Use store for selected member context if flightPathMode is active
+    const { selectedMemberId, roster: storeRoster } = useNavfitStore();
 
+    // Prefer passed roster prop, fallback to store
+    const roster = propRoster.length > 0 ? propRoster : storeRoster;
 
     const scrollContainerRef = useRef<HTMLDivElement>(null);
 
@@ -104,7 +107,7 @@ export function StrategyScattergram({ summaryGroups = EMPTY_SUMMARY_GROUPS, rost
 
 
     // Helper to map date string to X coordinate
-    const dateToX = (dateStr: string) => {
+    const dateToX = React.useCallback((dateStr: string) => {
         const d = new Date(dateStr);
         const start = new Date(MOCK_START_DATE);
         // Visual timeline starts 3 months before MOCK_START_DATE
@@ -116,7 +119,7 @@ export function StrategyScattergram({ summaryGroups = EMPTY_SUMMARY_GROUPS, rost
         const visualMonthIndex = diffMonths + 3;
 
         return (visualMonthIndex * 96) + 48; // 96 is COL_WIDTH
-    };
+    }, []);
 
     // Auto-scroll to focusDate (Horizontal)
     useEffect(() => {
@@ -134,14 +137,8 @@ export function StrategyScattergram({ summaryGroups = EMPTY_SUMMARY_GROUPS, rost
             }, 100);
             return () => clearTimeout(timer);
         }
-    }, [focusDate]);
+    }, [focusDate, dateToX]);
 
-    // Initial Scroll / Magnetic Logic
-    // Default View: Top of container (0) corresponds to NOB visible at top.
-    // So scrollTop 0 IS the default view.
-    // We add a snap point at 0.
-
-    // If props change, update state
     // --- DERIVED DATA ---
     const reports = useMemo(() => {
         if (!summaryGroups) return [];
@@ -199,6 +196,68 @@ export function StrategyScattergram({ summaryGroups = EMPTY_SUMMARY_GROUPS, rost
     const monthToX = (monthIndex: number) => {
         return (monthIndex * COL_WIDTH) + (COL_WIDTH / 2);
     };
+
+    // --- FLIGHT PATH / CONE LOGIC ---
+    // Logic: Identify selected member, their current/projected report, and calculate bounds based on PRD.
+    const flightPathData = useMemo(() => {
+        if (!flightPathMode || !selectedMemberId) return null;
+
+        const member = roster.find(m => m.id === selectedMemberId);
+        if (!member || !member.prd) return null;
+
+        // Find the "current" report for visualization (the one likely being edited or latest)
+        // We look in displayReports because it contains the live drag value
+        // Filter for this member
+        const memberReports = displayReports.filter(r => r.memberId === selectedMemberId);
+        if (memberReports.length === 0) return null;
+
+        // Use the latest report by date as the "Current" point
+        // Or if we specifically want the one that is NOT final?
+        // Let's assume the latest report IS the one we are concerned with (Projected).
+        const currentReport = memberReports.reduce((latest, r) =>
+            new Date(r.date) > new Date(latest.date) ? r : latest
+            , memberReports[0]);
+
+        if (!currentReport) return null;
+
+        // Calculate Attributes
+        const currentGrade = currentReport.isNOB ? 0 : currentReport.traitAverage; // If NOB, flight path is weird, assume 0 or hide
+        const currentDateX = dateToX(currentReport.date);
+        const currentGradeY = traitToY(currentGrade);
+
+        const prdX = dateToX(member.prd);
+        const prdGradeY = traitToY(5.00);
+
+        // --- Upper Bound Logic ---
+        // Max grade allowed today without hitting 5.00 before PRD.
+        // Formula: 5.00 - ((ReportsRemaining - 1) * Increment)
+        // Default increment 0.10 for meaningful progression
+        const reportsRemaining = member.reportsRemaining || 1;
+        const PROGRESSION_STEP = 0.10;
+
+        let maxGradeToday = 5.00;
+        if (reportsRemaining > 1) {
+            maxGradeToday = 5.00 - ((reportsRemaining - 1) * PROGRESSION_STEP);
+        }
+        // Clamp maxGradeToday? 
+        maxGradeToday = Math.min(5.00, Math.max(1.0, maxGradeToday));
+
+        const upperBoundY = traitToY(maxGradeToday);
+
+        const isOverLimit = currentGrade > maxGradeToday + 0.001; // epsilon
+
+        return {
+            currentReport,
+            currentX: currentDateX,
+            currentY: currentGradeY,
+            prdX,
+            prdY: prdGradeY,
+            upperStartY: upperBoundY,
+            isOverLimit,
+            maxGradeToday
+        };
+    }, [flightPathMode, selectedMemberId, roster, displayReports, dateToX, traitToY]);
+
 
     // --- DERIVED DATA ---
     const projectedRSCAVal = useMemo(() => {
@@ -553,6 +612,48 @@ export function StrategyScattergram({ summaryGroups = EMPTY_SUMMARY_GROUPS, rost
                                         <line key={i} x1={(i + 1) * COL_WIDTH} y1={0} x2={(i + 1) * COL_WIDTH} y2={TOTAL_SCROLL_HEIGHT} stroke="#f1f5f9" strokeWidth={1} />
                                     ))}
 
+                                    {/* Flight Path Cone (Behind points) */}
+                                    {flightPathData && (
+                                        <g className="pointer-events-none">
+                                            {/* Cone Fill */}
+                                            <path
+                                                d={`M ${flightPathData.currentX} ${flightPathData.currentY} L ${flightPathData.prdX} ${flightPathData.prdY} L ${flightPathData.currentX} ${flightPathData.upperStartY} Z`}
+                                                fill={flightPathData.isOverLimit ? '#fecaca' : '#dcfce7'} // Red tint if over, Green tint if safe
+                                                fillOpacity="0.4"
+                                            />
+                                            {/* Lower Bound Line (Linear to 5.0) */}
+                                            <line
+                                                x1={flightPathData.currentX} y1={flightPathData.currentY}
+                                                x2={flightPathData.prdX} y2={flightPathData.prdY}
+                                                stroke={flightPathData.isOverLimit ? '#ef4444' : '#22c55e'}
+                                                strokeWidth={2}
+                                                strokeDasharray="4 2"
+                                            />
+                                            {/* Upper Bound Line (Max Headroom) */}
+                                            {/* This connects Calculated Max Start to Result (PRD 5.0) OR just visualizes the ceiling from current X? */}
+                                            {/* Prompt: "Upper Bound Line: The mathematical max grade they can receive today..." */}
+                                            {/* We draw the line from (CurrentX, UpperStartY) to (PrdX, PrdY) to show the limit slope? */}
+                                            <line
+                                                x1={flightPathData.currentX} y1={flightPathData.upperStartY}
+                                                x2={flightPathData.prdX} y2={flightPathData.prdY}
+                                                stroke="#ef4444"
+                                                strokeWidth={1}
+                                                strokeDasharray="2 2"
+                                                strokeOpacity="0.6"
+                                            />
+
+                                            {/* Tooltip for Over Limit */}
+                                            {flightPathData.isOverLimit && (
+                                                <g transform={`translate(${flightPathData.currentX - 10}, ${flightPathData.currentY - 40})`}>
+                                                    <rect x="-100" y="-24" width="200" height="24" rx="4" fill="#fee2e2" stroke="#ef4444" strokeWidth="1" />
+                                                    <text x="0" y="-8" textAnchor="middle" className="text-[10px] fill-red-700 font-bold">
+                                                        No headroom for future progression
+                                                    </text>
+                                                </g>
+                                            )}
+                                        </g>
+                                    )}
+
                                     {/* Connections & Trends */}
                                     {impactConnections.map(conn => (
                                         <path
@@ -592,15 +693,19 @@ export function StrategyScattergram({ summaryGroups = EMPTY_SUMMARY_GROUPS, rost
                                     {/* Interactive Scatter Points */}
                                     {sortedPoints.map(p => {
                                         const isDragging = activeDragId === p.id;
-                                        // Border Logic:
-                                        // NOB -> White
-                                        // > RSCA -> Green
-                                        // Else (<= RSCA) -> Yellow
+                                        // Flight Path Override: Red if Over Limit
                                         let strokeColor = '#eab308';
+
+                                        // Default Logic
                                         if (p.report.isNOB) {
                                             strokeColor = 'white';
                                         } else if (p.report.traitAverage > projectedRSCAVal) {
                                             strokeColor = '#22c55e';
+                                        }
+
+                                        // Flight Path Override
+                                        if (flightPathData && p.report.id === flightPathData.currentReport.id && flightPathData.isOverLimit) {
+                                            strokeColor = '#ef4444'; // Red
                                         }
 
                                         const baseColor = getPointColor(p.report.type);
@@ -662,6 +767,13 @@ export function StrategyScattergram({ summaryGroups = EMPTY_SUMMARY_GROUPS, rost
                                                         <Lock size={10} className="text-slate-600" x={-5} y={-5} />
                                                         <path d="M5.5 5.5v-1a2.5 2.5 0 0 0-5 0v1" transform="translate(-1.5, -4)" fill="none" stroke="#64748b" strokeWidth="1.5" strokeLinecap="round" />
                                                         <rect x="-3" y="1" width="6" height="5" rx="1" fill="#64748b" />
+                                                    </g>
+                                                )}
+
+                                                {flightPathData && p.report.id === flightPathData.currentReport.id && flightPathData.isOverLimit && (
+                                                    <g transform="translate(-14, -14)">
+                                                        <circle r="8" fill="#fee2e2" stroke="#ef4444" strokeWidth="1" />
+                                                        <AlertCircle size={10} className="text-red-500" x={-5} y={-5} />
                                                     </g>
                                                 )}
 

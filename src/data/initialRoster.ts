@@ -17,7 +17,10 @@ export const INITIAL_ROSTER: RosterMember[] = [
         rank: 'O-5',
         designator: '1310',
         dateReported: '2023-01-01',
-        prd: '2026-06-01'
+        prd: '2026-06-01',
+        status: 'Promotable',
+        reportsRemaining: 1,
+        rankOrder: 1
     },
 
     // --- O-4 (LCDR) ---
@@ -29,7 +32,10 @@ export const INITIAL_ROSTER: RosterMember[] = [
         rank: 'O-4',
         designator: '1310',
         dateReported: '2023-05-15',
-        prd: '2026-05-15'
+        prd: '2026-05-15',
+        status: 'Promotable',
+        reportsRemaining: 2,
+        rankOrder: 2
     },
     {
         id: 'm-202',
@@ -38,7 +44,10 @@ export const INITIAL_ROSTER: RosterMember[] = [
         rank: 'O-4',
         designator: '1310',
         dateReported: '2022-11-01',
-        prd: '2025-11-01'
+        prd: '2025-11-01',
+        status: 'Promotable',
+        reportsRemaining: 1,
+        rankOrder: 3
     },
 
     // --- O-3 (LT) ---
@@ -50,7 +59,10 @@ export const INITIAL_ROSTER: RosterMember[] = [
         rank: 'O-3',
         designator: '1310',
         dateReported: '2024-02-01',
-        prd: '2027-02-01'
+        prd: '2027-02-01',
+        status: 'Promotable',
+        reportsRemaining: 3,
+        rankOrder: 4
     },
     {
         id: 'm-302',
@@ -59,7 +71,10 @@ export const INITIAL_ROSTER: RosterMember[] = [
         rank: 'O-3',
         designator: '1310',
         dateReported: '2023-08-01',
-        prd: '2026-08-01'
+        prd: '2026-08-01',
+        status: 'Promotable',
+        reportsRemaining: 2,
+        rankOrder: 5
     },
     {
         id: 'm-303',
@@ -68,7 +83,10 @@ export const INITIAL_ROSTER: RosterMember[] = [
         rank: 'O-3',
         designator: '1310',
         dateReported: '2024-01-15',
-        prd: '2026-01-15' // PRD implies a transfer report in Jan 2026
+        prd: '2026-01-15', // PRD implies a transfer report in Jan 2026
+        status: 'Transferring',
+        reportsRemaining: 1,
+        rankOrder: 6
     },
     {
         id: 'm-304',
@@ -77,7 +95,10 @@ export const INITIAL_ROSTER: RosterMember[] = [
         rank: 'O-3',
         designator: '1310',
         dateReported: '2023-03-01',
-        prd: '2026-03-01'
+        prd: '2026-03-01',
+        status: 'Promotable',
+        reportsRemaining: 2,
+        rankOrder: 7
     },
 
     // --- O-2 (LTJG) ---
@@ -89,7 +110,10 @@ export const INITIAL_ROSTER: RosterMember[] = [
         rank: 'O-2',
         designator: '1310',
         dateReported: '2024-06-01',
-        prd: '2027-06-01'
+        prd: '2027-06-01',
+        status: 'Promotable',
+        reportsRemaining: 3,
+        rankOrder: 8
     },
 
     // --- O-1 (ENS) ---
@@ -101,7 +125,10 @@ export const INITIAL_ROSTER: RosterMember[] = [
         rank: 'O-1',
         designator: '1110',
         dateReported: '2024-12-01',
-        prd: '2026-12-01'
+        prd: '2026-12-01',
+        status: 'Promotable',
+        reportsRemaining: 2,
+        rankOrder: 9
     },
 
     // --- LDO/CWO (Example) ---
@@ -113,6 +140,9 @@ export const INITIAL_ROSTER: RosterMember[] = [
         rank: 'W-2',
         designator: '6130',
         dateReported: '2020-01-01',
-        prd: '2026-01-01'
+        prd: '2026-01-01',
+        status: 'Retiring',
+        reportsRemaining: 1,
+        rankOrder: 10
     }
 ];

@@ -3,6 +3,8 @@ import type { Tab } from '../components/layout/Sidebar';
 import type { RosterMember, ReportingSeniorConfig } from '@/types/roster';
 import { INITIAL_ROSTER, INITIAL_RS_CONFIG } from '../data/initialRoster';
 
+import { calculateOutcomeBasedGrades, type Member } from '@/features/strategy/logic/autoPlan';
+
 interface NavfitStore {
     // Navigation State
     activeTab: Tab;
@@ -23,6 +25,7 @@ interface NavfitStore {
     // Data State
     roster: RosterMember[];
     setRoster: (roster: RosterMember[]) => void;
+    reorderMember: (memberId: string, newIndex: number) => void;
 
     rsConfig: ReportingSeniorConfig;
     setRsConfig: (config: ReportingSeniorConfig) => void;
@@ -73,6 +76,54 @@ export const useNavfitStore = create<NavfitStore>((set) => ({
     // Data
     roster: INITIAL_ROSTER,
     setRoster: (roster) => set({ roster }),
+    reorderMember: (memberId, newIndex) => set((state) => {
+        const currentRoster = [...state.roster];
+        const oldIndex = currentRoster.findIndex(m => m.id === memberId);
+
+        if (oldIndex === -1) return {};
+
+        // 1. Move the member
+        const [movedMember] = currentRoster.splice(oldIndex, 1);
+        currentRoster.splice(newIndex, 0, movedMember);
+
+        // 2. Update rankOrder based on new array position (1-based)
+        const updatedRoster = currentRoster.map((member, index) => ({
+            ...member,
+            rankOrder: index + 1
+        }));
+
+        // 3. Prepare Auto-Plan Input
+        // Map RosterMember to the Auto-Plan Member interface
+        // We ensure we have default values for any missing optional fields
+        const autoPlanInput: Member[] = updatedRoster.map(m => ({
+            id: m.id,
+            rankOrder: m.rankOrder || 99,
+            reportsRemaining: m.reportsRemaining || 1,
+            status: m.status || 'Promotable',
+            proposedTraitAverage: 0 // Reset for calculation
+        }));
+
+        // 4. Calculate Grades
+        // Use RSCA from config or default to 4.20 if missing
+        const rscaTarget = 4.20; // TODO: Pull from rsConfig if available, e.g. state.rsConfig.targetRsca
+        // Note: We might want strategy config from state later
+
+        const calculatedResults = calculateOutcomeBasedGrades(autoPlanInput, rscaTarget);
+
+        // 5. Update Projections
+        const newProjections = { ...state.projections };
+        calculatedResults.forEach(res => {
+            if (res.proposedTraitAverage) {
+                // Update projection using memberId as key (supported by reportGenerator now)
+                newProjections[res.id] = res.proposedTraitAverage;
+            }
+        });
+
+        return {
+            roster: updatedRoster,
+            projections: newProjections
+        };
+    }),
 
     rsConfig: INITIAL_RS_CONFIG,
     setRsConfig: (config) => set({ rsConfig: config }),

@@ -152,7 +152,7 @@ export const generateSummaryGroups = (
                         // but here we just project the periodic cycle slots.
 
                         const reportId = `r-${member.id}-periodic-${currentYear}`;
-                        const calculatedAvg = projections[reportId] ?? calculateStartValue(member, 'Periodic', rsConfig);
+                        const calculatedAvg = projections[reportId] ?? projections[member.id] ?? calculateStartValue(member, 'Periodic', rsConfig);
 
                         const report: Report = {
                             id: reportId,
@@ -186,7 +186,7 @@ export const generateSummaryGroups = (
             const group = ensureGroup(compGroup, prdStr);
 
             const reportId = `r-${member.id}-transfer-${memberPRD.getFullYear()}`;
-            const calculatedAvg = projections[reportId] ?? calculateStartValue(member, 'Transfer', rsConfig);
+            const calculatedAvg = projections[reportId] ?? projections[member.id] ?? calculateStartValue(member, 'Transfer', rsConfig);
             const report: Report = {
                 id: reportId,
                 memberId: member.id,
@@ -216,7 +216,7 @@ export const generateSummaryGroups = (
 
             if (!group.reports.some(r => r.memberId === member.id)) {
                 const reportId = `r-${member.id}-rsdetach-${rsEndDate.getFullYear()}`;
-                const calculatedAvg = projections[reportId] ?? calculateStartValue(member, 'Detachment', rsConfig);
+                const calculatedAvg = projections[reportId] ?? projections[member.id] ?? calculateStartValue(member, 'Detachment', rsConfig);
                 const report: Report = {
                     id: reportId,
                     memberId: member.id,

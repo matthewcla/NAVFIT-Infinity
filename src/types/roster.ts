@@ -19,6 +19,11 @@ export interface RosterMember {
     prd: string;          // Projected Rotation Date
     lastTrait?: number;
     target?: number;
+
+    // Auto-Plan Fields
+    status?: 'Promotable' | 'Transferring' | 'Retiring' | string;
+    reportsRemaining?: number;
+    rankOrder?: number;
 }
 
 export interface ReportingSeniorConfig {
