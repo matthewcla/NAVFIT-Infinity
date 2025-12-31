@@ -57,3 +57,38 @@ export const calculateSensitivity = (totalSigned: number): number => {
 export const calculateFlexibility = (totalSigned: number): number => {
     return Math.min(100, (totalSigned / 20) * 100);
 };
+
+/**
+ * Calculates the cumulative RSCA for a specific Paygrade (Rank).
+ * Aggregates all reports from all Summary Groups that match the target Paygrade.
+ * This ensures Frocked, Regular, Spot, etc. all feed the same RSCA bucket.
+ */
+import type { SummaryGroup } from '@/types';
+
+export const calculateCumulativeRSCA = (
+    allGroups: SummaryGroup[],
+    targetPaygrade: string
+): number => {
+    // 1. Filter groups by Paygrade
+    const matchingGroups = allGroups.filter(g => g.paygrade === targetPaygrade);
+
+    if (matchingGroups.length === 0) return 0;
+
+    // 2. Aggregate all reports
+    let totalScore = 0;
+    let totalReports = 0;
+
+    matchingGroups.forEach(group => {
+        group.reports.forEach(report => {
+            if (report.traitAverage) {
+                totalScore += report.traitAverage;
+                totalReports++;
+            }
+        });
+    });
+
+    if (totalReports === 0) return 0;
+
+    // 3. Return weighted average
+    return round2(totalScore / totalReports);
+};

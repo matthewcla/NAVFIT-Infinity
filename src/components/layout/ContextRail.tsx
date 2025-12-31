@@ -1,6 +1,6 @@
 import { ChevronLeft, ChevronRight, User } from 'lucide-react';
 import { useNavfitStore } from '@/store/useNavfitStore';
-import { OpportunityRadarWidget } from '@/features/strategy/components/OpportunityRadarWidget';
+
 import { QuickReportTuner } from '@/features/strategy/components/QuickReportTuner';
 import { cn } from '@/lib/utils';
 
@@ -47,7 +47,9 @@ export function ContextRail() {
                             </div>
                         </div>
                     ) : (
-                        <OpportunityRadarWidget />
+                        <div className="text-center p-8 text-slate-400 text-sm">
+                            Select a cycle or member to view details.
+                        </div>
                     )}
                 </div>
             </div>

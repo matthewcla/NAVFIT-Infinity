@@ -15,6 +15,7 @@ export interface RosterMember {
     middleInitial?: string;
     rank: PayGrade;
     designator: Designator;
+    promotionStatus?: 'REGULAR' | 'FROCKED' | 'SELECTED' | 'SPOT'; // Defaults to REGULAR if undefined
     // For Enlisted, would be rating. Keeping simple for Officers first.
 
     dateReported: string; // YYYY-MM-DD

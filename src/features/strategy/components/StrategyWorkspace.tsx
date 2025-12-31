@@ -1,7 +1,7 @@
 // import { Calendar, Plus } from 'lucide-react'; 
 // import { CURRENT_YEAR } from '@/lib/constants';
 import { useState } from 'react';
-import { GanttChart, List } from 'lucide-react';
+import { GanttChart, List, ChevronLeft } from 'lucide-react';
 import { ManningWaterfall } from './ManningWaterfall';
 import { StrategyListView } from './StrategyListView';
 import { StrategyScattergram } from './StrategyScattergram';
@@ -11,8 +11,13 @@ import { ActivitySyncBar } from './ActivitySyncBar';
 import { ReportEditorModal } from './ReportEditorModal';
 import { useNavfitStore } from '@/store/useNavfitStore';
 import { useSummaryGroups } from '@/features/strategy/hooks/useSummaryGroups';
+import { RscaHeadsUpDisplay } from './RscaHeadsUpDisplay';
 
-export function StrategyWorkspace() {
+interface StrategyWorkspaceProps {
+    onBack?: () => void;
+}
+
+export function StrategyWorkspace({ onBack }: StrategyWorkspaceProps) {
     const [flightPathMode, setFlightPathMode] = useState(false);
     const {
         roster,
@@ -38,6 +43,15 @@ export function StrategyWorkspace() {
             {/* Header */}
             <header className="h-16 bg-white border-b border-slate-200 flex justify-between items-center px-8 shadow-sm flex-shrink-0 z-10">
                 <div className="flex items-center space-x-4">
+                    {onBack && (
+                        <button
+                            onClick={onBack}
+                            className="p-1.5 rounded-md text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-all"
+                            title="Back to Command Center"
+                        >
+                            <ChevronLeft className="w-5 h-5" />
+                        </button>
+                    )}
                     <span className="text-sm font-bold text-slate-400 uppercase tracking-wider">Strategic Pulse</span>
                     <div className="h-6 w-px bg-slate-200"></div>
                 </div>
@@ -60,6 +74,11 @@ export function StrategyWorkspace() {
                     </div>
                 </div>
             </header>
+
+            {/* Sticky HUD */}
+            <div className="sticky top-0 z-20">
+                <RscaHeadsUpDisplay summaryGroups={summaryGroups} />
+            </div>
 
             <div className="flex-1 overflow-hidden flex flex-col">
                 {viewMode === 'timeline' ? (

@@ -9,30 +9,38 @@ const formatISODate = (year: number, monthIndex: number, day: number) => {
     return `${year}-${mm}-${dd}`;
 };
 
-const getCompetitiveGroup = (member: RosterMember): string => {
-    // E.g. "O-3 URL", "O-4 RL", "E-6 OS"
-    const { rank, designator } = member;
+interface CompGroupKey {
+    paygrade: string;
+    designator: string;
+    promotionStatus: 'REGULAR' | 'FROCKED' | 'SELECTED' | 'SPOT';
+    label: string;
+}
 
-    // Officer Groups
+const getCompetitiveGroup = (member: RosterMember): CompGroupKey => {
+    const { rank, designator, promotionStatus = 'REGULAR' } = member;
+
+    // Normalize Category for Label
+    let category = 'OFF';
     if (rank.startsWith('O') || rank.startsWith('W')) {
-        let category = 'OFF';
         if (designator) {
             if (['1110', '1120', '1310', '1320', '1300'].includes(designator)) category = 'URL';
             else if (['1200', '1800', '1810', '1820', '1830'].includes(designator)) category = 'RL';
-            else if (['6410', '6130', '6160', '6180'].includes(designator)) category = 'LDO'; // Limited Duty
+            else if (['6410', '6130', '6160', '6180'].includes(designator)) category = 'LDO';
             else if (designator.startsWith('7')) category = 'CWO';
-            else category = 'STAFF'; // Medical, Supply, etc. simplified
+            else category = 'STAFF';
         }
-        return `${category} ${rank}`;
+    } else {
+        category = ''; // Was 'ENL', now empty as requested
     }
 
-    // Enlisted Groups (Placeholder for future)
-    // if (rank.startsWith('E')) {
-    //     if (['E-7', 'E-8', 'E-9'].includes(rank)) return `CPO ${rank}`;
-    //     return `ENL ${rank}`;
-    // }
+    const label = `${rank} ${category} ${promotionStatus !== 'REGULAR' ? promotionStatus : ''}`.trim();
 
-    return `${rank} GROUP`;
+    return {
+        paygrade: rank,
+        designator: designator,
+        promotionStatus: promotionStatus,
+        label: label
+    };
 };
 
 // --- Logic Engine ---
@@ -88,22 +96,34 @@ export const generateSummaryGroups = (
     const rsEndDate = new Date(rsConfig.changeOfCommandDate); // e.g. 2026-06-01
 
     // Helper to get-or-create Group
-    const ensureGroup = (compGroup: string, endDate: string): SummaryGroup => {
-        const id = `sg-${compGroup.replace(/\s+/g, '-')}-${endDate}`;
+    const ensureGroup = (key: CompGroupKey, endDate: string): SummaryGroup => {
+        // Unique ID must include all segmentation factors
+        const idParts = [
+            key.paygrade,
+            key.designator,
+            key.promotionStatus,
+            endDate
+        ].join('|');
+
+        const id = `sg-${idParts.replace(/[\s|]+/g, '-')}`;
+
         if (!groupsMap.has(id)) {
             groupsMap.set(id, {
                 id,
-                name: compGroup,
+                name: key.label, // "O-3 URL Frocked"
                 periodEndDate: endDate,
                 status: 'Pending',
-                reports: []
+                reports: [],
+                paygrade: key.paygrade,
+                designator: key.designator,
+                promotionStatus: key.promotionStatus
             });
         }
         return groupsMap.get(id)!;
     };
 
     roster.forEach(member => {
-        const compGroup = getCompetitiveGroup(member);
+        const groupKey = getCompetitiveGroup(member);
         const memberPRD = new Date(member.prd);
 
         // Loop through years from Base Year until RS Detach Date
@@ -130,7 +150,7 @@ export const generateSummaryGroups = (
 
                 if (pDate <= rsEndDate && pDate <= memberPRD && pDate >= memberRepDate) {
                     const pDateStr = formatISODate(currentYear, pMonthIndex, pDate.getDate());
-                    const group = ensureGroup(compGroup, pDateStr);
+                    const group = ensureGroup(groupKey, pDateStr);
 
                     // Avoid duplication
                     if (!group.reports.some(r => r.memberId === member.id)) {
@@ -161,12 +181,13 @@ export const generateSummaryGroups = (
                             type: 'Periodic',
                             traitAverage: calculatedAvg,
                             promotionRecommendation: calculatedAvg > 0 ? 'P' : 'NOB',
-                            draftStatus: status, // <--- KEY CHANGE
+                            draftStatus: status,
                             traitGrades: {},
                             isAdverse: false,
                             notObservedReport: false,
                             grade: member.rank,
                             designator: member.designator,
+                            promotionStatus: member.promotionStatus, // Explicitly pass status
                             dateReported: member.dateReported,
                             reportingSeniorName: rsConfig.name,
                         };
@@ -183,7 +204,7 @@ export const generateSummaryGroups = (
         // If Member leaves BEFORE RS leaves, they get a Transfer Report at PRD.
         if (memberPRD < rsEndDate && memberPRD > new Date(member.dateReported)) {
             const prdStr = formatISODate(memberPRD.getFullYear(), memberPRD.getMonth(), memberPRD.getDate());
-            const group = ensureGroup(compGroup, prdStr);
+            const group = ensureGroup(groupKey, prdStr);
 
             const reportId = `r-${member.id}-transfer-${memberPRD.getFullYear()}`;
             const calculatedAvg = projections[reportId] ?? projections[member.id] ?? calculateStartValue(member, 'Transfer', rsConfig);
@@ -199,6 +220,7 @@ export const generateSummaryGroups = (
                 traitGrades: {},
                 grade: member.rank,
                 designator: member.designator,
+                promotionStatus: member.promotionStatus,
                 reportingSeniorName: rsConfig.name,
             };
             group.reports.push(report);
@@ -212,7 +234,7 @@ export const generateSummaryGroups = (
         // Member must have reported before RS Date.
         if (memberPRD >= rsEndDate && new Date(member.dateReported) < rsEndDate) {
             const rsDateStr = rsConfig.changeOfCommandDate;
-            const group = ensureGroup(compGroup, rsDateStr);
+            const group = ensureGroup(groupKey, rsDateStr);
 
             if (!group.reports.some(r => r.memberId === member.id)) {
                 const reportId = `r-${member.id}-rsdetach-${rsEndDate.getFullYear()}`;
@@ -228,6 +250,7 @@ export const generateSummaryGroups = (
                     traitGrades: {},
                     grade: member.rank,
                     designator: member.designator,
+                    promotionStatus: member.promotionStatus,
                     reportingSeniorName: rsConfig.name,
                 };
                 group.reports.push(report);

@@ -55,14 +55,23 @@ export const SummaryGroupGenerator = {
         });
 
         // Grouping logic
-        // Key format: "RANK|DESIGNATOR" (e.g. "O-4|1110" or "E-6|")
-        // Officers grouped by Rank + Designator
-        // Enlisted grouped by Rank (or Rating if needed, but per request Paygrade/Rank is main)
+        // Key format: "RANK|DESIGNATOR|STATUS"
+        // Officers grouped by Rank + Designator + Promotion Status
+        // Enlisted grouped by Rank + Promotion Status
         const candidatesByGroup = new Map<string, RosterMember[]>();
 
         periodicCandidates.forEach(m => {
             const isOfficer = m.rank.startsWith('O') || m.rank.startsWith('W');
-            const key = isOfficer ? `${m.rank}|${m.designator}` : `${m.rank}|Enlisted`;
+            const designatorKey = isOfficer ? m.designator : 'Enlisted';
+
+            // Normalize Promotion Status
+            // Roster typically has "Frocked", "Selected", "Regular". Convert to strict Upper Case.
+            let status = (m.promotionStatus || 'Regular').toUpperCase();
+            if (!['REGULAR', 'FROCKED', 'SELECTED', 'SPOT'].includes(status)) {
+                status = 'REGULAR';
+            }
+
+            const key = `${m.rank}|${designatorKey}|${status}`;
 
             if (!candidatesByGroup.has(key)) candidatesByGroup.set(key, []);
             candidatesByGroup.get(key)!.push(m);
@@ -71,7 +80,7 @@ export const SummaryGroupGenerator = {
         Array.from(candidatesByGroup.entries()).forEach(([key, members]) => {
             if (members.length === 0) return;
 
-            const [rank, designatorContext] = key.split('|');
+            const [rank, designatorContext, status] = key.split('|');
             const cycleMonth = PERIODIC_CYCLES[mapRankToKey(rank) || ''];
 
             if (cycleMonth !== undefined) {
@@ -79,13 +88,29 @@ export const SummaryGroupGenerator = {
                 const year = currentMonth > cycleMonth ? targetDate.getFullYear() + 1 : targetDate.getFullYear();
                 const closeoutDate = new Date(year, cycleMonth + 1, 0); // Last day of month
 
-                // Name format: "O-4 1310 Periodic" or "E-6 Periodic"
-                const groupName = designatorContext === 'Enlisted' ? `${rank} Periodic` : `${rank} ${designatorContext} Periodic`;
+                // Competitive Group Key (The "Pool")
+                // For Officers: "O-3 1110"
+                // For Enlisted: "E-6" (or "E-6 Enlisted" depending on preference, sticking to simple rank for display consistency?)
+                // User example: "O-3 1110". Let's follow that pattern.
+                const competitiveGroupKey = designatorContext === 'Enlisted' ? rank : `${rank} ${designatorContext}`;
+
+                // Summary Group Name (The "Report Bucket")
+                // Regular: "O-3 1110 Periodic"
+                // Frocked: "O-3 1110 FROCKED Periodic"
+                let groupNamePrefix = competitiveGroupKey;
+                if (status !== 'REGULAR') {
+                    groupNamePrefix += ` ${status}`;
+                }
+                const groupName = `${groupNamePrefix} Periodic`;
 
                 groups.push({
-                    id: `sg-auto-periodic-${rank}-${designatorContext}-${year}`,
+                    id: `sg-auto-periodic-${rank}-${designatorContext}-${status}-${year}`,
                     name: groupName,
                     periodEndDate: closeoutDate.toISOString().split('T')[0],
+                    paygrade: rank,
+                    designator: designatorContext === 'Enlisted' ? undefined : designatorContext,
+                    competitiveGroupKey: competitiveGroupKey,
+                    promotionStatus: status as 'REGULAR' | 'FROCKED' | 'SELECTED' | 'SPOT',
                     reports: members.map(m => createDraftReport(m, 'Periodic', closeoutDate))
                 });
             }
@@ -128,6 +153,7 @@ function createDraftReport(member: RosterMember, type: 'Periodic' | 'Detachment 
         narrative: "",
         draftStatus: 'Draft' as const,
         grade: member.rank,
+        promotionStatus: member.promotionStatus,
         shipStation: 'USS MOCK SHIP'
     };
 }

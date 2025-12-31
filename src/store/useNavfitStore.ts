@@ -51,6 +51,10 @@ interface NavfitStore {
     selectedMemberId: string | null;
     selectMember: (id: string | null) => void;
 
+    // Feature Context
+    selectedCompetitiveGroupKey: string | null;
+    setSelectedCompetitiveGroupKey: (key: string | null) => void;
+
     // Modal State
     isEditingReport: boolean;
     setEditingReport: (isEditing: boolean) => void;
@@ -170,6 +174,9 @@ export const useNavfitStore = create<NavfitStore>((set) => ({
         }
         return { selectedMemberId: null };
     }),
+
+    selectedCompetitiveGroupKey: null,
+    setSelectedCompetitiveGroupKey: (key) => set({ selectedCompetitiveGroupKey: key }),
 
 
     // Modal State
