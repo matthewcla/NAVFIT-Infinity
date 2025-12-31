@@ -65,6 +65,7 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
                     mta: currentMta,
                     delta: 0, // Placeholder for delta logic if history exists
                     rscaMargin,
+                    reportsRemaining: report.reportsRemaining,
                     report
                 };
             })
@@ -90,7 +91,7 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
         );
     }
 
-    const { cumulativeRsca, totalReports, gap, mainDraftStatus, rankedMembers } = contextData;
+    const { cumulativeRsca, gap, mainDraftStatus, rankedMembers } = contextData;
 
     return (
         <div className="h-full flex flex-row relative overflow-hidden">
@@ -99,35 +100,32 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
                 {/* 1. Sticky Header (Top) */}
                 <div className="sticky top-0 z-10 bg-white border-b border-slate-200">
                     <div className="px-6 pt-6 pb-4">
-                        {/* Row 1: Title & Date */}
-                        <div className="flex justify-between items-start mb-2">
+                        {/* Row 1: Title & Status Badges */}
+                        <div className="flex justify-between items-start mb-4">
                             <div>
                                 <h2 className="text-2xl font-bold text-slate-900">{group.name}</h2>
                                 <div className="text-sm text-slate-500 font-medium">{group.periodEndDate}</div>
                             </div>
-                        </div>
 
-                        {/* Row 2: Status Summary (Right Aligned) */}
-                        <div className="flex justify-end items-center gap-3 mb-4">
-                            <div className="flex items-center gap-1.5 px-2.5 py-1 bg-slate-100 rounded text-xs font-semibold text-slate-600 border border-slate-200">
-                                {totalReports} Reports
-                            </div>
-                            {gap > 0 && (
-                                <div className="flex items-center gap-1.5 px-2.5 py-1 bg-amber-50 rounded text-xs font-semibold text-amber-700 border border-amber-200">
-                                    {gap} Attention Needed
+                            {/* Status Badges (Moved to Top Right) */}
+                            <div className="flex flex-col items-end gap-1.5">
+                                {gap > 0 && (
+                                    <div className="flex items-center gap-1.5 px-2.5 py-1 bg-amber-50 rounded text-xs font-semibold text-amber-700 border border-amber-200">
+                                        {gap} Attention Needed
+                                    </div>
+                                )}
+                                <div className="flex items-center gap-1.5 px-2.5 py-1 bg-indigo-50 rounded text-xs font-semibold text-indigo-700 border border-indigo-200">
+                                    Status: {mainDraftStatus}
                                 </div>
-                            )}
-                            <div className="flex items-center gap-1.5 px-2.5 py-1 bg-indigo-50 rounded text-xs font-semibold text-indigo-700 border border-indigo-200">
-                                Status: {mainDraftStatus}
                             </div>
                         </div>
 
-                        {/* Row 3: RSCA Scoreboard */}
+                        {/* Row 2: RSCA Scoreboard */}
                         <div className="rounded-xl border border-slate-200 shadow-sm overflow-hidden mb-1">
                             <RscaHeadsUpDisplay
                                 currentRsca={cumulativeRsca}
                                 projectedRsca={cumulativeRsca}
-                                rankLabel="Current RSCA"
+                                rankLabel="Curr. RSCA"
                                 showSuffix={false}
                                 promotionStatus={group.promotionStatus}
                             />
@@ -135,20 +133,31 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
                     </div>
 
                     {/* 2. Sticky Toolbar (Below Header) */}
-                    <div className="sticky top-0 z-20 bg-white/95 backdrop-blur border-b border-slate-200 p-4 flex gap-3">
-                        <button
-                            onClick={onOpenWorkspace}
-                            className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg shadow-sm transition-all text-sm font-bold"
-                        >
-                            <span>Open Strategy Workspace</span>
-                            <ArrowRight className="w-4 h-4" />
-                        </button>
-                        <button className="p-2 text-slate-600 hover:bg-slate-50 border border-slate-200 rounded-lg transition-colors" title="Waterfall View">
-                            <BarChart className="w-5 h-5" />
-                        </button>
-                        <button className="p-2 text-slate-600 hover:bg-slate-50 border border-slate-200 rounded-lg transition-colors" title="Rank Members">
-                            <ListOrdered className="w-5 h-5" />
-                        </button>
+                    <div className="sticky top-0 z-20 bg-white/95 backdrop-blur border-b border-slate-200 p-4 pt-2">
+                        <div className="flex items-center gap-3">
+                            {/* Strategy Workspace - Compact (50% reduced implies smaller relative to others or just compact) */}
+                            {/* User asked: "Open Strategy Workspace: Reduce width by 50%" */}
+                            {/* Original was flex-1. Let's make it fixed width or auto */}
+                            <button
+                                onClick={onOpenWorkspace}
+                                className="flex items-center justify-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg shadow-sm transition-all text-sm font-bold shrink-0"
+                            >
+                                <ArrowRight className="w-4 h-4" />
+                                <span className="hidden sm:inline">Workspace</span>
+                            </button>
+
+                            {/* Action Buttons - "Increase width by 100%" implies taking up more space / becoming full buttons */}
+                            <div className="flex-1 grid grid-cols-2 gap-3">
+                                <button className="flex items-center justify-center gap-2 px-3 py-2.5 text-slate-700 hover:bg-slate-50 border border-slate-200 rounded-lg transition-colors font-medium text-sm">
+                                    <BarChart className="w-4 h-4 text-slate-500" />
+                                    <span>Waterfall</span>
+                                </button>
+                                <button className="flex items-center justify-center gap-2 px-3 py-2.5 text-slate-700 hover:bg-slate-50 border border-slate-200 rounded-lg transition-colors font-medium text-sm">
+                                    <ListOrdered className="w-4 h-4 text-slate-500" />
+                                    <span>Rank</span>
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -158,12 +167,13 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
                         <thead className="bg-slate-50 text-xs font-semibold text-slate-500 uppercase tracking-wider sticky top-0 z-0">
                             <tr>
                                 <th className="px-4 py-3 border-b border-slate-200 w-12 text-center">#</th>
-                                <th className="px-4 py-3 border-b border-slate-200">Name</th>
-                                <th className="px-4 py-3 border-b border-slate-200">Rate/Des</th>
-                                <th className="px-4 py-3 border-b border-slate-200">Rec</th>
-                                <th className="px-4 py-3 border-b border-slate-200 text-right">MTA</th>
-                                <th className="px-4 py-3 border-b border-slate-200 text-right">Delta</th>
-                                <th className="px-4 py-3 border-b border-slate-200 text-right">Margin</th>
+                                <th className="px-4 py-3 border-b border-slate-200 text-left">Name</th>
+                                <th className="px-4 py-3 border-b border-slate-200 text-center">Rate/Des</th>
+                                <th className="px-4 py-3 border-b border-slate-200 text-center" title="Projected reports remaining until PRD"># Rpts</th>
+                                <th className="px-4 py-3 border-b border-slate-200 text-center">Rec</th>
+                                <th className="px-4 py-3 border-b border-slate-200 text-center">MTA</th>
+                                <th className="px-4 py-3 border-b border-slate-200 text-center">Delta</th>
+                                <th className="px-4 py-3 border-b border-slate-200 text-center">Margin</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100 bg-white">
@@ -174,18 +184,21 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
                                     className={`cursor-pointer transition-colors hover:bg-slate-50 ${selectedMemberId === member.id ? 'bg-indigo-50/50' : ''}`}
                                 >
                                     <td className="px-4 py-3 text-center text-sm text-slate-500 font-medium">{idx + 1}</td>
-                                    <td className="px-4 py-3 text-sm font-semibold text-slate-700">{member.name}</td>
-                                    <td className="px-4 py-3 text-sm text-slate-500">{member.designator}</td>
-                                    <td className="px-4 py-3 text-sm">
+                                    <td className="px-4 py-3 text-sm font-semibold text-slate-700 text-left">{member.name}</td>
+                                    <td className="px-4 py-3 text-sm text-slate-500 text-center">{member.designator}</td>
+                                    <td className="px-4 py-3 text-sm text-slate-700 font-mono text-center">
+                                        {member.reportsRemaining !== undefined ? member.reportsRemaining : '-'}
+                                    </td>
+                                    <td className="px-4 py-3 text-sm text-center">
                                         <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-bold ${getPromRecStyle(member.promRec)}`}>
                                             {member.promRec}
                                         </span>
                                     </td>
-                                    <td className="px-4 py-3 text-sm font-mono text-slate-700 text-right">{member.mta.toFixed(2)}</td>
-                                    <td className="px-4 py-3 text-sm font-mono text-slate-400 text-right">
+                                    <td className="px-4 py-3 text-sm font-mono text-slate-700 text-center">{member.mta.toFixed(2)}</td>
+                                    <td className="px-4 py-3 text-sm font-mono text-slate-400 text-center">
                                         {member.delta === 0 ? '-' : (member.delta > 0 ? `+${member.delta.toFixed(2)}` : member.delta.toFixed(2))}
                                     </td>
-                                    <td className={`px-4 py-3 text-sm font-mono text-right font-medium ${member.rscaMargin >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>
+                                    <td className={`px-4 py-3 text-sm font-mono text-center font-medium ${member.rscaMargin >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>
                                         {member.rscaMargin > 0 ? '+' : ''}{member.rscaMargin.toFixed(2)}
                                     </td>
                                 </tr>

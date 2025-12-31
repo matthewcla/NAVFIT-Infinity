@@ -81,6 +81,9 @@ export interface Report {
     // Narrative Sections
     careerRecommendations?: string; // Block 40
     comments?: string; // Block 41/43 (Main narrative body)
+
+    // Projected Data
+    reportsRemaining?: number; // Calculated field: (PRD - PeriodEndDate) / 12 months (approx)
 }
 
 export interface SummaryGroup {

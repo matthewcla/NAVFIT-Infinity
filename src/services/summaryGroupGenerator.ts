@@ -140,6 +140,14 @@ export const SummaryGroupGenerator = {
 
         return groups;
     }
+});
+
+// 3. Identification of Promotion Reports
+// TODO: Implement Logic for Promotion Reports
+// For now, relying on mock data or manual addition
+
+return groups;
+    }
 };
 
 function createDraftReport(member: RosterMember, type: 'Periodic' | 'Detachment of Individual', date: Date): Report {
@@ -147,6 +155,20 @@ function createDraftReport(member: RosterMember, type: 'Periodic' | 'Detachment 
     const isNOB = Math.random() > 0.9;
     const rawTrait = 3.0 + (Math.random() * 2.0);
     const traitAverage = isNOB ? 0 : Number(rawTrait.toFixed(2));
+
+    // Calculate Reports Remaining based on PRD
+    let reportsRemaining = 0;
+    if (member.prd) {
+        const prdDate = new Date(member.prd);
+        const reportDate = new Date(date);
+
+        // Simple year diff logic approx
+        // If PRD is 2027 and Report is 2025, that's ~2 years
+        const diffYears = prdDate.getFullYear() - reportDate.getFullYear();
+        // Adjust for month if needed, but simplistic "Cycles Remaining" is usually just annual count
+        // If PRD is BEFORE report date (overdue), 0.
+        reportsRemaining = Math.max(0, diffYears);
+    }
 
     return {
         id: `r-auto-${member.id}-${type}`,
@@ -160,7 +182,8 @@ function createDraftReport(member: RosterMember, type: 'Periodic' | 'Detachment 
         draftStatus: 'Draft' as const,
         grade: member.rank,
         promotionStatus: member.promotionStatus,
-        shipStation: 'USS MOCK SHIP'
+        shipStation: 'USS MOCK SHIP',
+        reportsRemaining: reportsRemaining,
     };
 }
 

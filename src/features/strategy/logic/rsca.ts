@@ -99,3 +99,44 @@ export const calculateCumulativeRSCA = (
     // 4. Return weighted average
     return round2(totalScore / totalReports);
 };
+
+/**
+ * Returns detailed RSCA stats for a Competitive Group (Paygrade).
+ * Useful for establishing a baseline (Current RSCA) from historical data.
+ */
+export const getCompetitiveGroupStats = (
+    allGroups: SummaryGroup[],
+    targetPaygrade: string,
+    excludeGroupId?: string
+): { average: number; count: number; totalScore: number } => {
+    // 1. Normalize Rank
+    const rank = targetPaygrade.split(' ')[0];
+
+    // 2. Filter groups
+    const matchingGroups = allGroups.filter(g => {
+        if (excludeGroupId && g.id === excludeGroupId) return false;
+        const groupRank = g.paygrade || g.competitiveGroupKey.split(' ')[0];
+        return groupRank === rank;
+    });
+
+    // 3. Aggregate
+    let totalScore = 0;
+    let totalReports = 0;
+
+    matchingGroups.forEach(group => {
+        group.reports.forEach(report => {
+            if (typeof report.traitAverage === 'number' && report.traitAverage > 0) {
+                totalScore += report.traitAverage;
+                totalReports++;
+            }
+        });
+    });
+
+    const average = totalReports > 0 ? round2(totalScore / totalReports) : 0;
+
+    return {
+        average,
+        count: totalReports,
+        totalScore
+    };
+};

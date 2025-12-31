@@ -35,11 +35,17 @@ export function RscaHeadsUpDisplay({
 
     // Badge Logic
     const getBadgeStyle = (status?: string) => {
-        switch (status) {
-            case 'FROCKED': return 'bg-amber-100 text-amber-700 border-amber-200';
-            case 'SELECTED': return 'bg-emerald-100 text-emerald-700 border-emerald-200';
-            case 'SPOT': return 'bg-purple-100 text-purple-700 border-purple-200';
-            default: return 'hidden'; // Regular is hidden or standard
+        if (!status) return 'hidden';
+        const normalized = status.toUpperCase();
+
+        // Exact match to StrategyGroupCard style
+        const base = "px-1.5 py-0.5 rounded-md text-[10px] font-bold border shadow-sm leading-none tracking-wide";
+
+        switch (normalized) {
+            case 'FROCKED': return `${base} bg-amber-100 text-amber-800 border-amber-200`;
+            case 'SELECTED': return `${base} bg-green-100 text-green-800 border-green-200`;
+            case 'SPOT': return `${base} bg-purple-100 text-purple-800 border-purple-200`;
+            default: return 'hidden';
         }
     };
 
@@ -61,9 +67,9 @@ export function RscaHeadsUpDisplay({
                                 {rankLabel || 'Target RSCA'}
                             </span>
                             {promotionStatus && promotionStatus !== 'REGULAR' && (
-                                <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border ${getBadgeStyle(promotionStatus)}`}>
+                                <div className={getBadgeStyle(promotionStatus)}>
                                     {promotionStatus}
-                                </span>
+                                </div>
                             )}
                         </div>
                         <div className="flex items-baseline gap-2">
@@ -104,13 +110,13 @@ export function RscaHeadsUpDisplay({
                     </div>
                 </div>
 
-                {/* Health Bar Visualization */}
-                <div className="flex-1 w-full md:max-w-md hidden md:block">
+                {/* Health Bar Visualization - Width reduced to 80% of container */}
+                <div className="flex-1 w-full md:max-w-[80%] hidden md:block pl-6 border-l border-slate-100">
                     <div className="flex items-center justify-between mb-2">
                         <span className="text-xs font-medium text-slate-500">Group Health Zone</span>
                     </div>
                     {/* Visual Bar */}
-                    <div className="h-4 bg-slate-100 rounded-full overflow-hidden relative border border-slate-200/60">
+                    <div className="h-4 bg-slate-100 rounded-full overflow-hidden relative border border-slate-200/60 w-full">
                         {/* Safe Zone (0 - 3.80) */}
                         <div className="absolute left-0 top-0 bottom-0 bg-emerald-500/20 border-r border-white/50 w-[76%] z-10" title="Safe Region"></div>
                         {/* Warning Zone (3.80 - 4.10) */}

@@ -123,9 +123,17 @@ export const generateSummaryGroups = (
         return groupsMap.get(id)!;
     };
 
+
     roster.forEach(member => {
         const groupKey = getCompetitiveGroup(member);
         const memberPRD = new Date(member.prd);
+
+        // Helper to calc remaining reports
+        const getReportsRemaining = (rDate: string) => {
+            const d = new Date(rDate);
+            const years = memberPRD.getFullYear() - d.getFullYear();
+            return Math.max(0, years);
+        };
 
         // Loop through years from Base Year until RS Detach Date
         // We go a bit past base year to cover the full tenure
@@ -191,6 +199,7 @@ export const generateSummaryGroups = (
                             promotionStatus: member.promotionStatus, // Explicitly pass status
                             dateReported: member.dateReported,
                             reportingSeniorName: rsConfig.name,
+                            reportsRemaining: getReportsRemaining(pDateStr),
                         };
                         group.reports.push(report);
                     }
@@ -223,6 +232,7 @@ export const generateSummaryGroups = (
                 designator: member.designator,
                 promotionStatus: member.promotionStatus,
                 reportingSeniorName: rsConfig.name,
+                reportsRemaining: 0, // Transfer is last report
             };
             group.reports.push(report);
         }
@@ -253,6 +263,7 @@ export const generateSummaryGroups = (
                     designator: member.designator,
                     promotionStatus: member.promotionStatus,
                     reportingSeniorName: rsConfig.name,
+                    reportsRemaining: getReportsRemaining(rsDateStr),
                 };
                 group.reports.push(report);
             }

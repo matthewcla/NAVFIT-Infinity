@@ -1,6 +1,7 @@
+
 import { useNavfitStore } from '@/store/useNavfitStore';
 import { RscaHeadsUpDisplay } from '@/features/strategy/components/RscaHeadsUpDisplay';
-import { projectRSCA } from '@/features/strategy/logic/rsca';
+import { projectRSCA, getCompetitiveGroupStats } from '@/features/strategy/logic/rsca';
 import type { SummaryGroup } from '@/types';
 import {
     AlertTriangle,
@@ -19,30 +20,42 @@ interface CycleContextPanelProps {
 }
 
 export function CycleContextPanel({ group }: CycleContextPanelProps) {
-    const { rsConfig, setStrategyViewMode } = useNavfitStore();
+    const { rsConfig, summaryGroups, setStrategyViewMode } = useNavfitStore();
 
     // 1. Calculate RSCA Stats
-    // Use targetRsca from config or default
-    const currentRsca = rsConfig.targetRsca || 4.20;
+    // We want the "Current RSCA" to represent the Competitive Group's cumulative average
+    // EXCLUDING the current active cycle (so we can see the impact of adding it).
+    // Or, if this is existing history, maybe we want it to be part of it?
+    // Logic: Treat 'group' as the "New" set being projected against the "History".
 
-    // Calculate Projected RSCA
-    // We need to know the 'signed' count. For now, assume a mock baseline or 
-    // that the currentRSCA is weighted by 'totalReports' if we had it.
-    // Since we don't have the 'total previously signed' count easily available in rsConfig yet,
-    // we'll simulate a stable base of 20 reports for the projection logic to be meaningful,
-    // or we can treat the currentRSCA as the "average of existing".
-    // 
-    // real logic: projectRSCA(currentAverage, numPriorReports, newReportITAs)
+    // Competitive Group Key (e.g. "O-3 1110")
+    // If specific paygrade not on group, derive from key.
+    const paygrade = group.paygrade || group.competitiveGroupKey.split(' ')[0]; // fallback
 
-    // Extract ITAs from this group's reports
+    // Get Historical Stats (Baseline)
+    // We exclude the current group from the baseline to treat it as the "Active" cycle modifying the average.
+    const baselineStats = getCompetitiveGroupStats(summaryGroups, paygrade, group.id);
+
+    // If no history exists (first cycle), fall back to Config Target or Default.
+    // But conceptually, the "Current cumulative" is 0 if no reports.
+    // For display, if count is 0, we can use the RSConfig Target as the "Goal/Starting Point" visual,
+    // or arguably the current RSCA is just 0.
+    // Let's use rsConfig.targetRsca as a fallback baseline for visualization if we have literally 0 history,
+    // otherwise 0 starts to look like a bug in the bar chart. 
+    // Actually, usually you inherit the RSCA. Let's use targetRsca if baseline count < 1.
+    const currentRsca = baselineStats.count > 0
+        ? baselineStats.average
+        : (rsConfig.targetRsca || 4.20);
+
+    const baselineCount = baselineStats.count > 0 ? baselineStats.count : 20; // Default weight 20 if fresh start
+
+    // Extract ITAs from THIS group's reports
     const groupItas = group.reports
         .map(r => r.traitAverage)
         .filter((t): t is number => typeof t === 'number');
 
-    // Make a rough projection assuming a baseline "weight" of 20 reports for stability if not provided
-    // This effectively says "If I add these reports to a bucket of 20 existing reports..."
-    // Ideally we'd store 'reportsCount' per rank in rsConfig.
-    const projectedRsca = projectRSCA(currentRsca, 20, groupItas);
+    // Calculate Projected RSCA
+    const projectedRsca = projectRSCA(currentRsca, baselineCount, groupItas);
 
     // 2. Alerts Logic
     const alerts = [];
@@ -223,25 +236,56 @@ export function CycleContextPanel({ group }: CycleContextPanelProps) {
                                     <tr>
                                         <th className="px-3 py-2 font-medium text-slate-500 text-xs uppercase w-8">#</th>
                                         <th className="px-3 py-2 font-medium text-slate-500 text-xs uppercase">Name</th>
-                                        <th className="px-3 py-2 font-medium text-slate-500 text-xs uppercase text-right">Grade</th>
+                                        <th className="px-3 py-2 font-medium text-slate-500 text-xs uppercase">Rate/Desig</th>
+                                        <th className="px-3 py-2 font-medium text-slate-500 text-xs uppercase text-center" title="Projected reports remaining until PRD"># Rpts</th>
+                                        <th className="px-3 py-2 font-medium text-slate-500 text-xs uppercase text-center">Prom Rec</th>
+                                        <th className="px-3 py-2 font-medium text-slate-500 text-xs uppercase text-right">MTA</th>
+                                        <th className="px-3 py-2 font-medium text-slate-500 text-xs uppercase text-right">Delta</th>
+                                        <th className="px-3 py-2 font-medium text-slate-500 text-xs uppercase text-right">RSCA Marg</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-50">
-                                    {topMembers.map((member, idx) => (
-                                        <tr key={idx} className="hover:bg-slate-50/80 transition-colors">
-                                            <td className="px-3 py-2 text-slate-400 font-mono text-xs">{idx + 1}</td>
-                                            <td className="px-3 py-2 text-slate-700 font-medium truncate max-w-[140px]">
-                                                {/* In real app, resolve name via memberId if needed */}
-                                                Member {member.id.substring(0, 6)}...
-                                            </td>
-                                            <td className="px-3 py-2 text-slate-500 text-right font-mono text-xs">
-                                                {member.grade || group.paygrade}
-                                            </td>
-                                        </tr>
-                                    ))}
+                                    {topMembers.map((member, idx) => {
+                                        const r = group.reports.find(rep => rep.memberId === member.id);
+                                        const mta = r?.traitAverage || 0;
+                                        const delta = mta - currentRsca;
+                                        const rscaMargin = delta; // Using same logic for now as 'Delta' usually implies RSCA variance in this context
+
+                                        return (
+                                            <tr key={idx} className="hover:bg-slate-50/80 transition-colors">
+                                                <td className="px-3 py-2 text-slate-400 font-mono text-xs">{idx + 1}</td>
+                                                <td className="px-3 py-2 text-slate-700 font-medium truncate max-w-[140px]">
+                                                    {member.id.substring(0, 12)}...
+                                                </td>
+                                                <td className="px-3 py-2 text-slate-500 text-xs">
+                                                    {r?.designator || '1110'}
+                                                </td>
+                                                <td className="px-3 py-2 text-slate-700 font-mono text-xs text-center">
+                                                    {r?.reportsRemaining !== undefined ? r.reportsRemaining : '-'}
+                                                </td>
+                                                <td className="px-3 py-2 text-center text-xs font-medium">
+                                                    <span className={`px-1.5 py-0.5 rounded text-[10px] ${r?.promotionRecommendation === 'EP' ? 'bg-indigo-100 text-indigo-700' :
+                                                            r?.promotionRecommendation === 'MP' ? 'bg-slate-100 text-slate-700' :
+                                                                'bg-white border border-slate-200 text-slate-500'
+                                                        }`}>
+                                                        {r?.promotionRecommendation || 'NOB'}
+                                                    </span>
+                                                </td>
+                                                <td className="px-3 py-2 text-slate-700 text-right font-mono text-xs">
+                                                    {mta.toFixed(2)}
+                                                </td>
+                                                <td className={`px-3 py-2 text-right font-mono text-xs ${delta >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+                                                    {delta > 0 ? '+' : ''}{delta.toFixed(2)}
+                                                </td>
+                                                <td className={`px-3 py-2 text-right font-mono text-xs ${rscaMargin >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+                                                    {rscaMargin > 0 ? '+' : ''}{rscaMargin.toFixed(2)}
+                                                </td>
+                                            </tr>
+                                        )
+                                    })}
                                     {group.reports.length === 0 && (
                                         <tr>
-                                            <td colSpan={3} className="px-3 py-4 text-center text-slate-400 italic text-xs">
+                                            <td colSpan={8} className="px-3 py-4 text-center text-slate-400 italic text-xs">
                                                 No members assigned
                                             </td>
                                         </tr>
