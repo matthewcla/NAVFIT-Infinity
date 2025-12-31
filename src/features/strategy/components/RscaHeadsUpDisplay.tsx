@@ -63,7 +63,7 @@ export function RscaHeadsUpDisplay({
                     {/* Left Stat: Benchmark / Target */}
                     <div>
                         <div className="flex items-center gap-2 mb-0.5">
-                            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider whitespace-nowrap">
                                 {rankLabel || 'Target RSCA'}
                             </span>
                             {promotionStatus && promotionStatus !== 'REGULAR' && (
@@ -111,7 +111,7 @@ export function RscaHeadsUpDisplay({
                 </div>
 
                 {/* Health Bar Visualization - Width reduced to 80% of container */}
-                <div className="flex-1 w-full md:max-w-[80%] hidden md:block pl-6 border-l border-slate-100">
+                <div className="flex-1 w-full md:max-w-[60%] hidden md:block pl-6 border-l border-slate-100">
                     <div className="flex items-center justify-between mb-2">
                         <span className="text-xs font-medium text-slate-500">Group Health Zone</span>
                     </div>

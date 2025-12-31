@@ -95,7 +95,7 @@ export const useNavfitStore = create<NavfitStore>((set) => ({
     setSidebarCollapsed: (collapsed) => set({ sidebarCollapsed: collapsed }),
     toggleSidebar: () => set((state) => ({ sidebarCollapsed: !state.sidebarCollapsed })),
 
-    isContextRailOpen: true, // Default open as requested
+    isContextRailOpen: false, // Default closed as requested
     toggleContextRail: () => set((state) => ({ isContextRailOpen: !state.isContextRailOpen })),
 
     // Data

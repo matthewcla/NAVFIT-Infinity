@@ -138,15 +138,11 @@ export const SummaryGroupGenerator = {
             });
         });
 
+        // 3. Identification of Promotion Reports
+        // TODO: Implement Logic for Promotion Reports
+        // For now, relying on mock data or manual addition
+
         return groups;
-    }
-});
-
-// 3. Identification of Promotion Reports
-// TODO: Implement Logic for Promotion Reports
-// For now, relying on mock data or manual addition
-
-return groups;
     }
 };
 

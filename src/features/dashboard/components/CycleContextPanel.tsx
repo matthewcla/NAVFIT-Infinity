@@ -6,7 +6,6 @@ import type { SummaryGroup } from '@/types';
 import {
     AlertTriangle,
     Users,
-    FileText,
     ArrowRight,
     BarChart2,
     ListOrdered,
@@ -14,6 +13,8 @@ import {
     Clock,
     Activity
 } from 'lucide-react';
+import { useState } from 'react';
+import { MemberDetailSidebar } from './MemberDetailSidebar';
 
 interface CycleContextPanelProps {
     group: SummaryGroup;
@@ -21,6 +22,7 @@ interface CycleContextPanelProps {
 
 export function CycleContextPanel({ group }: CycleContextPanelProps) {
     const { rsConfig, summaryGroups, setStrategyViewMode } = useNavfitStore();
+    const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null);
 
     // 1. Calculate RSCA Stats
     // We want the "Current RSCA" to represent the Competitive Group's cumulative average
@@ -101,18 +103,35 @@ export function CycleContextPanel({ group }: CycleContextPanelProps) {
             {/* 1. Top Header */}
             <div className="bg-white border-b border-slate-200">
                 <div className="p-4 pb-2">
-                    <div className="flex items-center gap-2 mb-1">
-                        <span className="px-2 py-0.5 rounded text-xs font-semibold bg-indigo-100 text-indigo-700 uppercase tracking-wide">
-                            Active Cycle
-                        </span>
-                        <span className="text-xs text-slate-400 font-mono">
-                            {group.periodEndDate}
-                        </span>
+                    <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                            <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-indigo-100 text-indigo-700 uppercase tracking-wide border border-indigo-200">
+                                Active Cycle
+                            </span>
+                            <span className="text-xs text-slate-400 font-mono">
+                                {group.periodEndDate}
+                            </span>
+                        </div>
+                        {/* Status & Attention Badges - Moved to Header */}
+                        <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-slate-100 border border-slate-200 text-xs font-semibold text-slate-600">
+                                <Clock className="w-3 h-3" />
+                                <span>{group.status || 'Draft'}</span>
+                            </div>
+                            {/* Simple Attention Badge Example */}
+                            <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-amber-50 border border-amber-200 text-xs font-semibold text-amber-700">
+                                <AlertTriangle className="w-3 h-3" />
+                                <span>Action Needed</span>
+                            </div>
+                        </div>
                     </div>
-                    <h2 className="text-xl font-bold text-slate-800">
-                        {group.competitiveGroupKey || group.name}
-                    </h2>
-                    <p className="text-sm text-slate-500">
+
+                    <div className="flex items-center gap-3">
+                        <h2 className="text-xl font-bold text-slate-900">
+                            {group.competitiveGroupKey || group.name}
+                        </h2>
+                    </div>
+                    <p className="text-sm text-slate-500 mb-1">
                         {group.promotionStatus === 'REGULAR' ? 'Competitive' : group.promotionStatus} Group
                     </p>
                 </div>
@@ -131,7 +150,9 @@ export function CycleContextPanel({ group }: CycleContextPanelProps) {
                     <RscaHeadsUpDisplay
                         currentRsca={currentRsca}
                         projectedRsca={projectedRsca}
-                        rankLabel={`${group.competitiveGroupKey?.split(' ')[0] || 'Group'} Cumulative Average`}
+                        rankLabel="Curr. RSCA"
+                        showSuffix={false}
+                        promotionStatus={group.promotionStatus as any}
                     />
                 </div>
             </div>
@@ -141,24 +162,7 @@ export function CycleContextPanel({ group }: CycleContextPanelProps) {
                 <div className="p-4 space-y-6">
 
                     {/* 2. Main Content: Summary Stats */}
-                    <div className="grid grid-cols-2 gap-3">
-                        <div className="bg-white p-3 rounded-lg border border-slate-200 shadow-sm">
-                            <div className="text-xs text-slate-500 font-medium uppercase tracking-wider mb-1">Total Reports</div>
-                            <div className="flex items-center gap-2">
-                                <FileText className="w-5 h-5 text-indigo-500" />
-                                <span className="text-2xl font-bold text-slate-800">{group.reports.length}</span>
-                            </div>
-                        </div>
-                        <div className="bg-white p-3 rounded-lg border border-slate-200 shadow-sm">
-                            <div className="text-xs text-slate-500 font-medium uppercase tracking-wider mb-1">Status</div>
-                            <div className="flex items-center gap-2">
-                                <Clock className="w-5 h-5 text-amber-500" />
-                                <span className="text-lg font-semibold text-slate-700">
-                                    {group.status || 'Draft'}
-                                </span>
-                            </div>
-                        </div>
-                    </div>
+
 
                     {/* Alerts Section */}
                     {alerts.length > 0 ? (
@@ -200,21 +204,20 @@ export function CycleContextPanel({ group }: CycleContextPanelProps) {
                     )}
 
                     {/* Quick Actions */}
-                    <div className="space-y-2">
-                        <button
-                            onClick={() => setStrategyViewMode('workspace')}
-                            className="w-full flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm shadow-indigo-200 px-4 py-2.5 rounded-lg font-medium transition-colors">
-                            <span>Open Workspace</span>
-                            <ExternalLink className="w-4 h-4" />
-                        </button>
-                        <div className="grid grid-cols-2 gap-2">
-                            <button className="flex items-center justify-center gap-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 px-3 py-2 rounded-lg text-sm font-medium transition-colors">
-                                <BarChart2 className="w-4 h-4" />
-                                View Waterfall
+                    {/* Control Bar (Sticky) */}
+                    <div className="sticky top-0 bg-slate-50/95 backdrop-blur z-20 pb-2 border-b border-slate-200 mb-4 pt-1">
+                        <div className="flex items-center gap-2">
+                            <button
+                                onClick={() => setStrategyViewMode('workspace')}
+                                className="flex-grow flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm shadow-indigo-200 px-4 py-2 rounded-lg font-medium transition-colors text-sm">
+                                <span>Open Strategy Workspace</span>
+                                <ExternalLink className="w-4 h-4" />
                             </button>
-                            <button className="flex items-center justify-center gap-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 px-3 py-2 rounded-lg text-sm font-medium transition-colors">
+                            <button className="flex items-center justify-center p-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 rounded-lg transition-colors w-10 flex-shrink-0" title="Waterfall">
+                                <BarChart2 className="w-4 h-4" />
+                            </button>
+                            <button className="flex items-center justify-center p-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 rounded-lg transition-colors w-10 flex-shrink-0" title="Rank Members">
                                 <ListOrdered className="w-4 h-4" />
-                                Rank Members
                             </button>
                         </div>
                     </div>
@@ -252,7 +255,11 @@ export function CycleContextPanel({ group }: CycleContextPanelProps) {
                                         const rscaMargin = delta; // Using same logic for now as 'Delta' usually implies RSCA variance in this context
 
                                         return (
-                                            <tr key={idx} className="hover:bg-slate-50/80 transition-colors">
+                                            <tr
+                                                key={idx}
+                                                onClick={() => setSelectedMemberId(member.id)}
+                                                className="hover:bg-indigo-50/50 cursor-pointer transition-colors group"
+                                            >
                                                 <td className="px-3 py-2 text-slate-400 font-mono text-xs">{idx + 1}</td>
                                                 <td className="px-3 py-2 text-slate-700 font-medium truncate max-w-[140px]">
                                                     {member.id.substring(0, 12)}...
@@ -265,8 +272,8 @@ export function CycleContextPanel({ group }: CycleContextPanelProps) {
                                                 </td>
                                                 <td className="px-3 py-2 text-center text-xs font-medium">
                                                     <span className={`px-1.5 py-0.5 rounded text-[10px] ${r?.promotionRecommendation === 'EP' ? 'bg-indigo-100 text-indigo-700' :
-                                                            r?.promotionRecommendation === 'MP' ? 'bg-slate-100 text-slate-700' :
-                                                                'bg-white border border-slate-200 text-slate-500'
+                                                        r?.promotionRecommendation === 'MP' ? 'bg-slate-100 text-slate-700' :
+                                                            'bg-white border border-slate-200 text-slate-500'
                                                         }`}>
                                                         {r?.promotionRecommendation || 'NOB'}
                                                     </span>
@@ -303,6 +310,18 @@ export function CycleContextPanel({ group }: CycleContextPanelProps) {
 
                 </div>
             </div>
+
+            {/* Member Details Sidebar (Overlay) */}
+            {selectedMemberId && (
+                <MemberDetailSidebar
+                    memberId={selectedMemberId}
+                    onClose={() => setSelectedMemberId(null)}
+                    onUpdateMTA={(id, mta) => {
+                        console.log('Update MTA:', id, mta);
+                        // Implement update logic or connection store action here
+                    }}
+                />
+            )}
         </div>
     );
 }
