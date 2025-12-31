@@ -1,3 +1,5 @@
+import type { Report } from './index';
+
 export type PayGrade = 'O-1' | 'O-2' | 'O-3' | 'O-4' | 'O-5' | 'O-6' | 'O-7' | 'O-8' | 'O-9' | 'O-10' | 'W-1' | 'W-2' | 'W-3' | 'W-4' | 'W-5' | 'E-1' | 'E-2' | 'E-3' | 'E-4' | 'E-5' | 'E-6' | 'E-7' | 'E-8' | 'E-9';
 
 export type Designator =
@@ -13,12 +15,21 @@ export interface RosterMember {
     middleInitial?: string;
     rank: PayGrade;
     designator: Designator;
+    promotionStatus?: 'REGULAR' | 'FROCKED' | 'SELECTED' | 'SPOT'; // Defaults to REGULAR if undefined
     // For Enlisted, would be rating. Keeping simple for Officers first.
 
     dateReported: string; // YYYY-MM-DD
     prd: string;          // Projected Rotation Date
     lastTrait?: number;
     target?: number;
+
+    // History for Ghost Baseline / Flight Path
+    history?: Report[];
+
+    // Auto-Plan Fields
+    status?: 'Promotable' | 'Transferring' | 'Retiring' | string;
+    reportsRemaining?: number;
+    rankOrder?: number;
 }
 
 export interface ReportingSeniorConfig {
@@ -26,4 +37,6 @@ export interface ReportingSeniorConfig {
     rank: PayGrade;
     title: string; // e.g., "CO", "XO"
     changeOfCommandDate: string; // YYYY-MM-DD - Triggers RS Detach Reports
+    targetRsca?: number; // Target RSCA for Auto-Plan calculations
+    totalReports?: number; // Total reports by this RS (0 = New RS)
 }

@@ -2,7 +2,6 @@ import React from 'react';
 import {
     TrendingUp,
     Calendar,
-    FileText,
     Shield,
     Users,
     Menu
@@ -10,7 +9,7 @@ import {
 import { cn } from '@/lib/utils';
 
 // Define the tab type locally or import from a shared type file if needed
-export type Tab = 'dashboard' | 'reports' | 'schedule' | 'profiles' | 'admin';
+export type Tab = 'strategy' | 'schedule' | 'profiles' | 'admin';
 
 interface SidebarItemProps {
     icon: React.ElementType;
@@ -82,9 +81,9 @@ export function Sidebar({ activeTab, onTabChange, collapsed, onToggleCollapse }:
             <div className="flex-1 py-6 space-y-1 overflow-y-auto overflow-x-hidden scrollbar-thin scrollbar-thumb-slate-700">
                 <SidebarItem
                     icon={TrendingUp}
-                    label="Strategic Pulse"
-                    active={activeTab === 'dashboard'}
-                    onClick={() => onTabChange('dashboard')}
+                    label="Command Strategy"
+                    active={activeTab === 'strategy'}
+                    onClick={() => onTabChange('strategy')}
                     collapsed={collapsed}
                 />
                 <SidebarItem
@@ -94,14 +93,7 @@ export function Sidebar({ activeTab, onTabChange, collapsed, onToggleCollapse }:
                     onClick={() => onTabChange('profiles')}
                     collapsed={collapsed}
                 />
-                <div className="my-2 border-t border-slate-800/50 mx-4"></div>
-                <SidebarItem
-                    icon={FileText}
-                    label="Reports Manager"
-                    active={activeTab === 'reports'}
-                    onClick={() => onTabChange('reports')}
-                    collapsed={collapsed}
-                />
+
                 <SidebarItem
                     icon={Calendar}
                     label="Board Schedule"

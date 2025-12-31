@@ -34,6 +34,7 @@ export interface Report {
     summaryGroupAvg?: number;
     rscaAtTime?: number;
     narrative?: string; // Block 43 (formerly implied, now explicit)
+    openingStatement?: string; // Block 43 Opening Statement
 
     // New Fields for Reports Manager
     draftStatus?: 'Draft' | 'Review' | 'Submitted' | 'Final' | 'Projected';
@@ -84,7 +85,11 @@ export interface Report {
 
 export interface SummaryGroup {
     id: string;
-    name: string; // e.g., "O-3 SWO"
+    name: string; // e.g., "O-3 SWO Regular"
+    paygrade?: string;
+    designator?: string;
+    competitiveGroupKey?: string; // e.g. "O-3 1110" - Links Frocked/Selected back to pool
+    promotionStatus?: 'REGULAR' | 'FROCKED' | 'SELECTED' | 'SPOT';
     reports: Report[];
     periodEndDate: string;
     status?: 'Pending' | 'Accepted' | 'Rejected' | 'Projected' | 'Planned' | 'Draft' | 'Submitted' | 'Review' | 'Final';

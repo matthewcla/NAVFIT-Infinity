@@ -1,18 +1,93 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import type { Report } from '@/types';
-import { ArrowLeft, ChevronDown, ChevronUp, Save, FileOutput } from 'lucide-react';
+import { ArrowLeft, ChevronDown, ChevronUp, Save, FileOutput, CheckCircle, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useNavfitStore } from '@/store/useNavfitStore';
+
+const GHOST_BASELINE_TEXT = "MEMBER TRAIT AVERAGE DECREASED DUE ONLY TO CHANGE IN REPORTING SENIOR. PERFORMANCE REMAINS SUPERIOR AND ON PAR WITH [SOFT BREAKOUT].";
+
+function Toast({ message, onDismiss }: { message: string; onDismiss: () => void }) {
+    return (
+        <div className="absolute top-4 right-4 z-50 animate-in slide-in-from-top-2 fade-in duration-300">
+            <div className="bg-white rounded-lg shadow-lg border border-indigo-100 p-4 flex items-start gap-3 w-80 ring-1 ring-black/5">
+                <div className="text-green-500 mt-0.5">
+                    <CheckCircle className="w-5 h-5" />
+                </div>
+                <div className="flex-1">
+                    <h3 className="text-sm font-semibold text-slate-800">Ghost Baseline Applied</h3>
+                    <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+                        {message}
+                    </p>
+                    <button
+                        onClick={onDismiss}
+                        className="mt-3 text-xs font-medium text-indigo-600 hover:text-indigo-700 bg-indigo-50 hover:bg-indigo-100 px-3 py-1.5 rounded transition-colors"
+                    >
+                        Approve Text
+                    </button>
+                </div>
+                <button
+                    onClick={onDismiss}
+                    className="text-slate-400 hover:text-slate-600 transition-colors"
+                >
+                    <X className="w-4 h-4" />
+                </button>
+            </div>
+        </div>
+    );
+}
 
 
 interface ReportEditorProps {
     report: Report;
-    onBack: () => void;
+    onClose?: () => void; // Used by Modal
+    onBack?: () => void;  // Used by ReportsManager (drill-down view)
     readOnly?: boolean;
 }
 
-export function ReportEditor({ report, onBack, readOnly = false }: ReportEditorProps) {
+export function ReportEditor({ report, onClose, onBack, readOnly = false }: ReportEditorProps) {
     const [isHeaderCollapsed, setIsHeaderCollapsed] = useState(false);
     const [formData, setFormData] = useState<Report>(report);
+    const [showGhostToast, setShowGhostToast] = useState(false);
+
+    // Store Connection
+    const { rsConfig, roster } = useNavfitStore();
+
+    // Ghost Baseline Logic
+    useEffect(() => {
+        if (readOnly) return;
+
+        // 1. Check New RS (Total Reports == 0)
+        // If undefined, default to 0 just in case, but requirement says "rsConfig.totalReports == 0"
+        if ((rsConfig.totalReports || 0) > 0) return;
+
+        // 2. Find Member and Check Rank (Top 2)
+        const member = roster.find(m => m.id === report.memberId);
+        if (!member) return;
+
+        // Rank 1 or 2 (Top Performer)
+        const rankOrder = member.rankOrder || 99;
+        if (rankOrder > 2) return;
+
+        // 3. Check Grade Decrease
+        // Get previous report from history (assuming history[0] is most recent previous)
+        const previousReport = member.history?.[0];
+        const previousGrade = previousReport?.traitAverage || 0;
+        const currentGrade = formData.traitAverage || 0;
+
+        // Logic: Current < Previous
+        if (currentGrade > 0 && previousGrade > 0 && currentGrade < previousGrade) {
+            // Check if we already have the text to avoid overwriting user edits or looping
+            if (!formData.openingStatement && !formData.comments) {
+                setFormData(prev => ({
+                    ...prev,
+                    openingStatement: GHOST_BASELINE_TEXT,
+                    // Also populate main comments if empty, or just openingStatement if separate
+                    comments: prev.comments ? prev.comments : GHOST_BASELINE_TEXT
+                }));
+                setShowGhostToast(true);
+            }
+        }
+    }, [formData.traitAverage, rsConfig.totalReports, roster, report.memberId, readOnly, formData.openingStatement, formData.comments]);
 
     return (
         <div className="flex flex-col h-full bg-slate-50 relative">
@@ -20,7 +95,7 @@ export function ReportEditor({ report, onBack, readOnly = false }: ReportEditorP
             <div className="bg-white border-b border-slate-200 px-8 py-4 flex items-center justify-between shrink-0 z-30">
                 <div className="flex items-center gap-6">
                     <button
-                        onClick={onBack}
+                        onClick={onBack || onClose}
                         className="text-slate-500 hover:text-slate-800 transition-colors flex items-center gap-2 text-sm font-medium"
                     >
                         <ArrowLeft className="w-4 h-4" />
@@ -553,9 +628,76 @@ export function ReportEditor({ report, onBack, readOnly = false }: ReportEditorP
                     </section>
 
                     {/* Placeholder for future sections to demonstrate scrolling */}
-                    <div className="h-screen bg-slate-100/50 rounded-xl border border-dashed border-slate-300 flex items-center justify-center">
-                        <span className="text-slate-400">Future Performance & Narrative Sections</span>
+                    {/* Performance & Narrative Section */}
+                    <div className="space-y-6">
+                        {/* Temporary Trait Average Input for Testing Logic */}
+                        <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                            <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wide mb-4">
+                                Performance Data (Quick Entry)
+                            </h3>
+                            <div className="flex items-center gap-4">
+                                <label className="text-sm font-medium text-slate-700">Trait Average</label>
+                                <input
+                                    type="number"
+                                    step="0.01"
+                                    min="1.00"
+                                    max="5.00"
+                                    className="w-24 px-3 py-2 border border-slate-300 rounded-lg text-sm"
+                                    value={formData.traitAverage || 0}
+                                    onChange={(e) => setFormData({ ...formData, traitAverage: parseFloat(e.target.value) })}
+                                />
+                                <p className="text-xs text-slate-500">
+                                    Simulate grade changes here. Ghost Baseline triggers if &lt; Previous Grade.
+                                    <br />
+                                    (Ensure RS Config "Total Reports" is 0 and Member is Rank 1 or 2).
+                                </p>
+                            </div>
+                        </div>
+
+                        {/* Block 43: Comments on Performance */}
+                        <section className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                            <div className="p-6">
+                                <h2 className="text-sm font-bold text-slate-900 uppercase tracking-wide mb-4">
+                                    43. Comments on Performance
+                                </h2>
+                                <div className="space-y-4">
+                                    <div className="space-y-1.5">
+                                        <label className="block text-xs font-semibold text-slate-500 uppercase">
+                                            Opening Statement
+                                        </label>
+                                        <textarea
+                                            disabled={readOnly}
+                                            className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-shadow resize-none"
+                                            rows={2}
+                                            value={formData.openingStatement || ''}
+                                            onChange={(e) => setFormData({ ...formData, openingStatement: e.target.value })}
+                                            placeholder="Opening statement..."
+                                        />
+                                    </div>
+                                    <div className="space-y-1.5">
+                                        <label className="block text-xs font-semibold text-slate-500 uppercase">
+                                            Narrative Body
+                                        </label>
+                                        <textarea
+                                            disabled={readOnly}
+                                            className="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-shadow min-h-[200px]"
+                                            value={formData.comments || ''}
+                                            onChange={(e) => setFormData({ ...formData, comments: e.target.value })}
+                                            placeholder="Enter performance comments..."
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+                        </section>
                     </div>
+
+                    {/* Toast Notification */}
+                    {showGhostToast && (
+                        <Toast
+                            message="We detected a grade drop due to a new Reporting Senior. The required statement has been added."
+                            onDismiss={() => setShowGhostToast(false)}
+                        />
+                    )}
 
                 </div>
             </div>

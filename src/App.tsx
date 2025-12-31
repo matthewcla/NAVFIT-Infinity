@@ -1,25 +1,43 @@
+import { useState, useEffect } from 'react';
 import { AppLayout } from './components/layout/AppLayout';
-import { StrategicPulseDashboard } from '@/features/dashboard/components/StrategicPulseDashboard';
-import { ReportsManager } from '@/features/reports/components/ReportsManager';
+import { StrategyWorkspace } from '@/features/strategy/components/StrategyWorkspace';
+import { CommandStrategyCenter } from '@/features/strategy/components/CommandStrategyCenter';
+
 import { SelectionBoardsManager } from '@/features/boards/components/SelectionBoardsManager';
 import { CommandAdmin } from '@/features/admin/components/CommandAdmin';
 import { SailorProfiles } from '@/features/roster/components/SailorProfiles';
 import { useNavfitStore } from '@/store/useNavfitStore';
 
 function App() {
+  const [isWorkspaceOpen, setIsWorkspaceOpen] = useState(false);
   const {
     activeTab,
     setActiveTab,
     sidebarCollapsed,
-    toggleSidebar
+    toggleSidebar,
+    selectedCycleId
   } = useNavfitStore();
+
+  // Reset workspace view if tab changes
+  useEffect(() => {
+    setIsWorkspaceOpen(false);
+  }, [activeTab]);
 
   const renderContent = () => {
     switch (activeTab) {
-      case 'dashboard':
-        return <StrategicPulseDashboard />;
-      case 'reports':
-        return <ReportsManager />;
+      case 'strategy':
+        if (isWorkspaceOpen && selectedCycleId) {
+          return (
+            <StrategyWorkspace
+              onBack={() => setIsWorkspaceOpen(false)}
+            />
+          );
+        }
+        return (
+          <CommandStrategyCenter
+            onNavigateToRanking={() => setIsWorkspaceOpen(true)}
+          />
+        );
       case 'profiles':
         return <SailorProfiles />;
       case 'schedule':
@@ -27,7 +45,11 @@ function App() {
       case 'admin':
         return <CommandAdmin />;
       default:
-        return <StrategicPulseDashboard />;
+        return (
+          <CommandStrategyCenter
+            onNavigateToRanking={() => setIsWorkspaceOpen(true)}
+          />
+        );
     }
   };
 

@@ -40,7 +40,7 @@ export function SelectionBoardsManager() {
 
     return (
         <div className="flex flex-col h-full bg-slate-50">
-            {/* Header - Consistent with StrategicPulseDashboard */}
+            {/* Header - Consistent with StrategyWorkspace */}
             <header className="h-16 bg-white border-b border-slate-200 flex justify-between items-center px-8 shadow-sm flex-shrink-0 z-10">
                 <div className="flex items-center gap-4">
                     <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-indigo-600 text-white">

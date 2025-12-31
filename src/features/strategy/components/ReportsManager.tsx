@@ -4,9 +4,9 @@ import { ReportEditor } from './ReportEditor.tsx';
 import { CompetitiveGroupHeader } from './CompetitiveGroupHeader.tsx';
 import { cn } from '@/lib/utils';
 import { ChevronRight, FileText, AlertCircle, CheckCircle } from 'lucide-react';
-import { StrategyScattergram } from '@/features/dashboard/components/StrategyScattergram';
+import { StrategyScattergram } from '@/features/strategy/components/StrategyScattergram';
 import { useNavfitStore } from '@/store/useNavfitStore';
-import { useSummaryGroups } from '@/features/dashboard/hooks/useSummaryGroups';
+import { useSummaryGroups } from '@/features/strategy/hooks/useSummaryGroups';
 
 export function ReportsManager() {
     const {

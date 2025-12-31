@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavfitStore } from '@/store/useNavfitStore';
-import { useSummaryGroups } from '@/features/dashboard/hooks/useSummaryGroups';
+import { useSummaryGroups } from '@/features/strategy/hooks/useSummaryGroups';
 import { User, FileText, History, Search, Users } from 'lucide-react';
 
 export function SailorProfiles() {
@@ -40,7 +40,7 @@ export function SailorProfiles() {
                             onClick={() => setSelectedMemberId(member.id)}
                             className={`p-4 border-b border-slate-100 cursor-pointer hover:bg-slate-50 transition-colors ${selectedMemberId === member.id ? 'bg-indigo-50 border-l-4 border-l-indigo-600' : ''}`}
                         >
-                            <div className="font-medium text-slate-900">{member.lastName}, {member.firstName}</div>
+                            <div className="font-medium text-slate-900">{member.rank} {member.lastName}, {member.firstName}</div>
                             <div className="text-xs text-slate-500 mt-1 flex items-center gap-2">
                                 <span className="bg-slate-100 px-1.5 py-0.5 rounded">{member.rank}</span>
                                 <span>{member.designator}</span>
@@ -61,7 +61,7 @@ export function SailorProfiles() {
                                     <User className="w-10 h-10" />
                                 </div>
                                 <div>
-                                    <h1 className="text-2xl font-bold text-slate-900">{selectedMember.lastName}, {selectedMember.firstName} {selectedMember.middleInitial}</h1>
+                                    <h1 className="text-2xl font-bold text-slate-900">{selectedMember.rank} {selectedMember.lastName}, {selectedMember.firstName} {selectedMember.middleInitial}</h1>
                                     <div className="flex items-center gap-4 mt-2 text-slate-600">
                                         <div className="flex items-center gap-1">
                                             <span className="font-semibold text-slate-900">{selectedMember.rank}</span>
