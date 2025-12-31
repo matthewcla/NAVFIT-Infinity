@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
 import { AppLayout } from './components/layout/AppLayout';
 import { StrategyWorkspace } from '@/features/strategy/components/StrategyWorkspace';
 import { CommandStrategyCenter } from '@/features/strategy/components/CommandStrategyCenter';
@@ -9,35 +9,34 @@ import { SailorProfiles } from '@/features/roster/components/SailorProfiles';
 import { useNavfitStore } from '@/store/useNavfitStore';
 
 function App() {
-  const [isWorkspaceOpen, setIsWorkspaceOpen] = useState(false);
+  // const [isWorkspaceOpen, setIsWorkspaceOpen] = useState(false);  <-- Removed local state
   const {
     activeTab,
     setActiveTab,
     sidebarCollapsed,
     toggleSidebar,
-    selectedCycleId
+    selectedCycleId,
+    strategyViewMode,
+    setStrategyViewMode
   } = useNavfitStore();
 
   // Reset workspace view if tab changes
   useEffect(() => {
-    setIsWorkspaceOpen(false);
-  }, [activeTab]);
+    // Optional: Reset to landing when leaving strategy tab?
+    // For now, we can keep the user's place or reset.
+    // Let's reset to be safe if they leave the tab context.
+    if (activeTab !== 'strategy') {
+      setStrategyViewMode('landing');
+    }
+  }, [activeTab, setStrategyViewMode]);
 
   const renderContent = () => {
     switch (activeTab) {
       case 'strategy':
-        if (isWorkspaceOpen && selectedCycleId) {
-          return (
-            <StrategyWorkspace
-              onBack={() => setIsWorkspaceOpen(false)}
-            />
-          );
+        if (strategyViewMode === 'workspace' && selectedCycleId) {
+          return <StrategyWorkspace />;
         }
-        return (
-          <CommandStrategyCenter
-            onNavigateToRanking={() => setIsWorkspaceOpen(true)}
-          />
-        );
+        return <CommandStrategyCenter />;
       case 'profiles':
         return <SailorProfiles />;
       case 'schedule':
@@ -45,11 +44,7 @@ function App() {
       case 'admin':
         return <CommandAdmin />;
       default:
-        return (
-          <CommandStrategyCenter
-            onNavigateToRanking={() => setIsWorkspaceOpen(true)}
-          />
-        );
+        return <CommandStrategyCenter />;
     }
   };
 

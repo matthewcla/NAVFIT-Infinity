@@ -3,9 +3,10 @@ import { ArrowRight, TrendingDown, TrendingUp, Minus, Activity } from 'lucide-re
 interface RscaHeadsUpDisplayProps {
     currentRsca: number;
     projectedRsca: number;
+    rankLabel?: string;
 }
 
-export function RscaHeadsUpDisplay({ currentRsca, projectedRsca }: RscaHeadsUpDisplayProps) {
+export function RscaHeadsUpDisplay({ currentRsca, projectedRsca, rankLabel }: RscaHeadsUpDisplayProps) {
     const delta = projectedRsca - currentRsca;
     const isPositive = delta > 0;
     const isNeutral = delta === 0;
@@ -38,7 +39,7 @@ export function RscaHeadsUpDisplay({ currentRsca, projectedRsca }: RscaHeadsUpDi
                     {/* Left Stat: Benchmark / Target */}
                     <div>
                         <div className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-0.5">
-                            Target RSCA
+                            {rankLabel || 'Target RSCA'}
                         </div>
                         <div className="flex items-baseline gap-2">
                             <span className={`text-3xl font-bold ${zoneCurrent}`}>{currentRsca.toFixed(2)}</span>

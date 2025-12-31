@@ -94,10 +94,10 @@ export const SummaryGroupGenerator = {
 
                 // Summary Group Name (The "Report Bucket")
                 // Regular: "O-3 1110 Periodic"
-                // Frocked: "O-3 1110 FROCKED Periodic"
+                // Frocked: "O-3 1110 (FROCKED) Periodic"
                 let groupNamePrefix = competitiveGroupKey;
                 if (status !== 'REGULAR') {
-                    groupNamePrefix += ` ${status}`;
+                    groupNamePrefix += ` (${status})`;
                 }
                 const groupName = `${groupNamePrefix} Periodic`;
 
@@ -122,10 +122,18 @@ export const SummaryGroupGenerator = {
         });
 
         detachers.forEach(m => {
+            const isOfficer = m.rank.startsWith('O') || m.rank.startsWith('W');
+            const designatorKey = isOfficer ? m.designator : 'Enlisted';
+            // Use same key logic or just rank/desig. Let's use the standard logic for consistency if possible, 
+            // but for simple detachment groups, just Rank/Desig is fine.
+            const competitiveGroupKey = designatorKey === 'Enlisted' ? m.rank : `${m.rank} ${designatorKey}`;
+
             groups.push({
                 id: `sg-auto-det-${m.id}`,
                 name: `Detachment of Individual - ${m.lastName}, ${m.firstName}`,
                 periodEndDate: m.prd,
+                competitiveGroupKey: competitiveGroupKey,
+                promotionStatus: (m.promotionStatus || 'REGULAR') as 'REGULAR' | 'FROCKED' | 'SELECTED' | 'SPOT',
                 reports: [createDraftReport(m, 'Detachment of Individual', new Date(m.prd))]
             });
         });
