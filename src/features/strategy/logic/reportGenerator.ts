@@ -116,6 +116,7 @@ export const generateSummaryGroups = (
                 reports: [],
                 paygrade: key.paygrade,
                 designator: key.designator,
+                competitiveGroupKey: `${key.paygrade} ${key.designator}`,
                 promotionStatus: key.promotionStatus
             });
         }

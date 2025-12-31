@@ -4,9 +4,17 @@ interface RscaHeadsUpDisplayProps {
     currentRsca: number;
     projectedRsca: number;
     rankLabel?: string;
+    showSuffix?: boolean; // New: Toggle "/ 5.00"
+    promotionStatus?: 'REGULAR' | 'FROCKED' | 'SELECTED' | 'SPOT'; // New: For badging
 }
 
-export function RscaHeadsUpDisplay({ currentRsca, projectedRsca, rankLabel }: RscaHeadsUpDisplayProps) {
+export function RscaHeadsUpDisplay({
+    currentRsca,
+    projectedRsca,
+    rankLabel,
+    showSuffix = true,
+    promotionStatus
+}: RscaHeadsUpDisplayProps) {
     const delta = projectedRsca - currentRsca;
     const isPositive = delta > 0;
     const isNeutral = delta === 0;
@@ -25,9 +33,19 @@ export function RscaHeadsUpDisplay({ currentRsca, projectedRsca, rankLabel }: Rs
     const zoneProjected = getHealthColor(projectedRsca);
     const bgCurrent = currentRsca > 4.10 ? 'bg-red-50' : currentRsca > 3.80 ? 'bg-amber-50' : 'bg-emerald-50';
 
+    // Badge Logic
+    const getBadgeStyle = (status?: string) => {
+        switch (status) {
+            case 'FROCKED': return 'bg-amber-100 text-amber-700 border-amber-200';
+            case 'SELECTED': return 'bg-emerald-100 text-emerald-700 border-emerald-200';
+            case 'SPOT': return 'bg-purple-100 text-purple-700 border-purple-200';
+            default: return 'hidden'; // Regular is hidden or standard
+        }
+    };
+
     return (
-        <div className="sticky top-0 z-10 bg-white/95 backdrop-blur-sm border-b border-slate-200 p-4 shadow-sm transition-all duration-300">
-            <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
+        <div className="bg-white/95 backdrop-blur-sm p-4 transition-all duration-300">
+            <div className="flex flex-col md:flex-row items-center justify-between gap-6">
 
                 {/* Main Stats Block */}
                 <div className="flex items-center gap-8 flex-1">
@@ -38,12 +56,19 @@ export function RscaHeadsUpDisplay({ currentRsca, projectedRsca, rankLabel }: Rs
 
                     {/* Left Stat: Benchmark / Target */}
                     <div>
-                        <div className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-0.5">
-                            {rankLabel || 'Target RSCA'}
+                        <div className="flex items-center gap-2 mb-0.5">
+                            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                                {rankLabel || 'Target RSCA'}
+                            </span>
+                            {promotionStatus && promotionStatus !== 'REGULAR' && (
+                                <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border ${getBadgeStyle(promotionStatus)}`}>
+                                    {promotionStatus}
+                                </span>
+                            )}
                         </div>
                         <div className="flex items-baseline gap-2">
                             <span className={`text-3xl font-bold ${zoneCurrent}`}>{currentRsca.toFixed(2)}</span>
-                            <span className="text-sm font-medium text-slate-400">/ 5.00</span>
+                            {showSuffix && <span className="text-sm font-medium text-slate-400">/ 5.00</span>}
                         </div>
                     </div>
 
@@ -59,6 +84,7 @@ export function RscaHeadsUpDisplay({ currentRsca, projectedRsca, rankLabel }: Rs
                         </div>
                         <div className="flex items-baseline gap-3">
                             <span className={`text-3xl font-bold ${zoneProjected}`}>{projectedRsca.toFixed(2)}</span>
+                            {showSuffix && <span className="text-sm font-medium text-slate-400">/ 5.00</span>}
 
                             {/* Delta Indicator */}
                             {!isNeutral && (
@@ -88,7 +114,7 @@ export function RscaHeadsUpDisplay({ currentRsca, projectedRsca, rankLabel }: Rs
                         {/* Safe Zone (0 - 3.80) */}
                         <div className="absolute left-0 top-0 bottom-0 bg-emerald-500/20 border-r border-white/50 w-[76%] z-10" title="Safe Region"></div>
                         {/* Warning Zone (3.80 - 4.10) */}
-                        <div className="absolute left-[76%] top-0 bottom-0 bg-amber-500/20 border-r border-white/50 w-[6%] z-10" title="Caution Region"></div>
+                        <div className="absolute left-[76%] top-0 bottom-0 bg-amber-500/20 border-r border-white/50 w-[6%] z-10" title="Danger Region"></div>
                         {/* Danger Zone (> 4.10) */}
                         <div className="absolute left-[82%] top-0 bottom-0 bg-red-500/20 w-[18%] z-10" title="Danger Region"></div>
 
