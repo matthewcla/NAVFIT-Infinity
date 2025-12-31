@@ -28,18 +28,16 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
         if (!group) return null;
 
         // Re-generate all groups for cumulative RSCA context
-        // Ensure year matches what we expect (2023 default per other files)
         const allGroups = generateSummaryGroups(roster, rsConfig, 2023, projections);
 
-        const targetRsca = rsConfig.targetRsca || 4.20;
-        let projected = 0;
+        // Derive Rank from competitiveGroupKey (e.g., "O-3 1110" -> "O-3") or use paygrade
+        const rank = group.paygrade || (group.competitiveGroupKey ? group.competitiveGroupKey.split(' ')[0] : 'Unknown');
 
-        if (group.paygrade) {
-            projected = calculateCumulativeRSCA(allGroups, group.paygrade);
-        } else {
-            const sum = group.reports.reduce((acc, r) => acc + (r.traitAverage || 0), 0);
-            projected = group.reports.length > 0 ? sum / group.reports.length : 0;
-        }
+        // Calculate Rank-Wide Cumulative Average (Current State of all reports)
+        const cumulativeRsca = calculateCumulativeRSCA(allGroups, rank);
+
+        // Target is just for reference in logic, but HUD will show Cumulative
+        const targetRsca = rsConfig.targetRsca || 4.20;
 
         // Alerts Logic
         const alerts: string[] = [];
@@ -84,7 +82,8 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
             .slice(0, 5);
 
         return {
-            projected,
+            cumulativeRsca,
+            rank,
             targetRsca,
             alerts,
             totalReports,
@@ -103,7 +102,7 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
         );
     }
 
-    const { projected, targetRsca, alerts, totalReports, mainDraftStatus, topPerformers } = contextData;
+    const { cumulativeRsca, rank, alerts, totalReports, mainDraftStatus, topPerformers } = contextData;
 
     return (
         <div className="h-full flex flex-col bg-white border-l border-slate-200 shadow-xl shadow-slate-200/50 transform transition-transform duration-300">
@@ -131,7 +130,11 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
                 {/* Scoreboard Context */}
                 <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden -mx-2">
                     <div className="scale-90 origin-top-left w-[111%]">
-                        <RscaHeadsUpDisplay currentRsca={targetRsca} projectedRsca={projected} />
+                        <RscaHeadsUpDisplay
+                            currentRsca={cumulativeRsca}
+                            projectedRsca={cumulativeRsca}
+                            rankLabel={`${rank} Cumulative Average`}
+                        />
                     </div>
                 </div>
             </div>

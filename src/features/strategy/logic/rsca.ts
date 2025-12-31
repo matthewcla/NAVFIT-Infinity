@@ -69,18 +69,25 @@ export const calculateCumulativeRSCA = (
     allGroups: SummaryGroup[],
     targetPaygrade: string
 ): number => {
-    // 1. Filter groups by Paygrade
-    const matchingGroups = allGroups.filter(g => g.paygrade === targetPaygrade);
+    // 1. Normalize target Paygrade (take first part if "O-3 1110" passed by mistake, though caller should pass Rank)
+    const rank = targetPaygrade.split(' ')[0];
+
+    // 2. Filter groups by matching Paygrade (Rank)
+    // We check explicit 'paygrade' field OR derived from 'competitiveGroupKey'
+    const matchingGroups = allGroups.filter(g => {
+        const groupRank = g.paygrade || g.competitiveGroupKey.split(' ')[0];
+        return groupRank === rank;
+    });
 
     if (matchingGroups.length === 0) return 0;
 
-    // 2. Aggregate all reports
+    // 3. Aggregate all reports
     let totalScore = 0;
     let totalReports = 0;
 
     matchingGroups.forEach(group => {
         group.reports.forEach(report => {
-            if (report.traitAverage) {
+            if (typeof report.traitAverage === 'number' && report.traitAverage > 0) {
                 totalScore += report.traitAverage;
                 totalReports++;
             }
@@ -89,6 +96,6 @@ export const calculateCumulativeRSCA = (
 
     if (totalReports === 0) return 0;
 
-    // 3. Return weighted average
+    // 4. Return weighted average
     return round2(totalScore / totalReports);
 };

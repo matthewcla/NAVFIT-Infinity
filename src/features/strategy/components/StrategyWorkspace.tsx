@@ -12,20 +12,23 @@ import { ReportEditorModal } from './ReportEditorModal';
 import { useNavfitStore } from '@/store/useNavfitStore';
 import { useSummaryGroups } from '@/features/strategy/hooks/useSummaryGroups';
 import { RscaHeadsUpDisplay } from './RscaHeadsUpDisplay';
+import { calculateCumulativeRSCA } from '@/features/strategy/logic/rsca';
 
-interface StrategyWorkspaceProps {
-    onBack?: () => void;
-}
+// interface StrategyWorkspaceProps {
+//     onBack?: () => void;
+// }
 
-export function StrategyWorkspace({ onBack }: StrategyWorkspaceProps) {
+export function StrategyWorkspace() {
     const [flightPathMode, setFlightPathMode] = useState(false);
     const {
         roster,
         projections,
         updateProjection,
         selectReport,
+
         viewMode,
-        setViewMode
+        setViewMode,
+        setStrategyViewMode
     } = useNavfitStore();
 
     const summaryGroups = useSummaryGroups();
@@ -43,15 +46,13 @@ export function StrategyWorkspace({ onBack }: StrategyWorkspaceProps) {
             {/* Header */}
             <header className="h-16 bg-white border-b border-slate-200 flex justify-between items-center px-8 shadow-sm flex-shrink-0 z-10">
                 <div className="flex items-center space-x-4">
-                    {onBack && (
-                        <button
-                            onClick={onBack}
-                            className="p-1.5 rounded-md text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-all"
-                            title="Back to Command Center"
-                        >
-                            <ChevronLeft className="w-5 h-5" />
-                        </button>
-                    )}
+                    <button
+                        onClick={() => setStrategyViewMode('landing')}
+                        className="p-1.5 rounded-md text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-all"
+                        title="Back to Command Center"
+                    >
+                        <ChevronLeft className="w-5 h-5" />
+                    </button>
                     <span className="text-sm font-bold text-slate-400 uppercase tracking-wider">Strategic Pulse</span>
                     <div className="h-6 w-px bg-slate-200"></div>
                 </div>
@@ -78,27 +79,42 @@ export function StrategyWorkspace({ onBack }: StrategyWorkspaceProps) {
             {/* Sticky HUD */}
             <div className="sticky top-0 z-20">
                 <RscaHeadsUpDisplay
-                    currentRsca={useNavfitStore.getState().rsConfig.targetRsca || 4.20}
-                    projectedRsca={
-                        // Simple projection logic: average of all reports in view
-                        (() => {
-                            const relevantGroups = useNavfitStore.getState().selectedCycleId
-                                ? summaryGroups.filter(g => g.id === useNavfitStore.getState().selectedCycleId)
-                                : summaryGroups;
+                    currentRsca={(() => {
+                        const selectedId = useNavfitStore.getState().selectedCycleId;
+                        if (!selectedId) return 4.20;
 
-                            let totalScore = 0;
-                            let count = 0;
-                            relevantGroups.forEach(g => {
-                                g.reports.forEach(r => {
-                                    if (r.traitAverage) {
-                                        totalScore += r.traitAverage;
-                                        count++;
-                                    }
-                                });
-                            });
-                            return count > 0 ? totalScore / count : 0;
-                        })()
-                    }
+                        const selectedGroup = summaryGroups.find(g => g.id === selectedId);
+                        if (!selectedGroup) return 4.20;
+
+                        const rank = selectedGroup.paygrade || selectedGroup.competitiveGroupKey.split(' ')[0];
+
+                        // Import of calculateCumulativeRSCA needed! I will add it to imports.
+                        // Since I can't add imports in this block easily without ensuring I don't break things,
+                        // I will assume I can add the import in a separate block or this tool call allows it if I target the right range.
+                        // Wait, I should add the import first or include it in a larger block.
+                        // I will update the whole file import section too? 
+                        // No, let's use the tool's ability to just replace this block, BUT I need to import the function.
+                        // I'll do a separate tool call for import or try to use a MultiReplace.
+                        // For now, I'll write the logic here assuming I add the import.
+                        // Wait, I can't assume. I must add the import.
+                        return calculateCumulativeRSCA(summaryGroups, rank);
+                    })()}
+                    projectedRsca={(() => {
+                        const selectedId = useNavfitStore.getState().selectedCycleId;
+                        if (!selectedId) return 4.20;
+
+                        const selectedGroup = summaryGroups.find(g => g.id === selectedId);
+                        if (!selectedGroup) return 4.20;
+
+                        const rank = selectedGroup.paygrade || selectedGroup.competitiveGroupKey.split(' ')[0];
+                        return calculateCumulativeRSCA(summaryGroups, rank);
+                    })()}
+                    rankLabel={(() => {
+                        const selectedId = useNavfitStore.getState().selectedCycleId;
+                        const selectedGroup = summaryGroups.find(g => g.id === selectedId);
+                        const rank = selectedGroup ? (selectedGroup.paygrade || selectedGroup.competitiveGroupKey.split(' ')[0]) : 'Group';
+                        return `${rank} Cumulative Average`;
+                    })()}
                 />
             </div>
 

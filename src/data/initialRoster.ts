@@ -87,11 +87,17 @@ const o3_1110_frocked = generateMember('O-3', '1110', 'FROCKED', 5);
 
 // Use '0000' for Enlisted
 const e6_regular = generateMember('E-6', '0000', 'REGULAR', 10);
+const e6_frocked = generateMember('E-6', '0000', 'FROCKED', 5);
+
+// O-3 1110 Selected
+const o3_1110_selected = generateMember('O-3', '1110', 'SELECTED', 5);
 
 export const INITIAL_ROSTER: RosterMember[] = [
     ...o3_1110_regular,
     ...o3_1110_frocked,
+    ...o3_1110_selected,
     ...e6_regular,
+    ...e6_frocked,
 ];
 
 // 3. Export INITIAL_RS_CONFIG

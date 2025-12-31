@@ -4,7 +4,7 @@ import type { RosterMember, ReportingSeniorConfig } from '@/types/roster';
 import { INITIAL_ROSTER, INITIAL_RS_CONFIG } from '../data/initialRoster';
 
 import { calculateOutcomeBasedGrades, type Member } from '@/features/strategy/logic/autoPlan';
-import { generateSummaryGroups } from '@/features/strategy/logic/reportGenerator';
+
 import type { SummaryGroup } from '@/types';
 
 interface NavfitStore {
@@ -68,9 +68,17 @@ interface NavfitStore {
     selectedCycleId: string | null; // Used to highlight the active card in the left column
     activeCompetitiveGroup: string | null; // e.g., "O-3 1110"
     isContextPanelOpen: boolean;
+    cycleFilter: 'All' | 'Officer' | 'Enlisted';
+    cycleSort: 'DueDate' | 'Status';
 
     selectCycle: (cycleId: string, competitiveGroupKey: string) => void;
     clearSelection: () => void;
+    setCycleFilter: (filter: 'All' | 'Officer' | 'Enlisted') => void;
+    setCycleSort: (sort: 'DueDate' | 'Status') => void;
+
+    // Drill-Down Navigation State
+    strategyViewMode: 'landing' | 'workspace';
+    setStrategyViewMode: (mode: 'landing' | 'workspace') => void;
 }
 
 export const useNavfitStore = create<NavfitStore>((set) => ({
@@ -203,6 +211,9 @@ export const useNavfitStore = create<NavfitStore>((set) => ({
     selectedCycleId: null,
     activeCompetitiveGroup: null,
     isContextPanelOpen: false,
+    cycleFilter: 'All',
+    cycleSort: 'DueDate',
+    strategyViewMode: 'landing', // Default to landing
 
     selectCycle: (cycleId, competitiveGroupKey) => set({
         selectedCycleId: cycleId,
@@ -216,14 +227,12 @@ export const useNavfitStore = create<NavfitStore>((set) => ({
         activeCompetitiveGroup: null,
         isContextPanelOpen: false
     }),
+    setCycleFilter: (filter) => set({ cycleFilter: filter }),
+    setCycleSort: (sort) => set({ cycleSort: sort }),
+    setStrategyViewMode: (mode) => set({ strategyViewMode: mode }),
 }));
 
 export const selectActiveCycle = (state: NavfitStore): SummaryGroup | null => {
     if (!state.selectedCycleId) return null;
-    // Generate groups on the fly to find the active one. 
-    // Optimization: This repeats generation logic. In a real app, 'summaryGroups' should likely be in store or cached context.
-    // For now, we follow the pattern of generating from source state.
-    // Using default startYear 2023 to match hooks
-    const groups = generateSummaryGroups(state.roster, state.rsConfig, 2023, state.projections);
-    return groups.find(g => g.id === state.selectedCycleId) || null;
+    return state.summaryGroups.find(g => g.id === state.selectedCycleId) || null;
 };
