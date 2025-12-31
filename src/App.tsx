@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { AppLayout } from './components/layout/AppLayout';
 import { StrategyWorkspace } from '@/features/strategy/components/StrategyWorkspace';
 import { CommandStrategyCenter } from '@/features/strategy/components/CommandStrategyCenter';
@@ -9,25 +9,35 @@ import { SailorProfiles } from '@/features/roster/components/SailorProfiles';
 import { useNavfitStore } from '@/store/useNavfitStore';
 
 function App() {
-  const [selectedCycleId, setSelectedCycleId] = useState<string | null>(null);
+  const [isWorkspaceOpen, setIsWorkspaceOpen] = useState(false);
   const {
     activeTab,
     setActiveTab,
     sidebarCollapsed,
-    toggleSidebar
+    toggleSidebar,
+    selectedCycleId
   } = useNavfitStore();
+
+  // Reset workspace view if tab changes
+  useEffect(() => {
+    setIsWorkspaceOpen(false);
+  }, [activeTab]);
 
   const renderContent = () => {
     switch (activeTab) {
       case 'strategy':
-        if (selectedCycleId) {
-          return <StrategyWorkspace onBack={() => {
-            setSelectedCycleId(null);
-            // Clear the store selection too
-            useNavfitStore.getState().setSelectedCompetitiveGroupKey(null);
-          }} />;
+        if (isWorkspaceOpen && selectedCycleId) {
+          return (
+            <StrategyWorkspace
+              onBack={() => setIsWorkspaceOpen(false)}
+            />
+          );
         }
-        return <CommandStrategyCenter onNavigateToRanking={(id) => setSelectedCycleId(id)} />;
+        return (
+          <CommandStrategyCenter
+            onNavigateToRanking={() => setIsWorkspaceOpen(true)}
+          />
+        );
       case 'profiles':
         return <SailorProfiles />;
       case 'schedule':
@@ -35,14 +45,11 @@ function App() {
       case 'admin':
         return <CommandAdmin />;
       default:
-        // Default to Strategy Center logic
-        if (selectedCycleId) {
-          return <StrategyWorkspace onBack={() => {
-            setSelectedCycleId(null);
-            useNavfitStore.getState().setSelectedCompetitiveGroupKey(null);
-          }} />;
-        }
-        return <CommandStrategyCenter onNavigateToRanking={(id) => setSelectedCycleId(id)} />;
+        return (
+          <CommandStrategyCenter
+            onNavigateToRanking={() => setIsWorkspaceOpen(true)}
+          />
+        );
     }
   };
 

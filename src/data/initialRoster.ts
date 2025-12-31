@@ -84,25 +84,14 @@ const generateMember = (
 // 2. Generate the Roster Data
 const o3_1110_regular = generateMember('O-3', '1110', 'REGULAR', 15);
 const o3_1110_frocked = generateMember('O-3', '1110', 'FROCKED', 5);
-const o3_1110_selected = generateMember('O-3', '1110', 'SELECTED', 5);
 
-// Use '0000' for Enlisted as requested. Enforcing cast to Designator if strictly typed, 
-// or if Designator type is just a union of strings, we might need to adjust the type def if '0000' isn't allowed.
-// Assuming for now we pass it as string and cast, or the Designator type is flexible enough or we force it.
-// If RosterMember.designator is strict, we might need to add '0000' to it. 
-// Based on the prompt "Use '0000' or similar for Enlisted", I'll assume it's acceptable string data.
-const e6_0000_regular = generateMember('E-6', '0000', 'REGULAR', 10);
-const e6_0000_frocked = generateMember('E-6', '0000', 'FROCKED', 5);
-
-const o4_1110_regular = generateMember('O-4', '1110', 'REGULAR', 5);
+// Use '0000' for Enlisted
+const e6_regular = generateMember('E-6', '0000', 'REGULAR', 10);
 
 export const INITIAL_ROSTER: RosterMember[] = [
     ...o3_1110_regular,
     ...o3_1110_frocked,
-    ...o3_1110_selected,
-    ...e6_0000_regular,
-    ...e6_0000_frocked,
-    ...o4_1110_regular,
+    ...e6_regular,
 ];
 
 // 3. Export INITIAL_RS_CONFIG

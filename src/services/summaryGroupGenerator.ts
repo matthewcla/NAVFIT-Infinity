@@ -46,11 +46,7 @@ export const SummaryGroupGenerator = {
             const simpleRank = mapRankToKey(m.rank);
             if (!simpleRank) return false;
 
-            // Logic: Is the periodic month "soon"? (e.g., within 3 months) or "now"?
-            // For demo, let's just say we look for cycles landing in next 3 months
-            // For this specific User Request, let's hardcode a "match" logic to demo data
-            // If rank maps to a month close to "Today", suggest it.
-            // Let's just create groups for ALL ranks found in roster that match the cycle
+            // Return true to ensure we generate groups for all generated roster members for testing
             return true;
         });
 
@@ -58,6 +54,7 @@ export const SummaryGroupGenerator = {
         // Key format: "RANK|DESIGNATOR|STATUS"
         // Officers grouped by Rank + Designator + Promotion Status
         // Enlisted grouped by Rank + Promotion Status
+        // Ensures Frocked/Selected/Regular are ALWAYS separated
         const candidatesByGroup = new Map<string, RosterMember[]>();
 
         periodicCandidates.forEach(m => {
@@ -67,6 +64,7 @@ export const SummaryGroupGenerator = {
             // Normalize Promotion Status
             // Roster typically has "Frocked", "Selected", "Regular". Convert to strict Upper Case.
             let status = (m.promotionStatus || 'Regular').toUpperCase();
+            // Default to REGULAR if unknown, but allow distinct statuses to form groups
             if (!['REGULAR', 'FROCKED', 'SELECTED', 'SPOT'].includes(status)) {
                 status = 'REGULAR';
             }
@@ -89,9 +87,9 @@ export const SummaryGroupGenerator = {
                 const closeoutDate = new Date(year, cycleMonth + 1, 0); // Last day of month
 
                 // Competitive Group Key (The "Pool")
+                // Used for UI Headers to link separate status groups together (e.g. Frocked & Regular)
                 // For Officers: "O-3 1110"
-                // For Enlisted: "E-6" (or "E-6 Enlisted" depending on preference, sticking to simple rank for display consistency?)
-                // User example: "O-3 1110". Let's follow that pattern.
+                // For Enlisted: "E-6"
                 const competitiveGroupKey = designatorContext === 'Enlisted' ? rank : `${rank} ${designatorContext}`;
 
                 // Summary Group Name (The "Report Bucket")

@@ -77,7 +77,29 @@ export function StrategyWorkspace({ onBack }: StrategyWorkspaceProps) {
 
             {/* Sticky HUD */}
             <div className="sticky top-0 z-20">
-                <RscaHeadsUpDisplay summaryGroups={summaryGroups} />
+                <RscaHeadsUpDisplay
+                    currentRsca={useNavfitStore.getState().rsConfig.targetRsca || 4.20}
+                    projectedRsca={
+                        // Simple projection logic: average of all reports in view
+                        (() => {
+                            const relevantGroups = useNavfitStore.getState().selectedCycleId
+                                ? summaryGroups.filter(g => g.id === useNavfitStore.getState().selectedCycleId)
+                                : summaryGroups;
+
+                            let totalScore = 0;
+                            let count = 0;
+                            relevantGroups.forEach(g => {
+                                g.reports.forEach(r => {
+                                    if (r.traitAverage) {
+                                        totalScore += r.traitAverage;
+                                        count++;
+                                    }
+                                });
+                            });
+                            return count > 0 ? totalScore / count : 0;
+                        })()
+                    }
+                />
             </div>
 
             <div className="flex-1 overflow-hidden flex flex-col">
@@ -97,7 +119,12 @@ export function StrategyWorkspace({ onBack }: StrategyWorkspaceProps) {
 
                         {flightPathMode ? (
                             <StrategyScattergram
-                                summaryGroups={summaryGroups}
+                                summaryGroups={
+                                    // Use store's selectedCycleId to filter if available
+                                    useNavfitStore.getState().selectedCycleId
+                                        ? summaryGroups.filter(g => g.id === useNavfitStore.getState().selectedCycleId)
+                                        : summaryGroups
+                                }
                                 roster={roster}
                                 onOpenReport={handleOpenReport}
                                 onUpdateReport={updateProjection}
@@ -106,7 +133,11 @@ export function StrategyWorkspace({ onBack }: StrategyWorkspaceProps) {
                             />
                         ) : (
                             <ManningWaterfall
-                                summaryGroups={summaryGroups}
+                                summaryGroups={
+                                    useNavfitStore.getState().selectedCycleId
+                                        ? summaryGroups.filter(g => g.id === useNavfitStore.getState().selectedCycleId)
+                                        : summaryGroups
+                                }
                                 roster={roster}
                                 onOpenReport={handleOpenReport}
                                 onReportUpdate={updateProjection}
@@ -115,7 +146,13 @@ export function StrategyWorkspace({ onBack }: StrategyWorkspaceProps) {
                         )}
                     </div>
                 ) : (
-                    <StrategyListView summaryGroups={summaryGroups} />
+                    <StrategyListView
+                        summaryGroups={
+                            useNavfitStore.getState().selectedCycleId
+                                ? summaryGroups.filter(g => g.id === useNavfitStore.getState().selectedCycleId)
+                                : summaryGroups
+                        }
+                    />
                 )}
             </div>
 

@@ -4,6 +4,8 @@ import type { RosterMember, ReportingSeniorConfig } from '@/types/roster';
 import { INITIAL_ROSTER, INITIAL_RS_CONFIG } from '../data/initialRoster';
 
 import { calculateOutcomeBasedGrades, type Member } from '@/features/strategy/logic/autoPlan';
+import { generateSummaryGroups } from '@/features/strategy/logic/reportGenerator';
+import type { SummaryGroup } from '@/types';
 
 interface NavfitStore {
     // Navigation State
@@ -26,6 +28,9 @@ interface NavfitStore {
     roster: RosterMember[];
     setRoster: (roster: RosterMember[]) => void;
     reorderMember: (memberId: string, newIndex: number) => void;
+
+    summaryGroups: SummaryGroup[];
+    setSummaryGroups: (groups: SummaryGroup[]) => void;
 
     rsConfig: ReportingSeniorConfig;
     setRsConfig: (config: ReportingSeniorConfig) => void;
@@ -58,6 +63,14 @@ interface NavfitStore {
     // Modal State
     isEditingReport: boolean;
     setEditingReport: (isEditing: boolean) => void;
+
+    // Context-Driven List State
+    selectedCycleId: string | null; // Used to highlight the active card in the left column
+    activeCompetitiveGroup: string | null; // e.g., "O-3 1110"
+    isContextPanelOpen: boolean;
+
+    selectCycle: (cycleId: string, competitiveGroupKey: string) => void;
+    clearSelection: () => void;
 }
 
 export const useNavfitStore = create<NavfitStore>((set) => ({
@@ -80,6 +93,9 @@ export const useNavfitStore = create<NavfitStore>((set) => ({
     // Data
     roster: INITIAL_ROSTER,
     setRoster: (roster) => set({ roster }),
+
+    summaryGroups: [],
+    setSummaryGroups: (groups) => set({ summaryGroups: groups }),
     reorderMember: (memberId, newIndex) => set((state) => {
         const currentRoster = [...state.roster];
         const oldIndex = currentRoster.findIndex(m => m.id === memberId);
@@ -182,4 +198,32 @@ export const useNavfitStore = create<NavfitStore>((set) => ({
     // Modal State
     isEditingReport: false,
     setEditingReport: (isEditing) => set({ isEditingReport: isEditing }),
+
+    // Context-Driven List State
+    selectedCycleId: null,
+    activeCompetitiveGroup: null,
+    isContextPanelOpen: false,
+
+    selectCycle: (cycleId, competitiveGroupKey) => set({
+        selectedCycleId: cycleId,
+        activeCompetitiveGroup: competitiveGroupKey,
+        isContextPanelOpen: true,
+        // Also sync legacy selection if needed, or keep distinct?
+        // User request didn't specify syncing with selectedCompetitiveGroupKey, but activeCompetitiveGroup seems to serve that purpose.
+    }),
+    clearSelection: () => set({
+        selectedCycleId: null,
+        activeCompetitiveGroup: null,
+        isContextPanelOpen: false
+    }),
 }));
+
+export const selectActiveCycle = (state: NavfitStore): SummaryGroup | null => {
+    if (!state.selectedCycleId) return null;
+    // Generate groups on the fly to find the active one. 
+    // Optimization: This repeats generation logic. In a real app, 'summaryGroups' should likely be in store or cached context.
+    // For now, we follow the pattern of generating from source state.
+    // Using default startYear 2023 to match hooks
+    const groups = generateSummaryGroups(state.roster, state.rsConfig, 2023, state.projections);
+    return groups.find(g => g.id === state.selectedCycleId) || null;
+};
