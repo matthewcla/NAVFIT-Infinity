@@ -109,14 +109,14 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
 
                             {/* Status Badges (Moved to Top Right) */}
                             <div className="flex flex-col items-end gap-1.5">
+                                <div className="flex items-center gap-1.5 px-2.5 py-1 bg-indigo-50 rounded text-xs font-semibold text-indigo-700 border border-indigo-200">
+                                    Status: {mainDraftStatus}
+                                </div>
                                 {gap > 0 && (
                                     <div className="flex items-center gap-1.5 px-2.5 py-1 bg-amber-50 rounded text-xs font-semibold text-amber-700 border border-amber-200">
                                         {gap} Attention Needed
                                     </div>
                                 )}
-                                <div className="flex items-center gap-1.5 px-2.5 py-1 bg-indigo-50 rounded text-xs font-semibold text-indigo-700 border border-indigo-200">
-                                    Status: {mainDraftStatus}
-                                </div>
                             </div>
                         </div>
 
@@ -134,29 +134,33 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
 
                     {/* 2. Sticky Toolbar (Below Header) */}
                     <div className="sticky top-0 z-20 bg-white/95 backdrop-blur border-b border-slate-200 p-4 pt-2">
-                        <div className="flex items-center gap-3">
-                            {/* Strategy Workspace - Compact (50% reduced implies smaller relative to others or just compact) */}
-                            {/* User asked: "Open Strategy Workspace: Reduce width by 50%" */}
-                            {/* Original was flex-1. Let's make it fixed width or auto */}
+                        <div className="grid grid-cols-3 gap-2">
+                            {/* Strategy Workspace */}
                             <button
                                 onClick={onOpenWorkspace}
-                                className="flex items-center justify-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg shadow-sm transition-all text-sm font-bold shrink-0"
+                                className="flex items-center justify-center gap-2 px-2 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg shadow-sm transition-all text-xs font-bold"
                             >
-                                <ArrowRight className="w-4 h-4" />
-                                <span className="hidden sm:inline">Workspace</span>
+                                <ArrowRight className="w-3.5 h-3.5" />
+                                <span>Workspace</span>
                             </button>
 
-                            {/* Action Buttons - "Increase width by 100%" implies taking up more space / becoming full buttons */}
-                            <div className="flex-1 grid grid-cols-2 gap-3">
-                                <button className="flex items-center justify-center gap-2 px-3 py-2.5 text-slate-700 hover:bg-slate-50 border border-slate-200 rounded-lg transition-colors font-medium text-sm">
-                                    <BarChart className="w-4 h-4 text-slate-500" />
-                                    <span>Waterfall</span>
-                                </button>
-                                <button className="flex items-center justify-center gap-2 px-3 py-2.5 text-slate-700 hover:bg-slate-50 border border-slate-200 rounded-lg transition-colors font-medium text-sm">
-                                    <ListOrdered className="w-4 h-4 text-slate-500" />
-                                    <span>Rank</span>
-                                </button>
-                            </div>
+                            {/* Rank Button */}
+                            <button
+                                className="flex items-center justify-center gap-2 px-2 py-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 rounded-lg transition-colors text-xs font-medium"
+                                title="Rank Members"
+                            >
+                                <ListOrdered className="w-3.5 h-3.5 text-slate-500" />
+                                <span>Rank</span>
+                            </button>
+
+                            {/* Waterfall Button */}
+                            <button
+                                className="flex items-center justify-center gap-2 px-2 py-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 rounded-lg transition-colors text-xs font-medium"
+                                title="Waterfall View"
+                            >
+                                <BarChart className="w-3.5 h-3.5 text-slate-500" />
+                                <span>Waterfall</span>
+                            </button>
                         </div>
                     </div>
                 </div>
