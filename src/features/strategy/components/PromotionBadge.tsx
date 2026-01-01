@@ -1,8 +1,8 @@
-import React from 'react';
+
 
 interface PromotionBadgeProps {
     recommendation: string; // 'SP', 'PR', 'P', 'MP', 'EP', 'NOB', etc.
-    size?: 'sm' | 'md';
+    size?: 'xs' | 'sm' | 'md';
     className?: string;
 }
 
@@ -27,9 +27,10 @@ export function PromotionBadge({ recommendation, size = 'md', className = '' }: 
     };
 
     const baseClasses = "inline-flex items-center justify-center font-bold rounded border leading-none tracking-wide";
-    const sizeClasses = size === 'sm'
-        ? "px-1 py-0.5 text-[9px]"
-        : "px-2 py-0.5 text-xs";
+
+    let sizeClasses = "px-2 py-0.5 text-xs";
+    if (size === 'xs') sizeClasses = "px-1 py-0 text-[9px]";
+    else if (size === 'sm') sizeClasses = "px-1.5 py-0.5 text-[10px]";
 
     return (
         <span className={`${baseClasses} ${sizeClasses} ${getStyle(recommendation)} ${className}`}>

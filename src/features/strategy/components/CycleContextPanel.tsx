@@ -167,7 +167,6 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
                                 projectedRsca={cumulativeRsca}
                                 rankLabel="Curr. RSCA"
                                 showSuffix={false}
-                                promotionStatus={group.promotionStatus}
                             />
                         </div>
                     </div>
