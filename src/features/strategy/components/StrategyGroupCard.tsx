@@ -1,4 +1,5 @@
 import { Calendar, Users, Target, ArrowRight } from 'lucide-react';
+import { StatusBadge } from './StatusBadge';
 
 interface StrategyGroupCardProps {
     title: string;
@@ -19,8 +20,9 @@ export function StrategyGroupCard({
     rscaImpact,
     promotionStatus = 'REGULAR',
     isSelected = false,
-    onClick
-}: StrategyGroupCardProps) {
+    onClick,
+    workflowStatus // New Prop
+}: StrategyGroupCardProps & { workflowStatus?: string }) {
 
     const getStatusColor = (s: string) => {
         switch (s) {
@@ -88,6 +90,10 @@ export function StrategyGroupCard({
                                 </h3>
                                 {promotionStatus !== 'REGULAR' && getPromotionStatusBadge(promotionStatus)}
                             </div>
+                        </div>
+                        {/* Workflow Status Badge */}
+                        <div className="shrink-0">
+                            <StatusBadge status={workflowStatus} />
                         </div>
                     </div>
                 </div>

@@ -11,6 +11,7 @@ import {
     ListOrdered
 } from 'lucide-react';
 import { MemberDetailSidebar } from '@/features/dashboard/components/MemberDetailSidebar';
+import { StatusBadge } from './StatusBadge';
 
 interface CycleContextPanelProps {
     group: SummaryGroup | null;
@@ -46,7 +47,10 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
             return acc;
         }, {} as Record<string, number>);
 
-        const mainDraftStatus = Object.entries(draftStats).sort((a, b) => b[1] - a[1])[0]?.[0] || 'Pending';
+        const derivedStatus = Object.entries(draftStats).sort((a, b) => b[1] - a[1])[0]?.[0] || 'Pending';
+
+        // Priority: Use explicit group status if valid, otherwise fallback to derived
+        const mainDraftStatus = (group.status && group.status !== 'Pending') ? group.status : derivedStatus;
 
         // Prepare Member List Data
         const rankedMembers = group.reports
@@ -109,9 +113,7 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
 
                             {/* Status Badges (Moved to Top Right) */}
                             <div className="flex flex-col items-end gap-1.5">
-                                <div className="flex items-center gap-1.5 px-2.5 py-1 bg-indigo-50 rounded text-xs font-semibold text-indigo-700 border border-indigo-200">
-                                    Status: {mainDraftStatus}
-                                </div>
+                                <StatusBadge status={mainDraftStatus} />
                                 {gap > 0 && (
                                     <div className="flex items-center gap-1.5 px-2.5 py-1 bg-amber-50 rounded text-xs font-semibold text-amber-700 border border-amber-200">
                                         {gap} Attention Needed
@@ -138,7 +140,7 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
                             {/* Strategy Workspace */}
                             <button
                                 onClick={onOpenWorkspace}
-                                className="flex items-center justify-center gap-2 px-2 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg shadow-sm transition-all text-xs font-bold"
+                                className="flex items-center justify-center gap-2 px-2 py-2 bg-indigo-500 hover:bg-indigo-600 text-white rounded-lg shadow-sm transition-all text-xs font-bold"
                             >
                                 <ArrowRight className="w-3.5 h-3.5" />
                                 <span>Workspace</span>

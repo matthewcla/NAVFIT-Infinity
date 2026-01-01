@@ -270,5 +270,36 @@ export const generateSummaryGroups = (
         }
     });
 
-    return Array.from(groupsMap.values()).sort((a, b) => a.periodEndDate.localeCompare(b.periodEndDate));
+    // Post-process groups to set correct status based on simulation date (Today)
+    const today = new Date();
+    const finalGroups = Array.from(groupsMap.values()).map(group => {
+        const endDate = new Date(group.periodEndDate);
+
+        let status = group.status;
+
+        // If simulated status is still 'Pending', derive one
+        if (status === 'Pending') {
+            if (endDate < today) {
+                // Past Cycle
+                // Simulate some random status variety for Archive
+                const rand = Math.random();
+                if (rand > 0.9) status = 'Rejected';
+                else if (rand > 0.7) status = 'Submitted';
+                else status = 'Final';
+            } else {
+                // Current/Future Cycle
+                // If it's the very next one, maybe 'Drafting' or 'Planning'
+                // For simplicity, everything future is 'Drafting' unless specific logic
+                status = 'Drafting';
+
+                // If it's way out (more than 6 months), maybe 'Planned' (map to Planning)
+                const monthsOut = (endDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24 * 30);
+                if (monthsOut > 6) status = 'Planning';
+            }
+        }
+
+        return { ...group, status };
+    });
+
+    return finalGroups.sort((a, b) => a.periodEndDate.localeCompare(b.periodEndDate));
 };

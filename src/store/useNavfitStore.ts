@@ -78,6 +78,10 @@ interface NavfitStore {
     // Drill-Down Navigation State
     strategyViewMode: 'landing' | 'workspace';
     setStrategyViewMode: (mode: 'landing' | 'workspace') => void;
+
+    // History View State
+    isHistoryView: boolean;
+    toggleHistoryView: () => void;
 }
 
 export const useNavfitStore = create<NavfitStore>((set) => ({
@@ -93,6 +97,10 @@ export const useNavfitStore = create<NavfitStore>((set) => ({
     sidebarCollapsed: true,
     setSidebarCollapsed: (collapsed) => set({ sidebarCollapsed: collapsed }),
     toggleSidebar: () => set((state) => ({ sidebarCollapsed: !state.sidebarCollapsed })),
+
+    // History View State
+    isHistoryView: false,
+    toggleHistoryView: () => set((state) => ({ isHistoryView: !state.isHistoryView })),
 
 
     // Data
