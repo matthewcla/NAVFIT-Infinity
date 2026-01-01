@@ -21,8 +21,7 @@ interface NavfitStore {
     setSidebarCollapsed: (collapsed: boolean) => void;
     toggleSidebar: () => void;
 
-    isContextRailOpen: boolean;
-    toggleContextRail: () => void; // Toggles open/closed state
+
 
     // Data State
     roster: RosterMember[];
@@ -95,8 +94,6 @@ export const useNavfitStore = create<NavfitStore>((set) => ({
     setSidebarCollapsed: (collapsed) => set({ sidebarCollapsed: collapsed }),
     toggleSidebar: () => set((state) => ({ sidebarCollapsed: !state.sidebarCollapsed })),
 
-    isContextRailOpen: false, // Default closed as requested
-    toggleContextRail: () => set((state) => ({ isContextRailOpen: !state.isContextRailOpen })),
 
     // Data
     roster: INITIAL_ROSTER,
@@ -178,8 +175,7 @@ export const useNavfitStore = create<NavfitStore>((set) => ({
         if (id) {
             return {
                 selectedReportId: id,
-                selectedMemberId: null,
-                isContextRailOpen: true
+                selectedMemberId: null
             };
         }
         // If clearing, just clear it (optionally keep rail open or closed? request just says "selectReport should open context rail")
@@ -192,8 +188,7 @@ export const useNavfitStore = create<NavfitStore>((set) => ({
         if (id) {
             return {
                 selectedMemberId: id,
-                selectedReportId: null,
-                isContextRailOpen: true
+                selectedReportId: null
             };
         }
         return { selectedMemberId: null };

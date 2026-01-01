@@ -1,7 +1,7 @@
 import { type ReactNode } from 'react';
 import { Sidebar, type Tab } from './Sidebar';
 
-import { ContextRail } from './ContextRail';
+
 import { cn } from '@/lib/utils';
 
 interface AppLayoutProps {
@@ -28,11 +28,8 @@ export function AppLayout({ children, activeTab, onTabChange, collapsed, onToggl
                 )}
             >
 
-                <div className="flex-1 overflow-hidden flex flex-row min-h-0">
-                    <div className="flex-1 overflow-hidden flex flex-col min-h-0">
-                        {children}
-                    </div>
-                    <ContextRail />
+                <div className="flex-1 overflow-hidden flex flex-col min-h-0">
+                    {children}
                 </div>
             </div>
         </div>
