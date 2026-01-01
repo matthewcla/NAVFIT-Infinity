@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { MemberDetailSidebar } from '@/features/dashboard/components/MemberDetailSidebar';
 import { StatusBadge } from './StatusBadge';
+import { PromotionBadge } from './PromotionBadge';
 
 interface CycleContextPanelProps {
     group: SummaryGroup | null;
@@ -75,13 +76,25 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
             })
             .sort((a, b) => b.mta - a.mta); // Sort by MTA desc
 
+        // Calculate Distribution
+        const distribution: Record<string, number> = { SP: 0, PR: 0, P: 0, MP: 0, EP: 0 };
+        group.reports.forEach(r => {
+            const rec = r.promotionRecommendation;
+            if (rec === 'SP') distribution.SP++;
+            else if (rec === 'Prog') distribution.PR++;
+            else if (rec === 'P') distribution.P++;
+            else if (rec === 'MP') distribution.MP++;
+            else if (rec === 'EP') distribution.EP++;
+        });
+
         return {
             cumulativeRsca,
             rank,
             totalReports,
             gap,
             mainDraftStatus,
-            rankedMembers
+            rankedMembers,
+            distribution
         };
     }, [group, roster, rsConfig, projections]);
 
@@ -95,7 +108,29 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
         );
     }
 
-    const { cumulativeRsca, gap, mainDraftStatus, rankedMembers } = contextData;
+    const { cumulativeRsca, gap, mainDraftStatus, rankedMembers, distribution } = contextData;
+
+    // Helper for Badge
+    const getPromotionStatusBadge = (s?: string) => {
+        if (!s) return null;
+        const normalized = s.toUpperCase();
+        const badgeBase = "flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-bold border shadow-sm leading-none tracking-wide";
+
+        switch (normalized) {
+            case 'FROCKED': return <div className={`${badgeBase} bg-amber-100 text-amber-800 border-amber-200`}>FROCKED</div>;
+            case 'SELECTED': return <div className={`${badgeBase} bg-green-100 text-green-800 border-green-200`}>SELECTED</div>;
+            case 'SPOT': return <div className={`${badgeBase} bg-purple-100 text-purple-800 border-purple-200`}>SPOT</div>;
+            case 'REGULAR': return <div className={`${badgeBase} bg-slate-100 text-slate-600 border-slate-200`}>REGULAR</div>;
+            default: return null;
+        }
+    };
+
+    // Helper to clean title
+    const cleanTitle = (t: string) => {
+        return t.replace(/\b(FROCKED|REGULAR|SELECTED|SPOT)\b/gi, '').trim();
+    };
+
+    const formattedDate = new Date(group.periodEndDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
 
     return (
         <div className="h-full flex flex-row relative overflow-hidden">
@@ -106,9 +141,12 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
                     <div className="px-6 pt-6 pb-4">
                         {/* Row 1: Title & Status Badges */}
                         <div className="flex justify-between items-start mb-4">
-                            <div>
-                                <h2 className="text-2xl font-bold text-slate-900">{group.name}</h2>
-                                <div className="text-sm text-slate-500 font-medium">{group.periodEndDate}</div>
+                            <div className="flex flex-col gap-1">
+                                <div className="flex items-center gap-2">
+                                    <h2 className="text-2xl font-bold text-slate-900">{cleanTitle(group.name)}</h2>
+                                    {getPromotionStatusBadge(group.promotionStatus)}
+                                </div>
+                                <div className="text-sm text-slate-500 font-medium">{formattedDate}</div>
                             </div>
 
                             {/* Status Badges (Moved to Top Right) */}
@@ -136,33 +174,46 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
 
                     {/* 2. Sticky Toolbar (Below Header) */}
                     <div className="sticky top-0 z-20 bg-white/95 backdrop-blur border-b border-slate-200 p-4 pt-2">
-                        <div className="grid grid-cols-3 gap-2">
-                            {/* Strategy Workspace */}
-                            <button
-                                onClick={onOpenWorkspace}
-                                className="flex items-center justify-center gap-2 px-2 py-2 bg-indigo-500 hover:bg-indigo-600 text-white rounded-lg shadow-sm transition-all text-xs font-bold"
-                            >
-                                <ArrowRight className="w-3.5 h-3.5" />
-                                <span>Workspace</span>
-                            </button>
+                        <div className="flex items-center justify-between">
+                            {/* Left: Action Buttons */}
+                            <div className="flex items-center gap-2">
+                                {/* Strategy Workspace */}
+                                <button
+                                    onClick={onOpenWorkspace}
+                                    className="flex items-center justify-center gap-2 px-3 py-2 bg-indigo-500 hover:bg-indigo-600 text-white rounded-lg shadow-sm transition-all text-xs font-bold"
+                                >
+                                    <ArrowRight className="w-3.5 h-3.5" />
+                                    <span>Workspace</span>
+                                </button>
 
-                            {/* Rank Button */}
-                            <button
-                                className="flex items-center justify-center gap-2 px-2 py-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 rounded-lg transition-colors text-xs font-medium"
-                                title="Rank Members"
-                            >
-                                <ListOrdered className="w-3.5 h-3.5 text-slate-500" />
-                                <span>Rank</span>
-                            </button>
+                                {/* Rank Button */}
+                                <button
+                                    className="flex items-center justify-center gap-2 px-3 py-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 rounded-lg transition-colors text-xs font-medium"
+                                    title="Rank Members"
+                                >
+                                    <ListOrdered className="w-3.5 h-3.5 text-slate-500" />
+                                    <span>Rank</span>
+                                </button>
 
-                            {/* Waterfall Button */}
-                            <button
-                                className="flex items-center justify-center gap-2 px-2 py-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 rounded-lg transition-colors text-xs font-medium"
-                                title="Waterfall View"
-                            >
-                                <BarChart className="w-3.5 h-3.5 text-slate-500" />
-                                <span>Waterfall</span>
-                            </button>
+                                {/* Waterfall Button */}
+                                <button
+                                    className="flex items-center justify-center gap-2 px-3 py-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 rounded-lg transition-colors text-xs font-medium"
+                                    title="Waterfall View"
+                                >
+                                    <BarChart className="w-3.5 h-3.5 text-slate-500" />
+                                    <span>Waterfall</span>
+                                </button>
+                            </div>
+
+                            {/* Right: Distribution Stats */}
+                            <div className="flex items-center gap-2 text-[10px] px-2">
+                                {['SP', 'PR', 'P', 'MP', 'EP'].map(key => (
+                                    <div key={key} className="flex flex-col items-center justify-center gap-1 min-w-[24px]">
+                                        <span className="text-slate-700 font-bold leading-none text-xs">{distribution[key] || 0}</span>
+                                        <PromotionBadge recommendation={key} size="sm" className="rounded-[3px]" />
+                                    </div>
+                                ))}
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -196,9 +247,7 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
                                         {member.reportsRemaining !== undefined ? member.reportsRemaining : '-'}
                                     </td>
                                     <td className="px-4 py-3 text-sm text-center">
-                                        <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-bold ${getPromRecStyle(member.promRec)}`}>
-                                            {member.promRec}
-                                        </span>
+                                        <PromotionBadge recommendation={member.promRec} size="xs" className="rounded-sm px-1.5" />
                                     </td>
                                     <td className="px-4 py-3 text-sm font-mono text-slate-700 text-center">{member.mta.toFixed(2)}</td>
                                     <td className="px-4 py-3 text-sm font-mono text-slate-400 text-center">
@@ -224,13 +273,4 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
             )}
         </div>
     );
-}
-
-function getPromRecStyle(rec: string) {
-    switch (rec) {
-        case 'EP': return 'bg-emerald-100 text-emerald-800';
-        case 'MP': return 'bg-indigo-100 text-indigo-800';
-        case 'P': return 'bg-slate-100 text-slate-600';
-        default: return 'bg-gray-100 text-gray-500';
-    }
 }

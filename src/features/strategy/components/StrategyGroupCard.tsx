@@ -1,5 +1,6 @@
 import { Calendar, Users } from 'lucide-react';
 import { StatusBadge } from './StatusBadge';
+import { PromotionBadge } from './PromotionBadge';
 
 interface StrategyGroupCardProps {
     title: string;
@@ -134,10 +135,7 @@ export function StrategyGroupCard({
                         {['SP', 'PR', 'P', 'MP', 'EP'].map(key => (
                             <div key={key} className="flex flex-col items-center justify-center gap-0.5 min-w-[16px]">
                                 <span className="text-slate-700 font-bold leading-none">{distribution[key] || 0}</span>
-                                <span className={`font-bold text-[9px] leading-none ${key === 'EP' ? 'text-indigo-600' :
-                                        key === 'MP' ? 'text-slate-500' :
-                                            'text-slate-400'
-                                    }`}>{key}</span>
+                                <PromotionBadge recommendation={key} size="sm" className="rounded-[3px] scale-90" />
                             </div>
                         ))}
                     </div>
