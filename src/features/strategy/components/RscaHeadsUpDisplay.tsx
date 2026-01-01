@@ -66,11 +66,7 @@ export function RscaHeadsUpDisplay({
                             <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider whitespace-nowrap">
                                 {rankLabel || 'Target RSCA'}
                             </span>
-                            {promotionStatus && promotionStatus !== 'REGULAR' && (
-                                <div className={getBadgeStyle(promotionStatus)}>
-                                    {promotionStatus}
-                                </div>
-                            )}
+
                         </div>
                         <div className="flex items-baseline gap-2">
                             <span className={`text-3xl font-bold ${zoneCurrent}`}>{currentRsca.toFixed(2)}</span>

@@ -359,7 +359,7 @@ export function ReportsManager() {
                                     </div>
                                     <div className="w-px h-10 bg-slate-100"></div>
                                     <div className="flex flex-col">
-                                        <span className="text-xs font-bold text-green-600 uppercase tracking-wider">Signed/Final</span>
+                                        <span className="text-xs font-bold text-green-600 uppercase tracking-wider">Submitted/Final</span>
                                         <div className="flex items-center gap-2">
                                             <CheckCircle className="w-5 h-5 text-green-600" />
                                             <span className="text-2xl font-bold text-slate-900">{adminStats.signed}</span>
