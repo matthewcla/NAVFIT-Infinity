@@ -5,15 +5,14 @@ interface RscaHeadsUpDisplayProps {
     projectedRsca: number;
     rankLabel?: string;
     showSuffix?: boolean; // New: Toggle "/ 5.00"
-    promotionStatus?: 'REGULAR' | 'FROCKED' | 'SELECTED' | 'SPOT'; // New: For badging
+
 }
 
 export function RscaHeadsUpDisplay({
     currentRsca,
     projectedRsca,
     rankLabel,
-    showSuffix = true,
-    promotionStatus
+    showSuffix = true
 }: RscaHeadsUpDisplayProps) {
     const delta = projectedRsca - currentRsca;
     const isPositive = delta > 0;
@@ -33,21 +32,7 @@ export function RscaHeadsUpDisplay({
     const zoneProjected = getHealthColor(projectedRsca);
     const bgCurrent = currentRsca > 4.10 ? 'bg-red-50' : currentRsca > 3.80 ? 'bg-amber-50' : 'bg-emerald-50';
 
-    // Badge Logic
-    const getBadgeStyle = (status?: string) => {
-        if (!status) return 'hidden';
-        const normalized = status.toUpperCase();
 
-        // Exact match to StrategyGroupCard style
-        const base = "px-1.5 py-0.5 rounded-md text-[10px] font-bold border shadow-sm leading-none tracking-wide";
-
-        switch (normalized) {
-            case 'FROCKED': return `${base} bg-amber-100 text-amber-800 border-amber-200`;
-            case 'SELECTED': return `${base} bg-green-100 text-green-800 border-green-200`;
-            case 'SPOT': return `${base} bg-purple-100 text-purple-800 border-purple-200`;
-            default: return 'hidden';
-        }
-    };
 
     return (
         <div className="bg-white/95 backdrop-blur-sm p-4 transition-all duration-300">

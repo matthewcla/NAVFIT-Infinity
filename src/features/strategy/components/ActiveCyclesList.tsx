@@ -1,18 +1,19 @@
-// import { useMemo } from 'react'; - Removed unused import
+import { useState, useMemo } from 'react';
 import type { SummaryGroup } from '@/types';
 import { StrategyGroupCard } from './StrategyGroupCard';
-import { Layers } from 'lucide-react';
+import { ChevronRight, Filter } from 'lucide-react';
 
 interface ActiveCyclesListProps {
-    officerGroups: SummaryGroup[];
-    enlistedGroups: SummaryGroup[];
+    groups: SummaryGroup[];
     onSelect: (group: SummaryGroup) => void;
     selectedGroupId?: string | null;
 }
 
-export function ActiveCyclesList({ officerGroups, enlistedGroups, onSelect, selectedGroupId }: ActiveCyclesListProps) {
+export function ActiveCyclesList({ groups, onSelect, selectedGroupId }: ActiveCyclesListProps) {
+    const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({});
 
-    const groupByKey = (groups: SummaryGroup[]) => {
+    // Group by Competitive Group Key
+    const groupedMap = useMemo(() => {
         const map = new Map<string, SummaryGroup[]>();
         groups.forEach(g => {
             const key = g.competitiveGroupKey || 'Uncategorized';
@@ -20,91 +21,109 @@ export function ActiveCyclesList({ officerGroups, enlistedGroups, onSelect, sele
             map.get(key)!.push(g);
         });
         return map;
+    }, [groups]);
+
+    const sortedKeys = Array.from(groupedMap.keys()).sort();
+
+    const toggleGroup = (key: string) => {
+        setCollapsedGroups(prev => ({
+            ...prev,
+            [key]: !prev[key]
+        }));
     };
 
-    const renderColumn = (title: string, groups: SummaryGroup[]) => {
-        const groupedMap = groupByKey(groups);
-        // Sort keys if needed? For now, we trust the order or just map keys
-        const sortedKeys = Array.from(groupedMap.keys()).sort();
 
+
+    if (groups.length === 0) {
         return (
-            <div className="flex flex-col gap-4">
-                <div className="flex items-center gap-2 pb-2 border-b border-slate-200">
-                    <div className="bg-slate-100 p-1.5 rounded-lg">
-                        <Layers className="w-4 h-4 text-slate-500" />
-                    </div>
-                    <h2 className="text-sm font-bold text-slate-700 uppercase tracking-wider">{title}</h2>
-                    <span className="ml-auto bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full text-xs font-bold">
-                        {groups.length}
-                    </span>
-                </div>
+            <div className="text-center py-12 px-4 text-slate-400">
+                <Filter className="w-8 h-8 mx-auto mb-2 opacity-20" />
+                <p className="text-sm">No cycles found.</p>
 
-                <div className="space-y-6">
-                    {sortedKeys.map(key => {
-                        const subGroups = groupedMap.get(key) || [];
-                        return (
-                            <div key={key} className="flex flex-col gap-3">
-                                {/* Competitive Group Header */}
-                                <div className="flex items-center gap-2 pl-1">
-                                    <div className="w-1.5 h-1.5 rounded-full bg-slate-300"></div>
-                                    <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">{key}</span>
-                                </div>
 
-                                {/* Cards */}
-                                <div className="grid gap-3">
-                                    {subGroups.map(group => {
-                                        // Simple calculation for display (replace with real store/hook data later)
-                                        const rscaImpact = 0.00; // Placeholder as confirmed
-                                        const memberCount = group.reports.length;
-                                        // Determine status based on dates (simplified logic)
-                                        const now = new Date();
-                                        const endDate = new Date(group.periodEndDate);
-                                        let status: 'Upcoming' | 'Active' | 'Overdue' | 'Complete' = 'Active';
-                                        if (endDate < now) status = 'Overdue';
-
-                                        const dist = group.reports.reduce((acc, r) => {
-                                            const rec = r.promotionRecommendation;
-                                            if (rec && rec !== 'NOB') {
-                                                const key = rec === 'Prog' ? 'PR' : rec;
-                                                acc[key] = (acc[key] || 0) + 1;
-                                            }
-                                            return acc;
-                                        }, {} as Record<string, number>);
-
-                                        return (
-                                            <StrategyGroupCard
-                                                key={group.id}
-                                                title={group.name}
-                                                date={group.periodEndDate}
-                                                memberCount={memberCount}
-                                                status={status}
-                                                workflowStatus={group.status}
-                                                rscaImpact={rscaImpact}
-                                                promotionStatus={group.promotionStatus}
-                                                isSelected={selectedGroupId === group.id}
-                                                distribution={dist}
-                                                onClick={() => onSelect(group)}
-                                            />
-                                        );
-                                    })}
-                                </div>
-                            </div>
-                        );
-                    })}
-                    {groups.length === 0 && (
-                        <div className="text-center py-8 text-slate-400 italic text-sm border-2 border-dashed border-slate-100 rounded-xl">
-                            No active cycles found.
-                        </div>
-                    )}
-                </div>
             </div>
         );
-    };
+    }
 
     return (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 md:gap-12">
-            {renderColumn("Officer Cycles", officerGroups)}
-            {renderColumn("Enlisted Cycles", enlistedGroups)}
-        </div>
+        <div className="relative pb-24 pt-4 min-h-full">
+            <div className="space-y-6">
+                {sortedKeys.map(key => {
+                    const subGroups = groupedMap.get(key) || [];
+                    const isCollapsed = collapsedGroups[key] || false; // Default to expanded (false)
+
+                    return (
+                        <div key={key} className="flex flex-col gap-3 px-4">
+                            <button
+                                onClick={() => toggleGroup(key)}
+                                className="flex items-center gap-2 pl-2 w-full hover:bg-slate-100 p-1 rounded transition-colors group sticky top-0 z-10 bg-slate-50 backdrop-blur-sm shadow-sm"
+                            >
+                                <ChevronRight
+                                    className={`w-4 h-4 text-slate-400 transition-transform duration-200 ${!isCollapsed ? 'rotate-90' : ''}`}
+                                />
+                                <div className="w-1.5 h-1.5 rounded-full bg-slate-400"></div>
+                                <span className="text-xs font-bold text-slate-500 uppercase tracking-widest group-hover:text-slate-700">
+                                    {key}
+                                </span>
+                                <span className="text-xs text-slate-400 ml-auto font-medium">
+                                    {subGroups.length} Cycles
+                                </span>
+                            </button>
+
+                            {/* Cards */}
+                            {
+                                !isCollapsed && (
+                                    <div className="grid gap-2.5 pl-2 border-l-2 border-slate-100 ml-2.5">
+                                        {subGroups.map(group => {
+                                            // Simple calculation for display (replace with real store/hook data later)
+                                            const rscaImpact = 0.00; // Placeholder as confirmed
+                                            const memberCount = group.reports.length;
+                                            // Determine status based on dates (simplified logic)
+                                            const now = new Date();
+                                            const endDate = new Date(group.periodEndDate);
+                                            let status: 'Upcoming' | 'Active' | 'Overdue' | 'Complete' = 'Active';
+
+                                            if (['Submitted', 'Final', 'Complete'].includes(group.status || '')) {
+                                                status = 'Complete';
+                                            } else if (endDate < now) {
+                                                status = 'Overdue';
+                                            }
+
+                                            const dist = group.reports.reduce((acc, r) => {
+                                                const rec = r.promotionRecommendation;
+                                                if (rec && rec !== 'NOB') {
+                                                    const key = rec === 'Prog' ? 'PR' : rec;
+                                                    acc[key] = (acc[key] || 0) + 1;
+                                                }
+                                                return acc;
+                                            }, {} as Record<string, number>);
+
+                                            return (
+                                                <StrategyGroupCard
+                                                    key={group.id}
+                                                    title={group.name}
+                                                    date={group.periodEndDate}
+                                                    memberCount={memberCount}
+                                                    status={status}
+                                                    workflowStatus={group.status}
+                                                    rscaImpact={rscaImpact}
+                                                    promotionStatus={group.promotionStatus}
+                                                    isSelected={selectedGroupId === group.id}
+                                                    distribution={dist}
+                                                    onClick={() => onSelect(group)}
+                                                />
+                                            );
+                                        })}
+                                    </div>
+                                )
+                            }
+                        </div>
+                    );
+                })}
+            </div>
+
+
+
+        </div >
     );
 }

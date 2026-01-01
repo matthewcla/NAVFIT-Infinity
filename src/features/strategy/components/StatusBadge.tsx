@@ -8,7 +8,7 @@ interface StatusBadgeProps {
 export function StatusBadge({ status, className = '' }: StatusBadgeProps) {
     if (!status) return null;
 
-    const base = "text-[10px] font-bold px-1.5 py-0.5 rounded border inline-block whitespace-nowrap";
+    const base = "text-xs font-bold px-2 py-0.5 rounded border inline-block whitespace-nowrap";
     const combinedClass = `${base} ${className}`;
 
     switch (status) {

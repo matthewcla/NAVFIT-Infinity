@@ -30,6 +30,7 @@ interface NavfitStore {
 
     summaryGroups: SummaryGroup[];
     setSummaryGroups: (groups: SummaryGroup[]) => void;
+    addSummaryGroup: (group: SummaryGroup) => void;
 
     rsConfig: ReportingSeniorConfig;
     setRsConfig: (config: ReportingSeniorConfig) => void;
@@ -80,8 +81,8 @@ interface NavfitStore {
     setStrategyViewMode: (mode: 'landing' | 'workspace') => void;
 
     // History View State
-    isHistoryView: boolean;
-    toggleHistoryView: () => void;
+    cycleListPhase: 'Active' | 'Archive' | 'Projected';
+    setCycleListPhase: (phase: 'Active' | 'Archive' | 'Projected') => void;
 }
 
 export const useNavfitStore = create<NavfitStore>((set) => ({
@@ -99,8 +100,8 @@ export const useNavfitStore = create<NavfitStore>((set) => ({
     toggleSidebar: () => set((state) => ({ sidebarCollapsed: !state.sidebarCollapsed })),
 
     // History View State
-    isHistoryView: false,
-    toggleHistoryView: () => set((state) => ({ isHistoryView: !state.isHistoryView })),
+    cycleListPhase: 'Active',
+    setCycleListPhase: (phase) => set({ cycleListPhase: phase }),
 
 
     // Data
@@ -109,6 +110,9 @@ export const useNavfitStore = create<NavfitStore>((set) => ({
 
     summaryGroups: [],
     setSummaryGroups: (groups) => set({ summaryGroups: groups }),
+    addSummaryGroup: (group) => set((state) => ({
+        summaryGroups: [...state.summaryGroups, group]
+    })),
     reorderMember: (memberId, newIndex) => set((state) => {
         const currentRoster = [...state.roster];
         const oldIndex = currentRoster.findIndex(m => m.id === memberId);

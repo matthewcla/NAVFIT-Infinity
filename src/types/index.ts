@@ -92,7 +92,7 @@ export interface SummaryGroup {
     paygrade?: string;
     designator?: string;
     competitiveGroupKey: string; // e.g. "O-3 1110" - Links Frocked/Selected back to pool
-    promotionStatus: 'REGULAR' | 'FROCKED' | 'SELECTED' | 'SPOT';
+    promotionStatus?: 'REGULAR' | 'FROCKED' | 'SELECTED' | 'SPOT';
     reports: Report[];
     periodEndDate: string;
     status?: 'Pending' | 'Accepted' | 'Rejected' | 'Projected' | 'Planned' | 'Draft' | 'Submitted' | 'Review' | 'Final';
