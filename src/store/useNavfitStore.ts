@@ -30,6 +30,7 @@ interface NavfitStore {
 
     summaryGroups: SummaryGroup[];
     setSummaryGroups: (groups: SummaryGroup[]) => void;
+    addSummaryGroup: (group: SummaryGroup) => void;
 
     rsConfig: ReportingSeniorConfig;
     setRsConfig: (config: ReportingSeniorConfig) => void;
@@ -109,6 +110,9 @@ export const useNavfitStore = create<NavfitStore>((set) => ({
 
     summaryGroups: [],
     setSummaryGroups: (groups) => set({ summaryGroups: groups }),
+    addSummaryGroup: (group) => set((state) => ({
+        summaryGroups: [...state.summaryGroups, group]
+    })),
     reorderMember: (memberId, newIndex) => set((state) => {
         const currentRoster = [...state.roster];
         const oldIndex = currentRoster.findIndex(m => m.id === memberId);

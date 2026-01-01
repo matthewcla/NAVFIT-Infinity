@@ -1,12 +1,14 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
+import type { SummaryGroup } from '@/types';
 
 import { CycleContextPanel } from './CycleContextPanel';
-import { StrategyGroupCard } from './StrategyGroupCard';
+import { ActiveCyclesList } from './ActiveCyclesList';
 
 
 import { useNavfitStore } from '@/store/useNavfitStore';
 import { useSummaryGroups } from '@/features/strategy/hooks/useSummaryGroups';
-import { Filter, ArrowUpDown } from 'lucide-react';
+import { Filter, ArrowUpDown, Plus } from 'lucide-react';
+import { AddSummaryGroupModal } from '@/features/dashboard/components/AddSummaryGroupModal';
 
 export function CommandStrategyCenter() {
     const {
@@ -19,9 +21,24 @@ export function CommandStrategyCenter() {
         setCycleSort,
         cycleListPhase,
         setCycleListPhase,
+        addSummaryGroup,
     } = useNavfitStore();
 
+    const [isModalOpen, setIsModalOpen] = useState(false);
+
     const summaryGroups = useSummaryGroups();
+
+    const allCompetitiveGroups = useMemo(() => {
+        const keys = new Set<string>();
+        summaryGroups.forEach(g => {
+            if (g.competitiveGroupKey) keys.add(g.competitiveGroupKey);
+        });
+        return Array.from(keys).sort();
+    }, [summaryGroups]);
+
+    const handleCreateGroups = (newGroups: SummaryGroup[]) => {
+        newGroups.forEach(group => addSummaryGroup(group));
+    };
 
     // Retrieve the full selected group object
     const selectedGroup = useMemo(() => {
@@ -78,8 +95,6 @@ export function CommandStrategyCenter() {
         return groups;
     }, [summaryGroups, cycleFilter, cycleSort, cycleListPhase]);
 
-    const sortedGroupKeys = Array.from(groupedCycles.keys()).sort();
-
     // Handlers
     const handleGroupSelect = (group: typeof summaryGroups[0]) => {
         selectCycle(group.id, group.competitiveGroupKey || 'Unknown');
@@ -93,7 +108,9 @@ export function CommandStrategyCenter() {
             <div className={`border-b px-6 py-4 flex items-center justify-between shrink-0 transition-colors duration-300 ${cycleListPhase === 'Archive' ? 'bg-indigo-50 border-indigo-200' : 'bg-white border-slate-200'}`}>
                 <div>
                     <h1 className={`text-xl font-bold transition-colors ${cycleListPhase === 'Archive' ? 'text-indigo-900' : 'text-slate-900'}`}>
-                        {cycleListPhase === 'Archive' ? 'Cycle Archives' : 'Command Strategy Center'}
+                        {cycleListPhase === 'Archive' ? 'Command Strategy Archive' :
+                            cycleListPhase === 'Projected' ? 'Strategic Projections' :
+                                'Command Strategy Center'}
                     </h1>
                     <p className={`text-sm transition-colors ${cycleListPhase === 'Archive' ? 'text-indigo-600/70' : 'text-slate-500'}`}>
                         {cycleListPhase === 'Archive' ? 'View historical and finalized fitness report cycles.' : 'Select a Competitive Group to view strategy.'}
@@ -108,7 +125,7 @@ export function CommandStrategyCenter() {
             <div className="flex-1 flex overflow-hidden">
 
                 {/* Left Panel: Active Cycles Stream */}
-                <div className="w-[420px] bg-slate-50 border-r border-slate-200 flex flex-col shrink-0 z-10">
+                <div className="w-[420px] bg-slate-50 border-r border-slate-200 flex flex-col shrink-0 z-10 relative">
 
                     {/* Panel Header */}
                     <div className="px-6 py-4 border-b border-slate-200 bg-white/50 backdrop-blur-sm sticky top-0 z-10">
@@ -172,72 +189,35 @@ export function CommandStrategyCenter() {
                     </div>
 
                     {/* Scrollable Stream */}
-                    <div className="flex-1 overflow-y-auto p-4 space-y-8 custom-scrollbar">
-                        {sortedGroupKeys.length === 0 ? (
-                            <div className="text-center py-12 px-4 text-slate-400">
-                                <Filter className="w-8 h-8 mx-auto mb-2 opacity-20" />
-                                <p className="text-sm">No {cycleListPhase.toLowerCase()} cycles found for this filter.</p>
-                            </div>
-                        ) : (
-                            sortedGroupKeys.map(key => {
-                                const groups = groupedCycles.get(key) || [];
-                                return (
-                                    <div key={key} className="space-y-3">
-                                        <div className="flex items-center gap-2 px-2">
-                                            <div className="w-1.5 h-1.5 rounded-full bg-slate-400"></div>
-                                            <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">
-                                                {key}
-                                            </span>
-                                            <div className="h-px bg-slate-200 flex-1 ml-2"></div>
-                                        </div>
-
-                                        <div className="space-y-2.5">
-                                            {groups.map(group => {
-                                                // Calculate simple status (logic can be centralized later)
-                                                const now = new Date();
-                                                const endDate = new Date(group.periodEndDate);
-                                                let status: 'Upcoming' | 'Active' | 'Overdue' | 'Complete' = 'Active';
-
-                                                // Map data status to UI status
-                                                if (['Submitted', 'Final', 'Complete'].includes(group.status || '')) {
-                                                    status = 'Complete';
-                                                } else if (endDate < now) {
-                                                    status = 'Overdue';
-                                                }
-
-                                                // Calculate distribution
-                                                const distribution: Record<string, number> = { SP: 0, PR: 0, P: 0, MP: 0, EP: 0 };
-                                                group.reports.forEach(r => {
-                                                    const rec = r.promotionRecommendation;
-                                                    if (rec === 'SP') distribution.SP++;
-                                                    else if (rec === 'Prog') distribution.PR++;
-                                                    else if (rec === 'P') distribution.P++;
-                                                    else if (rec === 'MP') distribution.MP++;
-                                                    else if (rec === 'EP') distribution.EP++;
-                                                });
-
-                                                return (
-                                                    <StrategyGroupCard
-                                                        key={group.id}
-                                                        title={group.name}
-                                                        date={group.periodEndDate}
-                                                        memberCount={group.reports.length}
-                                                        status={status}
-                                                        workflowStatus={group.status || 'Drafting'}
-                                                        rscaImpact={0} // Placeholder
-                                                        promotionStatus={group.promotionStatus}
-                                                        isSelected={selectedCycleId === group.id}
-                                                        onClick={() => handleGroupSelect(group)}
-                                                        distribution={distribution}
-                                                    />
-                                                );
-                                            })}
-                                        </div>
-                                    </div>
-                                );
-                            })
-                        )}
+                    <div className="flex-1 overflow-y-auto custom-scrollbar bg-slate-50">
+                        <ActiveCyclesList
+                            groups={Array.from(groupedCycles.values()).flat()}
+                            onSelect={handleGroupSelect}
+                            selectedGroupId={selectedCycleId}
+                        />
                     </div>
+
+                    {/* Floating Action Button */}
+                    <div className="absolute bottom-4 left-0 right-0 flex justify-end px-4 pointer-events-none sticky-button-container">
+                        <button
+                            onClick={() => setIsModalOpen(true)}
+                            className="group bg-indigo-600 text-white shadow-lg rounded-full h-12 w-12 hover:w-48 transition-all duration-300 ease-in-out overflow-hidden flex items-center pointer-events-auto"
+                        >
+                            <div className="flex-shrink-0 w-12 h-12 flex items-center justify-center">
+                                <Plus className="w-6 h-6" />
+                            </div>
+                            <span className="whitespace-nowrap font-bold pr-6 opacity-0 group-hover:opacity-100 transition-opacity duration-300 delay-75">
+                                Summary Group
+                            </span>
+                        </button>
+                    </div>
+
+                    <AddSummaryGroupModal
+                        isOpen={isModalOpen}
+                        onClose={() => setIsModalOpen(false)}
+                        competitiveGroups={allCompetitiveGroups.length > 0 ? allCompetitiveGroups : ['O-1', 'O-2', 'O-3', 'O-4', 'O-5', 'O-6', 'E-1', 'E-2', 'E-3', 'E-4', 'E-5', 'E-6', 'E-7', 'E-8', 'E-9']}
+                        onCreate={handleCreateGroups}
+                    />
                 </div>
 
                 {/* Right Panel: Context & Details */}
