@@ -208,6 +208,17 @@ export function CommandStrategyCenter() {
                                                     status = 'Overdue';
                                                 }
 
+                                                // Calculate distribution
+                                                const distribution: Record<string, number> = { SP: 0, PR: 0, P: 0, MP: 0, EP: 0 };
+                                                group.reports.forEach(r => {
+                                                    const rec = r.promotionRecommendation;
+                                                    if (rec === 'SP') distribution.SP++;
+                                                    else if (rec === 'Prog') distribution.PR++;
+                                                    else if (rec === 'P') distribution.P++;
+                                                    else if (rec === 'MP') distribution.MP++;
+                                                    else if (rec === 'EP') distribution.EP++;
+                                                });
+
                                                 return (
                                                     <StrategyGroupCard
                                                         key={group.id}
@@ -220,6 +231,7 @@ export function CommandStrategyCenter() {
                                                         promotionStatus={group.promotionStatus}
                                                         isSelected={selectedCycleId === group.id}
                                                         onClick={() => handleGroupSelect(group)}
+                                                        distribution={distribution}
                                                     />
                                                 );
                                             })}

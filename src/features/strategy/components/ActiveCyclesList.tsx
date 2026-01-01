@@ -62,6 +62,15 @@ export function ActiveCyclesList({ officerGroups, enlistedGroups, onSelect, sele
                                         let status: 'Upcoming' | 'Active' | 'Overdue' | 'Complete' = 'Active';
                                         if (endDate < now) status = 'Overdue';
 
+                                        const dist = group.reports.reduce((acc, r) => {
+                                            const rec = r.promotionRecommendation;
+                                            if (rec && rec !== 'NOB') {
+                                                const key = rec === 'Prog' ? 'PR' : rec;
+                                                acc[key] = (acc[key] || 0) + 1;
+                                            }
+                                            return acc;
+                                        }, {} as Record<string, number>);
+
                                         return (
                                             <StrategyGroupCard
                                                 key={group.id}
@@ -69,9 +78,11 @@ export function ActiveCyclesList({ officerGroups, enlistedGroups, onSelect, sele
                                                 date={group.periodEndDate}
                                                 memberCount={memberCount}
                                                 status={status}
+                                                workflowStatus={group.status}
                                                 rscaImpact={rscaImpact}
                                                 promotionStatus={group.promotionStatus}
                                                 isSelected={selectedGroupId === group.id}
+                                                distribution={dist}
                                                 onClick={() => onSelect(group)}
                                             />
                                         );

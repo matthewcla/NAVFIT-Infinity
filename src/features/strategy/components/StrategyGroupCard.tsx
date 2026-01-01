@@ -1,4 +1,4 @@
-import { Calendar, Users, Target, ArrowRight } from 'lucide-react';
+import { Calendar, Users } from 'lucide-react';
 import { StatusBadge } from './StatusBadge';
 
 interface StrategyGroupCardProps {
@@ -10,7 +10,9 @@ interface StrategyGroupCardProps {
     promotionStatus?: 'REGULAR' | 'FROCKED' | 'SELECTED' | 'SPOT';
     isSelected?: boolean;
     onClick?: () => void;
+    distribution?: Record<string, number>;
 }
+
 
 export function StrategyGroupCard({
     title,
@@ -21,18 +23,11 @@ export function StrategyGroupCard({
     promotionStatus = 'REGULAR',
     isSelected = false,
     onClick,
-    workflowStatus // New Prop
-}: StrategyGroupCardProps & { workflowStatus?: string }) {
+    workflowStatus,
+    distribution
+}: StrategyGroupCardProps & { workflowStatus?: string; distribution?: Record<string, number> }) {
 
-    const getStatusColor = (s: string) => {
-        switch (s) {
-            case 'Active': return 'bg-blue-500';
-            case 'Upcoming': return 'bg-slate-400';
-            case 'Overdue': return 'bg-red-500';
-            case 'Complete': return 'bg-emerald-500';
-            default: return 'bg-slate-300';
-        }
-    };
+
 
     const getPromotionStatusBadge = (s?: string) => {
         if (!s) return null;
@@ -60,10 +55,22 @@ export function StrategyGroupCard({
                     </div>
                 );
             case 'REGULAR':
+                return (
+                    <div className={`${badgeBase} bg-slate-100 text-slate-600 border-slate-200`}>
+                        REGULAR
+                    </div>
+                );
             default:
                 return null;
         }
     };
+
+    // Helper to clean title
+    const cleanTitle = (t: string) => {
+        return t.replace(/\b(FROCKED|REGULAR|SELECTED|SPOT)\b/gi, '').trim();
+    };
+
+    const formattedDate = new Date(date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
 
     return (
         <div
@@ -76,54 +83,65 @@ export function StrategyGroupCard({
                 }
             `}
         >
-            {/* Status Strip */}
-            <div className={`absolute left-0 top-0 bottom-0 w-1 ${getStatusColor(status)}`}></div>
+            {/* Status Strip - Removed or Kept? User didn't explicitly say delete, but new layout implies changes. Keeping for specific status indication might be noisy if we have badges. 
+                 Let's keep the strip as it's a good succinct indicator, or rely on the badge. 
+                 Plan said "Position the status badge beneath Impact metric". 
+                 Let's keep the strip for 'Cycle Status' (Active/Overdue) if 'workflowStatus' is different. 
+                 But 'status' prop IS the cycle status. 
+                 Let's look at the old code: 'status' was used for the strip. 'workflowStatus' was used for a badge.
+                 User said: "Position the status badge beneath Impact metric". Use StatusBadge component likely.
+            */}
 
             <div className="p-3 pl-4 flex-1">
-                {/* Header with Title and Badge */}
-                <div className="flex flex-col gap-1 mb-2">
-                    <div className="flex items-start justify-between gap-2">
-                        <div className="flex flex-col">
-                            <div className="flex items-center gap-2 flex-wrap">
-                                <h3 className={`text-sm font-bold transition-colors leading-snug ${isSelected ? 'text-indigo-900' : 'text-slate-800 group-hover:text-indigo-700'}`}>
-                                    {title}
-                                </h3>
-                                {promotionStatus !== 'REGULAR' && getPromotionStatusBadge(promotionStatus)}
-                            </div>
+                {/* Header Row: Title + Badge (Left) vs Impact + Status (Right) */}
+                <div className="flex justify-between items-start gap-4 mb-2">
+                    <div className="flex flex-col gap-0.5">
+                        <div className="flex items-center gap-2">
+                            <h3 className={`text-sm font-bold transition-colors leading-snug ${isSelected ? 'text-indigo-900' : 'text-slate-800 group-hover:text-indigo-700'}`}>
+                                {cleanTitle(title)}
+                            </h3>
+                            {getPromotionStatusBadge(promotionStatus)}
                         </div>
-                        {/* Workflow Status Badge */}
-                        <div className="shrink-0">
-                            <StatusBadge status={workflowStatus} />
+                        <div className="flex items-center gap-1.5 text-[11px] text-slate-500">
+                            <Calendar className="w-3 h-3 text-slate-400" />
+                            <span>{formattedDate}</span>
                         </div>
                     </div>
-                </div>
 
-                {/* Details Grid */}
-                <div className="grid grid-cols-2 gap-y-1 gap-x-2 text-[11px] text-slate-500">
-                    <div className="flex items-center gap-1.5">
-                        <Calendar className="w-3 h-3 text-slate-400" />
-                        <span>{new Date(date).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: '2-digit' })}</span>
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                        <Users className="w-3 h-3 text-slate-400" />
-                        <span>{memberCount} Members</span>
+                    <div className="flex flex-col items-end gap-1">
+                        <div className="flex items-baseline gap-1.5">
+                            <span className="text-[10px] font-medium text-slate-400 uppercase tracking-wider">Impact</span>
+                            <span className={`font-mono font-bold text-sm ${rscaImpact > 0 ? 'text-red-600' : 'text-emerald-600'}`}>
+                                {rscaImpact > 0 ? '+' : ''}{rscaImpact.toFixed(2)}
+                            </span>
+                        </div>
+                        <StatusBadge status={workflowStatus || status} />
                     </div>
                 </div>
             </div>
 
-            {/* Footer / Impact Stats */}
-            <div className={`px-3 py-2 border-t flex items-center justify-between ${isSelected ? 'bg-indigo-100/50 border-indigo-200' : 'bg-slate-50 border-slate-100'}`}>
-                <div className="flex items-center gap-2 text-[11px] font-medium text-slate-500">
-                    <Target className="w-3 h-3" />
-                    <span>Impact:</span>
-                    <span className={`font-mono font-bold ${rscaImpact > 0 ? 'text-red-600' : 'text-emerald-600'}`}>
-                        {rscaImpact > 0 ? '+' : ''}{rscaImpact.toFixed(2)}
-                    </span>
+            {/* Footer: Member Count + Distribution */}
+            <div className={`px-3 py-2 border-t flex items-center justify-between gap-3 ${isSelected ? 'bg-indigo-100/50 border-indigo-200' : 'bg-slate-50 border-slate-100'}`}>
+                {/* Member Count */}
+                <div className="flex items-center gap-1.5 text-[11px] text-slate-500 shrink-0">
+                    <Users className="w-3 h-3 text-slate-400" />
+                    <span className="font-medium">{memberCount} Members</span>
                 </div>
 
-                <div className={`rounded-full p-0.5 border transition-colors ${isSelected ? 'bg-indigo-200 text-indigo-700 border-indigo-300' : 'bg-white text-slate-300 border-slate-200 group-hover:text-indigo-600 group-hover:border-indigo-200'}`}>
-                    <ArrowRight className="w-3 h-3" />
-                </div>
+                {/* Distribution */}
+                {distribution && (
+                    <div className="flex items-center gap-3 text-[10px]">
+                        {['SP', 'PR', 'P', 'MP', 'EP'].map(key => (
+                            <div key={key} className="flex flex-col items-center justify-center gap-0.5 min-w-[16px]">
+                                <span className="text-slate-700 font-bold leading-none">{distribution[key] || 0}</span>
+                                <span className={`font-bold text-[9px] leading-none ${key === 'EP' ? 'text-indigo-600' :
+                                        key === 'MP' ? 'text-slate-500' :
+                                            'text-slate-400'
+                                    }`}>{key}</span>
+                            </div>
+                        ))}
+                    </div>
+                )}
             </div>
         </div>
     );
