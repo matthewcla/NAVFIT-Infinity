@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useNavfitStore } from '@/store/useNavfitStore';
-import type { SummaryGroup } from '@/types';
+import type { SummaryGroup, Member } from '@/types';
 import { RscaHeadsUpDisplay } from './RscaHeadsUpDisplay';
 import { generateSummaryGroups } from '@/features/strategy/logic/reportGenerator';
 import { calculateCumulativeRSCA } from '@/features/strategy/logic/rsca';
@@ -262,12 +262,50 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
                 </div>
             </div>
 
+
+            {/* Sidebar Overlay */}
             {/* Sidebar Overlay */}
             {selectedMemberId && (
                 <MemberDetailSidebar
                     memberId={selectedMemberId}
+                    rosterMember={(() => {
+                        const m = roster.find(memb => memb.id === selectedMemberId);
+                        if (!m) {
+                            return {
+                                id: selectedMemberId,
+                                name: 'Unknown Member',
+                                rank: 'UNK',
+                                designator: '0000',
+                                status: 'Onboard',
+                                history: []
+                            } as Member;
+                        }
+                        return {
+                            ...m,
+                            name: `${m.lastName}, ${m.firstName}`,
+                            history: m.history || [],
+                            status: (m.status as any) || 'Onboard' // Ensure status matches expected union
+                        } as unknown as Member;
+                    })()}
+                    currentReport={group.reports.find(r => r.memberId === selectedMemberId)}
+                    groupStats={{ currentRSCA: cumulativeRsca, projectedRSCA: cumulativeRsca }} // TODO: Calculate actual proj RSCA
                     onClose={() => setSelectedMemberId(null)}
-                    onUpdateMTA={(id, val) => console.log('Update MTA:', id, val)}
+                    onUpdateMTA={(id, val) => {
+                        // TODO: Integrate with store action
+                        console.log('Update MTA:', id, val);
+                    }}
+                    onUpdatePromRec={(id, rec) => {
+                        // TODO: Integrate with store action
+                        console.log('Update PromRec:', id, rec);
+                    }}
+                    onNavigatePrev={() => {
+                        const idx = rankedMembers.findIndex(m => m.id === selectedMemberId);
+                        if (idx > 0) setSelectedMemberId(rankedMembers[idx - 1].id);
+                    }}
+                    onNavigateNext={() => {
+                        const idx = rankedMembers.findIndex(m => m.id === selectedMemberId);
+                        if (idx < rankedMembers.length - 1) setSelectedMemberId(rankedMembers[idx + 1].id);
+                    }}
                 />
             )}
         </div>

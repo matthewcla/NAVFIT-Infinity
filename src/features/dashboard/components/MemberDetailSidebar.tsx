@@ -1,237 +1,398 @@
-import { useState, useMemo, useEffect } from 'react';
-import { X, User, TrendingUp } from 'lucide-react';
-import { useNavfitStore, selectActiveCycle } from '@/store/useNavfitStore';
+import { useState, useEffect } from 'react';
+import {
+    X,
+    User,
+    ChevronLeft,
+    ChevronRight,
+    Lock,
+    Unlock,
+    AlertTriangle,
+    CheckCircle2,
+    TrendingUp
+} from 'lucide-react';
 import { cn } from '@/lib/utils';
-// import { Member, Report } from '@/types'; // Assuming types are available globally or we use the ones from store data
+import type { Member, Report } from '@/types';
 
 interface MemberDetailSidebarProps {
     memberId: string;
     onClose: () => void;
     onUpdateMTA: (memberId: string, newMta: number) => void;
+    onUpdatePromRec: (memberId: string, rec: 'EP' | 'MP' | 'P' | 'Prog' | 'SP' | 'NOB') => void;
+    onNavigateNext: () => void;
+    onNavigatePrev: () => void;
+    rosterMember: Member;
+    currentReport?: Report;
+    groupStats: { currentRSCA: number; projectedRSCA: number };
 }
 
-export function MemberDetailSidebar({ memberId, onClose, onUpdateMTA }: MemberDetailSidebarProps) {
-    const { roster } = useNavfitStore();
-    const activeCycle = useNavfitStore(selectActiveCycle);
+export function MemberDetailSidebar({
+    memberId,
+    onClose,
+    onUpdateMTA,
+    onUpdatePromRec,
+    onNavigateNext,
+    onNavigatePrev,
+    rosterMember,
+    currentReport,
+    groupStats
+}: MemberDetailSidebarProps) {
 
-    // 1. Get Member Data
-    const member = useMemo(() =>
-        roster.find(m => m.id === memberId),
-        [roster, memberId]);
+    // --- State Management ---
+    const initialMta = currentReport?.traitAverage || 3.00;
+    const initialRec = (currentReport?.promotionRecommendation as any) || 'P';
 
-    // 2. Local State for Simulation
-    // Initialize with existing report value if present in active cycle, else default
-    const existingReport = useMemo(() =>
-        activeCycle?.reports.find(r => r.memberId === memberId),
-        [activeCycle, memberId]);
+    const [simulatedMta, setSimulatedMta] = useState<number>(initialMta);
+    const [simulatedRec, setSimulatedRec] = useState<'EP' | 'MP' | 'P' | 'Prog' | 'SP' | 'NOB'>(initialRec);
+    const [softBreakout, setSoftBreakout] = useState<string>(''); // For "Ranked #1 of 12"
+    const [isLocked, setIsLocked] = useState(false);
 
-    const paramsInitialMta = existingReport?.traitAverage || 3.00; // Default lower bound
-    const [simulatedMta, setSimulatedMta] = useState<number>(paramsInitialMta);
-    const [simulatedPromo, setSimulatedPromo] = useState<'EP' | 'MP' | 'P'>(
-        (existingReport?.promotionRecommendation as 'EP' | 'MP' | 'P') || 'P'
-    );
-
-    // Update local state when member changes
+    // Reset state when member changes
     useEffect(() => {
-        if (existingReport) {
-            setSimulatedMta(existingReport.traitAverage);
-            setSimulatedPromo((existingReport.promotionRecommendation as 'EP' | 'MP' | 'P') || 'P');
-        } else {
-            // Reset if no report found (or new member selected)
-            setSimulatedMta(3.00);
-            setSimulatedPromo('P');
-        }
-    }, [existingReport, memberId]);
+        setSimulatedMta(currentReport?.traitAverage || 3.00);
+        setSimulatedRec((currentReport?.promotionRecommendation as any) || 'P');
+        setSoftBreakout('');
+        setIsLocked(false);
+    }, [memberId, currentReport]);
 
-    if (!member) return null;
 
-    // 3. Derived Data for UI
-    const history = member.history || [];
-    const last3Reports = history.slice(-3); // Assuming sorted? If not we might need to sort by date. 
-    // We'll assume history is chronological or we just take the last 3 in array.
+    // --- Derived Metrics ---
 
-    // 4. Simulation Logic: Projected Group RSCA
-    const projectionData = useMemo(() => {
-        if (!activeCycle) return { projectedRsca: 0, gap: 0, currentGroupRsca: 0 };
+    // Impact Simulation
+    // Note: We calculate projected impact effectively in the render loop for now.
 
-        const reports = activeCycle.reports;
-        // Calculate current group average (excluding this member if present, to re-add simulated)
-        // Actually, let's just take all *other* reports + this simulated one.
-        const otherReports = reports.filter(r => r.memberId !== memberId);
 
-        const sumOtherMta = otherReports.reduce((sum, r) => sum + r.traitAverage, 0);
-        const count = otherReports.length + 1; // Including this member
+    const isHighConfidence = simulatedMta === 5.00;
+    const isLowConfidence = simulatedMta < 3.60;
 
-        const projectedGroupRsca = (sumOtherMta + simulatedMta) / count;
+    // History Data for Chart
+    const history = (rosterMember.history || []).slice(-3); // Last 3 reports
 
-        // Gap: How far above/below the NEW group average is this member?
-        // "Gap to RSCA" usually means Member MTA - RSCA
-        const gap = simulatedMta - projectedGroupRsca;
+    // --- Helpers ---
+    const formatDelta = (val: number) => {
+        const sign = val > 0 ? '+' : '';
+        return `${sign}${val.toFixed(2)}`;
+    };
 
-        return {
-            projectedRsca: projectedGroupRsca,
-            gap
-        };
-
-    }, [activeCycle, memberId, simulatedMta]);
-
+    const handleApply = () => {
+        onUpdateMTA(memberId, simulatedMta);
+        onUpdatePromRec(memberId, simulatedRec);
+        onNavigateNext();
+    };
 
     return (
-        <div className="flex flex-col h-full bg-white border-l border-slate-200 shadow-xl w-80 fixed right-0 top-0 bottom-0 z-50">
-            {/* Header */}
-            <div className="flex items-center justify-between p-4 border-b border-slate-100 bg-slate-50/50">
-                <h2 className="text-sm font-semibold text-slate-800 uppercase tracking-wide">Member Detail</h2>
-                <button
-                    onClick={onClose}
-                    className="p-1 rounded-full hover:bg-slate-200 text-slate-400 hover:text-slate-600 transition-colors"
-                >
-                    <X className="w-4 h-4" />
-                </button>
-            </div>
+        <div className="flex flex-col h-full bg-white border-l border-slate-200 shadow-2xl w-[400px] fixed right-0 top-0 bottom-0 z-50 animate-in slide-in-from-right duration-300">
 
-            <div className="flex-1 overflow-y-auto p-6 space-y-8">
+            {/* --- Header (Sticky) --- */}
+            <div className="flex-none bg-white z-10 border-b border-slate-200 p-4">
+                <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                        <button
+                            onClick={onClose}
+                            className="p-1.5 -ml-1.5 rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
+                        >
+                            <X className="w-5 h-5" />
+                        </button>
+                        <div className="flex gap-1">
+                            {/* Status Badges - Mock logic for now */}
+                            {currentReport?.promotionStatus === 'FROCKED' && (
+                                <span className="px-1.5 py-0.5 text-[10px] font-bold bg-amber-100 text-amber-800 rounded border border-amber-200">FROCKED</span>
+                            )}
+                            {currentReport?.isAdverse && (
+                                <span className="px-1.5 py-0.5 text-[10px] font-bold bg-red-100 text-red-800 rounded border border-red-200">ADVERSE</span>
+                            )}
+                        </div>
+                    </div>
+                    <div className="flex items-center gap-1">
+                        <button
+                            onClick={onNavigatePrev}
+                            className="p-1.5 rounded-full hover:bg-slate-100 text-slate-500 border border-slate-200 shadow-sm"
+                        >
+                            <ChevronLeft className="w-4 h-4" />
+                        </button>
+                        <button
+                            onClick={onNavigateNext}
+                            className="p-1.5 rounded-full hover:bg-slate-100 text-slate-500 border border-slate-200 shadow-sm"
+                        >
+                            <ChevronRight className="w-4 h-4" />
+                        </button>
+                    </div>
+                </div>
 
-                {/* 1. Member Profile Header */}
-                <div className="flex flex-col items-center text-center space-y-3">
-                    <div className="w-20 h-20 rounded-full bg-slate-100 flex items-center justify-center border-2 border-slate-200 text-slate-400 shadow-inner">
-                        <User className="w-10 h-10" />
+                <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center border-2 border-slate-200 text-slate-400">
+                        <User className="w-6 h-6" />
                     </div>
                     <div>
-                        <h3 className="text-lg font-bold text-slate-900">{member.lastName}, {member.firstName}</h3>
-                        <div className="text-sm text-slate-500 font-medium">{member.rank} {member.designator}</div>
-                    </div>
-                </div>
-
-                {/* 2. History Widget (Sparkline) */}
-                <div className="bg-slate-50 rounded-lg p-4 border border-slate-100">
-                    <div className="flex items-center gap-2 mb-3">
-                        <TrendingUp className="w-4 h-4 text-indigo-500" />
-                        <span className="text-xs font-semibold text-slate-600 uppercase">Performance History</span>
-                    </div>
-                    {last3Reports.length > 0 ? (
-                        <div className="h-16 flex items-end justify-between gap-1 px-1">
-                            {/* Simple Bar Chart Sparkline for reliability over messy SVG path math without library */}
-                            {last3Reports.map((r, i) => {
-                                // Scale bar height: assume range 2.0 to 5.0
-                                const heightPct = Math.max(0, Math.min(100, ((r.traitAverage - 2.0) / 3.0) * 100));
-                                return (
-                                    <div key={r.id || i} className="flex flex-col items-center flex-1 gap-1">
-                                        <div className="w-full bg-indigo-100 rounded-sm relative h-full group">
-                                            <div
-                                                className="absolute bottom-0 left-0 right-0 bg-indigo-500 rounded-sm transition-all duration-500"
-                                                style={{ height: `${heightPct}%` }}
-                                            />
-                                            {/* Tooltip on hover */}
-                                            <div className="opacity-0 group-hover:opacity-100 absolute -top-6 left-1/2 -translate-x-1/2 bg-slate-800 text-white text-[10px] px-1.5 py-0.5 rounded whitespace-nowrap pointer-events-none transition-opacity">
-                                                {r.traitAverage.toFixed(2)}
-                                            </div>
-                                        </div>
-                                        <span className="text-[10px] text-slate-400">{r.periodEndDate.substring(0, 4)}</span>
-                                    </div>
-                                );
-                            })}
+                        <h2 className="text-lg font-bold text-slate-900 leading-tight">
+                            {rosterMember.name}
+                        </h2>
+                        <div className="text-sm font-medium text-slate-500">
+                            {rosterMember.rank} {rosterMember.designator}
                         </div>
-                    ) : (
-                        <div className="h-16 flex items-center justify-center text-xs text-slate-400 italic">No history available</div>
-                    )}
+                    </div>
+                </div>
+            </div>
+
+            {/* --- Scrollable Content --- */}
+            <div className="flex-1 overflow-y-auto">
+
+
+                {/* --- Section A: The Trajectory --- */}
+                <div className="p-5 border-b border-slate-100 bg-slate-50/50">
+                    <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center gap-2 text-xs font-bold uppercase text-slate-500 tracking-wider">
+                            <TrendingUp className="w-3.5 h-3.5" />
+                            <span>Flight Path</span>
+                        </div>
+                        <div className="text-xs font-medium text-slate-400">
+                            {currentReport?.reportsRemaining !== undefined ? `${currentReport.reportsRemaining} Rpts Left` : 'PRD Unknown'}
+                        </div>
+                    </div>
+
+                    <div className="flex gap-4 h-24">
+                        {/* Chart Area */}
+                        <div className="flex-1 bg-white rounded-lg border border-slate-200 p-2 relative">
+                            {/* Simple SVG Sparkline */}
+                            <svg className="w-full h-full overflow-visible" viewBox="0 0 100 100" preserveAspectRatio="none">
+                                {/* Baseline (RSCA) - Grey Line at 50% for mock */}
+                                <line x1="0" y1="50" x2="100" y2="50" stroke="#cbd5e1" strokeWidth="2" strokeDasharray="4 2" />
+
+                                {/* History Line */}
+                                {history.length > 0 && (
+                                    <polyline
+                                        points={history.map((h, i) => {
+                                            const x = (i / (Math.max(1, history.length - 1))) * 100;
+                                            const y = 100 - ((h.traitAverage - 2.0) / 3.0 * 100); // Scale 2.0-5.0
+                                            return `${x},${y}`;
+                                        }).join(' ')}
+                                        fill="none"
+                                        stroke="#6366f1"
+                                        strokeWidth="2.5"
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                    />
+                                )}
+                                {/* Current Projected Point */}
+                                {history.length > 0 && (
+                                    <circle
+                                        cx="100"
+                                        cy={100 - ((simulatedMta - 2.0) / 3.0 * 100)}
+                                        r="3"
+                                        fill="#6366f1"
+                                        className="animate-pulse"
+                                    />
+                                )}
+                            </svg>
+                        </div>
+
+                        {/* Current Delta Metrics */}
+                        <div className="w-24 flex flex-col justify-center items-end text-right">
+                            <div className="text-[10px] uppercase text-slate-500 font-semibold mb-0.5">Vs RSCA</div>
+                            <div className={cn(
+                                "text-2xl font-bold font-mono tracking-tight",
+                                simulatedMta - groupStats.currentRSCA >= 0 ? "text-emerald-600" : "text-amber-600"
+                            )}>
+                                {formatDelta(simulatedMta - groupStats.currentRSCA)}
+                            </div>
+                            <div className="text-[10px] text-slate-400 mt-1">
+                                Current MTA: <span className="font-mono text-slate-600">{simulatedMta.toFixed(2)}</span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
-                {/* 3. Controls */}
-                <div className="space-y-6">
+                {/* --- Section B: The Decision Engine --- */}
+                <div className="p-5 space-y-6">
+
                     {/* Promotion Recommendation */}
-                    <div className="space-y-2">
-                        <label className="text-xs font-semibold text-slate-500 uppercase">Recommendation</label>
-                        <div className="flex bg-slate-100 p-1 rounded-lg">
-                            {(['EP', 'MP', 'P'] as const).map((rec) => (
+                    <div className="space-y-3">
+                        <label className="text-xs font-bold text-slate-700 uppercase tracking-wide">Recommendation</label>
+                        <div className="flex bg-slate-100 p-1 rounded-lg shadow-inner">
+                            {(['NOB', 'SP', 'Prog', 'P', 'MP', 'EP'] as const).map((rec) => (
                                 <button
                                     key={rec}
-                                    onClick={() => setSimulatedPromo(rec)}
+                                    onClick={() => setSimulatedRec(rec)}
                                     className={cn(
-                                        "flex-1 py-1.5 text-sm font-medium rounded-md transition-all",
-                                        simulatedPromo === rec
-                                            ? "bg-white text-indigo-600 shadow-sm ring-1 ring-black/5"
+                                        "flex-1 py-1.5 text-xs font-bold rounded-md transition-all",
+                                        simulatedRec === rec
+                                            ? "bg-white text-indigo-600 shadow-sm ring-1 ring-black/5 scale-[1.02]"
                                             : "text-slate-500 hover:text-slate-700 hover:bg-slate-200/50"
                                     )}
                                 >
-                                    {rec}
+                                    {rec === 'Prog' ? 'PR' : rec}
                                 </button>
                             ))}
                         </div>
                     </div>
 
-                    {/* Trait Average Control */}
-                    <div className="space-y-3">
-                        <div className="flex items-center justify-between">
-                            <label className="text-xs font-semibold text-slate-500 uppercase">Trait Average</label>
+                    {/* Trait Average Tuner */}
+                    <div className="space-y-4">
+                        <div className="flex items-end justify-between">
+                            <label className="text-xs font-bold text-slate-700 uppercase tracking-wide flex items-center gap-1.5">
+                                Trait Average
+                                <button
+                                    onClick={() => setIsLocked(!isLocked)}
+                                    className={cn("transition-colors", isLocked ? "text-indigo-500" : "text-slate-300 hover:text-slate-400")}
+                                >
+                                    {isLocked ? <Lock className="w-3.5 h-3.5" /> : <Unlock className="w-3.5 h-3.5" />}
+                                </button>
+                            </label>
+
+                            <div className="flex items-center gap-2">
+                                {/* Match Peer Placeholder */}
+                                <select className="text-[10px] bg-slate-50 border-none text-slate-400 focus:ring-0 cursor-pointer hover:text-indigo-500 transition-colors">
+                                    <option>Match Peer...</option>
+                                    <option>Top RSCA</option>
+                                    <option>Group Avg</option>
+                                </select>
+
+                                <input
+                                    type="number"
+                                    step="0.01"
+                                    min="1.00"
+                                    max="5.00"
+                                    value={simulatedMta}
+                                    onChange={(e) => !isLocked && setSimulatedMta(parseFloat(e.target.value))}
+                                    disabled={isLocked}
+                                    className="w-20 text-right text-xl font-bold text-slate-900 bg-transparent border-b-2 border-slate-200 focus:border-indigo-500 focus:outline-none p-0 focus:ring-0 disabled:opacity-50"
+                                />
+                            </div>
+                        </div>
+
+                        {/* Slider with Ghost Value */}
+                        <div className="relative h-6 flex items-center">
+                            {/* Ghost Value Marker */}
+                            <div
+                                className="absolute top-1/2 -translate-y-1/2 w-1 h-3 bg-slate-400/50 rounded-full pointer-events-none z-0"
+                                style={{ left: `${((initialMta - 3.0) / 2.0) * 100}%` }}
+                                title="Initial Value"
+                            />
+
                             <input
-                                type="number"
-                                step="0.01"
-                                min="1.00"
+                                type="range"
+                                min="3.00"
                                 max="5.00"
+                                step="0.01"
                                 value={simulatedMta}
-                                onChange={(e) => {
-                                    const val = parseFloat(e.target.value);
-                                    if (!isNaN(val)) setSimulatedMta(val);
-                                }}
-                                className="w-20 text-right text-sm font-bold text-slate-900 bg-transparent border-b border-slate-300 focus:border-indigo-500 focus:outline-none p-0.5"
+                                onChange={(e) => !isLocked && setSimulatedMta(parseFloat(e.target.value))}
+                                disabled={isLocked}
+                                className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-600 z-10 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 disabled:cursor-not-allowed"
                             />
                         </div>
+
+                        {/* Quick Presets */}
+                        <div className="grid grid-cols-4 gap-2">
+                            <button
+                                onClick={() => !isLocked && setSimulatedMta(Number(groupStats.currentRSCA.toFixed(2)))}
+                                disabled={isLocked}
+                                className="px-2 py-1.5 text-[10px] font-medium bg-slate-50 border border-slate-200 rounded hover:border-indigo-300 hover:text-indigo-600 transition-colors disabled:opacity-50"
+                            >
+                                At RSCA
+                            </button>
+                            <button
+                                onClick={() => !isLocked && setSimulatedMta(Number((groupStats.currentRSCA + 0.15).toFixed(2)))}
+                                disabled={isLocked}
+                                className="px-2 py-1.5 text-[10px] font-medium bg-slate-50 border border-slate-200 rounded hover:border-indigo-300 hover:text-indigo-600 transition-colors disabled:opacity-50"
+                            >
+                                + 0.15
+                            </button>
+                            <button
+                                onClick={() => !isLocked && setSimulatedMta(Number((groupStats.currentRSCA + 0.35).toFixed(2)))}
+                                disabled={isLocked}
+                                className="px-2 py-1.5 text-[10px] font-medium bg-slate-50 border border-slate-200 rounded hover:border-orange-300 hover:text-orange-600 transition-colors disabled:opacity-50"
+                            >
+                                Burn
+                            </button>
+                            <button
+                                onClick={() => !isLocked && setSimulatedMta(5.00)}
+                                disabled={isLocked}
+                                className="px-2 py-1.5 text-[10px] font-medium bg-slate-50 border border-slate-200 rounded hover:border-indigo-300 hover:text-indigo-600 transition-colors disabled:opacity-50"
+                            >
+                                Max
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* Soft Breakout */}
+                    <div className="space-y-2">
+                        <label className="text-xs font-bold text-slate-700 uppercase tracking-wide">Soft Breakout</label>
                         <input
-                            type="range"
-                            min="3.00"
-                            max="5.00"
-                            step="0.01"
-                            value={simulatedMta}
-                            onChange={(e) => setSimulatedMta(parseFloat(e.target.value))}
-                            className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"
+                            type="text"
+                            placeholder='e.g., "Ranked #1 of 12..."'
+                            value={softBreakout}
+                            onChange={(e) => setSoftBreakout(e.target.value)}
+                            className="w-full text-sm border border-slate-200 rounded-lg px-3 py-2 focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500"
                         />
-                        <div className="flex justify-between text-[10px] text-slate-400 font-medium px-1">
-                            <span>3.00</span>
-                            <span>4.00</span>
-                            <span>5.00</span>
-                        </div>
                     </div>
                 </div>
 
-                {/* 4. Simulation Results */}
-                <div className="bg-gradient-to-br from-slate-900 to-slate-800 rounded-xl p-5 text-white shadow-lg ring-1 ring-white/10">
-                    <div className="flex items-center gap-2 mb-4 opacity-75">
-                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                        <span className="text-xs font-bold uppercase tracking-widest text-slate-300">Simulation</span>
-                    </div>
+                {/* --- Section C: Impact Analysis --- */}
+                <div className="p-5 bg-slate-50 border-t border-slate-100 mb-20"> {/* Margin bottom for sticky footer */}
+                    <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4 space-y-4">
+                        <div className="flex items-center gap-2">
+                            <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                            <span className="text-xs font-bold text-slate-900 uppercase tracking-wide">Simulation Analysis</span>
+                        </div>
 
-                    <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-1">
-                            <div className="text-[10px] text-slate-400 uppercase">Proj. Group RSCA</div>
-                            <div className="text-2xl font-bold font-mono tracking-tight text-emerald-300">
-                                {projectionData.projectedRsca.toFixed(2)}
-                            </div>
+                        <div className="p-3 bg-indigo-50/50 rounded-lg border border-indigo-100 text-sm text-indigo-900 leading-relaxed">
+                            Group RSCA will rise to <strong className="font-mono">
+                                {(groupStats.projectedRSCA + (simulatedMta - initialMta) / 10).toFixed(2)}
+                            </strong> (Est).
                         </div>
-                        <div className="space-y-1">
-                            <div className="text-[10px] text-slate-400 uppercase">Gap to RSCA</div>
-                            <div className={cn(
-                                "text-2xl font-bold font-mono tracking-tight",
-                                projectionData.gap > 0 ? "text-blue-300" : "text-amber-300"
-                            )}>
-                                {projectionData.gap > 0 ? "+" : ""}{projectionData.gap.toFixed(2)}
+
+                        {/* Validation Alerts */}
+                        {isHighConfidence && (
+                            <div className="flex items-start gap-2 text-xs text-amber-700 bg-amber-50 p-2 rounded border border-amber-100">
+                                <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+                                <span>Signals MAX confidence. Ensure justification supports 5.00 ceiling.</span>
                             </div>
-                        </div>
+                        )}
+                        {isLowConfidence && (
+                            <div className="flex items-start gap-2 text-xs text-amber-700 bg-amber-50 p-2 rounded border border-amber-100">
+                                <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+                                <span>MTA below 3.60 may signal decline against peer average.</span>
+                            </div>
+                        )}
+                        {!isHighConfidence && !isLowConfidence && (
+                            <div className="flex items-center gap-2 text-xs text-emerald-700 bg-emerald-50 p-2 rounded border border-emerald-100">
+                                <CheckCircle2 className="w-4 h-4 shrink-0" />
+                                <span>MTA progression is within healthy RSCA thresholds.</span>
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>
 
-            {/* Footer / Actions */}
-            <div className="p-4 border-t border-slate-100 bg-slate-50">
-                <button
-                    onClick={() => {
-                        onUpdateMTA(memberId, simulatedMta);
-                        // We could also pass promo status back if the handler supported it
-                    }}
-                    className="w-full py-2.5 bg-indigo-600 text-white text-sm font-semibold rounded-lg hover:bg-indigo-700 shadow-sm active:transform active:scale-[0.98] transition-all"
-                >
-                    Apply Changes
-                </button>
+            {/* --- Footer (Sticky) --- */}
+            <div className="flex-none absolute bottom-0 left-0 right-0 bg-white border-t border-slate-200 p-4 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
+                <div className="flex items-center gap-3">
+                    <button
+                        onClick={() => {
+                            setSimulatedMta(initialMta);
+                            setSimulatedRec(initialRec);
+                        }}
+                        className="px-4 py-2.5 text-sm font-semibold text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors"
+                    >
+                        Reset
+                    </button>
+                    {/* Spacer */}
+                    <div className="flex-1" />
+
+                    <button
+                        className="px-4 py-2.5 text-sm font-semibold text-slate-700 hover:text-slate-900 hover:bg-slate-100 rounded-lg border border-slate-200 transition-colors"
+                    >
+                        Edit Report
+                    </button>
+                    <button
+                        onClick={handleApply}
+                        className="px-6 py-2.5 bg-indigo-600 text-white text-sm font-bold rounded-lg hover:bg-indigo-700 shadow-md hover:shadow-lg active:transform active:scale-[0.98] transition-all flex items-center gap-2"
+                    >
+                        Apply & Next
+                        <ChevronRight className="w-4 h-4 opacity-70" />
+                    </button>
+                </div>
             </div>
+
         </div>
     );
 }
