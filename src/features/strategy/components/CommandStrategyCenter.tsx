@@ -3,9 +3,10 @@ import { useMemo } from 'react';
 import { CycleContextPanel } from './CycleContextPanel';
 import { StrategyGroupCard } from './StrategyGroupCard';
 
+
 import { useNavfitStore } from '@/store/useNavfitStore';
 import { useSummaryGroups } from '@/features/strategy/hooks/useSummaryGroups';
-import { Layout, Filter, ArrowUpDown } from 'lucide-react';
+import { Filter, ArrowUpDown } from 'lucide-react';
 
 export function CommandStrategyCenter() {
     const {
@@ -16,8 +17,8 @@ export function CommandStrategyCenter() {
         cycleSort,
         setCycleFilter,
         setCycleSort,
-        isHistoryView,
-        toggleHistoryView,
+        cycleListPhase,
+        setCycleListPhase,
     } = useNavfitStore();
 
     const summaryGroups = useSummaryGroups();
@@ -33,21 +34,21 @@ export function CommandStrategyCenter() {
 
     // 2. Filter & Sort Logic for Left Panel
     const groupedCycles = useMemo(() => {
-        // A. Filter by History Mode (Active vs Archive)
-        const historyFiltered = summaryGroups.filter(g => {
+        // A. Filter by Phase (Active, Archive, Projected)
+        const phaseFiltered = summaryGroups.filter(g => {
             const status = g.status || 'Drafting'; // Default to Drafting if missing
-            const activeStatuses = ['Drafting', 'Planning', 'Review', 'Submitted'];
-            const archiveStatuses = ['Final', 'Complete']; // Added Complete just in case
 
-            if (isHistoryView) {
-                return archiveStatuses.includes(status);
-            } else {
-                return activeStatuses.includes(status);
-            }
+            const activeStatuses = ['Drafting', 'Planning', 'Review', 'Submitted', 'Pending', 'Draft'];
+            const archiveStatuses = ['Final', 'Complete', 'Accepted', 'Rejected'];
+            const projectedStatuses = ['Projected', 'Planned'];
+
+            if (cycleListPhase === 'Archive') return archiveStatuses.includes(status);
+            if (cycleListPhase === 'Projected') return projectedStatuses.includes(status);
+            return activeStatuses.includes(status);
         });
 
         // B. Filter by Type (Officer/Enlisted)
-        const typeFiltered = historyFiltered.filter(g => {
+        const typeFiltered = phaseFiltered.filter(g => {
             if (cycleFilter === 'All') return true;
             const isEnlisted = g.paygrade?.startsWith('E');
             if (cycleFilter === 'Officer') return !isEnlisted;
@@ -75,7 +76,7 @@ export function CommandStrategyCenter() {
         });
 
         return groups;
-    }, [summaryGroups, cycleFilter, cycleSort, isHistoryView]);
+    }, [summaryGroups, cycleFilter, cycleSort, cycleListPhase]);
 
     const sortedGroupKeys = Array.from(groupedCycles.keys()).sort();
 
@@ -89,13 +90,13 @@ export function CommandStrategyCenter() {
     return (
         <div className="flex flex-col h-full bg-slate-50 overflow-hidden">
             {/* Command Strategy Center Header */}
-            <div className={`border-b px-6 py-4 flex items-center justify-between shrink-0 transition-colors duration-300 ${isHistoryView ? 'bg-indigo-50 border-indigo-200' : 'bg-white border-slate-200'}`}>
+            <div className={`border-b px-6 py-4 flex items-center justify-between shrink-0 transition-colors duration-300 ${cycleListPhase === 'Archive' ? 'bg-indigo-50 border-indigo-200' : 'bg-white border-slate-200'}`}>
                 <div>
-                    <h1 className={`text-xl font-bold transition-colors ${isHistoryView ? 'text-indigo-900' : 'text-slate-900'}`}>
-                        {isHistoryView ? 'Cycle Archives' : 'Command Strategy Center'}
+                    <h1 className={`text-xl font-bold transition-colors ${cycleListPhase === 'Archive' ? 'text-indigo-900' : 'text-slate-900'}`}>
+                        {cycleListPhase === 'Archive' ? 'Cycle Archives' : 'Command Strategy Center'}
                     </h1>
-                    <p className={`text-sm transition-colors ${isHistoryView ? 'text-indigo-600/70' : 'text-slate-500'}`}>
-                        {isHistoryView ? 'View historical and finalized fitness report cycles.' : 'Select a Competitive Group to view strategy.'}
+                    <p className={`text-sm transition-colors ${cycleListPhase === 'Archive' ? 'text-indigo-600/70' : 'text-slate-500'}`}>
+                        {cycleListPhase === 'Archive' ? 'View historical and finalized fitness report cycles.' : 'Select a Competitive Group to view strategy.'}
                     </p>
                 </div>
 
@@ -111,38 +112,34 @@ export function CommandStrategyCenter() {
 
                     {/* Panel Header */}
                     <div className="px-6 py-4 border-b border-slate-200 bg-white/50 backdrop-blur-sm sticky top-0 z-10">
-                        <div className="flex items-center justify-between mb-4">
-                            <h2 className="text-lg font-bold text-slate-800">
-                                {isHistoryView ? 'Archived Cycles' : 'Active Cycles'}
-                            </h2>
-
-                            {/* History Toggle */}
+                        <div className="flex items-center justify-start mb-4">
+                            {/* Phase Toggle */}
                             <div className="flex items-center gap-1 bg-slate-200/50 p-0.5 rounded-lg border border-slate-200 shadow-sm">
-                                <button
-                                    onClick={() => isHistoryView && toggleHistoryView()}
-                                    className={`px-3 py-1 text-[10px] font-bold uppercase tracking-wider rounded-md transition-all ${!isHistoryView ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
-                                >
-                                    Active
-                                </button>
-                                <button
-                                    onClick={() => !isHistoryView && toggleHistoryView()}
-                                    className={`px-3 py-1 text-[10px] font-bold uppercase tracking-wider rounded-md transition-all ${isHistoryView ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
-                                >
-                                    Archive
-                                </button>
+                                {(['Archive', 'Active', 'Projected'] as const).map((phase) => (
+                                    <button
+                                        key={phase}
+                                        onClick={() => setCycleListPhase(phase)}
+                                        className={`px-3 py-1 text-[10px] font-bold uppercase tracking-wider rounded-md transition-all ${cycleListPhase === phase
+                                            ? 'bg-white text-indigo-600 shadow-sm'
+                                            : 'text-slate-500 hover:text-slate-700'
+                                            }`}
+                                    >
+                                        {phase}
+                                    </button>
+                                ))}
                             </div>
                         </div>
 
                         {/* Controls */}
                         <div className="flex flex-col gap-3">
-                            <div className="flex items-center gap-2 p-1 bg-slate-100/50 rounded-lg border border-slate-200">
+                            <div className="flex items-center gap-1 bg-slate-200/50 p-0.5 rounded-lg border border-slate-200 shadow-sm">
                                 {(['All', 'Officer', 'Enlisted'] as const).map(f => (
                                     <button
                                         key={f}
                                         onClick={() => setCycleFilter(f as any)}
-                                        className={`flex-1 text-xs font-medium py-1.5 px-2 rounded-md transition-all ${cycleFilter === f
-                                            ? 'bg-white text-slate-800 shadow-sm border border-slate-200/50'
-                                            : 'text-slate-500 hover:text-slate-700 hover:bg-slate-200/50'
+                                        className={`flex-1 px-3 py-1 text-[10px] font-bold uppercase tracking-wider rounded-md transition-all ${cycleFilter === f
+                                            ? 'bg-white text-indigo-600 shadow-sm'
+                                            : 'text-slate-500 hover:text-slate-700'
                                             }`}
                                     >
                                         {f}
@@ -179,7 +176,7 @@ export function CommandStrategyCenter() {
                         {sortedGroupKeys.length === 0 ? (
                             <div className="text-center py-12 px-4 text-slate-400">
                                 <Filter className="w-8 h-8 mx-auto mb-2 opacity-20" />
-                                <p className="text-sm">No {isHistoryView ? 'archived' : 'active'} cycles found for this filter.</p>
+                                <p className="text-sm">No {cycleListPhase.toLowerCase()} cycles found for this filter.</p>
                             </div>
                         ) : (
                             sortedGroupKeys.map(key => {
@@ -254,14 +251,14 @@ export function CommandStrategyCenter() {
                             />
                         </div>
                     ) : (
-                        <div className="h-full flex flex-col items-center justify-center text-slate-400 p-8">
-                            <div className="w-16 h-16 bg-slate-100 rounded-2xl flex items-center justify-center mb-4 border border-slate-200 shadow-sm">
-                                <Layout className="w-8 h-8 text-slate-300" />
+                        <div className="flex h-full items-center justify-center p-8 text-center text-slate-400">
+                            <div>
+                                <Filter className="mx-auto mb-4 h-12 w-12 opacity-20" />
+                                <h3 className="text-lg font-medium text-slate-600">Select a Summary Group</h3>
+                                <p className="mt-2 text-sm">
+                                    Choose a group from the list on the left to view its strategy and metrics.
+                                </p>
                             </div>
-                            <h3 className="text-lg font-semibold text-slate-600 mb-1">No Cycle Selected</h3>
-                            <p className="text-sm max-w-xs text-center text-slate-500">
-                                Select an active cycle from the list on the left to view its strategy context and details.
-                            </p>
                         </div>
                     )}
                 </div>

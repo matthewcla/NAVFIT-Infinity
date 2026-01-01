@@ -80,8 +80,8 @@ interface NavfitStore {
     setStrategyViewMode: (mode: 'landing' | 'workspace') => void;
 
     // History View State
-    isHistoryView: boolean;
-    toggleHistoryView: () => void;
+    cycleListPhase: 'Active' | 'Archive' | 'Projected';
+    setCycleListPhase: (phase: 'Active' | 'Archive' | 'Projected') => void;
 }
 
 export const useNavfitStore = create<NavfitStore>((set) => ({
@@ -99,8 +99,8 @@ export const useNavfitStore = create<NavfitStore>((set) => ({
     toggleSidebar: () => set((state) => ({ sidebarCollapsed: !state.sidebarCollapsed })),
 
     // History View State
-    isHistoryView: false,
-    toggleHistoryView: () => set((state) => ({ isHistoryView: !state.isHistoryView })),
+    cycleListPhase: 'Active',
+    setCycleListPhase: (phase) => set({ cycleListPhase: phase }),
 
 
     // Data
