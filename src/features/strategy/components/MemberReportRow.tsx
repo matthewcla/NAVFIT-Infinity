@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react';
 import { PromotionBadge } from './PromotionBadge';
+import { GripVertical } from 'lucide-react';
 
 interface DragData {
     type: string;
@@ -24,10 +25,12 @@ interface MemberReportRowProps {
     onClick: () => void;
     onDragStart: (e: React.DragEvent, data: DragData) => void;
     onDragEnd: () => void;
+    onDragOver?: (e: React.DragEvent) => void;
+    onDrop?: (e: React.DragEvent) => void;
 }
 
 export function MemberReportRow({
-    id,
+    // id, // Not used locally, but passed by parent. Removing from destructuring to silence warning.
     reportId,
     groupId,
     index,
@@ -42,72 +45,59 @@ export function MemberReportRow({
     isRankMode,
     onClick,
     onDragStart,
-    onDragEnd
+    onDragEnd,
+    onDragOver,
+    onDrop
 }: MemberReportRowProps) {
     const dragPreviewRef = useRef<HTMLDivElement>(null);
     const [isDragging, setIsDragging] = useState(false);
 
     const handleDragStart = (e: React.DragEvent<HTMLTableRowElement>) => {
-        // Set drag image to custom mini card
-        if (dragPreviewRef.current) {
-            e.dataTransfer.setDragImage(dragPreviewRef.current, 0, 0);
-        }
-
         setIsDragging(true);
 
-        const data: DragData = {
-            type: 'member_report',
-            groupId,
-            reportId
-        };
+        if (isRankMode) {
+            // Reordering Mode
+            e.dataTransfer.setData('text/plain', reportId);
+            e.dataTransfer.effectAllowed = 'move';
+            // Do NOT set custom drag image for reordering, standard ghost row is better
+        } else {
+            // Assignment Mode (Legacy/Normal)
+            // Set drag image to custom mini card
+            if (dragPreviewRef.current) {
+                e.dataTransfer.setDragImage(dragPreviewRef.current, 0, 0);
+            }
 
-        // Pass up to parent for store updates / global state
-        onDragStart(e, data);
+            const data: DragData = {
+                type: 'member_report',
+                groupId,
+                reportId
+            };
+            onDragStart(e, data);
+        }
     };
 
-    const handleDragEnd = (e: React.DragEvent<HTMLTableRowElement>) => {
+    const handleDragEnd = () => {
         setIsDragging(false);
         onDragEnd();
     };
 
     return (
         <>
-            {/* Drag Preview - Hidden Mini Card */}
-            {/* We place this inside a hidden div or portal, or just absolute offscreen. 
-                Using a <tr> here is invalid HTML if not inside a table, but we can't easily put a div inside a tr safely for ref.
-                Actually, refs work on any element. 
-                But this component returns a <tr>. 
-                We can't render a <div> sibling to a <tr> in a map usually without Fragment, 
-                but <Fragment> doesn't support refs directly, and setDragImage needs a DOM node.
-                
-                Solution: Put the preview inside a <td className="hidden"> or similar, 
-                OR rely on the fact that this component is called inside a map, so we can return an array or Fragment.
-                However, React Fragments can't hold refs.
-                
-                Better: Render the preview *inside* the first <td> or just absolutely positioned inside relative cell.
-                BUT `setDragImage` requires the element to be visible (rendered), just usually off-screen.
-            */}
-
             <tr
-                draggable={!isRankMode}
+                draggable={true}
                 onDragStart={handleDragStart}
                 onDragEnd={handleDragEnd}
+                onDragOver={onDragOver}
+                onDrop={onDrop}
                 onClick={onClick}
                 className={`
-                    cursor-pointer transition-colors hover:bg-slate-50 relative
+                    cursor-pointer transition-colors hover:bg-slate-50 relative group
                     ${isSelected ? 'bg-indigo-50/50' : ''}
                     ${isDragging ? 'opacity-40 grayscale' : ''}
                 `}
             >
-                {/* 
-                    Hidden Drag Preview Container 
-                    We put it in the first cell, absolutely positioned off-screen.
-                */}
-                <td className="px-4 py-3 text-center text-sm text-slate-500 font-medium relative">
-                    {/* 
-                        Hidden Drag Preview Container 
-                        We put it in the first cell, absolutely positioned off-screen.
-                    */}
+                {/* 1. Rank Index Column (Contains Hidden Drag Preview for Normal Mode) */}
+                <td className="px-4 py-3 text-center text-sm text-slate-500 font-medium relative w-12">
                     <div
                         ref={dragPreviewRef}
                         className="fixed -top-[9999px] left-0 w-56 h-12 bg-white border border-indigo-500 rounded-lg shadow-xl flex items-center px-4 gap-3 z-50 pointer-events-none overflow-hidden"
@@ -122,6 +112,14 @@ export function MemberReportRow({
                     </div>
                     {index + 1}
                 </td>
+
+                {/* 2. Drag Handle Column */}
+                <td className="w-8 px-0 py-3 text-center align-middle touch-none">
+                    <div className={`flex items-center justify-center p-1 rounded transition-colors ${isRankMode ? 'cursor-grab hover:bg-slate-200/50 text-slate-400 group-hover:text-slate-600' : 'invisible'}`}>
+                        <GripVertical className="w-4 h-4" />
+                    </div>
+                </td>
+
                 <td className="px-4 py-3 text-sm font-semibold text-slate-700 text-left">{name}</td>
                 <td className="px-4 py-3 text-sm text-slate-500 text-center">{designator}</td>
                 <td className="px-4 py-3 text-sm text-slate-700 font-mono text-center">
