@@ -37,7 +37,8 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
         reorderMembers,
         selectedMemberId,
         selectMember,
-        setDraggingItemType
+        setDraggingItemType,
+        updateProjection
     } = useNavfitStore();
     // Reactivity Fix: Ensure we use the latest group state from store, even if parent prop is stale
     const latestGroup = useNavfitStore(state =>
@@ -499,8 +500,10 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
                         groupStats={{ currentRSCA: cumulativeRsca, projectedRSCA: cumulativeRsca }} // TODO: Calculate actual proj RSCA
                         onClose={() => selectMember(null)}
                         onUpdateMTA={(id, val) => {
-                            // TODO: Integrate with store action
-                            console.log('Update MTA:', id, val);
+                            const report = activeGroup.reports.find(r => r.memberId === id);
+                            if (report) {
+                                updateProjection(report.id, val);
+                            }
                         }}
                         onUpdatePromRec={(id, rec) => {
                             // TODO: Integrate with store action
