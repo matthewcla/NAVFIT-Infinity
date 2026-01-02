@@ -1,4 +1,4 @@
-import { Member, Constraints, RedistributionResult } from '@/domain/rsca/types';
+import type { Member, Constraints, RedistributionResult } from '@/domain/rsca/types';
 
 export type AnchorMap = Record<string, number>;
 

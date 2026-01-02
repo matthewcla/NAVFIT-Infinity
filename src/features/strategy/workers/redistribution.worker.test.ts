@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { processWorkerMessage } from './workerLogic';
-import { WorkerInput } from './types';
-import { Member } from '@/domain/rsca/types';
+import type { WorkerInput } from './types';
+import type { Member } from '@/domain/rsca/types';
 import { DEFAULT_CONSTRAINTS } from '@/domain/rsca/constants';
 // Import the mocked module so we can control it
 import { redistributeMTA } from '@/domain/rsca/redistribution';

@@ -56,23 +56,27 @@ describe('NavfitStore', () => {
     describe('reorderMembers (Summary Group & Projections)', () => {
         const createMockReport = (id: string, traitAverage: number, isAdverse = false): Report => ({
             id,
-            memberId: id, // Assuming memberId can be same as report id for simplicity in this mock
+            memberId: id,
             traitAverage,
             isAdverse,
             reportsRemaining: 1,
             isLocked: false,
-            // Add other required fields if necessary for Typescript, but for logic test these suffice
             promotionRecommendation: 'MP',
-            name: `Member ${id}`,
-            rank: 'E-5',
-            summaryGroupId: 'group1'
+            firstName: `Member`,
+            lastName: id,
+            // Added required fields
+            periodEndDate: '2023-01-01',
+            type: 'Periodic',
+            traitGrades: {}
         });
 
         it('should reorder reports in a summary group and update projections', () => {
             // Setup: Create a summary group with reports
             const group1: SummaryGroup = {
                 id: 'group1',
-                title: 'Test Group',
+                name: 'Test Group',
+                competitiveGroupKey: 'group1-key',
+                periodEndDate: '2023-12-31',
                 reports: [
                     createMockReport('1', 3.0),
                     createMockReport('2', 3.0),
@@ -126,9 +130,11 @@ describe('NavfitStore', () => {
         });
 
         it('should handle bulk reorder (array of IDs)', () => {
-             const group1: SummaryGroup = {
+            const group1: SummaryGroup = {
                 id: 'group1',
-                title: 'Test Group',
+                name: 'Test Group',
+                competitiveGroupKey: 'group1-key',
+                periodEndDate: '2023-12-31',
                 reports: [
                     createMockReport('1', 3.0),
                     createMockReport('2', 3.0),
@@ -145,7 +151,7 @@ describe('NavfitStore', () => {
             // Action: Bulk reorder to [3, 2, 1]
             useNavfitStore.getState().reorderMembers('group1', '3', ['3', '2', '1']);
 
-             // Verification: Order
+            // Verification: Order
             const updatedGroups = useNavfitStore.getState().summaryGroups;
             const updatedReports = updatedGroups[0].reports;
 

@@ -1,4 +1,4 @@
-import { Constraints } from './types';
+import type { Constraints } from './types';
 
 export const DEFAULT_CONSTRAINTS: Constraints = {
   controlBandLower: 3.8,

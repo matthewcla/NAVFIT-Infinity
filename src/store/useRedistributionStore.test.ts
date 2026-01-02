@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { useRedistributionStore } from './useRedistributionStore';
 import { useNavfitStore } from './useNavfitStore';
-import { Member } from '@/domain/rsca/types';
+import type { Member } from '@/domain/rsca/types';
 
 // Mock Worker
 class MockWorker {
@@ -28,10 +28,10 @@ class MockWorker {
             }
         }, 50);
     }
-    terminate() {}
+    terminate() { }
 }
 
-global.Worker = MockWorker as any;
+(globalThis as any).Worker = MockWorker as any;
 
 describe('useRedistributionStore', () => {
     beforeEach(() => {
@@ -91,8 +91,8 @@ describe('useRedistributionStore', () => {
     it('setRankOrder should update NavfitStore and trigger redistribution', async () => {
         const store = useRedistributionStore.getState();
         const newMembers: Member[] = [
-             { id: '2', rank: 1, mta: 4.0, isAnchor: false },
-             { id: '1', rank: 2, mta: 4.2, isAnchor: false }
+            { id: '2', rank: 1, mta: 4.0, isAnchor: false },
+            { id: '1', rank: 2, mta: 4.2, isAnchor: false }
         ];
 
         store.setRankOrder('group1', newMembers);

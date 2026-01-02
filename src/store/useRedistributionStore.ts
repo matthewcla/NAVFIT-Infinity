@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { debounce } from 'lodash';
-import { Member, Constraints, RedistributionResult, RedistributionReasonCode, AuditEvent, ChangedMember } from '@/domain/rsca/types';
+import type { Member, Constraints, RedistributionResult } from '@/domain/rsca/types';
 import { DEFAULT_CONSTRAINTS } from '@/domain/rsca/constants';
 import { useNavfitStore } from './useNavfitStore';
 import { redistributeMTA } from '@/domain/rsca/redistribution'; // Fallback
@@ -34,7 +34,7 @@ function generateUUID() {
     if (typeof crypto !== 'undefined' && crypto.randomUUID) {
         return crypto.randomUUID();
     }
-    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
         var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
         return v.toString(16);
     });
@@ -150,9 +150,9 @@ export const useRedistributionStore = create<RedistributionStoreState>((set, get
                 }
 
             } catch (err) {
-                 if (get().latestRequestId === requestId) {
+                if (get().latestRequestId === requestId) {
                     set({ isCalculating: false, error: (err as Error).message });
-                 }
+                }
             }
 
             // Cleanup context
@@ -221,7 +221,7 @@ export const useRedistributionStore = create<RedistributionStoreState>((set, get
                 id: r.id,
                 rank: index + 1,
                 mta: r.traitAverage,
-                isAnchor: r.isLocked,
+                isAnchor: !!r.isLocked,
                 anchorValue: r.traitAverage,
                 name: `${r.firstName} ${r.lastName}`
             }));
@@ -230,59 +230,59 @@ export const useRedistributionStore = create<RedistributionStoreState>((set, get
         },
 
         setAnchors: (groupId, anchorMap) => {
-             const navfitStore = useNavfitStore.getState();
-             const groupIndex = navfitStore.summaryGroups.findIndex(g => g.id === groupId);
-             if (groupIndex === -1) return;
+            const navfitStore = useNavfitStore.getState();
+            const groupIndex = navfitStore.summaryGroups.findIndex(g => g.id === groupId);
+            if (groupIndex === -1) return;
 
-             const group = navfitStore.summaryGroups[groupIndex];
-             const newReports = group.reports.map(r => {
-                 if (anchorMap.hasOwnProperty(r.id)) {
-                     return { ...r, isLocked: true, traitAverage: anchorMap[r.id] };
-                 }
-                 return r;
-             });
+            const group = navfitStore.summaryGroups[groupIndex];
+            const newReports = group.reports.map(r => {
+                if (anchorMap.hasOwnProperty(r.id)) {
+                    return { ...r, isLocked: true, traitAverage: anchorMap[r.id] };
+                }
+                return r;
+            });
 
-             const newGroups = [...navfitStore.summaryGroups];
-             newGroups[groupIndex] = { ...group, reports: newReports };
-             navfitStore.setSummaryGroups(newGroups);
+            const newGroups = [...navfitStore.summaryGroups];
+            newGroups[groupIndex] = { ...group, reports: newReports };
+            navfitStore.setSummaryGroups(newGroups);
 
-             const payloadMembers = newReports.map((r, i) => ({
+            const payloadMembers = newReports.map((r, i) => ({
                 id: r.id,
                 rank: i + 1,
                 mta: r.traitAverage,
-                isAnchor: r.isLocked,
+                isAnchor: !!r.isLocked,
                 anchorValue: r.traitAverage,
                 name: `${r.firstName} ${r.lastName}`
-             }));
-             get().requestRedistribution(groupId, payloadMembers, DEFAULT_CONSTRAINTS, navfitStore.rsConfig.targetRsca);
+            }));
+            get().requestRedistribution(groupId, payloadMembers, DEFAULT_CONSTRAINTS, navfitStore.rsConfig.targetRsca);
         },
 
         setAnchorMTA: (groupId, memberId, value) => {
-             const navfitStore = useNavfitStore.getState();
-             const groupIndex = navfitStore.summaryGroups.findIndex(g => g.id === groupId);
-             if (groupIndex === -1) return;
+            const navfitStore = useNavfitStore.getState();
+            const groupIndex = navfitStore.summaryGroups.findIndex(g => g.id === groupId);
+            if (groupIndex === -1) return;
 
-             const group = navfitStore.summaryGroups[groupIndex];
-             const newReports = group.reports.map(r => {
-                 if (r.id === memberId) {
-                     return { ...r, isLocked: true, traitAverage: value };
-                 }
-                 return r;
-             });
+            const group = navfitStore.summaryGroups[groupIndex];
+            const newReports = group.reports.map(r => {
+                if (r.id === memberId) {
+                    return { ...r, isLocked: true, traitAverage: value };
+                }
+                return r;
+            });
 
-             const newGroups = [...navfitStore.summaryGroups];
-             newGroups[groupIndex] = { ...group, reports: newReports };
-             navfitStore.setSummaryGroups(newGroups);
+            const newGroups = [...navfitStore.summaryGroups];
+            newGroups[groupIndex] = { ...group, reports: newReports };
+            navfitStore.setSummaryGroups(newGroups);
 
-             const payloadMembers = newReports.map((r, i) => ({
+            const payloadMembers = newReports.map((r, i) => ({
                 id: r.id,
                 rank: i + 1,
                 mta: r.traitAverage,
-                isAnchor: r.isLocked,
+                isAnchor: !!r.isLocked,
                 anchorValue: r.traitAverage,
                 name: `${r.firstName} ${r.lastName}`
-             }));
-             get().requestRedistribution(groupId, payloadMembers, DEFAULT_CONSTRAINTS, navfitStore.rsConfig.targetRsca);
+            }));
+            get().requestRedistribution(groupId, payloadMembers, DEFAULT_CONSTRAINTS, navfitStore.rsConfig.targetRsca);
         },
 
         setConstraints: (groupId, constraints) => {
@@ -290,15 +290,15 @@ export const useRedistributionStore = create<RedistributionStoreState>((set, get
             const group = navfitStore.summaryGroups.find(g => g.id === groupId);
             if (!group) return;
 
-             const payloadMembers = group.reports.map((r, i) => ({
+            const payloadMembers = group.reports.map((r, i) => ({
                 id: r.id,
                 rank: i + 1,
                 mta: r.traitAverage,
-                isAnchor: r.isLocked,
+                isAnchor: !!r.isLocked,
                 anchorValue: r.traitAverage,
                 name: `${r.firstName} ${r.lastName}`
-             }));
-             get().requestRedistribution(groupId, payloadMembers, constraints, navfitStore.rsConfig.targetRsca);
+            }));
+            get().requestRedistribution(groupId, payloadMembers, constraints, navfitStore.rsConfig.targetRsca);
         }
     };
 });

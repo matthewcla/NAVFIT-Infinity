@@ -38,12 +38,14 @@ export interface AuditEvent {
   severity: 'info' | 'warning' | 'error';
 }
 
-export enum RedistributionReasonCode {
-  ANCHOR_CONSTRAINT = 'ANCHOR_CONSTRAINT',
-  RSCA_BAND_ENFORCED = 'RSCA_BAND_ENFORCED',
-  MONOTONICITY_ENFORCED = 'MONOTONICITY_ENFORCED',
-  BOUNDS_CLAMPED = 'BOUNDS_CLAMPED'
-}
+export const RedistributionReasonCode = {
+  ANCHOR_CONSTRAINT: 'ANCHOR_CONSTRAINT',
+  RSCA_BAND_ENFORCED: 'RSCA_BAND_ENFORCED',
+  MONOTONICITY_ENFORCED: 'MONOTONICITY_ENFORCED',
+  BOUNDS_CLAMPED: 'BOUNDS_CLAMPED'
+} as const;
+
+export type RedistributionReasonCode = typeof RedistributionReasonCode[keyof typeof RedistributionReasonCode];
 
 export interface ChangedMember {
   id: string;

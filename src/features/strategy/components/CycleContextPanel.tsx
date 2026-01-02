@@ -34,6 +34,9 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
         projections,
 
         reorderMembers,
+        addSummaryGroup,
+        summaryGroups,
+
         selectedMemberId,
         selectMember,
         setDraggingItemType,
@@ -43,6 +46,21 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
     const latestGroup = useNavfitStore(state =>
         group ? state.summaryGroups.find(g => g.id === group.id) || group : null
     );
+
+    const handleReorderMembers = (groupId: string, droppedId: string, newOrderIds: string[]) => {
+        // Fix: If this is an auto-generated group (not in store), we must persist it first.
+        const existingGroup = summaryGroups.find(g => g.id === groupId);
+
+        if (!existingGroup && group) {
+            // It's transient. Add it to store first.
+            addSummaryGroup(group);
+            // Now reorder (store will find it by ID)
+            reorderMembers(groupId, droppedId, newOrderIds);
+        } else {
+            // Normal path
+            reorderMembers(groupId, droppedId, newOrderIds);
+        }
+    };
 
     // Use latestGroup for all derived logic
     const activeGroup = latestGroup || group;
@@ -326,7 +344,7 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
                     activeGroupId={activeGroup.id}
                     selectedMemberId={selectedMemberId}
                     onSelectMember={selectMember}
-                    onReorderMembers={reorderMembers}
+                    onReorderMembers={handleReorderMembers}
                     setDraggingItemType={setDraggingItemType}
                 />
             </div>

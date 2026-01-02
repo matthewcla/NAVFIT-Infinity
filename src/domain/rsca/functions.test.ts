@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { computeRSCA, validateMonotonicity, computeFeasibleRanges } from './functions';
-import { Member, Constraints } from './types';
+import type { Member, Constraints } from './types';
 import { DEFAULT_CONSTRAINTS } from './constants';
 
 describe('RSCA Domain Functions', () => {
@@ -45,9 +45,9 @@ describe('RSCA Domain Functions', () => {
     });
 
     it('should handle unsorted input', () => {
-        const members = [member2, member1]; // Rank 2 then Rank 1
-        // Sorted: Rank 1 (4.5), Rank 2 (4.0) -> Monotonic
-        expect(validateMonotonicity(members)).toBe(true);
+      const members = [member2, member1]; // Rank 2 then Rank 1
+      // Sorted: Rank 1 (4.5), Rank 2 (4.0) -> Monotonic
+      expect(validateMonotonicity(members)).toBe(true);
     });
   });
 
@@ -79,10 +79,10 @@ describe('RSCA Domain Functions', () => {
     });
 
     it('should handle boundary cases', () => {
-        // Only one member
-        const single = [member1];
-        const ranges = computeFeasibleRanges(single, constraints);
-        expect(ranges['1']).toEqual({ min: 2.0, max: 5.0 });
+      // Only one member
+      const single = [member1];
+      const ranges = computeFeasibleRanges(single, constraints);
+      expect(ranges['1']).toEqual({ min: 2.0, max: 5.0 });
     });
   });
 });

@@ -1,4 +1,5 @@
-import { Member, Constraints, ChangedMember, RedistributionReasonCode, InfeasibilityReport } from './types';
+import type { Member, Constraints, ChangedMember, InfeasibilityReport } from './types';
+import { RedistributionReasonCode } from './types';
 
 // Types specific to the redistribution engine
 export interface RedistributionEngineResult {
@@ -167,7 +168,7 @@ export function boundedIsotonicRegressionWithAnchors(
     // Upper limit comes from previous anchor or global H
     let upperLimit = H;
     if (start > 0 && anchors.has(start - 1)) {
-       upperLimit = anchors.get(start - 1)!;
+      upperLimit = anchors.get(start - 1)!;
     }
 
     // Lower limit is the current anchor value
@@ -182,7 +183,7 @@ export function boundedIsotonicRegressionWithAnchors(
   if (start < n) {
     let upperLimit = H;
     if (start > 0 && anchors.has(start - 1)) {
-        upperLimit = anchors.get(start - 1)!;
+      upperLimit = anchors.get(start - 1)!;
     }
     const lowerLimit = L;
 
@@ -252,19 +253,20 @@ function computeAnchorSensitivity(
     // Note: increasing an anchor generally increases or keeps same the min/max mean because it lifts the curve.
 
     // Use simple difference for positive perturbation
-    const delta = (val + epsilon <= bounds[1]) ? epsilon : -epsilon;
+    // const delta = (val + epsilon <= bounds[1]) ? epsilon : -epsilon;
+    // Unused variable removed
     // If we can't go up, go down.
 
     let impactOnMin = 0;
     let impactOnMax = 0;
 
     if (val + epsilon <= bounds[1]) {
-        impactOnMin = (minUp - baseMin) / epsilon;
-        impactOnMax = (maxUp - baseMax) / epsilon;
+      impactOnMin = (minUp - baseMin) / epsilon;
+      impactOnMax = (maxUp - baseMax) / epsilon;
     } else if (val - epsilon >= bounds[0]) {
-        // use downward perturbation
-        impactOnMin = (baseMin - minDown) / epsilon;
-        impactOnMax = (baseMax - maxDown) / epsilon;
+      // use downward perturbation
+      impactOnMin = (baseMin - minDown) / epsilon;
+      impactOnMax = (baseMax - maxDown) / epsilon;
     }
 
     sensitivities.push({
@@ -288,9 +290,9 @@ export function redistributeMTA(
 ): RedistributionEngineResult {
   const n = members.length;
   if (n === 0) {
-      return {
-          mtaVector: [], finalRSCA: 0, isFeasible: true, deltas: [], explanation: "Empty group"
-      };
+    return {
+      mtaVector: [], finalRSCA: 0, isFeasible: true, deltas: [], explanation: "Empty group"
+    };
   }
 
   // Extract constraints
@@ -318,18 +320,18 @@ export function redistributeMTA(
   // Check anchor consistency
   const sortedAnchorIndices = Array.from(anchors.keys()).sort((a, b) => a - b);
   for (let k = 0; k < sortedAnchorIndices.length - 1; k++) {
-      const idx1 = sortedAnchorIndices[k];
-      const idx2 = sortedAnchorIndices[k + 1];
-      if (anchors.get(idx1)! < anchors.get(idx2)!) {
-          // Violation: Higher rank (lower index) has lower value.
-          return {
-              mtaVector: initialValues,
-              finalRSCA: 0, // Invalid
-              isFeasible: false,
-              deltas: new Array(n).fill(0),
-              explanation: `Anchor inconsistency: Rank ${members[idx1].rank} (${anchors.get(idx1)}) < Rank ${members[idx2].rank} (${anchors.get(idx2)})`
-          };
-      }
+    const idx1 = sortedAnchorIndices[k];
+    const idx2 = sortedAnchorIndices[k + 1];
+    if (anchors.get(idx1)! < anchors.get(idx2)!) {
+      // Violation: Higher rank (lower index) has lower value.
+      return {
+        mtaVector: initialValues,
+        finalRSCA: 0, // Invalid
+        isFeasible: false,
+        deltas: new Array(n).fill(0),
+        explanation: `Anchor inconsistency: Rank ${members[idx1].rank} (${anchors.get(idx1)}) < Rank ${members[idx2].rank} (${anchors.get(idx2)})`
+      };
+    }
   }
 
   const weights = computeWeights(n); // Uniform for now
@@ -343,85 +345,85 @@ export function redistributeMTA(
   const effectiveMax = Math.min(muMax, maxPossibleMean);
 
   if (effectiveMin > effectiveMax + 1e-9) {
-      // INFEASIBLE
-      // Run sensitivity analysis
-      const anchorSensitivity = computeAnchorSensitivity(n, anchors, weights, bounds, members);
+    // INFEASIBLE
+    // Run sensitivity analysis
+    const anchorSensitivity = computeAnchorSensitivity(n, anchors, weights, bounds, members);
 
-      // Suggest minimal adjustments
-      // If minPossible > muMax, we need to lower minPossible. Look for anchors with high impactOnMin.
-      // If maxPossible < muMin, we need to raise maxPossible. Look for anchors with high impactOnMax.
+    // Suggest minimal adjustments
+    // If minPossible > muMax, we need to lower minPossible. Look for anchors with high impactOnMin.
+    // If maxPossible < muMin, we need to raise maxPossible. Look for anchors with high impactOnMax.
 
-      const minimalAdjustments: { memberId: string; suggestedValue: number }[] = [];
+    const minimalAdjustments: { memberId: string; suggestedValue: number }[] = [];
 
-      if (minPossibleMean > muMax) {
-          // Need to decrease mean.
-          // Target reduction: minPossibleMean - muMax
-          const targetReduction = minPossibleMean - muMax;
-          // Find anchor with highest sensitivity (impactOnMin)
-          // impactOnMin is positive (increasing anchor increases mean).
-          // We want to DECREASE anchor to decrease mean.
-          // Sort by impactOnMin descending.
-          const contributors = anchorSensitivity
-            .filter(s => s.impactOnMin > 0.001)
-            .sort((a, b) => b.impactOnMin - a.impactOnMin);
+    if (minPossibleMean > muMax) {
+      // Need to decrease mean.
+      // Target reduction: minPossibleMean - muMax
+      const targetReduction = minPossibleMean - muMax;
+      // Find anchor with highest sensitivity (impactOnMin)
+      // impactOnMin is positive (increasing anchor increases mean).
+      // We want to DECREASE anchor to decrease mean.
+      // Sort by impactOnMin descending.
+      const contributors = anchorSensitivity
+        .filter(s => s.impactOnMin > 0.001)
+        .sort((a, b) => b.impactOnMin - a.impactOnMin);
 
-          if (contributors.length > 0) {
-              const best = contributors[0];
-              // delta * sensitivity = reduction => delta = reduction / sensitivity
-              // We need to lower the anchor.
-              const delta = targetReduction / best.impactOnMin;
-              const currentVal = anchors.get(best.anchorIndex)!;
-              const suggested = Math.max(L, currentVal - delta);
-              minimalAdjustments.push({
-                  memberId: best.memberId!,
-                  suggestedValue: suggested
-              });
-              best.suggestedAdjustment = suggested - currentVal;
-          }
-      } else if (maxPossibleMean < muMin) {
-          // Need to increase mean.
-          const targetIncrease = muMin - maxPossibleMean;
-          const contributors = anchorSensitivity
-            .filter(s => s.impactOnMax > 0.001)
-            .sort((a, b) => b.impactOnMax - a.impactOnMax);
-
-           if (contributors.length > 0) {
-              const best = contributors[0];
-              const delta = targetIncrease / best.impactOnMax;
-              const currentVal = anchors.get(best.anchorIndex)!;
-              const suggested = Math.min(H, currentVal + delta);
-              minimalAdjustments.push({
-                  memberId: best.memberId!,
-                  suggestedValue: suggested
-              });
-              best.suggestedAdjustment = suggested - currentVal;
-          }
+      if (contributors.length > 0) {
+        const best = contributors[0];
+        // delta * sensitivity = reduction => delta = reduction / sensitivity
+        // We need to lower the anchor.
+        const delta = targetReduction / best.impactOnMin;
+        const currentVal = anchors.get(best.anchorIndex)!;
+        const suggested = Math.max(L, currentVal - delta);
+        minimalAdjustments.push({
+          memberId: best.memberId!,
+          suggestedValue: suggested
+        });
+        best.suggestedAdjustment = suggested - currentVal;
       }
+    } else if (maxPossibleMean < muMin) {
+      // Need to increase mean.
+      const targetIncrease = muMin - maxPossibleMean;
+      const contributors = anchorSensitivity
+        .filter(s => s.impactOnMax > 0.001)
+        .sort((a, b) => b.impactOnMax - a.impactOnMax);
 
-      return {
-          mtaVector: initialValues,
-          finalRSCA: 0,
-          isFeasible: false,
-          deltas: new Array(n).fill(0),
-          explanation: `Infeasible: Achievable RSCA range [${minPossibleMean.toFixed(3)}, ${maxPossibleMean.toFixed(3)}] does not overlap with target band [${muMin}, ${muMax}]`,
-          diagnostics: { meanMin: minPossibleMean, meanMax: maxPossibleMean, iterations: 0 },
-          infeasibilityReport: {
-              meanMin: minPossibleMean,
-              meanMax: maxPossibleMean,
-              targetBand: [muMin, muMax],
-              anchorSensitivity,
-              minimalAdjustments
-          },
-          reasonCodes: [RedistributionReasonCode.ANCHOR_CONSTRAINT], // Definitely constrained by anchors if infeasible
-          changedMembers: [] // Empty as we don't have a valid redistribution
-      };
+      if (contributors.length > 0) {
+        const best = contributors[0];
+        const delta = targetIncrease / best.impactOnMax;
+        const currentVal = anchors.get(best.anchorIndex)!;
+        const suggested = Math.min(H, currentVal + delta);
+        minimalAdjustments.push({
+          memberId: best.memberId!,
+          suggestedValue: suggested
+        });
+        best.suggestedAdjustment = suggested - currentVal;
+      }
+    }
+
+    return {
+      mtaVector: initialValues,
+      finalRSCA: 0,
+      isFeasible: false,
+      deltas: new Array(n).fill(0),
+      explanation: `Infeasible: Achievable RSCA range [${minPossibleMean.toFixed(3)}, ${maxPossibleMean.toFixed(3)}] does not overlap with target band [${muMin}, ${muMax}]`,
+      diagnostics: { meanMin: minPossibleMean, meanMax: maxPossibleMean, iterations: 0 },
+      infeasibilityReport: {
+        meanMin: minPossibleMean,
+        meanMax: maxPossibleMean,
+        targetBand: [muMin, muMax],
+        anchorSensitivity,
+        minimalAdjustments
+      },
+      reasonCodes: [RedistributionReasonCode.ANCHOR_CONSTRAINT], // Definitely constrained by anchors if infeasible
+      changedMembers: [] // Empty as we don't have a valid redistribution
+    };
   }
 
   // Iterative Mean-Shift
   // Use midpoint of effective band as target if no specific target provided
   const targetMean = targetRSCA !== undefined
-      ? Math.max(effectiveMin, Math.min(effectiveMax, targetRSCA))
-      : (effectiveMin + effectiveMax) / 2;
+    ? Math.max(effectiveMin, Math.min(effectiveMax, targetRSCA))
+    : (effectiveMin + effectiveMax) / 2;
 
   let currentInputs = [...initialValues];
   // Ensure initial inputs are within L, H (though baseline might be out, we clamp)
@@ -447,10 +449,10 @@ export function redistributeMTA(
 
     // Only shift non-anchors
     for (let i = 0; i < n; i++) {
-        if (!anchors.has(i)) {
-            currentInputs[i] += shiftAmount;
-            currentInputs[i] = Math.max(L, Math.min(H, currentInputs[i]));
-        }
+      if (!anchors.has(i)) {
+        currentInputs[i] += shiftAmount;
+        currentInputs[i] = Math.max(L, Math.min(H, currentInputs[i]));
+      }
     }
 
     iterations++;
@@ -460,15 +462,15 @@ export function redistributeMTA(
   const deltas = resultVector.map((v, i) => v - members[i].mta);
   const changedMembers: ChangedMember[] = [];
   resultVector.forEach((v, i) => {
-      const original = members[i].mta;
-      if (Math.abs(v - original) > 1e-9) {
-          changedMembers.push({
-              id: members[i].id,
-              oldMta: original,
-              newMta: v,
-              delta: v - original
-          });
-      }
+    const original = members[i].mta;
+    if (Math.abs(v - original) > 1e-9) {
+      changedMembers.push({
+        id: members[i].id,
+        oldMta: original,
+        newMta: v,
+        delta: v - original
+      });
+    }
   });
 
   // Determine Reason Codes
@@ -477,12 +479,12 @@ export function redistributeMTA(
   // 1. BOUNDS_CLAMPED
   // If any result value is L or H (within epsilon)
   if (resultVector.some(v => Math.abs(v - L) < 1e-5 || Math.abs(v - H) < 1e-5)) {
-      reasonCodes.add(RedistributionReasonCode.BOUNDS_CLAMPED);
+    reasonCodes.add(RedistributionReasonCode.BOUNDS_CLAMPED);
   }
 
   // 2. ANCHOR_CONSTRAINT
   if (anchors.size > 0) {
-      reasonCodes.add(RedistributionReasonCode.ANCHOR_CONSTRAINT);
+    reasonCodes.add(RedistributionReasonCode.ANCHOR_CONSTRAINT);
   }
 
   // 3. RSCA_BAND_ENFORCED
@@ -498,13 +500,13 @@ export function redistributeMTA(
 
 
   return {
-      mtaVector: resultVector,
-      finalRSCA: finalMean,
-      isFeasible: true,
-      deltas,
-      explanation: `Feasible solution found in ${iterations} iterations. RSCA: ${finalMean.toFixed(3)}`,
-      diagnostics: { meanMin: minPossibleMean, meanMax: maxPossibleMean, iterations },
-      changedMembers,
-      reasonCodes: Array.from(reasonCodes)
+    mtaVector: resultVector,
+    finalRSCA: finalMean,
+    isFeasible: true,
+    deltas,
+    explanation: `Feasible solution found in ${iterations} iterations. RSCA: ${finalMean.toFixed(3)}`,
+    diagnostics: { meanMin: minPossibleMean, meanMax: maxPossibleMean, iterations },
+    changedMembers,
+    reasonCodes: Array.from(reasonCodes)
   };
 }

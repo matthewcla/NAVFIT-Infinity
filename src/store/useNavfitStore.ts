@@ -3,7 +3,7 @@ import type { Tab } from '../components/layout/Sidebar';
 import type { RosterMember, ReportingSeniorConfig } from '@/types/roster';
 import { INITIAL_ROSTER, INITIAL_RS_CONFIG } from '../data/initialRoster';
 
-import { type Member } from '@/features/strategy/logic/autoPlan';
+// import { type Member } from '@/features/strategy/logic/autoPlan';
 import { useRedistributionStore } from './useRedistributionStore';
 import { DEFAULT_CONSTRAINTS } from '@/domain/rsca/constants';
 import type { Member as DomainMember } from '@/domain/rsca/types';
@@ -173,11 +173,11 @@ export const useNavfitStore = create<NavfitStore>((set) => ({
         const state = useNavfitStore.getState(); // Get fresh state
         const group = state.summaryGroups.find(g => g.id === groupId);
         if (group) {
-             const anchors: Record<string, number> = {};
-             group.reports.forEach(r => {
-                 if (r.isLocked) anchors[r.id] = r.traitAverage;
-             });
-             useRedistributionStore.getState().setAnchors(groupId, anchors);
+            const anchors: Record<string, number> = {};
+            group.reports.forEach(r => {
+                if (r.isLocked) anchors[r.id] = r.traitAverage;
+            });
+            useRedistributionStore.getState().setAnchors(groupId, anchors);
         }
     },
     reorderMember: (memberId, newIndex) => set((state) => {
@@ -255,7 +255,7 @@ export const useNavfitStore = create<NavfitStore>((set) => ({
             id: r.id,
             rank: i + 1,
             mta: r.traitAverage, // Send current MTA as baseline
-            isAnchor: r.isLocked,
+            isAnchor: !!r.isLocked,
             anchorValue: r.traitAverage,
             name: `${r.firstName} ${r.lastName}`
         }));
@@ -295,15 +295,15 @@ export const useNavfitStore = create<NavfitStore>((set) => ({
         const state = useNavfitStore.getState();
         const group = state.summaryGroups.find(g => g.id === groupId);
         if (group) {
-             const domainMembers: DomainMember[] = group.reports.map((r, i) => ({
-                 id: r.id,
-                 rank: i + 1,
-                 mta: r.traitAverage,
-                 isAnchor: r.isLocked,
-                 anchorValue: r.traitAverage,
-                 name: `${r.firstName} ${r.lastName}`
-             }));
-             useRedistributionStore.getState().requestRedistribution(groupId, domainMembers, DEFAULT_CONSTRAINTS, state.rsConfig.targetRsca);
+            const domainMembers: DomainMember[] = group.reports.map((r, i) => ({
+                id: r.id,
+                rank: i + 1,
+                mta: r.traitAverage,
+                isAnchor: !!r.isLocked,
+                anchorValue: r.traitAverage,
+                name: `${r.firstName} ${r.lastName}`
+            }));
+            useRedistributionStore.getState().requestRedistribution(groupId, domainMembers, DEFAULT_CONSTRAINTS, state.rsConfig.targetRsca);
         }
     },
 

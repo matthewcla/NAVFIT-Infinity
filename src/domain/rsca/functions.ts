@@ -1,4 +1,4 @@
-import { Member, Constraints } from './types';
+import type { Member, Constraints } from './types';
 
 /**
  * Computes the Reporting Senior Cumulative Average (RSCA) for a group of members.
