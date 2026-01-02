@@ -9,8 +9,7 @@ import { useNavfitStore } from '@/store/useNavfitStore';
 import { useSummaryGroups } from '@/features/strategy/hooks/useSummaryGroups';
 import { Filter, ArrowUpDown } from 'lucide-react';
 import { AddSummaryGroupModal } from '@/features/dashboard/components/AddSummaryGroupModal';
-import { TrashDropZone } from '@/features/dashboard/components/TrashDropZone';
-import { ConfirmationModal } from '@/features/dashboard/components/ConfirmationModal';
+
 
 export function CommandStrategyCenter() {
     const {
@@ -23,35 +22,14 @@ export function CommandStrategyCenter() {
         cycleListPhase,
         setCycleListPhase,
         addSummaryGroup,
-        deleteSummaryGroup,
-        deleteReport,
+
         draggingItemType,
         isRankMode
     } = useNavfitStore();
 
     const [isModalOpen, setIsModalOpen] = useState(false);
 
-    // Deletion Modal State
-    const [deletionModalState, setDeletionModalState] = useState<{
-        isOpen: boolean;
-        type: 'GROUP' | 'REPORT';
-        id: string; // Group ID for groups
-        reportId?: string; // Only for reports
-        groupId?: string; // Only for reports
-        title: string;
-        description: string;
-    } | null>(null);
 
-    const handleConfirmDelete = () => {
-        if (!deletionModalState) return;
-
-        if (deletionModalState.type === 'GROUP') {
-            deleteSummaryGroup(deletionModalState.id);
-        } else if (deletionModalState.type === 'REPORT' && deletionModalState.groupId && deletionModalState.reportId) {
-            deleteReport(deletionModalState.groupId, deletionModalState.reportId);
-        }
-        setDeletionModalState(null);
-    };
 
     const summaryGroups = useSummaryGroups();
 
@@ -256,38 +234,7 @@ export function CommandStrategyCenter() {
                     )}
 
                     {/* Trash Zone for Reports - KEPT as per original logic but strictly for member reports now */}
-                    {!isRankMode && (draggingItemType === 'member_report') && (
-                        <TrashDropZone
-                            acceptTypes={['member_report']}
-                            onDrop={(data) => {
-                                if (data && data.type === 'member_report') {
-                                    setDeletionModalState({
-                                        isOpen: true,
-                                        type: 'REPORT',
-                                        id: data.reportId,
-                                        groupId: data.groupId,
-                                        reportId: data.reportId,
-                                        title: 'Remove Member?',
-                                        description: 'Are you sure you want to remove this member report from the group?'
-                                    });
-                                }
-                            }}
-                            className="absolute bottom-6 left-1/2 -translate-x-1/2 z-40 w-12 h-12 bg-white/80 backdrop-blur shadow-lg border-2 border-slate-200 rounded-full hover:scale-110 hover:border-red-400 hover:bg-red-50 transition-all flex items-center justify-center"
-                        />
-                    )}
 
-                    {/* Confirmation Modal for Reports */}
-                    {deletionModalState && (
-                        <ConfirmationModal
-                            isOpen={deletionModalState.isOpen}
-                            onClose={() => setDeletionModalState(null)}
-                            onConfirm={handleConfirmDelete}
-                            title={deletionModalState.title}
-                            description={deletionModalState.description}
-                            confirmText="Delete"
-                            variant="danger"
-                        />
-                    )}
                 </div>
 
             </div>
