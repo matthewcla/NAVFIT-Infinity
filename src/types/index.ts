@@ -84,6 +84,7 @@ export interface Report {
 
     // Projected Data
     reportsRemaining?: number; // Calculated field: (PRD - PeriodEndDate) / 12 months (approx)
+    isLocked?: boolean; // If true, auto-plan logic will not override traitAverage
 }
 
 export interface SummaryGroup {

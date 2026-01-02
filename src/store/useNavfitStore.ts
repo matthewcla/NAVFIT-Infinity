@@ -26,7 +26,10 @@ interface NavfitStore {
     // Data State
     roster: RosterMember[];
     setRoster: (roster: RosterMember[]) => void;
-    reorderMember: (memberId: string, newIndex: number) => void;
+    reorderMember: (memberId: string, newIndex: number) => void; // Legacy roster reorder? Or keep for completeness
+
+    // Summary Group / Ranking Mode Actions
+    reorderMembers: (groupId: string, newOrder: string[]) => void;
 
     summaryGroups: SummaryGroup[];
     setSummaryGroups: (groups: SummaryGroup[]) => void;
@@ -37,6 +40,7 @@ interface NavfitStore {
 
     deleteSummaryGroup: (groupId: string) => void;
     deleteReport: (groupId: string, reportId: string) => void;
+    toggleReportLock: (groupId: string, reportId: string) => void;
 
     rsConfig: ReportingSeniorConfig;
     setRsConfig: (config: ReportingSeniorConfig) => void;
@@ -145,51 +149,110 @@ export const useNavfitStore = create<NavfitStore>((set) => ({
             };
         })
     })),
+    toggleReportLock: (groupId, reportId) => set((state) => ({
+        summaryGroups: state.summaryGroups.map((group) => {
+            if (group.id !== groupId) return group;
+            return {
+                ...group,
+                reports: group.reports.map((report) => {
+                    if (report.id !== reportId) return report;
+                    return {
+                        ...report,
+                        isLocked: !report.isLocked
+                    };
+                })
+            };
+        })
+    })),
     reorderMember: (memberId, newIndex) => set((state) => {
+        // Legacy Roster Reorder (Keep for Member Detail View if needed, but primary is now Group-based)
         const currentRoster = [...state.roster];
         const oldIndex = currentRoster.findIndex(m => m.id === memberId);
-
         if (oldIndex === -1) return {};
-
-        // 1. Move the member
         const [movedMember] = currentRoster.splice(oldIndex, 1);
         currentRoster.splice(newIndex, 0, movedMember);
+        return { roster: currentRoster };
+    }),
 
-        // 2. Update rankOrder based on new array position (1-based)
-        const updatedRoster = currentRoster.map((member, index) => ({
-            ...member,
-            rankOrder: index + 1
-        }));
+    reorderMembers: (groupId, newOrder) => set((state) => {
+        const groupIndex = state.summaryGroups.findIndex(g => g.id === groupId);
+        if (groupIndex === -1) return {};
 
-        // 3. Prepare Auto-Plan Input
-        // Map RosterMember to the Auto-Plan Member interface
-        // We ensure we have default values for any missing optional fields
-        const autoPlanInput: Member[] = updatedRoster.map(m => ({
-            id: m.id,
-            rankOrder: m.rankOrder || 99,
-            reportsRemaining: m.reportsRemaining || 1,
-            status: m.status || 'Promotable',
-            proposedTraitAverage: 0 // Reset for calculation
-        }));
+        const group = state.summaryGroups[groupIndex];
+        const currentReports = [...group.reports];
 
-        // 4. Calculate Grades
-        // Use RSCA from config or default to 4.20 if missing
-        const rscaTarget = state.rsConfig.targetRsca || 4.20;
-        // Note: We might want strategy config from state later
+        // 1. Reorder Reports based on newOrder (array of report IDs)
+        // Create a map for O(1) lookup
+        const reportMap = new Map(currentReports.map(r => [r.id, r]));
 
-        const calculatedResults = calculateOutcomeBasedGrades(autoPlanInput, rscaTarget);
+        const reorderedReports = newOrder.map(id => reportMap.get(id)).filter((r): r is import('@/types').Report => !!r);
 
-        // 5. Update Projections
-        const newProjections = { ...state.projections };
-        calculatedResults.forEach(res => {
-            if (res.proposedTraitAverage) {
-                // Update projection using memberId as key (supported by reportGenerator now)
-                newProjections[res.id] = res.proposedTraitAverage;
+        // Append any reports not in newOrder (safety fallback)
+        currentReports.forEach(r => {
+            if (!newOrder.includes(r.id)) {
+                reorderedReports.push(r);
             }
         });
 
+        // 2. Prepare Auto-Plan Input
+        // Map Reports to Auto-Plan Member interface
+        // Note: 'status' needs to come from Member Roster or be inferred. 
+        // For now, we'll infer 'Promotable' unless we can look up the Member status, 
+        // OR we just use a default since we don't have easy access to the full Roster map here without expensive lookup.
+        // Actually, we can just say everyone is 'Promotable' for simple ranking unless we have that data on the Report.
+        // The Report has `reportsRemaining`. `status` is not explicitly on Report, but `isAdverse` is?
+        // Let's assume 'Promotable' for standard calculations for now.
+
+        const autoPlanInput: Member[] = reorderedReports.map((r, index) => ({
+            id: r.id, // Using Report ID as Member ID for the calculator context to map back easily
+            rankOrder: index + 1,
+            reportsRemaining: r.reportsRemaining || 1, // Default to 1 if missing
+            status: r.isAdverse ? 'Adverse' : 'Promotable', // Basic inference
+            proposedTraitAverage: r.traitAverage, // Current value
+            isLocked: r.isLocked
+        }));
+
+        // 3. Calculate Grades
+        const rscaTarget = state.rsConfig.targetRsca || 4.20;
+        const calculatedResults = calculateOutcomeBasedGrades(autoPlanInput, rscaTarget);
+
+        // 4. Update Reports with Results & Promo Recs
+        const updatedReports = reorderedReports.map((report, index) => {
+            const result = calculatedResults.find(res => res.id === report.id);
+
+            // EP Logic: Rank #1 is EP, others MP (User specified heuristic)
+            // Unless manually locked? The plan said "Rank #1 as 'EP' and all others as 'MP'... You can manually adjust this afterwards."
+            // So we overwrite.
+            let newPromo: 'EP' | 'MP' | 'P' | 'Prog' | 'SP' | 'NOB' = index === 0 ? 'EP' : 'MP';
+            if (report.isAdverse) newPromo = 'SP'; // Preserve adverse flag impact if any
+
+            // Check lock for Promo Rec? Plan didn't explicitly say to lock Rec, only Grade.
+            // "Members with isLocked: true will have their traitAverage preserved... they will effectively be skipped by the math engine"
+            // Assuming lock applies to Traits mostly. I'll default overwrite Recs for now as requested.
+
+            return {
+                ...report,
+                traitAverage: result?.proposedTraitAverage ?? report.traitAverage,
+                promotionRecommendation: newPromo,
+                // Also ensure summaryGroupAvg is updated? We assume the group average changes? 
+                // We don't calculate group avg here, usually typically calculated on read.
+            };
+        });
+
+        // 5. Update State
+        const newSummaryGroups = [...state.summaryGroups];
+        newSummaryGroups[groupIndex] = {
+            ...group,
+            reports: updatedReports
+        };
+
+        const newProjections = { ...state.projections };
+        updatedReports.forEach(r => {
+            newProjections[r.id] = r.traitAverage; // Map Report ID to Projection
+        });
+
         return {
-            roster: updatedRoster,
+            summaryGroups: newSummaryGroups,
             projections: newProjections
         };
     }),

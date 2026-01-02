@@ -24,12 +24,13 @@ export interface Member {
     reportsRemaining: number;
     status: 'Transferring' | 'Retiring' | 'Promotable' | string;
     proposedTraitAverage?: number;
+    isLocked?: boolean;
 }
 
 /**
  * Calculates Outcome-Based Grades for a roster of members.
  *
- * @param roster - Array of members to calculate grades for.
+ * @param roster - Array of members to calculate grades for. The array is assumed to be ORDERED by rank.
  * @param rscaTarget - The Reporting Senior Cumulative Average target.
  * @param config - Configuration for the strategy (defaults to DEFAULT_STRATEGY_CONFIG).
  * @returns Array of members with updated proposedTraitAverage.
@@ -39,15 +40,12 @@ export function calculateOutcomeBasedGrades(
     rscaTarget: number,
     config: StrategyConfig = DEFAULT_STRATEGY_CONFIG
 ): Member[] {
-    // 1. Sort members by their rankOrder.
-    const sortedRoster = [...roster].sort((a, b) => a.rankOrder - b.rankOrder);
+    // 1. Trust the input order (Visual Rank Order).
+    const outcomeRoster = roster.map(member => ({ ...member })); // Shallow copy to avoid mutation
 
-    if (sortedRoster.length === 0) {
+    if (outcomeRoster.length === 0) {
         return [];
     }
-
-    // Initialize outcome roster
-    const outcomeRoster = sortedRoster.map(member => ({ ...member, proposedTraitAverage: 0 }));
 
     // 2. Determine Ceiling (#1 Ranked)
     const numberOne = outcomeRoster[0];
@@ -67,7 +65,7 @@ export function calculateOutcomeBasedGrades(
 
     // 3. Determine Floor (Ballast)
     // Identify the lowest ranked "Promotable" member (not Adverse).
-    // Note: User prompt said "Promotable" member. We'll search from bottom up.
+    // We'll search from bottom up.
     let floorIndex = -1;
     let floorMember: Member | null = null;
 
@@ -111,6 +109,12 @@ export function calculateOutcomeBasedGrades(
 
     for (let i = 0; i < outcomeRoster.length; i++) {
         const member = outcomeRoster[i];
+
+        // Skip calculation if locked
+        if (member.isLocked && member.proposedTraitAverage !== undefined) {
+            continue;
+        }
+
         let calculatedGrade = 0;
 
         // Base Calculation
