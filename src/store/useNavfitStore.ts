@@ -5,6 +5,7 @@ import { INITIAL_ROSTER, INITIAL_RS_CONFIG } from '../data/initialRoster';
 
 // import { type Member } from '@/features/strategy/logic/autoPlan';
 import { useRedistributionStore } from './useRedistributionStore';
+import { useAuditStore } from './useAuditStore';
 import { DEFAULT_CONSTRAINTS } from '@/domain/rsca/constants';
 import type { Member as DomainMember } from '@/domain/rsca/types';
 
@@ -173,6 +174,14 @@ export const useNavfitStore = create<NavfitStore>((set) => ({
         const state = useNavfitStore.getState(); // Get fresh state
         const group = state.summaryGroups.find(g => g.id === groupId);
         if (group) {
+            const report = group.reports.find(r => r.id === reportId);
+            // Log the NEW state (which is in `report` because we got fresh state)
+            useAuditStore.getState().addLog('ANCHOR_SELECTION_CHANGE', {
+                groupId,
+                memberId: reportId,
+                isLocked: report?.isLocked
+            });
+
             const anchors: Record<string, number> = {};
             group.reports.forEach(r => {
                 if (r.isLocked) anchors[r.id] = r.traitAverage;
@@ -260,6 +269,12 @@ export const useNavfitStore = create<NavfitStore>((set) => ({
             name: `${r.firstName} ${r.lastName}`
         }));
 
+        useAuditStore.getState().addLog('RANK_ORDER_CHANGE', {
+            groupId,
+            draggedId,
+            targetIdOrOrder
+        });
+
         // Do NOT call setRankOrder to avoid cycle (setRankOrder calls reorderMembers)
         // Call requestRedistribution directly
         useRedistributionStore.getState().requestRedistribution(groupId, domainMembers, DEFAULT_CONSTRAINTS, state.rsConfig.targetRsca);
@@ -295,6 +310,12 @@ export const useNavfitStore = create<NavfitStore>((set) => ({
         const state = useNavfitStore.getState();
         const group = state.summaryGroups.find(g => g.id === groupId);
         if (group) {
+            useAuditStore.getState().addLog('ANCHOR_MTA_EDIT', {
+                groupId,
+                memberId: reportId,
+                value
+            });
+
             const domainMembers: DomainMember[] = group.reports.map((r, i) => ({
                 id: r.id,
                 rank: i + 1,
