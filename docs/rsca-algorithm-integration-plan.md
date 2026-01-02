@@ -17,10 +17,11 @@
 A classification attribute inherent to the individual Service member. It defines who determines the Reporting Senior's Cumulative Average (RSCA).
 *   **Role**: Acts as the "Pool" or "Filter" for RSCA tracking.
 *   **Officer Definition**: Defined by **Competitive Designator Category** (Block 3).
-    *   *Example*: "O-3 11XX" (Includes Regular, Frocked, Selected).
+    *   *Example*: "O-3 11XX".
 *   **Enlisted Definition**: Defined by **Paygrade** AND **Duty Status** (Block 5).
     *   *Example*: "E-6 ACT/TAR" is one group; "E-6 INACT" is a separate group.
     *   *Note*: Enlisted members in the same paygrade compete together regardless of rating.
+*   **Handling**: 
 
 ### 2. Summary Group (The Calculation Bucket)
 The specific collection of reports processed together for a specific event (e.g., Periodic Cycle). It is a subset of a Competitive Group.
@@ -55,13 +56,14 @@ The specific collection of reports processed together for a specific event (e.g.
 *   **Location**: `src/features/strategy/logic/optimizationEngine.ts`
 *   **Scope**: The engine is no longer just a "Distribution Solver" for a single group. It is a **Time-Series Projection Engine**.
 *   **Inputs**:
+    *   Last Summary Group (Trait Avgs for each member in current Summary Group).
     *   Current Summary Group (Members, Trait Avgs).
     *   Reporting Senior's Historical RSCA (for this Competitive Group).
     *   Projected Future Events (Member Rotations/Gains).
 *   **Logic**:
     *   **Step 1**: Calculate outcomes for the current Summary Group.
     *   **Step 2**: Update the cumulative RSCA.
-    *   **Step 3**: Project this new RSCA forward to all future reports the Senior is expected to write.
+    *   **Step 3**: Project this new RSCA forward to all future reports the Senior is expected to write assuming a 0.05 to 0.10 MTA progression per report.
     *   **Step 4**: Apply "Rotation Logic":
         *   *Departures*: Remaining members linearly improve ranking.
         *   *Gains*: New members assume lower ranks (bottom of pile).
@@ -70,7 +72,6 @@ The specific collection of reports processed together for a specific event (e.g.
 *   **Location**: `src/features/strategy/logic/validation.ts`
 *   **Enhancement**:
     *   **Strict**: Quota limits (EP <= 20%).
-    *   **Soft**: RSCA "Gap" warnings (if RSCA is significantly over/under-assigned).
     *   **Cross-Check**: Ensure officers of different designators are strictly separated.
 
 ## Incremental PR Plan
