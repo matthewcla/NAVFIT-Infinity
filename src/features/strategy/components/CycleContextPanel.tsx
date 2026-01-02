@@ -20,7 +20,7 @@ interface CycleContextPanelProps {
 }
 
 export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelProps) {
-    const { rsConfig, roster, projections } = useNavfitStore();
+    const { rsConfig, roster, projections, setDraggingItemType, isRankMode, setRankMode } = useNavfitStore();
     const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null);
 
     // Derived Stats using the "Dashboard" logic for advanced metrics
@@ -187,10 +187,11 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
 
                                 {/* Rank Button */}
                                 <button
-                                    className="flex items-center justify-center gap-2 px-3 py-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 rounded-lg transition-colors text-xs font-medium"
+                                    onClick={() => setRankMode(!isRankMode)}
+                                    className={`flex items-center justify-center gap-2 px-3 py-2 border rounded-lg transition-colors text-xs font-medium ${isRankMode ? 'bg-indigo-50 text-indigo-700 border-indigo-200' : 'bg-white hover:bg-slate-50 text-slate-700 border-slate-200'}`}
                                     title="Rank Members"
                                 >
-                                    <ListOrdered className="w-3.5 h-3.5 text-slate-500" />
+                                    <ListOrdered className={`w-3.5 h-3.5 ${isRankMode ? 'text-indigo-600' : 'text-slate-500'}`} />
                                     <span>Rank</span>
                                 </button>
 
@@ -236,6 +237,16 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
                             {rankedMembers.map((member, idx) => (
                                 <tr
                                     key={member.id}
+                                    draggable={!isRankMode}
+                                    onDragStart={(e) => {
+                                        setDraggingItemType('member_report');
+                                        e.dataTransfer.setData('member_report', JSON.stringify({
+                                            type: 'member_report',
+                                            groupId: group.id,
+                                            reportId: member.reportId
+                                        }));
+                                    }}
+                                    onDragEnd={() => setDraggingItemType(null)}
                                     onClick={() => setSelectedMemberId(selectedMemberId === member.id ? null : member.id)}
                                     className={`cursor-pointer transition-colors hover:bg-slate-50 ${selectedMemberId === member.id ? 'bg-indigo-50/50' : ''}`}
                                 >

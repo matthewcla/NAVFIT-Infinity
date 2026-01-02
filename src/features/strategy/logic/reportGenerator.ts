@@ -20,8 +20,10 @@ const getCompetitiveGroup = (member: RosterMember): CompGroupKey => {
     const { rank, designator, promotionStatus = 'REGULAR' } = member;
 
     // Normalize Category for Label
-    let category = 'OFF';
-    if (rank.startsWith('O') || rank.startsWith('W')) {
+    let category = '';
+    const isOfficer = rank.startsWith('O') || rank.startsWith('W');
+
+    if (isOfficer) {
         if (designator) {
             if (['1110', '1120', '1310', '1320', '1300'].includes(designator)) category = 'URL';
             else if (['1200', '1800', '1810', '1820', '1830'].includes(designator)) category = 'RL';
@@ -30,10 +32,19 @@ const getCompetitiveGroup = (member: RosterMember): CompGroupKey => {
             else category = 'STAFF';
         }
     } else {
-        category = ''; // Was 'ENL', now empty as requested
+        // Enlisted: No designator suffix in label
+        category = '';
     }
 
-    const label = `${rank} ${category} ${promotionStatus !== 'REGULAR' ? promotionStatus : ''}`.trim();
+    // Label Construction
+    // Officers: "O-3 URL" or "O-3 STAFF"
+    // Enlisted: "E-6" (No designator)
+    const labelBase = isOfficer && category ? `${rank} ${category}` : rank;
+    const label = `${labelBase} ${promotionStatus !== 'REGULAR' ? promotionStatus : ''}`.trim();
+
+    // Key Construction (used for grouping)
+    // We update this to match the label logic so grouping works as expected visually
+    const groupKeyLabel = labelBase;
 
     return {
         paygrade: rank,
@@ -116,7 +127,9 @@ export const generateSummaryGroups = (
                 reports: [],
                 paygrade: key.paygrade,
                 designator: key.designator,
-                competitiveGroupKey: `${key.paygrade} ${key.designator}`,
+                // Update key to use the constructed label base (e.g. "O-3 URL") instead of raw designator
+                // This ensures "O-3 1110" and "O-3 1310" group together under "O-3 URL"
+                competitiveGroupKey: key.paygrade + (['O', 'W'].some(p => key.paygrade.startsWith(p)) && key.designator ? ` ${key.label.split(' ')[1] || 'STAFF'}` : ''),
                 promotionStatus: key.promotionStatus
             });
         }
