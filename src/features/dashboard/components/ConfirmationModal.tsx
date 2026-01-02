@@ -1,4 +1,5 @@
 import { X, AlertTriangle } from 'lucide-react';
+import { createPortal } from 'react-dom';
 
 interface ConfirmationModalProps {
     isOpen: boolean;
@@ -23,8 +24,8 @@ export function ConfirmationModal({
 }: ConfirmationModalProps) {
     if (!isOpen) return null;
 
-    return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+    return createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in duration-200">
             <div className="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden flex flex-col animate-in zoom-in-95 duration-200">
                 {/* Header */}
                 <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-white sticky top-0">
@@ -63,14 +64,15 @@ export function ConfirmationModal({
                             onClose();
                         }}
                         className={`px-4 py-2 text-sm font-bold text-white rounded-lg shadow-sm transition-all focus:outline-none focus:ring-2 focus:ring-offset-2 ${variant === 'danger'
-                                ? 'bg-red-600 hover:bg-red-700 focus:ring-red-500'
-                                : 'bg-indigo-600 hover:bg-indigo-700 focus:ring-indigo-500'
+                            ? 'bg-red-600 hover:bg-red-700 focus:ring-red-500'
+                            : 'bg-indigo-600 hover:bg-indigo-700 focus:ring-indigo-500'
                             }`}
                     >
                         {confirmText}
                     </button>
                 </div>
             </div>
-        </div>
+        </div>,
+        document.body
     );
 }

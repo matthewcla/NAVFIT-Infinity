@@ -7,7 +7,7 @@ import { ActiveCyclesList } from './ActiveCyclesList';
 
 import { useNavfitStore } from '@/store/useNavfitStore';
 import { useSummaryGroups } from '@/features/strategy/hooks/useSummaryGroups';
-import { Filter, ArrowUpDown, Plus } from 'lucide-react';
+import { Filter, ArrowUpDown } from 'lucide-react';
 import { AddSummaryGroupModal } from '@/features/dashboard/components/AddSummaryGroupModal';
 import { TrashDropZone } from '@/features/dashboard/components/TrashDropZone';
 import { ConfirmationModal } from '@/features/dashboard/components/ConfirmationModal';
@@ -215,28 +215,14 @@ export function CommandStrategyCenter() {
                         </div>
                     </div>
 
-                    {/* Scrollable Stream */}
-                    <div className="flex-1 overflow-y-auto custom-scrollbar bg-slate-50">
+                    {/* Scrollable Stream & FAB managed intrinsically */}
+                    <div className="flex-1 overflow-hidden">
                         <ActiveCyclesList
                             groups={Array.from(groupedCycles.values()).flat()}
                             onSelect={handleGroupSelect}
                             selectedGroupId={selectedCycleId}
+                            onAddClick={() => setIsModalOpen(true)}
                         />
-                    </div>
-
-                    {/* Floating Action Button */}
-                    <div className="absolute bottom-4 left-0 right-0 flex justify-end px-4 pointer-events-none sticky-button-container">
-                        <button
-                            onClick={() => setIsModalOpen(true)}
-                            className="group bg-indigo-600 text-white shadow-lg rounded-full h-12 w-12 hover:w-48 transition-all duration-300 ease-in-out overflow-hidden flex items-center pointer-events-auto"
-                        >
-                            <div className="flex-shrink-0 w-12 h-12 flex items-center justify-center">
-                                <Plus className="w-6 h-6" />
-                            </div>
-                            <span className="whitespace-nowrap font-bold pr-6 opacity-0 group-hover:opacity-100 transition-opacity duration-300 delay-75">
-                                Summary Group
-                            </span>
-                        </button>
                     </div>
 
                     <AddSummaryGroupModal
@@ -269,21 +255,12 @@ export function CommandStrategyCenter() {
                         </div>
                     )}
 
-                    {/* Trash Zone */}
-                    {!isRankMode && (draggingItemType === 'summary_group' || draggingItemType === 'member_report') && (
+                    {/* Trash Zone for Reports - KEPT as per original logic but strictly for member reports now */}
+                    {!isRankMode && (draggingItemType === 'member_report') && (
                         <TrashDropZone
-                            acceptTypes={['summary_group', 'member_report']}
+                            acceptTypes={['member_report']}
                             onDrop={(data) => {
-                                if (typeof data === 'string') {
-                                    // Assume Summary Group ID
-                                    setDeletionModalState({
-                                        isOpen: true,
-                                        type: 'GROUP',
-                                        id: data,
-                                        title: 'Delete Summary Group?',
-                                        description: 'Are you sure you want to delete this Summary Group? This action cannot be undone.'
-                                    });
-                                } else if (data && data.type === 'member_report') {
+                                if (data && data.type === 'member_report') {
                                     setDeletionModalState({
                                         isOpen: true,
                                         type: 'REPORT',
@@ -299,7 +276,7 @@ export function CommandStrategyCenter() {
                         />
                     )}
 
-                    {/* Confirmation Modal */}
+                    {/* Confirmation Modal for Reports */}
                     {deletionModalState && (
                         <ConfirmationModal
                             isOpen={deletionModalState.isOpen}
