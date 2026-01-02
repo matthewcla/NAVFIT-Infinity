@@ -124,7 +124,7 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
     const getPromotionStatusBadge = (s?: string) => {
         if (!s) return null;
         const normalized = s.toUpperCase();
-        const badgeBase = "flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-bold border shadow-sm leading-none tracking-wide";
+        const badgeBase = "flex items-center gap-1 px-2.5 py-1 rounded text-xs font-semibold border shadow-sm leading-none tracking-wide";
 
         switch (normalized) {
             case 'FROCKED': return <div className={`${badgeBase} bg-amber-100 text-amber-800 border-amber-200`}>FROCKED</div>;
@@ -157,13 +157,16 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
                                 <div className="flex items-center gap-2">
                                     <h2 className="text-2xl font-bold text-slate-900">{cleanTitle(group.name)}</h2>
                                     {getPromotionStatusBadge(group.promotionStatus)}
+                                    <StatusBadge
+                                        status={mainDraftStatus}
+                                        className="!px-2.5 !py-1 !text-xs !font-semibold !rounded !shadow-sm !leading-none !tracking-wide"
+                                    />
                                 </div>
                                 <div className="text-sm text-slate-500 font-medium">{formattedDate}</div>
                             </div>
 
                             {/* Status Badges (Moved to Top Right) */}
                             <div className="flex flex-col items-end gap-1.5">
-                                <StatusBadge status={mainDraftStatus} />
                                 {gap > 0 && (
                                     <div className="flex items-center gap-1.5 px-2.5 py-1 bg-amber-50 rounded text-xs font-semibold text-amber-700 border border-amber-200">
                                         {gap} Attention Needed

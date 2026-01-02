@@ -143,31 +143,31 @@ export function StrategyGroupCard({
                      User said: "Position the status badge beneath Impact metric". Use StatusBadge component likely.
                 */}
 
-                <div className="p-3 pl-4 flex-1">
-                    {/* Header Row: Title + Badge (Left) vs Impact + Status (Right) */}
-                    <div className="flex justify-between items-start gap-4 mb-2">
-                        <div className="flex flex-col gap-0.5">
-                            <div className="flex items-center gap-2">
-                                <h3 className={`text-sm font-bold transition-colors leading-snug ${isSelected ? 'text-indigo-900' : 'text-slate-800 group-hover:text-indigo-700'}`}>
-                                    {cleanTitle(title)}
-                                </h3>
-                                {getPromotionStatusBadge(promotionStatus)}
-                            </div>
-                            <div className="flex items-center gap-1.5 text-[11px] text-slate-500">
-                                <Calendar className="w-3 h-3 text-slate-400" />
-                                <span>{formattedDate}</span>
-                            </div>
+                <div className="p-3 pl-4 flex-1 relative min-h-[72px]">
+                    {/* Header Row: Title + Badge (Left) */}
+                    <div className="flex flex-col gap-0.5 pr-24">
+                        <div className="flex items-center gap-2">
+                            <h3 className={`text-sm font-bold transition-colors leading-snug ${isSelected ? 'text-indigo-900' : 'text-slate-800 group-hover:text-indigo-700'}`}>
+                                {cleanTitle(title)}
+                            </h3>
+                            {getPromotionStatusBadge(promotionStatus)}
+                            <StatusBadge
+                                status={workflowStatus || status}
+                                className="!text-[10px] !px-1.5 !py-0.5 !rounded-md !shadow-sm !leading-none !tracking-wide"
+                            />
                         </div>
+                        <div className="flex items-center gap-1.5 text-[11px] text-slate-500">
+                            <Calendar className="w-3 h-3 text-slate-400" />
+                            <span>{formattedDate}</span>
+                        </div>
+                    </div>
 
-                        <div className="flex flex-col items-end gap-1">
-                            <div className="flex items-baseline gap-1.5">
-                                <span className="text-[10px] font-medium text-slate-400 uppercase tracking-wider">Impact</span>
-                                <span className={`font-mono font-bold text-sm ${rscaImpact > 0 ? 'text-red-600' : 'text-emerald-600'}`}>
-                                    {rscaImpact > 0 ? '+' : ''}{rscaImpact.toFixed(2)}
-                                </span>
-                            </div>
-                            <StatusBadge status={workflowStatus || status} />
-                        </div>
+                    {/* Right Side: Impact (Top) */}
+                    <div className="absolute top-3 right-3 flex items-baseline gap-1.5">
+                        <span className="text-[10px] font-medium text-slate-400 uppercase tracking-wider">Impact</span>
+                        <span className={`font-mono font-bold text-sm ${rscaImpact > 0 ? 'text-red-600' : 'text-emerald-600'}`}>
+                            {rscaImpact > 0 ? '+' : ''}{rscaImpact.toFixed(2)}
+                        </span>
                     </div>
                 </div>
 

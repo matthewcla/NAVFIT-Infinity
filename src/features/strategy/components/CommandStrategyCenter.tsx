@@ -132,66 +132,11 @@ export function CommandStrategyCenter() {
                 {/* Left Panel: Active Cycles Stream */}
                 <div className="w-[420px] bg-slate-50 border-r border-slate-200 flex flex-col shrink-0 z-10 relative">
 
-                    {/* Panel Header */}
-                    <div className="px-6 py-4 border-b border-slate-200 bg-white/50 backdrop-blur-sm sticky top-0 z-10">
-                        <div className="flex items-center justify-start mb-4">
-                            {/* Phase Toggle */}
-                            <div className="flex items-center gap-1 bg-slate-200/50 p-0.5 rounded-lg border border-slate-200 shadow-sm">
-                                {(['Archive', 'Active', 'Projected'] as const).map((phase) => (
-                                    <button
-                                        key={phase}
-                                        onClick={() => setCycleListPhase(phase)}
-                                        className={`px-3 py-1 text-[10px] font-bold uppercase tracking-wider rounded-md transition-all ${cycleListPhase === phase
-                                            ? 'bg-white text-indigo-600 shadow-sm'
-                                            : 'text-slate-500 hover:text-slate-700'
-                                            }`}
-                                    >
-                                        {phase}
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
-
-                        {/* Controls */}
-                        <div className="flex flex-col gap-3">
-                            <div className="flex items-center gap-1 bg-slate-200/50 p-0.5 rounded-lg border border-slate-200 shadow-sm">
-                                {(['All', 'Officer', 'Enlisted'] as const).map(f => (
-                                    <button
-                                        key={f}
-                                        onClick={() => setCycleFilter(f as any)}
-                                        className={`flex-1 px-3 py-1 text-[10px] font-bold uppercase tracking-wider rounded-md transition-all ${cycleFilter === f
-                                            ? 'bg-white text-indigo-600 shadow-sm'
-                                            : 'text-slate-500 hover:text-slate-700'
-                                            }`}
-                                    >
-                                        {f}
-                                    </button>
-                                ))}
-                            </div>
-
-                            <div className="flex items-center justify-between text-xs text-slate-500 px-1">
-                                <div className="flex items-center gap-1.5">
-                                    <ArrowUpDown className="w-3 h-3" />
-                                    <span>Sort by</span>
-                                </div>
-                                <div className="flex gap-2">
-                                    <button
-                                        onClick={() => setCycleSort('DueDate')}
-                                        className={`hover:text-indigo-600 transition-colors ${cycleSort === 'DueDate' ? 'text-indigo-600 font-bold' : ''}`}
-                                    >
-                                        Due Date
-                                    </button>
-                                    <span>•</span>
-                                    <button
-                                        onClick={() => setCycleSort('Status')}
-                                        className={`hover:text-indigo-600 transition-colors ${cycleSort === 'Status' ? 'text-indigo-600 font-bold' : ''}`}
-                                    >
-                                        Status
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                    {/* Panel Header - Controls Removed */}
+                    {/* <div className="px-6 py-4 border-b border-slate-200 bg-white/50 backdrop-blur-sm sticky top-0 z-10"> ... </div> */}
+                    {/* Just keeping a small spacer or nothing if the list handles its own padding? 
+                        Let's remove the header entirely. 
+                    */}
 
                     {/* Scrollable Stream & FAB managed intrinsically */}
                     <div className="flex-1 overflow-hidden">
