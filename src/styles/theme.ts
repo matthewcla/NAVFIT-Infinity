@@ -13,9 +13,18 @@ export const THEME_COLORS = {
     info: '#3b82f6',    // blue-500
 
     // Grays
+    slate100: '#f1f5f9',
     slate200: '#e2e8f0',
+    slate300: '#cbd5e1',
     slate400: '#94a3b8',
     slate500: '#64748b',
+
+    // Colors
+    indigo500: '#6366f1',
+    purple500: '#a855f7',
+    red100: '#fee2e2',
+    red200: '#fecaca',
+    green100: '#dcfce7',
 
     // Special
     gold: '#FFD700',
