@@ -38,9 +38,44 @@ export interface AuditEvent {
   severity: 'info' | 'warning' | 'error';
 }
 
+export enum RedistributionReasonCode {
+  ANCHOR_CONSTRAINT = 'ANCHOR_CONSTRAINT',
+  RSCA_BAND_ENFORCED = 'RSCA_BAND_ENFORCED',
+  MONOTONICITY_ENFORCED = 'MONOTONICITY_ENFORCED',
+  BOUNDS_CLAMPED = 'BOUNDS_CLAMPED'
+}
+
+export interface ChangedMember {
+  id: string;
+  oldMta: number;
+  newMta: number;
+  delta: number;
+}
+
+export interface InfeasibilityReport {
+  meanMin: number;
+  meanMax: number;
+  targetBand: [number, number];
+  anchorSensitivity: {
+    anchorIndex: number; // Using index as ID might not be sufficient if not mapped back, but internal engine uses index.
+    memberId?: string; // Optional if we can map it back
+    impactOnMin: number;
+    impactOnMax: number;
+    suggestedAdjustment?: number;
+  }[];
+  minimalAdjustments: {
+    memberId: string;
+    suggestedValue: number;
+  }[];
+}
+
 export interface RedistributionResult {
   updatedMembers: Member[];
   rsca: number;
   isFeasible: boolean;
   auditTrail: AuditEvent[];
+  // New fields
+  changedMembers: ChangedMember[];
+  reasonCodes: RedistributionReasonCode[];
+  infeasibilityReport?: InfeasibilityReport;
 }
