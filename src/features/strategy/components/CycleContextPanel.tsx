@@ -1,18 +1,21 @@
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { useNavfitStore } from '@/store/useNavfitStore';
 import type { SummaryGroup, Member } from '@/types';
 import { RscaHeadsUpDisplay } from './RscaHeadsUpDisplay';
 import { generateSummaryGroups } from '@/features/strategy/logic/reportGenerator';
-import { calculateCumulativeRSCA } from '@/features/strategy/logic/rsca';
+import { calculateCumulativeRSCA, calculateEotRsca } from '@/features/strategy/logic/rsca';
 import {
     ArrowRight,
     Layout,
     BarChart,
-    ListOrdered
+    ListOrdered,
+    Calendar
 } from 'lucide-react';
 import { MemberDetailSidebar } from '@/features/dashboard/components/MemberDetailSidebar';
 import { StatusBadge } from './StatusBadge';
 import { PromotionBadge } from './PromotionBadge';
+import { MemberReportRow } from './MemberReportRow';
+
 
 interface CycleContextPanelProps {
     group: SummaryGroup | null;
@@ -20,9 +23,17 @@ interface CycleContextPanelProps {
 }
 
 export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelProps) {
-    const { rsConfig, roster, projections, setDraggingItemType, isRankMode, setRankMode } = useNavfitStore();
-    const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null);
 
+    const {
+        roster,
+        rsConfig,
+        projections,
+        isRankMode, // Also used in toolbar
+        setRankMode,
+        selectedMemberId,
+        selectMember,
+        setDraggingItemType
+    } = useNavfitStore();
     // Derived Stats using the "Dashboard" logic for advanced metrics
     const contextData = useMemo(() => {
         if (!group) return null;
@@ -94,7 +105,13 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
             gap,
             mainDraftStatus,
             rankedMembers,
-            distribution
+            distribution,
+            eotRsca: calculateEotRsca(
+                roster,
+                cumulativeRsca,
+                rsConfig.totalReports || 100, // Fallback if 0
+                rsConfig.changeOfCommandDate
+            )
         };
     }, [group, roster, rsConfig, projections]);
 
@@ -108,13 +125,13 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
         );
     }
 
-    const { cumulativeRsca, gap, mainDraftStatus, rankedMembers, distribution } = contextData;
+    const { cumulativeRsca, gap, mainDraftStatus, rankedMembers, distribution, eotRsca } = contextData;
 
     // Helper for Badge
     const getPromotionStatusBadge = (s?: string) => {
         if (!s) return null;
         const normalized = s.toUpperCase();
-        const badgeBase = "flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-bold border shadow-sm leading-none tracking-wide";
+        const badgeBase = "flex items-center gap-1 px-2.5 py-1 rounded text-xs font-semibold border shadow-sm leading-none tracking-wide";
 
         switch (normalized) {
             case 'FROCKED': return <div className={`${badgeBase} bg-amber-100 text-amber-800 border-amber-200`}>FROCKED</div>;
@@ -132,6 +149,8 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
 
     const formattedDate = new Date(group.periodEndDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
 
+
+
     return (
         <div className="h-full flex flex-row relative overflow-hidden">
             {/* Main Panel Content */}
@@ -145,13 +164,19 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
                                 <div className="flex items-center gap-2">
                                     <h2 className="text-2xl font-bold text-slate-900">{cleanTitle(group.name)}</h2>
                                     {getPromotionStatusBadge(group.promotionStatus)}
+                                    <StatusBadge
+                                        status={mainDraftStatus}
+                                        className="!px-2.5 !py-1 !text-xs !font-semibold !rounded !shadow-sm !leading-none !tracking-wide"
+                                    />
                                 </div>
-                                <div className="text-sm text-slate-500 font-medium">{formattedDate}</div>
+                                <div className="flex items-center text-sm text-slate-500 font-medium">
+                                    <Calendar className="w-4 h-4 mr-2 text-slate-400" />
+                                    {formattedDate}
+                                </div>
                             </div>
 
                             {/* Status Badges (Moved to Top Right) */}
                             <div className="flex flex-col items-end gap-1.5">
-                                <StatusBadge status={mainDraftStatus} />
                                 {gap > 0 && (
                                     <div className="flex items-center gap-1.5 px-2.5 py-1 bg-amber-50 rounded text-xs font-semibold text-amber-700 border border-amber-200">
                                         {gap} Attention Needed
@@ -160,14 +185,36 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
                             </div>
                         </div>
 
-                        {/* Row 2: RSCA Scoreboard */}
-                        <div className="rounded-xl border border-slate-200 shadow-sm overflow-hidden mb-1">
-                            <RscaHeadsUpDisplay
-                                currentRsca={cumulativeRsca}
-                                projectedRsca={cumulativeRsca}
-                                rankLabel="Curr. RSCA"
-                                showSuffix={false}
-                            />
+                        {/* Row 2: RSCA Scoreboard Container */}
+                        <div className="flex items-stretch gap-2">
+                            {/* 2A. RSCA Heads Up Display (Left) - Framed */}
+                            <div className="rounded-xl border border-slate-200 shadow-sm overflow-hidden bg-white/50 shrink-0">
+                                <RscaHeadsUpDisplay
+                                    currentRsca={cumulativeRsca}
+                                    projectedRsca={cumulativeRsca}
+                                    eotRsca={eotRsca}
+                                    rankLabel="Curr. RSCA"
+                                    showSuffix={false}
+                                />
+                            </div>
+
+                            {/* 2B. Promotion Recommendation Scoreboard (Right) - Framed & Flexible */}
+                            <div className="flex-1 rounded-xl border border-slate-200 shadow-sm overflow-hidden bg-white/50">
+                                <div className="flex items-center justify-around h-full px-4 bg-white/95 backdrop-blur-sm transition-all duration-300">
+                                    {['SP', 'PR', 'P', 'MP', 'EP'].map((key) => (
+                                        <div key={key} className="flex flex-col items-center gap-1 min-w-[32px]">
+                                            <span className="text-xl font-bold text-slate-700 leading-none">
+                                                {distribution[key] || 0}
+                                            </span>
+                                            <PromotionBadge
+                                                recommendation={key}
+                                                size="sm"
+                                                className="rounded-[3px] !text-[10px] !py-0.5 !px-2 h-auto min-h-0 uppercase tracking-wider"
+                                            />
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
                         </div>
                     </div>
 
@@ -176,14 +223,7 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
                         <div className="flex items-center justify-between">
                             {/* Left: Action Buttons */}
                             <div className="flex items-center gap-2">
-                                {/* Strategy Workspace */}
-                                <button
-                                    onClick={onOpenWorkspace}
-                                    className="flex items-center justify-center gap-2 px-3 py-2 bg-indigo-500 hover:bg-indigo-600 text-white rounded-lg shadow-sm transition-all text-xs font-bold"
-                                >
-                                    <ArrowRight className="w-3.5 h-3.5" />
-                                    <span>Workspace</span>
-                                </button>
+
 
                                 {/* Rank Button */}
                                 <button
@@ -205,14 +245,15 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
                                 </button>
                             </div>
 
-                            {/* Right: Distribution Stats */}
+                            {/* Right: Workspace Control */}
                             <div className="flex items-center gap-2 text-[10px] px-2">
-                                {['SP', 'PR', 'P', 'MP', 'EP'].map(key => (
-                                    <div key={key} className="flex flex-col items-center justify-center gap-1 min-w-[24px]">
-                                        <span className="text-slate-700 font-bold leading-none text-xs">{distribution[key] || 0}</span>
-                                        <PromotionBadge recommendation={key} size="sm" className="rounded-[3px]" />
-                                    </div>
-                                ))}
+                                <button
+                                    onClick={onOpenWorkspace}
+                                    className="flex items-center justify-center gap-2 px-3 py-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 rounded-lg transition-colors text-xs font-medium"
+                                >
+                                    <ArrowRight className="w-3.5 h-3.5 text-slate-500" />
+                                    <span>Workspace</span>
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -221,7 +262,7 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
                 {/* 3. Member List (Scrollable Main) */}
                 <div className="flex-1 overflow-y-auto">
                     <table className="w-full text-left border-collapse">
-                        <thead className="bg-slate-50 text-xs font-semibold text-slate-500 uppercase tracking-wider sticky top-0 z-0">
+                        <thead className="bg-white text-xs font-semibold text-slate-500 uppercase tracking-wider sticky top-0 z-10 shadow-sm">
                             <tr>
                                 <th className="px-4 py-3 border-b border-slate-200 w-12 text-center">#</th>
                                 <th className="px-4 py-3 border-b border-slate-200 text-left">Name</th>
@@ -235,38 +276,28 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
                         </thead>
                         <tbody className="divide-y divide-slate-100 bg-white">
                             {rankedMembers.map((member, idx) => (
-                                <tr
+                                <MemberReportRow
                                     key={member.id}
-                                    draggable={!isRankMode}
-                                    onDragStart={(e) => {
+                                    id={member.id}
+                                    reportId={member.reportId}
+                                    groupId={group.id}
+                                    index={idx}
+                                    name={member.name}
+                                    designator={member.designator}
+                                    reportsRemaining={member.reportsRemaining}
+                                    promRec={member.promRec}
+                                    mta={member.mta}
+                                    delta={member.delta}
+                                    rscaMargin={member.rscaMargin}
+                                    isSelected={selectedMemberId === member.id}
+                                    isRankMode={isRankMode}
+                                    onClick={() => selectMember(selectedMemberId === member.id ? null : member.id)}
+                                    onDragStart={(e, data) => {
                                         setDraggingItemType('member_report');
-                                        e.dataTransfer.setData('member_report', JSON.stringify({
-                                            type: 'member_report',
-                                            groupId: group.id,
-                                            reportId: member.reportId
-                                        }));
+                                        e.dataTransfer.setData('member_report', JSON.stringify(data));
                                     }}
                                     onDragEnd={() => setDraggingItemType(null)}
-                                    onClick={() => setSelectedMemberId(selectedMemberId === member.id ? null : member.id)}
-                                    className={`cursor-pointer transition-colors hover:bg-slate-50 ${selectedMemberId === member.id ? 'bg-indigo-50/50' : ''}`}
-                                >
-                                    <td className="px-4 py-3 text-center text-sm text-slate-500 font-medium">{idx + 1}</td>
-                                    <td className="px-4 py-3 text-sm font-semibold text-slate-700 text-left">{member.name}</td>
-                                    <td className="px-4 py-3 text-sm text-slate-500 text-center">{member.designator}</td>
-                                    <td className="px-4 py-3 text-sm text-slate-700 font-mono text-center">
-                                        {member.reportsRemaining !== undefined ? member.reportsRemaining : '-'}
-                                    </td>
-                                    <td className="px-4 py-3 text-sm text-center">
-                                        <PromotionBadge recommendation={member.promRec} size="xs" className="rounded-sm px-1.5" />
-                                    </td>
-                                    <td className="px-4 py-3 text-sm font-mono text-slate-700 text-center">{member.mta.toFixed(2)}</td>
-                                    <td className="px-4 py-3 text-sm font-mono text-slate-400 text-center">
-                                        {member.delta === 0 ? '-' : (member.delta > 0 ? `+${member.delta.toFixed(2)}` : member.delta.toFixed(2))}
-                                    </td>
-                                    <td className={`px-4 py-3 text-sm font-mono text-center font-medium ${member.rscaMargin >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>
-                                        {member.rscaMargin > 0 ? '+' : ''}{member.rscaMargin.toFixed(2)}
-                                    </td>
-                                </tr>
+                                />
                             ))}
                         </tbody>
                     </table>
@@ -274,51 +305,53 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
             </div>
 
 
-            {/* Sidebar Overlay */}
-            {/* Sidebar Overlay */}
-            {selectedMemberId && (
-                <MemberDetailSidebar
-                    memberId={selectedMemberId}
-                    rosterMember={(() => {
-                        const m = roster.find(memb => memb.id === selectedMemberId);
-                        if (!m) {
+            {
+                selectedMemberId && (
+                    <MemberDetailSidebar
+                        memberId={selectedMemberId}
+                        rosterMember={(() => {
+                            const m = roster.find(memb => memb.id === selectedMemberId);
+                            if (!m) {
+                                return {
+                                    id: selectedMemberId,
+                                    name: 'Unknown Member',
+                                    rank: 'UNK',
+                                    designator: '0000',
+                                    status: 'Onboard',
+                                    history: []
+                                } as Member;
+                            }
                             return {
-                                id: selectedMemberId,
-                                name: 'Unknown Member',
-                                rank: 'UNK',
-                                designator: '0000',
-                                status: 'Onboard',
-                                history: []
-                            } as Member;
-                        }
-                        return {
-                            ...m,
-                            name: `${m.lastName}, ${m.firstName}`,
-                            history: m.history || [],
-                            status: (m.status as any) || 'Onboard' // Ensure status matches expected union
-                        } as unknown as Member;
-                    })()}
-                    currentReport={group.reports.find(r => r.memberId === selectedMemberId)}
-                    groupStats={{ currentRSCA: cumulativeRsca, projectedRSCA: cumulativeRsca }} // TODO: Calculate actual proj RSCA
-                    onClose={() => setSelectedMemberId(null)}
-                    onUpdateMTA={(id, val) => {
-                        // TODO: Integrate with store action
-                        console.log('Update MTA:', id, val);
-                    }}
-                    onUpdatePromRec={(id, rec) => {
-                        // TODO: Integrate with store action
-                        console.log('Update PromRec:', id, rec);
-                    }}
-                    onNavigatePrev={() => {
-                        const idx = rankedMembers.findIndex(m => m.id === selectedMemberId);
-                        if (idx > 0) setSelectedMemberId(rankedMembers[idx - 1].id);
-                    }}
-                    onNavigateNext={() => {
-                        const idx = rankedMembers.findIndex(m => m.id === selectedMemberId);
-                        if (idx < rankedMembers.length - 1) setSelectedMemberId(rankedMembers[idx + 1].id);
-                    }}
-                />
-            )}
-        </div>
+                                ...m,
+                                name: `${m.lastName}, ${m.firstName}`,
+                                history: m.history || [],
+                                status: (m.status as any) || 'Onboard' // Ensure status matches expected union
+                            } as unknown as Member;
+                        })()}
+                        currentReport={group.reports.find(r => r.memberId === selectedMemberId)}
+                        groupStats={{ currentRSCA: cumulativeRsca, projectedRSCA: cumulativeRsca }} // TODO: Calculate actual proj RSCA
+                        onClose={() => selectMember(null)}
+                        onUpdateMTA={(id, val) => {
+                            // TODO: Integrate with store action
+                            console.log('Update MTA:', id, val);
+                        }}
+                        onUpdatePromRec={(id, rec) => {
+                            // TODO: Integrate with store action
+                            console.log('Update PromRec:', id, rec);
+                        }}
+                        onNavigatePrev={() => {
+                            const idx = rankedMembers.findIndex(m => m.id === selectedMemberId);
+                            if (idx > 0) selectMember(rankedMembers[idx - 1].id);
+                        }}
+                        onNavigateNext={() => {
+                            const idx = rankedMembers.findIndex(m => m.id === selectedMemberId);
+                            if (idx < rankedMembers.length - 1) selectMember(rankedMembers[idx + 1].id);
+                        }}
+                    />
+                )
+            }
+
+
+        </div >
     );
 }

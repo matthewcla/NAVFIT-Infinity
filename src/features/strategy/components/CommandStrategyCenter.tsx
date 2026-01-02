@@ -9,8 +9,7 @@ import { useNavfitStore } from '@/store/useNavfitStore';
 import { useSummaryGroups } from '@/features/strategy/hooks/useSummaryGroups';
 import { Filter, ArrowUpDown } from 'lucide-react';
 import { AddSummaryGroupModal } from '@/features/dashboard/components/AddSummaryGroupModal';
-import { TrashDropZone } from '@/features/dashboard/components/TrashDropZone';
-import { ConfirmationModal } from '@/features/dashboard/components/ConfirmationModal';
+
 
 export function CommandStrategyCenter() {
     const {
@@ -22,36 +21,12 @@ export function CommandStrategyCenter() {
         setCycleSort,
         cycleListPhase,
         setCycleListPhase,
-        addSummaryGroup,
-        deleteSummaryGroup,
-        deleteReport,
-        draggingItemType,
-        isRankMode
+        addSummaryGroup
     } = useNavfitStore();
 
     const [isModalOpen, setIsModalOpen] = useState(false);
 
-    // Deletion Modal State
-    const [deletionModalState, setDeletionModalState] = useState<{
-        isOpen: boolean;
-        type: 'GROUP' | 'REPORT';
-        id: string; // Group ID for groups
-        reportId?: string; // Only for reports
-        groupId?: string; // Only for reports
-        title: string;
-        description: string;
-    } | null>(null);
 
-    const handleConfirmDelete = () => {
-        if (!deletionModalState) return;
-
-        if (deletionModalState.type === 'GROUP') {
-            deleteSummaryGroup(deletionModalState.id);
-        } else if (deletionModalState.type === 'REPORT' && deletionModalState.groupId && deletionModalState.reportId) {
-            deleteReport(deletionModalState.groupId, deletionModalState.reportId);
-        }
-        setDeletionModalState(null);
-    };
 
     const summaryGroups = useSummaryGroups();
 
@@ -154,64 +129,52 @@ export function CommandStrategyCenter() {
                 {/* Left Panel: Active Cycles Stream */}
                 <div className="w-[420px] bg-slate-50 border-r border-slate-200 flex flex-col shrink-0 z-10 relative">
 
-                    {/* Panel Header */}
-                    <div className="px-6 py-4 border-b border-slate-200 bg-white/50 backdrop-blur-sm sticky top-0 z-10">
-                        <div className="flex items-center justify-start mb-4">
-                            {/* Phase Toggle */}
-                            <div className="flex items-center gap-1 bg-slate-200/50 p-0.5 rounded-lg border border-slate-200 shadow-sm">
-                                {(['Archive', 'Active', 'Projected'] as const).map((phase) => (
-                                    <button
-                                        key={phase}
-                                        onClick={() => setCycleListPhase(phase)}
-                                        className={`px-3 py-1 text-[10px] font-bold uppercase tracking-wider rounded-md transition-all ${cycleListPhase === phase
-                                            ? 'bg-white text-indigo-600 shadow-sm'
-                                            : 'text-slate-500 hover:text-slate-700'
-                                            }`}
-                                    >
-                                        {phase}
-                                    </button>
-                                ))}
-                            </div>
+                    {/* Panel Header - Restored */}
+                    <div className="px-6 py-4 border-b border-slate-200 bg-white/50 backdrop-blur-sm sticky top-0 z-10 space-y-4">
+
+                        {/* Phase Toggles */}
+                        <div className="flex p-1 bg-slate-100 rounded-lg">
+                            {['Active', 'Projected', 'Archive'].map((phase) => (
+                                <button
+                                    key={phase}
+                                    onClick={() => setCycleListPhase(phase as any)}
+                                    className={`flex-1 px-3 py-1.5 text-xs font-semibold rounded-md transition-all ${cycleListPhase === phase
+                                        ? 'bg-white text-slate-900 shadow-sm'
+                                        : 'text-slate-500 hover:text-slate-700'
+                                        }`}
+                                >
+                                    {phase}
+                                </button>
+                            ))}
                         </div>
 
-                        {/* Controls */}
-                        <div className="flex flex-col gap-3">
-                            <div className="flex items-center gap-1 bg-slate-200/50 p-0.5 rounded-lg border border-slate-200 shadow-sm">
-                                {(['All', 'Officer', 'Enlisted'] as const).map(f => (
+                        {/* Filters & Sort Row */}
+                        <div className="flex items-center justify-between">
+                            {/* Filter Buttons */}
+                            <div className="flex items-center gap-1">
+                                {['All', 'Officer', 'Enlisted'].map((filter) => (
                                     <button
-                                        key={f}
-                                        onClick={() => setCycleFilter(f as any)}
-                                        className={`flex-1 px-3 py-1 text-[10px] font-bold uppercase tracking-wider rounded-md transition-all ${cycleFilter === f
-                                            ? 'bg-white text-indigo-600 shadow-sm'
-                                            : 'text-slate-500 hover:text-slate-700'
+                                        key={filter}
+                                        onClick={() => setCycleFilter(filter as any)}
+                                        className={`px-2.5 py-1 rounded text-[11px] font-semibold border transition-colors ${cycleFilter === filter
+                                            ? 'bg-slate-800 text-white border-slate-800'
+                                            : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300'
                                             }`}
                                     >
-                                        {f}
+                                        {filter}
                                     </button>
                                 ))}
                             </div>
 
-                            <div className="flex items-center justify-between text-xs text-slate-500 px-1">
-                                <div className="flex items-center gap-1.5">
-                                    <ArrowUpDown className="w-3 h-3" />
-                                    <span>Sort by</span>
-                                </div>
-                                <div className="flex gap-2">
-                                    <button
-                                        onClick={() => setCycleSort('DueDate')}
-                                        className={`hover:text-indigo-600 transition-colors ${cycleSort === 'DueDate' ? 'text-indigo-600 font-bold' : ''}`}
-                                    >
-                                        Due Date
-                                    </button>
-                                    <span>•</span>
-                                    <button
-                                        onClick={() => setCycleSort('Status')}
-                                        className={`hover:text-indigo-600 transition-colors ${cycleSort === 'Status' ? 'text-indigo-600 font-bold' : ''}`}
-                                    >
-                                        Status
-                                    </button>
-                                </div>
-                            </div>
+                            {/* Sort Toggle */}
+                            <button
+                                onClick={() => setCycleSort(cycleSort === 'DueDate' ? 'Status' : 'DueDate')}
+                                className="flex items-center gap-1.5 px-2 py-1 text-[11px] font-medium text-slate-500 hover:text-slate-800 transition-colors"
+                                title="Toggle Sort Order"
+                            >
+                                <ArrowUpDown className="w-3 h-3" />
+                                <span>{cycleSort === 'DueDate' ? 'Due Date' : 'Status'}</span>
+                            </button>
                         </div>
                     </div>
 
@@ -225,12 +188,6 @@ export function CommandStrategyCenter() {
                         />
                     </div>
 
-                    <AddSummaryGroupModal
-                        isOpen={isModalOpen}
-                        onClose={() => setIsModalOpen(false)}
-                        competitiveGroups={allCompetitiveGroups.length > 0 ? allCompetitiveGroups : ['O-1', 'O-2', 'O-3', 'O-4', 'O-5', 'O-6', 'E-1', 'E-2', 'E-3', 'E-4', 'E-5', 'E-6', 'E-7', 'E-8', 'E-9']}
-                        onCreate={handleCreateGroups}
-                    />
                 </div>
 
                 {/* Right Panel: Context & Details */}
@@ -256,41 +213,17 @@ export function CommandStrategyCenter() {
                     )}
 
                     {/* Trash Zone for Reports - KEPT as per original logic but strictly for member reports now */}
-                    {!isRankMode && (draggingItemType === 'member_report') && (
-                        <TrashDropZone
-                            acceptTypes={['member_report']}
-                            onDrop={(data) => {
-                                if (data && data.type === 'member_report') {
-                                    setDeletionModalState({
-                                        isOpen: true,
-                                        type: 'REPORT',
-                                        id: data.reportId,
-                                        groupId: data.groupId,
-                                        reportId: data.reportId,
-                                        title: 'Remove Member?',
-                                        description: 'Are you sure you want to remove this member report from the group?'
-                                    });
-                                }
-                            }}
-                            className="absolute bottom-6 left-1/2 -translate-x-1/2 z-40 w-12 h-12 bg-white/80 backdrop-blur shadow-lg border-2 border-slate-200 rounded-full hover:scale-110 hover:border-red-400 hover:bg-red-50 transition-all flex items-center justify-center"
-                        />
-                    )}
 
-                    {/* Confirmation Modal for Reports */}
-                    {deletionModalState && (
-                        <ConfirmationModal
-                            isOpen={deletionModalState.isOpen}
-                            onClose={() => setDeletionModalState(null)}
-                            onConfirm={handleConfirmDelete}
-                            title={deletionModalState.title}
-                            description={deletionModalState.description}
-                            confirmText="Delete"
-                            variant="danger"
-                        />
-                    )}
                 </div>
 
             </div>
+
+            <AddSummaryGroupModal
+                isOpen={isModalOpen}
+                onClose={() => setIsModalOpen(false)}
+                competitiveGroups={allCompetitiveGroups.length > 0 ? allCompetitiveGroups : ['O-1', 'O-2', 'O-3', 'O-4', 'O-5', 'O-6', 'E-1', 'E-2', 'E-3', 'E-4', 'E-5', 'E-6', 'E-7', 'E-8', 'E-9']}
+                onCreate={handleCreateGroups}
+            />
         </div>
     );
 }
