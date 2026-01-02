@@ -147,7 +147,7 @@ export const GroupHeader = ({
                             y1="0"
                             x2={(i + 1) * COL_WIDTH}
                             y2={CHART_H}
-                            stroke="#e2e8f0"
+                            stroke={THEME_COLORS.slate200}
                             strokeWidth="1"
                         />
                     ))}

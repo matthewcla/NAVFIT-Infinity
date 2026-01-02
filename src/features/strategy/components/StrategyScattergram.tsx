@@ -6,18 +6,13 @@ import { Lock, AlertCircle } from 'lucide-react';
 import { useNavfitStore } from '@/store/useNavfitStore';
 import { THEME_COLORS } from '@/styles/theme';
 import { useScatterLayout, type RSCAReport } from '../hooks/useScatterLayout';
+import { useScatterChartDimensions } from '../hooks/useScatterChartDimensions';
 
 // --- MOCK DATA FOR PROTOTYPING ---
 const MOCK_START_DATE = new Date('2025-01-01');
 
 const INITIAL_RSCA = 3.85;
 const INITIAL_SIGNED_COUNT = 45;
-
-// Types now imported from hook
-
-
-// Types now imported from hook
-
 
 interface StrategyScattergramProps {
     summaryGroups?: SummaryGroup[];
@@ -45,66 +40,23 @@ export function StrategyScattergram({ summaryGroups = EMPTY_SUMMARY_GROUPS, rost
     const scrollContainerRef = useRef<HTMLDivElement>(null);
 
     // --- DIMENSIONS & SCALES ---
-    const containerHeight = propHeight || 320;
-
-    // VISUAL CONSTANTS
-    const HEADER_HEIGHT = 40; // Sticky header
-    const ICON_RADIUS = 22;   // Max radius for collision/vis
-    const TOP_BUFFER = 20;    // Margin below header for NOB line
-    const BOTTOM_BUFFER = 30; // Margin at bottom for 3.0 line visibility inside container
-
-    // Start Y for NOB Line (Visually)
-    // Needs to clear sticky header (40) + Top Buffer + Radius/Half-element
-    // Actually relative to the Scroll Container content flow.
-    // The "Sticky Header" visually overlays.
-    // If we want NOB line at visual Y = HEADER_HEIGHT + TOP_BUFFER (+ Radius roughly), then:
-    const VISIBLE_TOP_Y = HEADER_HEIGHT + TOP_BUFFER + ICON_RADIUS;
-
-    // Target Bottom Y for 3.0 Line (Visually) within container
-    const VISIBLE_BOTTOM_Y = containerHeight - BOTTOM_BUFFER;
-
-    // Available Height for Range (NOB to 3.0)
-    const VISIBLE_PIXEL_HEIGHT = VISIBLE_BOTTOM_Y - VISIBLE_TOP_Y;
-
-    const NOB_VALUE = 5.5;
-    const TARGET_BOTTOM_TRAIT = 3.0;
-    const VISIBLE_TRAIT_RANGE = NOB_VALUE - TARGET_BOTTOM_TRAIT; // 2.5 units
-
-    const pixelsPerTrait = VISIBLE_PIXEL_HEIGHT / VISIBLE_TRAIT_RANGE;
-
-    // Helper: Trait -> Y Coordinate (relative to Scroll Container Top 0)
-    const traitToY = React.useCallback((trait: number) => {
-        // NOB (5.5) is at VISIBLE_TOP_Y
-        const valFromTop = NOB_VALUE - trait;
-        return VISIBLE_TOP_Y + (valFromTop * pixelsPerTrait);
-    }, [VISIBLE_TOP_Y, pixelsPerTrait, NOB_VALUE]);
-
-    const yToTrait = React.useCallback((y: number) => {
-        const relativeY = y - VISIBLE_TOP_Y;
-        const valFromTop = relativeY / pixelsPerTrait;
-        return NOB_VALUE - valFromTop;
-    }, [VISIBLE_TOP_Y, pixelsPerTrait, NOB_VALUE]);
-
-    // Total content height required to reach 1.0 (plus buffer)
-    const MIN_TRAIT = 1.0;
-    const CHART_BOTTOM_Y = traitToY(MIN_TRAIT) + BOTTOM_BUFFER;
-    const TOTAL_SCROLL_HEIGHT = Math.max(containerHeight, CHART_BOTTOM_Y);
-
-
-    // Helper to map date string to X coordinate
-    const dateToX = React.useCallback((dateStr: string) => {
-        const d = new Date(dateStr);
-        const start = new Date(MOCK_START_DATE);
-        // Visual timeline starts 3 months before MOCK_START_DATE
-        const diffTime = d.getTime() - start.getTime();
-        const diffDays = diffTime / (1000 * 3600 * 24);
-        const diffMonths = diffDays / 30.44;
-
-        // Add 3 months offset for visual alignment, and center in column
-        const visualMonthIndex = diffMonths + 3;
-
-        return (visualMonthIndex * 96) + 48; // 96 is COL_WIDTH
-    }, []);
+    const {
+        containerHeight,
+        TOTAL_SCROLL_HEIGHT,
+        CHART_TOTAL_WIDTH,
+        HEADER_HEIGHT,
+        COL_WIDTH,
+        NUM_MONTHS,
+        NOB_VALUE,
+        MIN_TRAIT,
+        IDEAL_RSCA_MIN,
+        IDEAL_RSCA_MAX,
+        ICON_RADIUS,
+        traitToY,
+        yToTrait,
+        dateToX,
+        monthToX
+    } = useScatterChartDimensions({ height: propHeight, startDate: MOCK_START_DATE });
 
     // Auto-scroll to focusDate (Horizontal)
     useEffect(() => {
@@ -169,19 +121,6 @@ export function StrategyScattergram({ summaryGroups = EMPTY_SUMMARY_GROUPS, rost
         });
     }, [reports, dragOverride]);
 
-    // X-Axis Config
-    const NUM_MONTHS = 24;
-    const COL_WIDTH = 96;
-    const CHART_TOTAL_WIDTH = NUM_MONTHS * COL_WIDTH;
-
-    // Ideal RSCA Range
-    const IDEAL_RSCA_MIN = 3.8;
-    const IDEAL_RSCA_MAX = 4.0;
-
-    const monthToX = (monthIndex: number) => {
-        return (monthIndex * COL_WIDTH) + (COL_WIDTH / 2);
-    };
-
     // --- FLIGHT PATH / CONE LOGIC ---
     // Logic: Identify selected member, their current/projected report, and calculate bounds based on PRD.
     const flightPathData = useMemo(() => {
@@ -224,7 +163,7 @@ export function StrategyScattergram({ summaryGroups = EMPTY_SUMMARY_GROUPS, rost
         if (reportsRemaining > 1) {
             maxGradeToday = 5.00 - ((reportsRemaining - 1) * PROGRESSION_STEP);
         }
-        // Clamp maxGradeToday? 
+        // Clamp maxGradeToday?
         maxGradeToday = Math.min(5.00, Math.max(1.0, maxGradeToday));
 
         const upperBoundY = traitToY(maxGradeToday);
@@ -367,7 +306,7 @@ export function StrategyScattergram({ summaryGroups = EMPTY_SUMMARY_GROUPS, rost
             arr.push(d.toLocaleDateString('en-US', { month: 'short', year: '2-digit' }));
         }
         return arr;
-    }, []);
+    }, [NUM_MONTHS]);
 
 
 
@@ -464,7 +403,7 @@ export function StrategyScattergram({ summaryGroups = EMPTY_SUMMARY_GROUPS, rost
                                     {[1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0].map(val => {
                                         const y = traitToY(val);
                                         return (
-                                            <line key={val} x1={0} y1={y} x2={CHART_TOTAL_WIDTH} y2={y} stroke="#94a3b8" strokeDasharray="4 4" />
+                                        <line key={val} x1={0} y1={y} x2={CHART_TOTAL_WIDTH} y2={y} stroke={THEME_COLORS.slate400} strokeDasharray="4 4" />
                                         );
                                     })}
 
@@ -494,14 +433,14 @@ export function StrategyScattergram({ summaryGroups = EMPTY_SUMMARY_GROUPS, rost
                                         y1={traitToY(NOB_VALUE)}
                                         x2={CHART_TOTAL_WIDTH}
                                         y2={traitToY(NOB_VALUE)}
-                                        stroke="#94a3b8"
+                                        stroke={THEME_COLORS.slate400}
                                         strokeWidth={2}
                                         strokeDasharray="6 4"
                                     />
 
                                     {/* Month Vertical Lines */}
                                     {Array.from({ length: NUM_MONTHS }).map((_, i) => (
-                                        <line key={i} x1={(i + 1) * COL_WIDTH} y1={0} x2={(i + 1) * COL_WIDTH} y2={TOTAL_SCROLL_HEIGHT} stroke="#f1f5f9" strokeWidth={1} />
+                                        <line key={i} x1={(i + 1) * COL_WIDTH} y1={0} x2={(i + 1) * COL_WIDTH} y2={TOTAL_SCROLL_HEIGHT} stroke={THEME_COLORS.slate100} strokeWidth={1} />
                                     ))}
 
                                     {/* Flight Path Cone (Behind points) */}
@@ -510,14 +449,14 @@ export function StrategyScattergram({ summaryGroups = EMPTY_SUMMARY_GROUPS, rost
                                             {/* Cone Fill */}
                                             <path
                                                 d={`M ${flightPathData.currentX} ${flightPathData.currentY} L ${flightPathData.prdX} ${flightPathData.prdY} L ${flightPathData.currentX} ${flightPathData.upperStartY} Z`}
-                                                fill={flightPathData.isOverLimit ? '#fecaca' : '#dcfce7'} // Red tint if over, Green tint if safe
+                                                fill={flightPathData.isOverLimit ? THEME_COLORS.red200 : THEME_COLORS.green100} // Red tint if over, Green tint if safe
                                                 fillOpacity="0.4"
                                             />
                                             {/* Lower Bound Line (Linear to 5.0) */}
                                             <line
                                                 x1={flightPathData.currentX} y1={flightPathData.currentY}
                                                 x2={flightPathData.prdX} y2={flightPathData.prdY}
-                                                stroke={flightPathData.isOverLimit ? '#ef4444' : '#22c55e'}
+                                                stroke={flightPathData.isOverLimit ? THEME_COLORS.danger : THEME_COLORS.promotion}
                                                 strokeWidth={2}
                                                 strokeDasharray="4 2"
                                             />
@@ -525,7 +464,7 @@ export function StrategyScattergram({ summaryGroups = EMPTY_SUMMARY_GROUPS, rost
                                             <line
                                                 x1={flightPathData.currentX} y1={flightPathData.upperStartY}
                                                 x2={flightPathData.prdX} y2={flightPathData.prdY}
-                                                stroke="#ef4444"
+                                                stroke={THEME_COLORS.danger}
                                                 strokeWidth={1}
                                                 strokeDasharray="2 2"
                                                 strokeOpacity="0.6"
@@ -534,7 +473,7 @@ export function StrategyScattergram({ summaryGroups = EMPTY_SUMMARY_GROUPS, rost
                                             {/* Tooltip for Over Limit */}
                                             {flightPathData.isOverLimit && (
                                                 <g transform={`translate(${flightPathData.currentX - 10}, ${flightPathData.currentY - 40})`}>
-                                                    <rect x="-100" y="-24" width="200" height="24" rx="4" fill="#fee2e2" stroke="#ef4444" strokeWidth="1" />
+                                                    <rect x="-100" y="-24" width="200" height="24" rx="4" fill={THEME_COLORS.red100} stroke={THEME_COLORS.danger} strokeWidth="1" />
                                                     <text x="0" y="-8" textAnchor="middle" className="text-[10px] fill-red-700 font-bold">
                                                         No headroom for future progression
                                                     </text>
@@ -561,7 +500,7 @@ export function StrategyScattergram({ summaryGroups = EMPTY_SUMMARY_GROUPS, rost
                                             <line
                                                 x1={line.x1} y1={line.y}
                                                 x2={line.x2} y2={line.y}
-                                                stroke="#a855f7"
+                                                stroke={THEME_COLORS.purple500}
                                                 strokeWidth={3}
                                                 strokeDasharray="6 4"
                                                 className="opacity-70"
@@ -570,7 +509,7 @@ export function StrategyScattergram({ summaryGroups = EMPTY_SUMMARY_GROUPS, rost
                                                 <line
                                                     x1={line.x2} y1={line.y}
                                                     x2={line.x2} y2={trendLines[i + 1].y}
-                                                    stroke="#a855f7"
+                                                    stroke={THEME_COLORS.purple500}
                                                     strokeWidth={1}
                                                     strokeDasharray="2 2"
                                                     className="opacity-40"
@@ -602,7 +541,7 @@ export function StrategyScattergram({ summaryGroups = EMPTY_SUMMARY_GROUPS, rost
                                         }
 
                                         const baseColor = getPointColor(p.report.type);
-                                        const radius = isDragging ? 22 : 18;
+                                        const radius = isDragging ? ICON_RADIUS : 18;
                                         const isFinal = p.report.draftStatus === 'Final';
 
                                         if (p.report.type === 'Gain') {
@@ -669,23 +608,23 @@ export function StrategyScattergram({ summaryGroups = EMPTY_SUMMARY_GROUPS, rost
 
                                                 {isFinal && (
                                                     <g transform="translate(10, -14)">
-                                                        <circle r="8" fill="white" stroke="#64748b" strokeWidth="1" />
+                                                        <circle r="8" fill="white" stroke={THEME_COLORS.slate500} strokeWidth="1" />
                                                         <Lock size={10} className="text-slate-600" x={-5} y={-5} />
-                                                        <path d="M5.5 5.5v-1a2.5 2.5 0 0 0-5 0v1" transform="translate(-1.5, -4)" fill="none" stroke="#64748b" strokeWidth="1.5" strokeLinecap="round" />
-                                                        <rect x="-3" y="1" width="6" height="5" rx="1" fill="#64748b" />
+                                                        <path d="M5.5 5.5v-1a2.5 2.5 0 0 0-5 0v1" transform="translate(-1.5, -4)" fill="none" stroke={THEME_COLORS.slate500} strokeWidth="1.5" strokeLinecap="round" />
+                                                        <rect x="-3" y="1" width="6" height="5" rx="1" fill={THEME_COLORS.slate500} />
                                                     </g>
                                                 )}
 
                                                 {flightPathData && p.report.id === flightPathData.currentReport.id && flightPathData.isOverLimit && (
                                                     <g transform="translate(-14, -14)">
-                                                        <circle r="8" fill="#fee2e2" stroke="#ef4444" strokeWidth="1" />
+                                                        <circle r="8" fill={THEME_COLORS.red100} stroke={THEME_COLORS.danger} strokeWidth="1" />
                                                         <AlertCircle size={10} className="text-red-500" x={-5} y={-5} />
                                                     </g>
                                                 )}
 
                                                 {/* Text Label - Hover Only or Selected */}
                                                 <g className={`transition-opacity ${isSelected || isDragging ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
-                                                    <rect x="-60" y={radius + 8} width="120" height="18" rx="4" fill="rgba(255,255,255,0.9)" stroke="#cbd5e1" strokeWidth="1" />
+                                                    <rect x="-60" y={radius + 8} width="120" height="18" rx="4" fill="rgba(255,255,255,0.9)" stroke={THEME_COLORS.slate300} strokeWidth="1" />
                                                     <text y={radius + 20} textAnchor="middle" className="text-[10px] fill-slate-700 font-bold uppercase pointer-events-none whitespace-nowrap">{formatName(p.report.memberName)}</text>
                                                 </g>
                                             </g>
@@ -710,7 +649,7 @@ export function StrategyScattergram({ summaryGroups = EMPTY_SUMMARY_GROUPS, rost
                         <span>Transfer</span>
                     </div>
                     <div className="flex items-center space-x-1">
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#22c55e" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={THEME_COLORS.promotion} strokeWidth="4" strokeLinecap="round" strokeLinejoin="round">
                             <line x1="12" y1="5" x2="12" y2="19"></line>
                             <line x1="5" y1="12" x2="19" y2="12"></line>
                         </svg>

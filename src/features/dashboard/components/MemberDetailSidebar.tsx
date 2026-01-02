@@ -12,6 +12,7 @@ import {
     TrendingUp
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+
 import type { Member, Report } from '@/types';
 
 interface MemberDetailSidebarProps {
@@ -81,7 +82,7 @@ export function MemberDetailSidebar({
     };
 
     return createPortal(
-        <div className="flex flex-col h-full bg-white border-l border-slate-200 shadow-2xl w-member-sidebar fixed right-0 top-0 bottom-0 z-infinity-slideover animate-in slide-in-from-right duration-300">
+        <div className="flex flex-col h-full bg-white border-l border-slate-200 shadow-2xl w-member-sidebar fixed right-0 top-0 bottom-0 !z-[100] animate-in slide-in-from-right duration-300">
 
             {/* --- Header (Sticky) --- */}
             <div className="flex-none bg-white z-10 border-b border-slate-200 p-4">
