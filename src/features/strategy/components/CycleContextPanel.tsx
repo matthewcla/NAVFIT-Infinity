@@ -4,21 +4,7 @@ import type { SummaryGroup, Member } from '@/types';
 import { RscaHeadsUpDisplay } from './RscaHeadsUpDisplay';
 import { generateSummaryGroups } from '@/features/strategy/logic/reportGenerator';
 import { calculateCumulativeRSCA, calculateEotRsca } from '@/features/strategy/logic/rsca';
-import {
-    DndContext,
-    closestCenter,
-    KeyboardSensor,
-    PointerSensor,
-    useSensor,
-    useSensors,
-    type DragEndEvent
-} from '@dnd-kit/core';
-import {
-    arrayMove,
-    SortableContext,
-    sortableKeyboardCoordinates,
-    verticalListSortingStrategy
-} from '@dnd-kit/sortable';
+
 import {
     ArrowRight,
     Layout,
@@ -26,9 +12,10 @@ import {
     ListOrdered,
     Calendar,
     Check,
-    X
+    X,
+    GripVertical
 } from 'lucide-react';
-import { SortableRankRow } from './SortableRankRow';
+
 import { MemberDetailSidebar } from '@/features/dashboard/components/MemberDetailSidebar';
 import { StatusBadge } from './StatusBadge';
 import { PromotionBadge } from './PromotionBadge';
@@ -135,35 +122,7 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
     // Local Rank Mode State
     const [isRankingMode, setIsRankingMode] = React.useState(false);
 
-    // DnD Sensors
-    const sensors = useSensors(
-        useSensor(PointerSensor, {
-            activationConstraint: {
-                distance: 5, // Require 5px movement before drag starts
-            },
-        }),
-        useSensor(KeyboardSensor, {
-            coordinateGetter: sortableKeyboardCoordinates,
-        })
-    );
 
-    const handleDragEnd = (event: DragEndEvent) => {
-        const { active, over } = event;
-
-        if (active.id !== over?.id && group) {
-            const oldIndex = contextData?.rankedMembers.findIndex((item) => item.reportId === active.id) ?? -1;
-            const newIndex = contextData?.rankedMembers.findIndex((item) => item.reportId === over?.id) ?? -1;
-
-            if (oldIndex !== -1 && newIndex !== -1 && contextData) {
-                // Get the new order of report IDs
-                const currentOrder = contextData.rankedMembers.map(m => m.reportId);
-                const newOrder = arrayMove(currentOrder, oldIndex, newIndex);
-
-                // Call store action
-                reorderMembers(group.id, newOrder);
-            }
-        }
-    };
 
 
     if (!group || !contextData) {
@@ -368,24 +327,51 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
                         </thead>
                         <tbody className="divide-y divide-slate-100 bg-white">
                             {isRankingMode ? (
-                                <DndContext
-                                    sensors={sensors}
-                                    collisionDetection={closestCenter}
-                                    onDragEnd={handleDragEnd}
-                                >
-                                    <SortableContext
-                                        items={rankedMembers.map(m => m.reportId)}
-                                        strategy={verticalListSortingStrategy}
+                                rankedMembers.map((member, idx) => (
+                                    <tr
+                                        key={member.reportId}
+                                        draggable
+                                        onDragStart={(e) => {
+                                            e.dataTransfer.setData('text/plain', member.reportId);
+                                            e.dataTransfer.effectAllowed = 'move';
+                                        }}
+                                        onDragOver={(e) => {
+                                            e.preventDefault();
+                                            e.dataTransfer.dropEffect = 'move';
+                                        }}
+                                        onDrop={(e) => {
+                                            e.preventDefault();
+                                            const draggedId = e.dataTransfer.getData('text/plain');
+                                            const targetId = member.reportId;
+                                            console.log('Dropped:', draggedId, 'on', targetId);
+                                            if (draggedId && targetId && draggedId !== targetId && group) {
+                                                reorderMembers(group.id, draggedId, targetId);
+                                            }
+                                        }}
+                                        className="group bg-white hover:bg-slate-50 border-b border-slate-100 last:border-0 transition-colors cursor-move"
                                     >
-                                        {rankedMembers.map((member, idx) => (
-                                            <SortableRankRow
-                                                key={member.reportId}
-                                                member={member}
-                                                index={idx}
-                                            />
-                                        ))}
-                                    </SortableContext>
-                                </DndContext>
+                                        <td className="px-4 py-3 text-center text-sm font-medium text-slate-500 w-12">
+                                            {idx + 1}
+                                        </td>
+                                        <td className="w-10 px-2 py-3 text-center touch-none">
+                                            <div
+                                                className="flex items-center justify-center p-1 rounded hover:bg-slate-200/50 text-slate-400 group-hover:text-slate-600 transition-colors"
+                                            >
+                                                <GripVertical className="w-4 h-4" />
+                                            </div>
+                                        </td>
+                                        <td className="px-4 py-3 text-sm font-medium text-slate-900">
+                                            {member.name}
+                                            <span className="ml-2 text-xs font-normal text-slate-400">{member.rank}</span>
+                                        </td>
+                                        <td className="px-4 py-3 text-sm text-slate-600 text-center font-mono">
+                                            {member.mta.toFixed(2)}
+                                        </td>
+                                        <td className="px-4 py-3 text-center">
+                                            <PromotionBadge recommendation={member.promRec} size="sm" />
+                                        </td>
+                                    </tr>
+                                ))
                             ) : (
                                 rankedMembers.map((member, idx) => (
                                     <MemberReportRow
