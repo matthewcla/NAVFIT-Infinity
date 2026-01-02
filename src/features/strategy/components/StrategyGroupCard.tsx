@@ -101,10 +101,22 @@ export function StrategyGroupCard({
             {/* Drag Preview - Hidden from view but used for drag image */}
             <div
                 ref={dragPreviewRef}
-                className="absolute -top-[9999px] left-0 w-40 h-12 bg-white border border-indigo-500 rounded-lg shadow-lg flex items-center justify-center overflow-hidden z-50 pointer-events-none"
+                className="absolute -top-[9999px] left-0 w-64 bg-white border border-indigo-500 rounded-lg shadow-xl p-3 z-50 pointer-events-none overflow-hidden flex flex-col gap-2"
             >
-                <div className="text-sm font-bold text-indigo-900 truncate px-2">
-                    {cleanTitle(title)}
+                <div className="flex items-center justify-between">
+                    <span className="text-sm font-bold text-indigo-900 truncate mr-2">
+                        {cleanTitle(title)}
+                    </span>
+                    {getPromotionStatusBadge(promotionStatus)}
+                </div>
+                <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-1.5 text-[11px] text-slate-500">
+                        <Calendar className="w-3 h-3 text-slate-400" />
+                        <span>{formattedDate}</span>
+                    </div>
+                    <div className="scale-90 origin-right">
+                        <StatusBadge status={workflowStatus || status} />
+                    </div>
                 </div>
             </div>
 

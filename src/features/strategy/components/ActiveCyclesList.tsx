@@ -168,6 +168,7 @@ export function ActiveCyclesList({ groups, onSelect, selectedGroupId, onAddClick
                         <div className="animate-in fade-in zoom-in duration-200">
                             <TrashDropZone
                                 acceptTypes={['summary_group', 'member_report']}
+                                caption="Drop to Delete"
                                 onDrop={(data) => {
                                     if (typeof data === 'string') {
                                         // It's a group ID (from summary_group drop)
@@ -177,7 +178,7 @@ export function ActiveCyclesList({ groups, onSelect, selectedGroupId, onAddClick
                                         setReportToDelete({ groupId: data.groupId, reportId: data.reportId });
                                     }
                                 }}
-                                className="w-14 h-14 rounded-full bg-red-100 border-2 border-red-400 text-red-600 shadow-xl flex items-center justify-center hover:scale-110 hover:bg-red-200 transition-all scale-100"
+                                className="h-14 w-auto px-6 rounded-full bg-red-100 border-2 border-red-400 text-red-600 shadow-xl flex items-center justify-center hover:scale-105 hover:bg-red-200 transition-all"
                             />
                         </div>
                     ) : (

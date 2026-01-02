@@ -5,12 +5,14 @@ import { cn } from '@/lib/utils'; // Assuming this utility exists, typical in sh
 interface TrashDropZoneProps {
     onDrop: (data: any) => void;
     acceptTypes: string[];
+    caption?: string;
     className?: string;
 }
 
 export const TrashDropZone: React.FC<TrashDropZoneProps> = ({
     onDrop,
     acceptTypes,
+    caption,
     className,
 }) => {
     const [isDragOver, setIsDragOver] = useState(false);
@@ -92,18 +94,24 @@ export const TrashDropZone: React.FC<TrashDropZoneProps> = ({
                 className
             )}
         >
-            <div className="flex flex-col items-center gap-1 pointer-events-none">
+            <div className="flex items-center gap-2 pointer-events-none">
                 <Trash2
                     size={24}
                     className={cn(
                         'transition-colors duration-200',
-                        isDragOver ? 'text-red-600' : 'text-current'
+                        isDragOver ? 'text-red-700' : 'text-current'
                     )}
                 />
-                {isDragOver && (
-                    <span className="text-[10px] font-bold text-red-600 uppercase tracking-wider animate-in fade-in zoom-in duration-200">
-                        Drop to Delete
+                {caption ? (
+                    <span className="text-sm font-bold uppercase tracking-wider whitespace-nowrap">
+                        {caption}
                     </span>
+                ) : (
+                    isDragOver && (
+                        <span className="text-[10px] font-bold text-red-600 uppercase tracking-wider animate-in fade-in zoom-in duration-200 absolute -bottom-6 left-1/2 -translate-x-1/2 whitespace-nowrap">
+                            Drop to Delete
+                        </span>
+                    )
                 )}
             </div>
         </div>
