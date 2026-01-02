@@ -64,6 +64,7 @@ export const calculateFlexibility = (totalSigned: number): number => {
  * This ensures Frocked, Regular, Spot, etc. all feed the same RSCA bucket.
  */
 import type { SummaryGroup } from '@/types';
+import { PERIODIC_SCHEDULE } from '@/lib/constants';
 
 export const calculateCumulativeRSCA = (
     allGroups: SummaryGroup[],
@@ -139,4 +140,109 @@ export const getCompetitiveGroupStats = (
         count: totalReports,
         totalScore
     };
+};
+
+/**
+ * rounds a number to 2 decimal places - Reused from top if scope issue, 
+ * but simpler to just use Math.
+ */
+// const round2 defined at top
+
+// Minimal interface for Member data needed for projection (compatible with both Member and RosterMember)
+interface ProjectableMember {
+    id: string;
+    rank: string;
+    prd?: string;
+    lastTrait?: number;
+    // ... any other fields
+}
+
+/**
+ * Calculates the projected EOT RSCA.
+ * Incorporates future Phantom Reports (Periodic & Transfer) into the current RSCA.
+ */
+export const calculateEotRsca = (
+    roster: ProjectableMember[],
+    currentRsca: number,
+    totalSignedReports: number,
+    rsDetachDate: string
+): number => {
+    let futureTotalScore = 0;
+    let futureTotalCount = 0;
+
+    const rsDate = new Date(rsDetachDate);
+    const today = new Date();
+    const currentYear = today.getFullYear();
+    const rsDetachYear = rsDate.getFullYear();
+
+    roster.forEach(member => {
+        // Validation
+        if (!member.prd) return;
+
+        const memberPRD = new Date(member.prd);
+        const rank = member.rank;
+
+        // Skip if member already left
+        if (memberPRD < today) return;
+
+        // Heuristic: Current Trait Average or Baseline
+        // If they have a lastTrait, use it. If not, maybe use current RSCA as neutral proxy.
+        // Cap growth at 5.0
+        let projectedMTA = member.lastTrait || (currentRsca > 0 ? currentRsca : 3.60);
+
+        // 1. Iterate Years for Periodic Cycles
+        for (let year = currentYear; year <= rsDetachYear; year++) {
+            const periodicMonth = PERIODIC_SCHEDULE[rank]; // 1-based (Jan=1)
+
+            if (periodicMonth) {
+                // Periodic Date: End of that month
+                const pDate = new Date(year, periodicMonth, 0); // Day 0 of next month = last day of this month
+
+                // Check constraints
+                // Must be in future relative to "simulation now" (approx today)
+                // Must be BEFORE RS leaves
+                // Must be BEFORE Member leaves
+                if (pDate > today && pDate <= rsDate && pDate <= memberPRD) {
+
+                    // Apply Improvement Heuristic
+                    // Assume +0.05 per cycle
+                    if (projectedMTA < 4.80) { // Soft cap for easy growth
+                        projectedMTA += 0.05;
+                    }
+                    projectedMTA = Math.min(5.00, round2(projectedMTA));
+
+                    futureTotalCount++;
+                    futureTotalScore += projectedMTA;
+                }
+            }
+        }
+
+        // 2. Transfer Report Check
+        // If Member PRD is BEFORE RS Detach, they get a Transfer Report
+        // which counts towards RSCA.
+        // We only count this if we haven't already counted it via Periodic (collision check simplisitic here)
+        // Usually Transfer overrides Periodic if close, but let's just check raw date.
+        if (memberPRD > today && memberPRD <= rsDate) {
+            // Is this distinct from the periodic we just counted?
+            // Simplest check: Did we count a periodic exactly on this month?
+            // For MVP: Just add it if it's the Transfer. Transfer is usually a separate event unless coinciding.
+            // Heuristic Update: Transfer usually "one up".
+
+            let transferMTA = projectedMTA + 0.10;
+            transferMTA = Math.min(5.00, round2(transferMTA));
+
+            // To avoid double counting for the exact same month/year collision, 
+            // we could be smarter, but usually PRD is specific day.
+            // Let's assume valid separate report for now.
+            futureTotalCount++;
+            futureTotalScore += transferMTA;
+        }
+    });
+
+    if (totalSignedReports + futureTotalCount === 0) return 0;
+
+    const numerator = (currentRsca * totalSignedReports) + futureTotalScore;
+    const denominator = totalSignedReports + futureTotalCount;
+
+    return round2(numerator / denominator);
 };

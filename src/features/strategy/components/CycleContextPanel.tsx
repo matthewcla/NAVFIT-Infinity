@@ -3,7 +3,7 @@ import { useNavfitStore } from '@/store/useNavfitStore';
 import type { SummaryGroup, Member } from '@/types';
 import { RscaHeadsUpDisplay } from './RscaHeadsUpDisplay';
 import { generateSummaryGroups } from '@/features/strategy/logic/reportGenerator';
-import { calculateCumulativeRSCA } from '@/features/strategy/logic/rsca';
+import { calculateCumulativeRSCA, calculateEotRsca } from '@/features/strategy/logic/rsca';
 import {
     ArrowRight,
     Layout,
@@ -104,7 +104,13 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
             gap,
             mainDraftStatus,
             rankedMembers,
-            distribution
+            distribution,
+            eotRsca: calculateEotRsca(
+                roster,
+                cumulativeRsca,
+                rsConfig.totalReports || 100, // Fallback if 0
+                rsConfig.changeOfCommandDate
+            )
         };
     }, [group, roster, rsConfig, projections]);
 
@@ -118,7 +124,7 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
         );
     }
 
-    const { cumulativeRsca, gap, mainDraftStatus, rankedMembers, distribution } = contextData;
+    const { cumulativeRsca, gap, mainDraftStatus, rankedMembers, distribution, eotRsca } = contextData;
 
     // Helper for Badge
     const getPromotionStatusBadge = (s?: string) => {
@@ -180,6 +186,7 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
                             <RscaHeadsUpDisplay
                                 currentRsca={cumulativeRsca}
                                 projectedRsca={cumulativeRsca}
+                                eotRsca={eotRsca}
                                 rankLabel="Curr. RSCA"
                                 showSuffix={false}
                             />

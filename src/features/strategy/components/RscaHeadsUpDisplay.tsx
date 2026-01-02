@@ -3,14 +3,15 @@ import { ArrowRight, TrendingDown, TrendingUp, Minus, Activity } from 'lucide-re
 interface RscaHeadsUpDisplayProps {
     currentRsca: number;
     projectedRsca: number;
+    eotRsca?: number; // New EOT Metric
     rankLabel?: string;
-    showSuffix?: boolean; // New: Toggle "/ 5.00"
-
+    showSuffix?: boolean;
 }
 
 export function RscaHeadsUpDisplay({
     currentRsca,
     projectedRsca,
+    eotRsca,
     rankLabel,
     showSuffix = true
 }: RscaHeadsUpDisplayProps) {
@@ -28,11 +29,20 @@ export function RscaHeadsUpDisplay({
         return 'text-emerald-600';
     };
 
+    // EOT Specific Color Logic
+    const getEotColor = (val?: number) => {
+        if (!val) return 'text-slate-400';
+        if (val >= 4.20) return 'text-red-600';
+        if (val >= 4.10) return 'text-amber-500';
+        return 'text-emerald-600';
+    };
+
     const zoneCurrent = getHealthColor(currentRsca);
     const zoneProjected = getHealthColor(projectedRsca);
+    const zoneEot = getEotColor(eotRsca);
+
+    // Background tint based on current health
     const bgCurrent = currentRsca > 4.10 ? 'bg-red-50' : currentRsca > 3.80 ? 'bg-amber-50' : 'bg-emerald-50';
-
-
 
     return (
         <div className="bg-white/95 backdrop-blur-sm p-4 transition-all duration-300">
@@ -51,7 +61,6 @@ export function RscaHeadsUpDisplay({
                             <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider whitespace-nowrap">
                                 {rankLabel || 'Target RSCA'}
                             </span>
-
                         </div>
                         <div className="flex items-baseline gap-2">
                             <span className={`text-3xl font-bold ${zoneCurrent}`}>{currentRsca.toFixed(2)}</span>
@@ -64,7 +73,7 @@ export function RscaHeadsUpDisplay({
                         <ArrowRight className="w-5 h-5" />
                     </div>
 
-                    {/* Right Stat: Actual / Projected */}
+                    {/* Middle Stat: Actual / Projected */}
                     <div>
                         <div className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-0.5">
                             Proj. RSCA
@@ -89,42 +98,28 @@ export function RscaHeadsUpDisplay({
                             )}
                         </div>
                     </div>
-                </div>
 
-                {/* Health Bar Visualization - Width reduced to 80% of container */}
-                <div className="flex-1 w-full md:max-w-[60%] hidden md:block pl-6 border-l border-slate-100">
-                    <div className="flex items-center justify-between mb-2">
-                        <span className="text-xs font-medium text-slate-500">Group Health Zone</span>
-                    </div>
-                    {/* Visual Bar */}
-                    <div className="h-4 bg-slate-100 rounded-full overflow-hidden relative border border-slate-200/60 w-full">
-                        {/* Safe Zone (0 - 3.80) */}
-                        <div className="absolute left-0 top-0 bottom-0 bg-emerald-500/20 border-r border-white/50 w-[76%] z-10" title="Safe Region"></div>
-                        {/* Warning Zone (3.80 - 4.10) */}
-                        <div className="absolute left-[76%] top-0 bottom-0 bg-amber-500/20 border-r border-white/50 w-[6%] z-10" title="Danger Region"></div>
-                        {/* Danger Zone (> 4.10) */}
-                        <div className="absolute left-[82%] top-0 bottom-0 bg-red-500/20 w-[18%] z-10" title="Danger Region"></div>
+                    {/* EOT RSCA Metric (New) */}
+                    {eotRsca !== undefined && (
+                        <>
+                            {/* Arrow Divider */}
+                            <div className="text-slate-300">
+                                <ArrowRight className="w-5 h-5" />
+                            </div>
 
-                        {/* Marker - Target */}
-                        <div
-                            className="absolute top-0 bottom-0 w-1 bg-slate-400/50 z-10"
-                            style={{ left: `${(currentRsca / 5.00) * 100}%` }}
-                            title="Target RSCA"
-                        ></div>
-
-                        {/* Marker - Actual */}
-                        <div
-                            className="absolute top-0 bottom-0 w-1.5 bg-indigo-600 z-20 shadow-[0_0_4px_rgba(79,70,229,0.4)] transition-all duration-500"
-                            style={{ left: `${(projectedRsca / 5.00) * 100}%` }}
-                            title="Group Average"
-                        ></div>
-                    </div>
-                    <div className="flex justify-between mt-1 text-[10px] text-slate-400 font-mono">
-                        <span>3.00</span>
-                        <span>3.60</span>
-                        <span>4.10</span>
-                        <span>5.00</span>
-                    </div>
+                            <div>
+                                <div className="flex items-center gap-1.5 mb-0.5" title="Estimated RSCA at end of tour based on projected progression.">
+                                    <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                                        EOT RSCA
+                                    </span>
+                                </div>
+                                <div className="flex items-baseline gap-2">
+                                    <span className={`text-3xl font-bold ${zoneEot}`}>{eotRsca.toFixed(2)}</span>
+                                    {showSuffix && <span className="text-sm font-medium text-slate-400">/ 5.00</span>}
+                                </div>
+                            </div>
+                        </>
+                    )}
                 </div>
             </div>
         </div>
