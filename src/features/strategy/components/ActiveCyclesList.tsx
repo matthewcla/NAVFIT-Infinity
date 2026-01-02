@@ -65,7 +65,7 @@ export function ActiveCyclesList({ groups, onSelect, selectedGroupId, onAddClick
     return (
         <div className="relative h-full flex flex-col">
             {/* Scrollable List Container */}
-            <div className="flex-1 overflow-y-auto custom-scrollbar pb-24 px-0">
+            <div className="flex-1 overflow-y-auto custom-scrollbar pb-24 px-0 [scrollbar-gutter:stable]">
                 {groups.length === 0 ? (
                     <div className="text-center py-12 px-4 text-slate-400">
                         <Filter className="w-8 h-8 mx-auto mb-2 opacity-20" />

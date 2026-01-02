@@ -10,7 +10,7 @@ export default {
         'infinity-modal': '100',
         'infinity-tooltip': '9999',
         'infinity-header': '50',
-        'infinity-slideover': '70',
+        'infinity-slideover': '100',
         'infinity-sidebar': '40',
         'infinity-fab': '50',
       },

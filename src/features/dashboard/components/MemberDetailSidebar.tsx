@@ -12,7 +12,7 @@ import {
     TrendingUp
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { THEME_COLORS } from '@/styles/theme';
+
 import type { Member, Report } from '@/types';
 
 interface MemberDetailSidebarProps {
@@ -82,7 +82,7 @@ export function MemberDetailSidebar({
     };
 
     return createPortal(
-        <div className="flex flex-col h-full bg-white border-l border-slate-200 shadow-2xl w-member-sidebar fixed right-0 top-0 bottom-0 z-infinity-slideover animate-in slide-in-from-right duration-300">
+        <div className="flex flex-col h-full bg-white border-l border-slate-200 shadow-2xl w-member-sidebar fixed right-0 top-0 bottom-0 !z-[100] animate-in slide-in-from-right duration-300">
 
             {/* --- Header (Sticky) --- */}
             <div className="flex-none bg-white z-10 border-b border-slate-200 p-4">
@@ -157,7 +157,7 @@ export function MemberDetailSidebar({
                             {/* Simple SVG Sparkline */}
                             <svg className="w-full h-full overflow-visible" viewBox="0 0 100 100" preserveAspectRatio="none">
                                 {/* Baseline (RSCA) - Grey Line at 50% for mock */}
-                                <line x1="0" y1="50" x2="100" y2="50" stroke={THEME_COLORS.slate300} strokeWidth="2" strokeDasharray="4 2" />
+                                <line x1="0" y1="50" x2="100" y2="50" stroke="#cbd5e1" strokeWidth="2" strokeDasharray="4 2" />
 
                                 {/* History Line */}
                                 {history.length > 0 && (
@@ -168,7 +168,7 @@ export function MemberDetailSidebar({
                                             return `${x},${y}`;
                                         }).join(' ')}
                                         fill="none"
-                                        stroke={THEME_COLORS.indigo500}
+                                        stroke="#6366f1"
                                         strokeWidth="2.5"
                                         strokeLinecap="round"
                                         strokeLinejoin="round"
@@ -180,7 +180,7 @@ export function MemberDetailSidebar({
                                         cx="100"
                                         cy={100 - ((simulatedMta - 2.0) / 3.0 * 100)}
                                         r="3"
-                                        fill={THEME_COLORS.indigo500}
+                                        fill="#6366f1"
                                         className="animate-pulse"
                                     />
                                 )}
