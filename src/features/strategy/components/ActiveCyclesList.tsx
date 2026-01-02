@@ -63,7 +63,6 @@ export function ActiveCyclesList({ groups, onSelect, selectedGroupId }: ActiveCy
                                 <ChevronRight
                                     className={`w-4 h-4 text-slate-400 transition-transform duration-200 ${!isCollapsed ? 'rotate-90' : ''}`}
                                 />
-                                <div className="w-1.5 h-1.5 rounded-full bg-slate-400"></div>
                                 <span className="text-xs font-bold text-slate-500 uppercase tracking-widest group-hover:text-slate-700">
                                     {key}
                                 </span>
