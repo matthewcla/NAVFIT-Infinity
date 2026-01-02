@@ -1,9 +1,8 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
-import { GroupHeader } from './GroupHeader';
-import { TimelineRow } from './TimelineRow';
+import { WaterfallGroup } from './WaterfallGroup';
+import { useMemberDrag } from '../hooks/useMemberDrag';
 import type { SummaryGroup, Member } from '@/types';
 import type { RosterMember } from '@/types/roster';
-import { CO_DETACH_DATE } from '@/lib/constants';
 
 const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
@@ -133,8 +132,6 @@ export function ManningWaterfall({ summaryGroups = [], roster = [], onOpenReport
 
     // Expand/Collapse State
     const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
-    // Default allExpanded is effectively true conceptually, but we removed the toggle.
-    // So distinct state is just expandedGroups overrides.
 
     const toggleGroup = (groupKey: string) => {
         setExpandedGroups(prev => ({
@@ -143,97 +140,8 @@ export function ManningWaterfall({ summaryGroups = [], roster = [], onOpenReport
         }));
     };
 
-    // --- Drag and Drop Logic ---
-    const [groupOrder, setGroupOrder] = useState<Record<string, string[]>>({});
-
-    // Initialize/Sync groupOrder with current groups
-    useEffect(() => {
-        setGroupOrder(prev => {
-            const newOrder = { ...prev };
-            let hasChanges = false;
-
-            Object.entries(groups).forEach(([key, list]) => {
-                if (!newOrder[key]) {
-                    // Initial sort alphabetical
-                    newOrder[key] = list
-                        .sort((a, b) => a.name.localeCompare(b.name))
-                        .map(m => m.id);
-                    hasChanges = true;
-                } else {
-                    // Check for new members not in order list
-                    const existingIds = new Set(newOrder[key]);
-                    const newMembers = list.filter(m => !existingIds.has(m.id));
-                    if (newMembers.length > 0) {
-                        newOrder[key] = [...newOrder[key], ...newMembers.map(m => m.id)];
-                        hasChanges = true;
-                    }
-                }
-            });
-
-            return hasChanges ? newOrder : prev;
-        });
-    }, [groups]);
-
-    const handleDragStart = (e: React.DragEvent, memberId: string, groupKey: string) => {
-        e.dataTransfer.setData('text/plain', JSON.stringify({ memberId, groupKey }));
-        e.dataTransfer.effectAllowed = 'move';
-    };
-
-    const handleDragOver = (e: React.DragEvent) => {
-        e.preventDefault();
-        e.dataTransfer.dropEffect = 'move';
-    };
-
-    const handleDrop = (e: React.DragEvent, targetMemberId: string, targetGroupKey: string) => {
-        e.preventDefault();
-        const data = e.dataTransfer.getData('text/plain');
-        if (!data) return;
-
-        try {
-            const { memberId: draggedId, groupKey: sourceGroupKey } = JSON.parse(data);
-
-            if (sourceGroupKey !== targetGroupKey) return; // Constraint: Only same group
-            if (draggedId === targetMemberId) return;
-
-            setGroupOrder(prev => {
-                const currentOrder = prev[targetGroupKey] ? [...prev[targetGroupKey]] : [];
-                const fromIndex = currentOrder.indexOf(draggedId);
-                const toIndex = currentOrder.indexOf(targetMemberId);
-
-                if (fromIndex === -1 || toIndex === -1) return prev;
-
-                // Move item
-                currentOrder.splice(fromIndex, 1);
-                currentOrder.splice(toIndex, 0, draggedId);
-
-                return {
-                    ...prev,
-                    [targetGroupKey]: currentOrder
-                };
-            });
-
-        } catch (err) {
-            console.error("Drop failed", err);
-        }
-    };
-
-    // Helper to get sorted list for rendering
-    const getSortedGroupList = (key: string, list: Member[]) => {
-        const order = groupOrder[key];
-        if (!order) return list.sort((a, b) => a.name.localeCompare(b.name));
-
-        // Create map for fast lookup
-        const map = new Map(list.map(m => [m.id, m]));
-
-        // Return ordered list, filter out any missing ids (safety)
-        const sorted = order.map(id => map.get(id)).filter(Boolean) as Member[];
-
-        // Append any potentially missing members (safety)
-        const returnedIds = new Set(sorted.map(m => m.id));
-        const missing = list.filter(m => !returnedIds.has(m.id));
-
-        return [...sorted, ...missing];
-    };
+    // --- Drag and Drop Logic (Extracted) ---
+    const { handleDragStart, handleDragOver, handleDrop, getSortedGroupList } = useMemberDrag(groups);
 
     return (
         <div className="bg-white border-t border-slate-200 h-full flex flex-col min-h-0">
@@ -258,192 +166,27 @@ export function ManningWaterfall({ summaryGroups = [], roster = [], onOpenReport
                         {Object.entries(groups).map(([groupTitle, groupList]) => {
                             const isExpanded = expandedGroups[groupTitle] !== undefined ? expandedGroups[groupTitle] : true;
 
-                            // Calculate Trend Points (RSCA - Running Cumulative Average)
-                            // 1. Flatten and Apply Projections
-                            const allReports = groupList.flatMap(m => {
-                                return m.history.map(r => ({
-                                    ...r,
-                                    // Use projection if available, else original
-                                    effectiveAverage: (projections && projections[r.id] !== undefined)
-                                        ? projections[r.id]
-                                        : r.traitAverage
-                                }));
-                            });
-
-                            // 2. Filter Valid & Sort by Date
-                            const validReports = allReports.filter(r =>
-                                r.effectiveAverage !== null &&
-                                r.effectiveAverage !== undefined &&
-                                (typeof r.effectiveAverage === 'number' ? r.effectiveAverage > 0 : false)
-                            ).sort((a, b) => new Date(a.periodEndDate).getTime() - new Date(b.periodEndDate).getTime());
-
-                            // 3. Calculate Cumulative Average over Time with 90-Day Delay & Batching
-                            // We need to map this to "Month Indices" relative to Start Date
-                            const timelineStart = new Date(START_DATE);
-                            timelineStart.setMonth(timelineStart.getMonth() - 3); // Timeline starts -3 months
-
-                            // Group reports by Date (Batch Logic)
-                            const reportsByDate = new Map<string, typeof validReports>();
-                            validReports.forEach(r => {
-                                const dKey = r.periodEndDate;
-                                if (!reportsByDate.has(dKey)) reportsByDate.set(dKey, []);
-                                reportsByDate.get(dKey)!.push(r);
-                            });
-
-                            // Sort batches by date
-                            const sortedDates = Array.from(reportsByDate.keys()).sort((a, b) => new Date(a).getTime() - new Date(b).getTime());
-
-                            const trendPoints: { monthIndex: number, value: number, isProjected?: boolean }[] = [];
-
-                            // Initialize running stats
-                            let runningSum = 0;
-                            let runningCount = 0;
-                            // Initialize "Current" RSCA before any visible timeline points if possible, 
-                            // but for simplicity, we start plotting from the first update or 0.
-                            // Better: Calculate the state *before* the timeline window starts if history exists.
-
-                            // We need to process ALL history to get accurate running averages,
-                            // then plot them with the delay.
-
-                            // Helper to get month index relative to timeline start
-                            const getMonthIndex = (d: Date) => (d.getFullYear() - timelineStart.getFullYear()) * 12 + (d.getMonth() - timelineStart.getMonth());
-
-                            sortedDates.forEach(dateStr => {
-                                const batch = reportsByDate.get(dateStr)!;
-
-                                // 1. Calculate new RSCA for this batch
-                                batch.forEach(r => {
-                                    const val = typeof r.effectiveAverage === 'number' ? r.effectiveAverage : 0;
-                                    runningSum += val;
-                                    runningCount++;
-                                });
-                                const newRSCA = runningCount > 0 ? runningSum / runningCount : 0;
-
-                                // 2. Determine WHEN this update applies (90 day delay)
-                                const reportDate = new Date(dateStr);
-                                const updateDate = new Date(reportDate);
-                                updateDate.setDate(updateDate.getDate() + 90); // +90 Days
-
-                                // 3. Plot this point
-                                const mIndex = getMonthIndex(updateDate);
-
-                                trendPoints.push({
-                                    monthIndex: mIndex,
-                                    value: newRSCA
-                                });
-                            });
-
-                            // Ensure points are sorted by month index (just in case)
-                            trendPoints.sort((a, b) => a.monthIndex - b.monthIndex);
-
-                            // "Fill gaps" / Hold value until next change?
-                            // actually the visualizer (Recharts or SVG line) usually connects points.
-                            // But for "Step" changes, we might want a point immediately before the new one?
-                            // For this specific visuals, simple line connection is usually fine, 
-                            // OR we want a "step" look. The requirement says "RSCA calculation is based on the batch submission".
-                            // The trend line usually just connects points. 
-
-                            // CRITIAL: Ensure we have a starting point at -3 if there was history *before* the first visible update.
-                            // If the first update is at month 5, what was the value at month 0?
-                            // We should probably inject a start point.
-                            if (trendPoints.length > 0) {
-                                const firstPt = trendPoints[0];
-                                if (firstPt.monthIndex > -3) {
-                                    // If we have a first point later, we need to know the "pre-existing" average?
-                                    // But since we calculate running average from scratch here, 
-                                    // the "previous" was theoretical 0 or whatever the default baseline is, 
-                                    // which might look weird dropping from 0 to 3.5.
-                                    // Let's assume the FIRST batch establishes the baseline, and we extend it backwards 
-                                    // if it's the very first data point we have.
-                                    trendPoints.unshift({
-                                        monthIndex: -3,
-                                        value: firstPt.value
-                                    });
-                                }
-                            }
-
-                            // Filter to visible range (optional, but good for perf) - actually we need off-screen points for lines to draw correctly in/out
-                            // We kept -3 to 24 logic essentially.
-
-                            // 4. "Covers the full timeline": Extend last known value to the end
-                            if (trendPoints.length > 0) {
-                                const lastPt = trendPoints[trendPoints.length - 1];
-                                if (lastPt.monthIndex < 23) {
-                                    trendPoints.push({
-                                        monthIndex: 23,
-                                        value: lastPt.value,
-                                        isProjected: true
-                                    });
-                                }
-                            }
-
-                            // Calculate Current RSCA (Last Real Point)
-                            // If we added a projection point, the "Current" is the value of that point (which is the last real point value)
-                            const currentRSCA = trendPoints.length > 0 ? trendPoints[trendPoints.length - 1].value : 0;
-
-                            // --- KPI Calculation Logic (Moved from RscaHealthScoreboard) ---
-                            const valueGap = 5.00 - currentRSCA;
-
-                            // Logic for Status
-                            let status: 'Safe' | 'Risk' | 'Developing' | 'Stabilized' = 'Safe';
-                            if (currentRSCA > 4.10) status = 'Risk';
-                            else if (currentRSCA < 3.60) status = 'Developing';
-                            else status = 'Stabilized';
-
-                            // Description logic
-                            let description = 'Stable performance';
-                            if (status === 'Risk') description = 'Average too high; limits EP value';
-                            if (status === 'Developing') description = 'Room for growth';
-
-                            // Sequencing Logic (stubbed for now as "Optimal" unless Risk)
-                            let sequencing: 'Optimal' | 'Concern' | 'Inverted' = 'Optimal';
-                            if (status === 'Risk') sequencing = 'Inverted';
-                            // ----------------------------------------------------------------
+                            // Get sorted members from wrapper
+                            const sortedMembers = getSortedGroupList(groupTitle, groupList);
 
                             return (
-                                <div key={groupTitle}>
-                                    <GroupHeader
-                                        title={groupTitle}
-                                        count={groupList.length}
-                                        isExpanded={isExpanded}
-                                        onToggle={() => toggleGroup(groupTitle)}
-                                        trendPoints={trendPoints}
-                                        targetRange={{ min: 3.8, max: 4.2 }}
-                                        timelineMonths={TIMELINE_MONTHS}
-                                        // New KPI Props
-                                        status={status}
-                                        valueGap={valueGap}
-                                        sequencing={sequencing}
-                                        description={description}
-                                    />
-                                    {isExpanded && getSortedGroupList(groupTitle, groupList).map((member, idx) => {
-                                        // Periodic Report ID Logic? TimelineRow handles checks.
-                                        // Just pass standard props.
-                                        const hasReport = true; // Simplified for now, or check real logic
-
-                                        return (
-                                            <TimelineRow
-                                                key={member.id}
-                                                member={member}
-                                                coDetachDate={CO_DETACH_DATE}
-                                                avgRSCA={currentRSCA}
-                                                timelineMonths={TIMELINE_MONTHS}
-                                                onOpenReport={(reportId) => {
-                                                    if (onOpenReport) onOpenReport(member.id, member.name, member.rank, reportId);
-                                                }}
-                                                rankIndex={idx + 1}
-                                                onDragStart={(e: React.DragEvent) => handleDragStart(e, member.id, groupTitle)}
-                                                onDragOver={handleDragOver}
-                                                onDrop={(e: React.DragEvent) => handleDrop(e, member.id, groupTitle)}
-                                                isDraggable={hasReport}
-                                                onReportUpdate={onReportUpdate}
-                                                projections={projections}
-                                                periodicReportId={(member as any).periodicReportId}
-                                                transferReportId={(member as any).transferReportId}
-                                            />
-                                        );
-                                    })}
-                                </div>
+                                <WaterfallGroup
+                                    key={groupTitle}
+                                    groupTitle={groupTitle}
+                                    members={sortedMembers}
+                                    isExpanded={isExpanded}
+                                    onToggle={() => toggleGroup(groupTitle)}
+                                    startDate={START_DATE}
+                                    timelineMonths={TIMELINE_MONTHS}
+                                    projections={projections}
+                                    onOpenReport={onOpenReport}
+                                    onReportUpdate={onReportUpdate}
+                                    dragHandlers={{
+                                        onDragStart: handleDragStart,
+                                        onDragOver: handleDragOver,
+                                        onDrop: handleDrop
+                                    }}
+                                />
                             );
                         })}
                         {members.length === 0 && (

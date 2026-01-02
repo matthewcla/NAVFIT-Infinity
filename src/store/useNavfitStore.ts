@@ -29,7 +29,7 @@ interface NavfitStore {
     reorderMember: (memberId: string, newIndex: number) => void; // Legacy roster reorder? Or keep for completeness
 
     // Summary Group / Ranking Mode Actions
-    reorderMembers: (groupId: string, draggedId: string, targetId: string) => void;
+    reorderMembers: (groupId: string, draggedId: string, targetIdOrOrder: string | string[]) => void;
 
     summaryGroups: SummaryGroup[];
     setSummaryGroups: (groups: SummaryGroup[]) => void;
@@ -174,29 +174,47 @@ export const useNavfitStore = create<NavfitStore>((set) => ({
         return { roster: currentRoster };
     }),
 
-    reorderMembers: (groupId, draggedId, targetId) => set((state) => {
+    reorderMembers: (groupId, draggedId, targetIdOrOrder) => set((state) => {
         const groupIndex = state.summaryGroups.findIndex(g => g.id === groupId);
         if (groupIndex === -1) return {};
 
         const group = state.summaryGroups[groupIndex];
         const currentReports = [...group.reports];
 
-        // 1. Identification
-        const draggedIndex = currentReports.findIndex(r => r.id === draggedId);
-        const targetIndex = currentReports.findIndex(r => r.id === targetId);
+        let updatedReportList: typeof currentReports = [];
 
-        if (draggedIndex === -1 || targetIndex === -1 || draggedIndex === targetIndex) {
-            return {};
+        if (Array.isArray(targetIdOrOrder)) {
+            // Bulk Reorder based on ID list
+            const newOrderIds = targetIdOrOrder;
+            // Map current reports to the new order
+            updatedReportList = newOrderIds
+                .map(id => currentReports.find(r => r.id === id))
+                .filter((r): r is typeof currentReports[0] => !!r);
+
+            // Append any missing reports (robustness)
+            const missingReports = currentReports.filter(r => !newOrderIds.includes(r.id));
+            updatedReportList = [...updatedReportList, ...missingReports];
+
+        } else {
+            // Legacy Single-Item Move
+            const targetId = targetIdOrOrder;
+
+            // 1. Identification
+            const draggedIndex = currentReports.findIndex(r => r.id === draggedId);
+            const targetIndex = currentReports.findIndex(r => r.id === targetId);
+
+            if (draggedIndex === -1 || targetIndex === -1 || draggedIndex === targetIndex) {
+                return {};
+            }
+
+            // 2. Atomic Move (Remove and Insert)
+            const [draggedItem] = currentReports.splice(draggedIndex, 1);
+            currentReports.splice(targetIndex, 0, draggedItem);
+            updatedReportList = currentReports;
         }
 
-        console.log('Reordering complete: ', draggedId, ' -> ', targetId);
-
-        // 2. Atomic Move (Remove and Insert)
-        const [draggedItem] = currentReports.splice(draggedIndex, 1);
-        currentReports.splice(targetIndex, 0, draggedItem);
-
         // 3. Prepare Auto-Plan Input
-        const autoPlanInput: Member[] = currentReports.map((r, index) => ({
+        const autoPlanInput: Member[] = updatedReportList.map((r, index) => ({
             id: r.id,
             rankOrder: index + 1,
             reportsRemaining: r.reportsRemaining || 1,
@@ -210,7 +228,7 @@ export const useNavfitStore = create<NavfitStore>((set) => ({
         const calculatedResults = calculateOutcomeBasedGrades(autoPlanInput, rscaTarget);
 
         // 5. Update Reports with Results & Promo Recs
-        const updatedReports = currentReports.map((report, index) => {
+        const finalReports = updatedReportList.map((report, index) => {
             const result = calculatedResults.find(res => res.id === report.id);
 
             // EP Logic: Rank #1 is EP, others MP (User specified heuristic)
@@ -228,11 +246,11 @@ export const useNavfitStore = create<NavfitStore>((set) => ({
         const newSummaryGroups = [...state.summaryGroups];
         newSummaryGroups[groupIndex] = {
             ...group,
-            reports: updatedReports
+            reports: finalReports
         };
 
         const newProjections = { ...state.projections };
-        updatedReports.forEach(r => {
+        finalReports.forEach(r => {
             newProjections[r.id] = r.traitAverage;
         });
 

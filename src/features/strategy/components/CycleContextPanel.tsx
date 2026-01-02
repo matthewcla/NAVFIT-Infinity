@@ -39,26 +39,34 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
         selectMember,
         setDraggingItemType
     } = useNavfitStore();
+    // Reactivity Fix: Ensure we use the latest group state from store, even if parent prop is stale
+    const latestGroup = useNavfitStore(state =>
+        group ? state.summaryGroups.find(g => g.id === group.id) || group : null
+    );
+
+    // Use latestGroup for all derived logic
+    const activeGroup = latestGroup || group;
+
     // Derived Stats using the "Dashboard" logic for advanced metrics
     const contextData = useMemo(() => {
-        if (!group) return null;
+        if (!activeGroup) return null;
 
         // Re-generate all groups for cumulative RSCA context
         const allGroups = generateSummaryGroups(roster, rsConfig, 2023, projections);
 
         // Derive Rank from competitiveGroupKey (e.g., "O-3 1110" -> "O-3") or use paygrade
-        const rank = group.paygrade || (group.competitiveGroupKey ? group.competitiveGroupKey.split(' ')[0] : 'Unknown');
+        const rank = activeGroup.paygrade || (activeGroup.competitiveGroupKey ? activeGroup.competitiveGroupKey.split(' ')[0] : 'Unknown');
 
         // Calculate Rank-Wide Cumulative Average (Current State of all reports)
         const cumulativeRsca = calculateCumulativeRSCA(allGroups, rank);
 
         // Stats
-        const totalReports = group.reports.length;
-        const assignedEPs = group.reports.filter(r => r.promotionRecommendation === 'EP').length;
+        const totalReports = activeGroup.reports.length;
+        const assignedEPs = activeGroup.reports.filter(r => r.promotionRecommendation === 'EP').length;
         const maxEPs = Math.floor(totalReports * 0.2); // Simple Rule of thumb
         const gap = Math.max(0, maxEPs - assignedEPs);
 
-        const draftStats = group.reports.reduce((acc, r) => {
+        const draftStats = activeGroup.reports.reduce((acc, r) => {
             const status = r.draftStatus || 'Projected';
             acc[status] = (acc[status] || 0) + 1;
             return acc;
@@ -67,10 +75,10 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
         const derivedStatus = Object.entries(draftStats).sort((a, b) => b[1] - a[1])[0]?.[0] || 'Pending';
 
         // Priority: Use explicit group status if valid, otherwise fallback to derived
-        const mainDraftStatus = (group.status && group.status !== 'Pending') ? group.status : derivedStatus;
+        const mainDraftStatus = (activeGroup.status && activeGroup.status !== 'Pending') ? activeGroup.status : derivedStatus;
 
         // Prepare Member List Data
-        const rankedMembers = group.reports
+        const rankedMembers = activeGroup.reports
             .map(report => {
                 const member = roster.find(m => m.id === report.memberId);
                 const currentMta = projections[report.id] || report.traitAverage || 0;
@@ -93,7 +101,7 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
 
         // Calculate Distribution
         const distribution: Record<string, number> = { SP: 0, PR: 0, P: 0, MP: 0, EP: 0 };
-        group.reports.forEach(r => {
+        activeGroup.reports.forEach(r => {
             const rec = r.promotionRecommendation;
             if (rec === 'SP') distribution.SP++;
             else if (rec === 'Prog') distribution.PR++;
@@ -117,15 +125,42 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
                 rsConfig.changeOfCommandDate
             )
         };
-    }, [group, roster, rsConfig, projections]);
+    }, [activeGroup, roster, rsConfig, projections]); // Depend on activeGroup
 
     // Local Rank Mode State
     const [isRankingMode, setIsRankingMode] = React.useState(false);
 
+    // Local Drag State for Live Reordering (iOS-style)
+    // Initialize as null. When dragging starts, populate with current list.
+    // While dragging, this local list is what gets mutated and rendered.
+    // On drop, we just read the final order from here and dispatch to store.
+
+    // We need to define the type of items in rankedMembers to avoid 'any' and 'never' inference issues
+    interface RankedMember {
+        id: string;
+        reportId: string;
+        name: string;
+        rank: string;
+        designator: string;
+        promRec: string;
+        mta: number;
+        delta: number;
+        rscaMargin: number;
+        reportsRemaining: number | undefined;
+        report: any; // Using any for the raw report to avoid strict typing issues here, or use Report type if imported
+    }
+
+    const [localOrderedMembers, setLocalOrderedMembers] = React.useState<RankedMember[] | null>(null);
+    const [draggedReportId, setDraggedReportId] = React.useState<string | null>(null);
 
 
+    // Effective list to render: Local preview if dragging, otherwise source of truth
+    // Use fallback array but cast or ensure types match. 
+    // contextData.rankedMembers matches the shape.
+    const membersToRender = localOrderedMembers || (contextData ? (contextData.rankedMembers as unknown as RankedMember[]) : []);
 
-    if (!group || !contextData) {
+
+    if (!activeGroup || !contextData) {
         return (
             <div className="h-full bg-slate-50 border-l border-slate-200 p-8 flex flex-col items-center justify-center text-center text-slate-400">
                 <Layout className="w-12 h-12 mb-4 opacity-20" />
@@ -156,7 +191,7 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
         return t.replace(/\b(FROCKED|REGULAR|SELECTED|SPOT)\b/gi, '').trim();
     };
 
-    const formattedDate = new Date(group.periodEndDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+    const formattedDate = new Date(activeGroup.periodEndDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
 
 
 
@@ -171,8 +206,8 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
                         <div className="flex justify-between items-start mb-4">
                             <div className="flex flex-col gap-1">
                                 <div className="flex items-center gap-2">
-                                    <h2 className="text-2xl font-bold text-slate-900">{cleanTitle(group.name)}</h2>
-                                    {getPromotionStatusBadge(group.promotionStatus)}
+                                    <h2 className="text-2xl font-bold text-slate-900">{cleanTitle(activeGroup.name)}</h2>
+                                    {getPromotionStatusBadge(activeGroup.promotionStatus)}
                                     <StatusBadge
                                         status={mainDraftStatus}
                                         className="!px-2.5 !py-1 !text-xs !font-semibold !rounded !shadow-sm !leading-none !tracking-wide"
@@ -238,7 +273,10 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
                                     {isRankingMode ? (
                                         <>
                                             <button
-                                                onClick={() => setIsRankingMode(false)}
+                                                onClick={() => {
+                                                    setIsRankingMode(false);
+                                                    setLocalOrderedMembers(null);
+                                                }}
                                                 className="flex items-center justify-center gap-2 px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white border border-transparent rounded-lg transition-colors text-xs font-medium shadow-sm"
                                                 title="Save Order"
                                             >
@@ -246,7 +284,10 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
                                                 <span>Done</span>
                                             </button>
                                             <button
-                                                onClick={() => setIsRankingMode(false)}
+                                                onClick={() => {
+                                                    setIsRankingMode(false);
+                                                    setLocalOrderedMembers(null);
+                                                }}
                                                 className="flex items-center justify-center gap-2 px-3 py-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 rounded-lg transition-colors text-xs font-medium"
                                                 title="Cancel Reordering"
                                             >
@@ -307,7 +348,7 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
                             {isRankingMode ? (
                                 <tr>
                                     <th className="px-4 py-3 border-b border-slate-200 w-12 text-center">#</th>
-                                    <th className="w-10 px-2 py-3 border-b border-slate-200 text-center"></th>
+                                    <th className="w-10 px-0 py-3 border-b border-slate-200 text-center"></th> {/* Handle */}
                                     <th className="px-4 py-3 border-b border-slate-200 text-left">Name</th>
                                     <th className="px-4 py-3 border-b border-slate-200 text-center font-mono">Proj. MTA</th>
                                     <th className="px-4 py-3 border-b border-slate-200 text-center">Rec</th>
@@ -315,6 +356,7 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
                             ) : (
                                 <tr>
                                     <th className="px-4 py-3 border-b border-slate-200 w-12 text-center">#</th>
+                                    <th className="w-8 px-0 py-3 border-b border-slate-200"></th> {/* Spacer for Handle */}
                                     <th className="px-4 py-3 border-b border-slate-200 text-left">Name</th>
                                     <th className="px-4 py-3 border-b border-slate-200 text-center">Rate/Des</th>
                                     <th className="px-4 py-3 border-b border-slate-200 text-center" title="Projected reports remaining until PRD"># Rpts</th>
@@ -327,36 +369,62 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
                         </thead>
                         <tbody className="divide-y divide-slate-100 bg-white">
                             {isRankingMode ? (
-                                rankedMembers.map((member, idx) => (
+                                membersToRender.map((member, idx) => (
                                     <tr
                                         key={member.reportId}
                                         draggable
                                         onDragStart={(e) => {
+                                            setLocalOrderedMembers(rankedMembers);
+                                            setDraggedReportId(member.reportId);
                                             e.dataTransfer.setData('text/plain', member.reportId);
                                             e.dataTransfer.effectAllowed = 'move';
+
+                                            // Optional: Create a custom drag image if needed
+                                            // const dragIcon = document.createElement('div'); ...
                                         }}
                                         onDragOver={(e) => {
                                             e.preventDefault();
                                             e.dataTransfer.dropEffect = 'move';
+
+                                            if (!localOrderedMembers || !draggedReportId) return;
+
+                                            const draggedIndex = localOrderedMembers.findIndex(m => m.reportId === draggedReportId);
+                                            const hoverIndex = idx; // The index of the row being hovered over
+
+                                            // Optimization: If dragging over itself or no actual change, skip update
+                                            if (draggedIndex === -1 || draggedIndex === hoverIndex) return;
+
+                                            // Calculate new order
+                                            const newOrder = [...localOrderedMembers];
+                                            const [reorderedItem] = newOrder.splice(draggedIndex, 1);
+                                            newOrder.splice(hoverIndex, 0, reorderedItem);
+
+                                            setLocalOrderedMembers(newOrder);
+                                        }}
+                                        onDragEnd={() => {
+                                            setDraggedReportId(null);
+                                            setLocalOrderedMembers(null);
                                         }}
                                         onDrop={(e) => {
                                             e.preventDefault();
-                                            const draggedId = e.dataTransfer.getData('text/plain');
-                                            const targetId = member.reportId;
-                                            console.log('Dropped:', draggedId, 'on', targetId);
-                                            if (draggedId && targetId && draggedId !== targetId && group) {
-                                                reorderMembers(group.id, draggedId, targetId);
+                                            if (draggedReportId && localOrderedMembers && activeGroup) {
+                                                const finalOrderIds = localOrderedMembers.map(m => m.reportId);
+                                                // Dispatch with the full new order
+                                                reorderMembers(activeGroup.id, draggedReportId, finalOrderIds);
                                             }
+                                            setDraggedReportId(null);
+                                            setLocalOrderedMembers(null);
                                         }}
-                                        className="group bg-white hover:bg-slate-50 border-b border-slate-100 last:border-0 transition-colors cursor-move"
+                                        className={`group bg-white border-b border-slate-100 last:border-0 transition-colors cursor-move ${draggedReportId === member.reportId
+                                            ? 'opacity-50 bg-slate-50 ring-2 ring-inset ring-indigo-500/20 z-10 relative'
+                                            : 'hover:bg-slate-50'
+                                            }`}
                                     >
                                         <td className="px-4 py-3 text-center text-sm font-medium text-slate-500 w-12">
                                             {idx + 1}
                                         </td>
-                                        <td className="w-10 px-2 py-3 text-center touch-none">
-                                            <div
-                                                className="flex items-center justify-center p-1 rounded hover:bg-slate-200/50 text-slate-400 group-hover:text-slate-600 transition-colors"
-                                            >
+                                        <td className="w-10 px-2 py-3 text-center">
+                                            <div className="flex items-center justify-center p-1 rounded hover:bg-slate-200/50 text-slate-400 group-hover:text-slate-600 transition-colors cursor-grab active:cursor-grabbing">
                                                 <GripVertical className="w-4 h-4" />
                                             </div>
                                         </td>
@@ -378,7 +446,7 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
                                         key={member.id}
                                         id={member.id}
                                         reportId={member.reportId}
-                                        groupId={group.id}
+                                        groupId={activeGroup.id}
                                         index={idx}
                                         name={member.name}
                                         designator={member.designator}
@@ -427,7 +495,7 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
                                 status: (m.status as any) || 'Onboard' // Ensure status matches expected union
                             } as unknown as Member;
                         })()}
-                        currentReport={group.reports.find(r => r.memberId === selectedMemberId)}
+                        currentReport={activeGroup.reports.find(r => r.memberId === selectedMemberId)}
                         groupStats={{ currentRSCA: cumulativeRsca, projectedRSCA: cumulativeRsca }} // TODO: Calculate actual proj RSCA
                         onClose={() => selectMember(null)}
                         onUpdateMTA={(id, val) => {
