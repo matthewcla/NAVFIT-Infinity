@@ -35,6 +35,8 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
         projections,
 
         reorderMembers,
+        updateReportMTA,
+        updateReportPromRec,
         selectedMemberId,
         selectMember,
         setDraggingItemType
@@ -431,12 +433,16 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
                         groupStats={{ currentRSCA: cumulativeRsca, projectedRSCA: cumulativeRsca }} // TODO: Calculate actual proj RSCA
                         onClose={() => selectMember(null)}
                         onUpdateMTA={(id, val) => {
-                            // TODO: Integrate with store action
-                            console.log('Update MTA:', id, val);
+                            const report = group.reports.find(r => r.memberId === id);
+                            if (report) {
+                                updateReportMTA(group.id, report.id, val);
+                            }
                         }}
                         onUpdatePromRec={(id, rec) => {
-                            // TODO: Integrate with store action
-                            console.log('Update PromRec:', id, rec);
+                            const report = group.reports.find(r => r.memberId === id);
+                            if (report) {
+                                updateReportPromRec(group.id, report.id, rec);
+                            }
                         }}
                         onNavigatePrev={() => {
                             const idx = rankedMembers.findIndex(m => m.id === selectedMemberId);

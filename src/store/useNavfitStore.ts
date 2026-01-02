@@ -48,6 +48,8 @@ interface NavfitStore {
     // Feature State
     projections: Record<string, number>;
     updateProjection: (reportId: string, value: number) => void;
+    updateReportMTA: (groupId: string, reportId: string, value: number) => void;
+    updateReportPromRec: (groupId: string, reportId: string, value: string) => void;
 
 
     // Cross-Component Requests
@@ -254,6 +256,44 @@ export const useNavfitStore = create<NavfitStore>((set) => ({
                 [reportId]: value
             }
         })),
+
+    updateReportMTA: (groupId, reportId, value) => set((state) => {
+        const groupIndex = state.summaryGroups.findIndex(g => g.id === groupId);
+        if (groupIndex === -1) return {};
+
+        const group = state.summaryGroups[groupIndex];
+        const updatedReports = group.reports.map(r => {
+            if (r.id !== reportId) return r;
+            return { ...r, traitAverage: value };
+        });
+
+        const newSummaryGroups = [...state.summaryGroups];
+        newSummaryGroups[groupIndex] = { ...group, reports: updatedReports };
+
+        return {
+            summaryGroups: newSummaryGroups,
+            projections: {
+                ...state.projections,
+                [reportId]: value
+            }
+        };
+    }),
+
+    updateReportPromRec: (groupId, reportId, value) => set((state) => {
+        const groupIndex = state.summaryGroups.findIndex(g => g.id === groupId);
+        if (groupIndex === -1) return {};
+
+        const group = state.summaryGroups[groupIndex];
+        const updatedReports = group.reports.map(r => {
+            if (r.id !== reportId) return r;
+            return { ...r, promotionRecommendation: value as any };
+        });
+
+        const newSummaryGroups = [...state.summaryGroups];
+        newSummaryGroups[groupIndex] = { ...group, reports: updatedReports };
+
+        return { summaryGroups: newSummaryGroups };
+    }),
 
     // Requests
     pendingReportRequest: null,
