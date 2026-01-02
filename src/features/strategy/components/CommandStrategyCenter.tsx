@@ -188,12 +188,6 @@ export function CommandStrategyCenter() {
                         />
                     </div>
 
-                    <AddSummaryGroupModal
-                        isOpen={isModalOpen}
-                        onClose={() => setIsModalOpen(false)}
-                        competitiveGroups={allCompetitiveGroups.length > 0 ? allCompetitiveGroups : ['O-1', 'O-2', 'O-3', 'O-4', 'O-5', 'O-6', 'E-1', 'E-2', 'E-3', 'E-4', 'E-5', 'E-6', 'E-7', 'E-8', 'E-9']}
-                        onCreate={handleCreateGroups}
-                    />
                 </div>
 
                 {/* Right Panel: Context & Details */}
@@ -223,6 +217,13 @@ export function CommandStrategyCenter() {
                 </div>
 
             </div>
+
+            <AddSummaryGroupModal
+                isOpen={isModalOpen}
+                onClose={() => setIsModalOpen(false)}
+                competitiveGroups={allCompetitiveGroups.length > 0 ? allCompetitiveGroups : ['O-1', 'O-2', 'O-3', 'O-4', 'O-5', 'O-6', 'E-1', 'E-2', 'E-3', 'E-4', 'E-5', 'E-6', 'E-7', 'E-8', 'E-9']}
+                onCreate={handleCreateGroups}
+            />
         </div>
     );
 }

@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { useNavfitStore } from '@/store/useNavfitStore';
 import type { SummaryGroup, Member } from '@/types';
 import { RscaHeadsUpDisplay } from './RscaHeadsUpDisplay';
@@ -8,7 +8,8 @@ import {
     ArrowRight,
     Layout,
     BarChart,
-    ListOrdered
+    ListOrdered,
+    Calendar
 } from 'lucide-react';
 import { MemberDetailSidebar } from '@/features/dashboard/components/MemberDetailSidebar';
 import { StatusBadge } from './StatusBadge';
@@ -168,7 +169,10 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
                                         className="!px-2.5 !py-1 !text-xs !font-semibold !rounded !shadow-sm !leading-none !tracking-wide"
                                     />
                                 </div>
-                                <div className="text-sm text-slate-500 font-medium">{formattedDate}</div>
+                                <div className="flex items-center text-sm text-slate-500 font-medium">
+                                    <Calendar className="w-4 h-4 mr-2 text-slate-400" />
+                                    {formattedDate}
+                                </div>
                             </div>
 
                             {/* Status Badges (Moved to Top Right) */}
@@ -181,15 +185,36 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
                             </div>
                         </div>
 
-                        {/* Row 2: RSCA Scoreboard */}
-                        <div className="rounded-xl border border-slate-200 shadow-sm overflow-hidden mb-1">
-                            <RscaHeadsUpDisplay
-                                currentRsca={cumulativeRsca}
-                                projectedRsca={cumulativeRsca}
-                                eotRsca={eotRsca}
-                                rankLabel="Curr. RSCA"
-                                showSuffix={false}
-                            />
+                        {/* Row 2: RSCA Scoreboard Container */}
+                        <div className="flex items-stretch gap-2">
+                            {/* 2A. RSCA Heads Up Display (Left) - Framed */}
+                            <div className="rounded-xl border border-slate-200 shadow-sm overflow-hidden bg-white/50 shrink-0">
+                                <RscaHeadsUpDisplay
+                                    currentRsca={cumulativeRsca}
+                                    projectedRsca={cumulativeRsca}
+                                    eotRsca={eotRsca}
+                                    rankLabel="Curr. RSCA"
+                                    showSuffix={false}
+                                />
+                            </div>
+
+                            {/* 2B. Promotion Recommendation Scoreboard (Right) - Framed & Flexible */}
+                            <div className="flex-1 rounded-xl border border-slate-200 shadow-sm overflow-hidden bg-white/50">
+                                <div className="flex items-center justify-around h-full px-4 bg-white/95 backdrop-blur-sm transition-all duration-300">
+                                    {['SP', 'PR', 'P', 'MP', 'EP'].map((key) => (
+                                        <div key={key} className="flex flex-col items-center gap-1 min-w-[32px]">
+                                            <span className="text-xl font-bold text-slate-700 leading-none">
+                                                {distribution[key] || 0}
+                                            </span>
+                                            <PromotionBadge
+                                                recommendation={key}
+                                                size="sm"
+                                                className="rounded-[3px] !text-[10px] !py-0.5 !px-2 h-auto min-h-0 uppercase tracking-wider"
+                                            />
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
                         </div>
                     </div>
 
@@ -198,14 +223,7 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
                         <div className="flex items-center justify-between">
                             {/* Left: Action Buttons */}
                             <div className="flex items-center gap-2">
-                                {/* Strategy Workspace */}
-                                <button
-                                    onClick={onOpenWorkspace}
-                                    className="flex items-center justify-center gap-2 px-3 py-2 bg-indigo-500 hover:bg-indigo-600 text-white rounded-lg shadow-sm transition-all text-xs font-bold"
-                                >
-                                    <ArrowRight className="w-3.5 h-3.5" />
-                                    <span>Workspace</span>
-                                </button>
+
 
                                 {/* Rank Button */}
                                 <button
@@ -227,14 +245,15 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
                                 </button>
                             </div>
 
-                            {/* Right: Distribution Stats */}
+                            {/* Right: Workspace Control */}
                             <div className="flex items-center gap-2 text-[10px] px-2">
-                                {['SP', 'PR', 'P', 'MP', 'EP'].map(key => (
-                                    <div key={key} className="flex flex-col items-center justify-center gap-1 min-w-[24px]">
-                                        <span className="text-slate-700 font-bold leading-none text-xs">{distribution[key] || 0}</span>
-                                        <PromotionBadge recommendation={key} size="sm" className="rounded-[3px]" />
-                                    </div>
-                                ))}
+                                <button
+                                    onClick={onOpenWorkspace}
+                                    className="flex items-center justify-center gap-2 px-3 py-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 rounded-lg transition-colors text-xs font-medium"
+                                >
+                                    <ArrowRight className="w-3.5 h-3.5 text-slate-500" />
+                                    <span>Workspace</span>
+                                </button>
                             </div>
                         </div>
                     </div>

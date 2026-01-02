@@ -69,7 +69,7 @@ export function ActiveCyclesList({ groups, onSelect, selectedGroupId, onAddClick
                 {groups.length === 0 ? (
                     <div className="text-center py-12 px-4 text-slate-400">
                         <Filter className="w-8 h-8 mx-auto mb-2 opacity-20" />
-                        <p className="text-sm">No cycles found.</p>
+                        <p className="text-sm">No summary groups found.</p>
                     </div>
                 ) : (
                     <div className="space-y-6">
@@ -90,7 +90,7 @@ export function ActiveCyclesList({ groups, onSelect, selectedGroupId, onAddClick
                                             {key}
                                         </span>
                                         <span className="text-xs text-slate-400 ml-auto font-medium">
-                                            {subGroups.length} Cycles
+                                            {subGroups.length} Summary Groups
                                         </span>
                                     </button>
 
