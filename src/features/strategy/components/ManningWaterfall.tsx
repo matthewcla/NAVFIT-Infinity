@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
 import { WaterfallGroup } from './WaterfallGroup';
 import { useMemberDrag } from '../hooks/useMemberDrag';
-import type { SummaryGroup, Member } from '@/types';
+import type { SummaryGroup, Member, TimelineMonth, WaterfallMember } from '@/types';
 import type { RosterMember } from '@/types/roster';
 
 const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -9,12 +9,12 @@ const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Se
 // Align with StrategyScattergram MOCK_START_DATE for "Same Chart" consistency
 const START_DATE = new Date('2025-01-01');
 
-const generateTimeline = () => {
+const generateTimeline = (): TimelineMonth[] => {
     // Start 3 months back from Fixed Start Date
     const startYear = START_DATE.getFullYear();
     const startMonth = START_DATE.getMonth();
 
-    const months = [];
+    const months: TimelineMonth[] = [];
     for (let i = -3; i < 21; i++) { // Total 24 months
         const date = new Date(startYear, startMonth + i, 1);
         months.push({
@@ -40,7 +40,7 @@ interface ManningWaterfallProps {
 
 export function ManningWaterfall({ summaryGroups = [], roster = [], onOpenReport, onReportUpdate, projections }: ManningWaterfallProps) {
     // Derived State: Convert Roster + Reports -> Member[] for Waterfall
-    const members = useMemo(() => {
+    const members = useMemo<WaterfallMember[]>(() => {
         let effectiveRoster: Member[] = [];
 
         if (roster && roster.length > 0) {
@@ -105,7 +105,7 @@ export function ManningWaterfall({ summaryGroups = [], roster = [], onOpenReport
 
     // Grouping Logic
     const groups = useMemo(() => {
-        const g: Record<string, Member[]> = {};
+        const g: Record<string, WaterfallMember[]> = {};
         members.forEach(m => {
             const key = m.rank === 'E-7' || m.rank === 'E-8' || m.rank === 'E-9' ? `${m.rank} CPO` : `${m.rank} ${m.designator || ''}`;
             if (!g[key]) g[key] = [];

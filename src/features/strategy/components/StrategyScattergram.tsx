@@ -4,6 +4,7 @@ import type { RosterMember } from '@/types/roster';
 import type { SummaryGroup } from '@/types';
 import { Lock, AlertCircle } from 'lucide-react';
 import { useNavfitStore } from '@/store/useNavfitStore';
+import { THEME_COLORS } from '@/styles/theme';
 import { useScatterLayout, type RSCAReport } from '../hooks/useScatterLayout';
 
 // --- MOCK DATA FOR PROTOTYPING ---
@@ -280,13 +281,13 @@ export function StrategyScattergram({ summaryGroups = EMPTY_SUMMARY_GROUPS, rost
 
     const getPointColor = (type: string) => {
         switch (type) {
-            case 'Periodic': return '#3b82f6';
-            case 'Transfer': return '#ef4444';
-            case 'Detachment': return '#ef4444';
-            case 'Gain': return '#64748b';
-            case 'Special': return '#eab308';
-            case 'Promotion': return '#22c55e';
-            default: return '#64748b';
+            case 'Periodic': return THEME_COLORS.periodic;
+            case 'Transfer': return THEME_COLORS.transfer;
+            case 'Detachment': return THEME_COLORS.transfer;
+            case 'Gain': return THEME_COLORS.gain;
+            case 'Special': return THEME_COLORS.special;
+            case 'Promotion': return THEME_COLORS.promotion;
+            default: return THEME_COLORS.gain;
         }
     };
 
@@ -473,18 +474,18 @@ export function StrategyScattergram({ summaryGroups = EMPTY_SUMMARY_GROUPS, rost
                                         y={traitToY(IDEAL_RSCA_MAX)}
                                         width={CHART_TOTAL_WIDTH}
                                         height={traitToY(IDEAL_RSCA_MIN) - traitToY(IDEAL_RSCA_MAX)}
-                                        fill="#10b981"
+                                        fill={THEME_COLORS.success}
                                         fillOpacity="0.1"
                                     />
                                     <line
                                         x1={0} y1={traitToY(IDEAL_RSCA_MAX)}
                                         x2={CHART_TOTAL_WIDTH} y2={traitToY(IDEAL_RSCA_MAX)}
-                                        stroke="#10b981" strokeWidth={1} strokeDasharray="4 4" strokeOpacity="0.5"
+                                        stroke={THEME_COLORS.success} strokeWidth={1} strokeDasharray="4 4" strokeOpacity="0.5"
                                     />
                                     <line
                                         x1={0} y1={traitToY(IDEAL_RSCA_MIN)}
                                         x2={CHART_TOTAL_WIDTH} y2={traitToY(IDEAL_RSCA_MIN)}
-                                        stroke="#10b981" strokeWidth={1} strokeDasharray="4 4" strokeOpacity="0.5"
+                                        stroke={THEME_COLORS.success} strokeWidth={1} strokeDasharray="4 4" strokeOpacity="0.5"
                                     />
 
                                     {/* NOB Line */}
@@ -582,7 +583,7 @@ export function StrategyScattergram({ summaryGroups = EMPTY_SUMMARY_GROUPS, rost
                                     {sortedPoints.map(p => {
                                         const isDragging = activeDragId === p.id;
                                         // Flight Path Override: Red if Over Limit
-                                        let strokeColor = '#eab308';
+                                        let strokeColor: string = THEME_COLORS.special;
 
                                         // Highlight Selected Member if in Flight Path Mode
                                         const isSelected = selectedMemberId === p.report.memberId;
@@ -592,12 +593,12 @@ export function StrategyScattergram({ summaryGroups = EMPTY_SUMMARY_GROUPS, rost
                                         if (p.report.isNOB) {
                                             strokeColor = 'white';
                                         } else if (p.report.traitAverage > projectedRSCAVal) {
-                                            strokeColor = '#22c55e';
+                                            strokeColor = THEME_COLORS.promotion;
                                         }
 
                                         // Flight Path Override
                                         if (flightPathData && p.report.id === flightPathData.currentReport.id && flightPathData.isOverLimit) {
-                                            strokeColor = '#ef4444'; // Red
+                                            strokeColor = THEME_COLORS.danger; // Red
                                         }
 
                                         const baseColor = getPointColor(p.report.type);
@@ -613,7 +614,7 @@ export function StrategyScattergram({ summaryGroups = EMPTY_SUMMARY_GROUPS, rost
                                                 >
                                                     <path
                                                         d="M0 -18 V18 M-18 0 H18"
-                                                        stroke="#22c55e"
+                                                        stroke={THEME_COLORS.promotion}
                                                         strokeWidth={4}
                                                         strokeLinecap="round"
                                                     />

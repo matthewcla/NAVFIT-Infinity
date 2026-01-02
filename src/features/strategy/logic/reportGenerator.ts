@@ -44,7 +44,7 @@ const getCompetitiveGroup = (member: RosterMember): CompGroupKey => {
 
     // Key Construction (used for grouping)
     // We update this to match the label logic so grouping works as expected visually
-    const groupKeyLabel = labelBase;
+    // const groupKeyLabel = labelBase; // Removed unused variable
 
     return {
         paygrade: rank,
@@ -53,6 +53,7 @@ const getCompetitiveGroup = (member: RosterMember): CompGroupKey => {
         label: label
     };
 };
+
 
 // --- Logic Engine ---
 
@@ -303,11 +304,11 @@ export const generateSummaryGroups = (
                 // Current/Future Cycle
                 // If it's the very next one, maybe 'Drafting' or 'Planning'
                 // For simplicity, everything future is 'Drafting' unless specific logic
-                status = 'Drafting';
+                status = 'Draft';
 
                 // If it's way out (more than 6 months), maybe 'Planned' (map to Planning)
                 const monthsOut = (endDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24 * 30);
-                if (monthsOut > 6) status = 'Planning';
+                if (monthsOut > 6) status = 'Planned';
             }
         }
 

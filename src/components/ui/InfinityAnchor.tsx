@@ -1,4 +1,5 @@
 import { Infinity } from 'lucide-react';
+import { THEME_COLORS } from '@/styles/theme';
 
 interface InfinityAnchorProps {
     size?: number;
@@ -7,8 +8,9 @@ interface InfinityAnchorProps {
 
 export const InfinityAnchor = ({ size = 24, className = "" }: InfinityAnchorProps) => {
     // Custom Gold Colors
-    const anchorColor = "#FFD700"; // Deep Gold
-    const infinityColor = "#FCEFA3"; // Light Gold / Cream
+    // Custom Gold Colors
+    const anchorColor = THEME_COLORS.gold; // Deep Gold
+    const infinityColor = THEME_COLORS.goldLight; // Light Gold / Cream
 
     return (
         <div

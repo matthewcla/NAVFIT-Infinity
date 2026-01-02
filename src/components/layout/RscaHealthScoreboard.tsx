@@ -95,7 +95,7 @@ export function RscaHealthScoreboard() {
     }, [summaryGroups]);
 
     return (
-        <div className="w-full bg-white/80 backdrop-blur-md border-b border-slate-200 px-6 py-2 flex items-center space-x-4 overflow-x-auto min-h-[85px] z-20 shadow-sm sticky top-0">
+        <div className="w-full bg-white/80 backdrop-blur-md border-b border-slate-200 px-6 py-2 flex items-center space-x-4 overflow-x-auto min-h-header-height z-infinity-header shadow-sm sticky top-0">
             {groupHealth.length === 0 && (
                 <div className="text-slate-400 text-sm italic">No RSCA Groups Found</div>
             )}

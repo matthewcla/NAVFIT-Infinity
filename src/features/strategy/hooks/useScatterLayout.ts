@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { THEME_COLORS } from '@/styles/theme';
 
 // Shared interfaces
 export interface RSCAReport {
@@ -139,7 +140,7 @@ export function useScatterLayout({
                 y1: reportY,
                 x2: impactX,
                 y2: impactY,
-                color: r.traitAverage >= impactY ? '#22c55e' : '#ef4444'
+                color: r.traitAverage >= impactY ? THEME_COLORS.promotion : THEME_COLORS.transfer
             };
         }).filter(Boolean) as { id: string, x1: number, y1: number, x2: number, y2: number, color: string }[];
 

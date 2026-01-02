@@ -2,16 +2,16 @@ import React, { memo } from 'react';
 import { GroupHeader } from './GroupHeader';
 import { TimelineRow } from './TimelineRow';
 import { useGroupMetrics } from '../hooks/useGroupMetrics';
-import type { Member } from '@/types';
+import type { WaterfallMember, TimelineMonth } from '../../../types';
 import { CO_DETACH_DATE } from '@/lib/constants';
 
 interface WaterfallGroupProps {
     groupTitle: string;
-    members: Member[];
+    members: WaterfallMember[];
     isExpanded: boolean;
     onToggle: () => void;
     startDate: Date;
-    timelineMonths: any[];
+    timelineMonths: TimelineMonth[];
     projections?: Record<string, number>;
     onOpenReport?: (memberId: string, name: string, rank?: string, reportId?: string) => void;
     onReportUpdate?: (reportId: string, newAverage: number) => void;
@@ -77,8 +77,8 @@ export const WaterfallGroup = memo(function WaterfallGroup({
                         isDraggable={hasReport}
                         onReportUpdate={onReportUpdate}
                         projections={projections}
-                        periodicReportId={(member as any).periodicReportId}
-                        transferReportId={(member as any).transferReportId}
+                        periodicReportId={member.periodicReportId}
+                        transferReportId={member.transferReportId}
                     />
                 );
             })}

@@ -1,10 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useCallback } from 'react';
 import type { Report } from '@/types';
 import { ArrowLeft, ChevronDown, ChevronUp, Save, FileOutput, CheckCircle, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useNavfitStore } from '@/store/useNavfitStore';
-
-const GHOST_BASELINE_TEXT = "MEMBER TRAIT AVERAGE DECREASED DUE ONLY TO CHANGE IN REPORTING SENIOR. PERFORMANCE REMAINS SUPERIOR AND ON PAR WITH [SOFT BREAKOUT].";
+import { useGhostBaseline } from '../hooks/useGhostBaseline';
 
 function Toast({ message, onDismiss }: { message: string; onDismiss: () => void }) {
     return (
@@ -47,47 +46,28 @@ interface ReportEditorProps {
 export function ReportEditor({ report, onClose, onBack, readOnly = false }: ReportEditorProps) {
     const [isHeaderCollapsed, setIsHeaderCollapsed] = useState(false);
     const [formData, setFormData] = useState<Report>(report);
-    const [showGhostToast, setShowGhostToast] = useState(false);
 
     // Store Connection
     const { rsConfig, roster } = useNavfitStore();
 
-    // Ghost Baseline Logic
-    useEffect(() => {
-        if (readOnly) return;
+    const handleApplyGhostText = useCallback((text: string) => {
+        setFormData(prev => ({
+            ...prev,
+            openingStatement: text,
+            comments: prev.comments ? prev.comments : text
+        }));
+    }, []);
 
-        // 1. Check New RS (Total Reports == 0)
-        // If undefined, default to 0 just in case, but requirement says "rsConfig.totalReports == 0"
-        if ((rsConfig.totalReports || 0) > 0) return;
-
-        // 2. Find Member and Check Rank (Top 2)
-        const member = roster.find(m => m.id === report.memberId);
-        if (!member) return;
-
-        // Rank 1 or 2 (Top Performer)
-        const rankOrder = member.rankOrder || 99;
-        if (rankOrder > 2) return;
-
-        // 3. Check Grade Decrease
-        // Get previous report from history (assuming history[0] is most recent previous)
-        const previousReport = member.history?.[0];
-        const previousGrade = previousReport?.traitAverage || 0;
-        const currentGrade = formData.traitAverage || 0;
-
-        // Logic: Current < Previous
-        if (currentGrade > 0 && previousGrade > 0 && currentGrade < previousGrade) {
-            // Check if we already have the text to avoid overwriting user edits or looping
-            if (!formData.openingStatement && !formData.comments) {
-                setFormData(prev => ({
-                    ...prev,
-                    openingStatement: GHOST_BASELINE_TEXT,
-                    // Also populate main comments if empty, or just openingStatement if separate
-                    comments: prev.comments ? prev.comments : GHOST_BASELINE_TEXT
-                }));
-                setShowGhostToast(true);
-            }
-        }
-    }, [formData.traitAverage, rsConfig.totalReports, roster, report.memberId, readOnly, formData.openingStatement, formData.comments]);
+    const { showGhostToast, dismissGhostToast } = useGhostBaseline({
+        report,
+        roster,
+        rsConfig,
+        readOnly,
+        onApplyGhostText: handleApplyGhostText,
+        currentOpeningStatement: formData.openingStatement,
+        currentComments: formData.comments,
+        currentTraitAverage: formData.traitAverage
+    });
 
     return (
         <div className="flex flex-col h-full bg-slate-50 relative">
@@ -695,7 +675,7 @@ export function ReportEditor({ report, onClose, onBack, readOnly = false }: Repo
                     {showGhostToast && (
                         <Toast
                             message="We detected a grade drop due to a new Reporting Senior. The required statement has been added."
-                            onDismiss={() => setShowGhostToast(false)}
+                            onDismiss={dismissGhostToast}
                         />
                     )}
 
