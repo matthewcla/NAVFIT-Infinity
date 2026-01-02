@@ -6,18 +6,13 @@ import { Lock, AlertCircle } from 'lucide-react';
 import { useNavfitStore } from '@/store/useNavfitStore';
 import { THEME_COLORS } from '@/styles/theme';
 import { useScatterLayout, type RSCAReport } from '../hooks/useScatterLayout';
+import { useScatterChartDimensions } from '../hooks/useScatterChartDimensions';
 
 // --- MOCK DATA FOR PROTOTYPING ---
 const MOCK_START_DATE = new Date('2025-01-01');
 
 const INITIAL_RSCA = 3.85;
 const INITIAL_SIGNED_COUNT = 45;
-
-// Types now imported from hook
-
-
-// Types now imported from hook
-
 
 interface StrategyScattergramProps {
     summaryGroups?: SummaryGroup[];
@@ -45,66 +40,23 @@ export function StrategyScattergram({ summaryGroups = EMPTY_SUMMARY_GROUPS, rost
     const scrollContainerRef = useRef<HTMLDivElement>(null);
 
     // --- DIMENSIONS & SCALES ---
-    const containerHeight = propHeight || 320;
-
-    // VISUAL CONSTANTS
-    const HEADER_HEIGHT = 40; // Sticky header
-    const ICON_RADIUS = 22;   // Max radius for collision/vis
-    const TOP_BUFFER = 20;    // Margin below header for NOB line
-    const BOTTOM_BUFFER = 30; // Margin at bottom for 3.0 line visibility inside container
-
-    // Start Y for NOB Line (Visually)
-    // Needs to clear sticky header (40) + Top Buffer + Radius/Half-element
-    // Actually relative to the Scroll Container content flow.
-    // The "Sticky Header" visually overlays.
-    // If we want NOB line at visual Y = HEADER_HEIGHT + TOP_BUFFER (+ Radius roughly), then:
-    const VISIBLE_TOP_Y = HEADER_HEIGHT + TOP_BUFFER + ICON_RADIUS;
-
-    // Target Bottom Y for 3.0 Line (Visually) within container
-    const VISIBLE_BOTTOM_Y = containerHeight - BOTTOM_BUFFER;
-
-    // Available Height for Range (NOB to 3.0)
-    const VISIBLE_PIXEL_HEIGHT = VISIBLE_BOTTOM_Y - VISIBLE_TOP_Y;
-
-    const NOB_VALUE = 5.5;
-    const TARGET_BOTTOM_TRAIT = 3.0;
-    const VISIBLE_TRAIT_RANGE = NOB_VALUE - TARGET_BOTTOM_TRAIT; // 2.5 units
-
-    const pixelsPerTrait = VISIBLE_PIXEL_HEIGHT / VISIBLE_TRAIT_RANGE;
-
-    // Helper: Trait -> Y Coordinate (relative to Scroll Container Top 0)
-    const traitToY = React.useCallback((trait: number) => {
-        // NOB (5.5) is at VISIBLE_TOP_Y
-        const valFromTop = NOB_VALUE - trait;
-        return VISIBLE_TOP_Y + (valFromTop * pixelsPerTrait);
-    }, [VISIBLE_TOP_Y, pixelsPerTrait, NOB_VALUE]);
-
-    const yToTrait = React.useCallback((y: number) => {
-        const relativeY = y - VISIBLE_TOP_Y;
-        const valFromTop = relativeY / pixelsPerTrait;
-        return NOB_VALUE - valFromTop;
-    }, [VISIBLE_TOP_Y, pixelsPerTrait, NOB_VALUE]);
-
-    // Total content height required to reach 1.0 (plus buffer)
-    const MIN_TRAIT = 1.0;
-    const CHART_BOTTOM_Y = traitToY(MIN_TRAIT) + BOTTOM_BUFFER;
-    const TOTAL_SCROLL_HEIGHT = Math.max(containerHeight, CHART_BOTTOM_Y);
-
-
-    // Helper to map date string to X coordinate
-    const dateToX = React.useCallback((dateStr: string) => {
-        const d = new Date(dateStr);
-        const start = new Date(MOCK_START_DATE);
-        // Visual timeline starts 3 months before MOCK_START_DATE
-        const diffTime = d.getTime() - start.getTime();
-        const diffDays = diffTime / (1000 * 3600 * 24);
-        const diffMonths = diffDays / 30.44;
-
-        // Add 3 months offset for visual alignment, and center in column
-        const visualMonthIndex = diffMonths + 3;
-
-        return (visualMonthIndex * 96) + 48; // 96 is COL_WIDTH
-    }, []);
+    const {
+        containerHeight,
+        TOTAL_SCROLL_HEIGHT,
+        CHART_TOTAL_WIDTH,
+        HEADER_HEIGHT,
+        COL_WIDTH,
+        NUM_MONTHS,
+        NOB_VALUE,
+        MIN_TRAIT,
+        IDEAL_RSCA_MIN,
+        IDEAL_RSCA_MAX,
+        ICON_RADIUS,
+        traitToY,
+        yToTrait,
+        dateToX,
+        monthToX
+    } = useScatterChartDimensions({ height: propHeight, startDate: MOCK_START_DATE });
 
     // Auto-scroll to focusDate (Horizontal)
     useEffect(() => {
@@ -169,19 +121,6 @@ export function StrategyScattergram({ summaryGroups = EMPTY_SUMMARY_GROUPS, rost
         });
     }, [reports, dragOverride]);
 
-    // X-Axis Config
-    const NUM_MONTHS = 24;
-    const COL_WIDTH = 96;
-    const CHART_TOTAL_WIDTH = NUM_MONTHS * COL_WIDTH;
-
-    // Ideal RSCA Range
-    const IDEAL_RSCA_MIN = 3.8;
-    const IDEAL_RSCA_MAX = 4.0;
-
-    const monthToX = (monthIndex: number) => {
-        return (monthIndex * COL_WIDTH) + (COL_WIDTH / 2);
-    };
-
     // --- FLIGHT PATH / CONE LOGIC ---
     // Logic: Identify selected member, their current/projected report, and calculate bounds based on PRD.
     const flightPathData = useMemo(() => {
@@ -224,7 +163,7 @@ export function StrategyScattergram({ summaryGroups = EMPTY_SUMMARY_GROUPS, rost
         if (reportsRemaining > 1) {
             maxGradeToday = 5.00 - ((reportsRemaining - 1) * PROGRESSION_STEP);
         }
-        // Clamp maxGradeToday? 
+        // Clamp maxGradeToday?
         maxGradeToday = Math.min(5.00, Math.max(1.0, maxGradeToday));
 
         const upperBoundY = traitToY(maxGradeToday);
@@ -367,7 +306,7 @@ export function StrategyScattergram({ summaryGroups = EMPTY_SUMMARY_GROUPS, rost
             arr.push(d.toLocaleDateString('en-US', { month: 'short', year: '2-digit' }));
         }
         return arr;
-    }, []);
+    }, [NUM_MONTHS]);
 
 
 
@@ -602,7 +541,7 @@ export function StrategyScattergram({ summaryGroups = EMPTY_SUMMARY_GROUPS, rost
                                         }
 
                                         const baseColor = getPointColor(p.report.type);
-                                        const radius = isDragging ? 22 : 18;
+                                        const radius = isDragging ? ICON_RADIUS : 18;
                                         const isFinal = p.report.draftStatus === 'Final';
 
                                         if (p.report.type === 'Gain') {
