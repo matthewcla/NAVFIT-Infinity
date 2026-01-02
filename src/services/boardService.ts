@@ -1,5 +1,25 @@
 import type { Board, BoardSchedule } from '@/types';
 
+// Standard API Response Interface
+export interface ApiResponse<T> {
+    data: T;
+    status: number;
+    message?: string;
+}
+
+// Mock Fetch Helper - Simulate API latency and response structure
+async function mockFetch<T>(data: T, delay: number = 500): Promise<ApiResponse<T>> {
+    return new Promise((resolve) => {
+        setTimeout(() => {
+            resolve({
+                data,
+                status: 200,
+                message: 'Success'
+            });
+        }, delay);
+    });
+}
+
 // Mock Data
 const MOCK_BOARDS: Board[] = [
     {
@@ -36,29 +56,30 @@ const MOCK_BOARDS: Board[] = [
 export const BoardService = {
     getSchedule: async (year: number): Promise<BoardSchedule> => {
         // Simulate API call
-        return new Promise((resolve) => {
-            setTimeout(() => {
-                resolve({
-                    year,
-                    boards: MOCK_BOARDS
-                });
-            }, 500);
-        });
+        const schedule = {
+            year,
+            boards: MOCK_BOARDS
+        };
+        const response = await mockFetch(schedule);
+        return response.data;
     },
 
     addCustomBoard: async (board: Omit<Board, 'id'>): Promise<Board> => {
         const newBoard = { ...board, id: `cb-${Date.now()}` };
         MOCK_BOARDS.push(newBoard);
-        return newBoard;
+        const response = await mockFetch(newBoard);
+        return response.data;
     },
 
     // Helper to find boards a member is eligible for
     getBoardsForMember: async (memberId: string): Promise<Board[]> => {
-        return MOCK_BOARDS.filter(b =>
+        const boards = MOCK_BOARDS.filter(b =>
             b.zones?.inZone.includes(memberId) ||
             b.zones?.aboveZone.includes(memberId) ||
             b.zones?.belowZone.includes(memberId) ||
             b.eligibles?.includes(memberId)
         );
+        const response = await mockFetch(boards);
+        return response.data;
     }
 };

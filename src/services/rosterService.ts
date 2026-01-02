@@ -1,5 +1,25 @@
 import type { RosterEntry } from '@/types';
 
+// Standard API Response Interface
+export interface ApiResponse<T> {
+    data: T;
+    status: number;
+    message?: string;
+}
+
+// Mock Fetch Helper - Simulate API latency and response structure
+async function mockFetch<T>(data: T, delay: number = 400): Promise<ApiResponse<T>> {
+    return new Promise((resolve) => {
+        setTimeout(() => {
+            resolve({
+                data,
+                status: 200,
+                message: 'Success'
+            });
+        }, delay);
+    });
+}
+
 // Mock Roster Data
 const MOCK_ROSTER: RosterEntry[] = [
     {
@@ -33,12 +53,13 @@ const MOCK_ROSTER: RosterEntry[] = [
 
 export const RosterService = {
     getRoster: async (): Promise<RosterEntry[]> => {
-        return new Promise((resolve) => {
-            setTimeout(() => resolve(MOCK_ROSTER), 400);
-        });
+        const response = await mockFetch(MOCK_ROSTER);
+        return response.data;
     },
 
     getMemberDetails: async (memberId: string): Promise<RosterEntry | undefined> => {
-        return MOCK_ROSTER.find(m => m.memberId === memberId);
+        const member = MOCK_ROSTER.find(m => m.memberId === memberId);
+        const response = await mockFetch(member);
+        return response.data;
     }
 };
