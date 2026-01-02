@@ -3,6 +3,7 @@ import {
     Plus,
     Users,
 } from 'lucide-react';
+import { THEME_COLORS } from '@/styles/theme';
 import type { Member } from '@/types';
 import { PERIODIC_SCHEDULE } from '@/lib/constants';
 
@@ -580,7 +581,7 @@ export const TimelineRow = ({
                     coDetachPos > 0 && (
                         <div
                             className="absolute h-full w-0.5 bg-purple-500 top-0 z-0 opacity-60 dashed"
-                            style={{ left: `${coDetachPos}px`, borderLeft: '2px dashed #a855f7' }}
+                            style={{ left: `${coDetachPos}px`, borderLeft: `2px dashed ${THEME_COLORS.purple500}` }}
                         >
                             <div className="absolute top-1/2 -translate-y-1/2 -left-2.5 w-5 h-5 bg-purple-100 rounded-full border border-purple-500 flex items-center justify-center z-20">
                                 <Users size={10} className="text-purple-700" />

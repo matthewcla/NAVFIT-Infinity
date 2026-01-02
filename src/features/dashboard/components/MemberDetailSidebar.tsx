@@ -12,6 +12,7 @@ import {
     TrendingUp
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { THEME_COLORS } from '@/styles/theme';
 import type { Member, Report } from '@/types';
 
 interface MemberDetailSidebarProps {
@@ -156,7 +157,7 @@ export function MemberDetailSidebar({
                             {/* Simple SVG Sparkline */}
                             <svg className="w-full h-full overflow-visible" viewBox="0 0 100 100" preserveAspectRatio="none">
                                 {/* Baseline (RSCA) - Grey Line at 50% for mock */}
-                                <line x1="0" y1="50" x2="100" y2="50" stroke="#cbd5e1" strokeWidth="2" strokeDasharray="4 2" />
+                                <line x1="0" y1="50" x2="100" y2="50" stroke={THEME_COLORS.slate300} strokeWidth="2" strokeDasharray="4 2" />
 
                                 {/* History Line */}
                                 {history.length > 0 && (
@@ -167,7 +168,7 @@ export function MemberDetailSidebar({
                                             return `${x},${y}`;
                                         }).join(' ')}
                                         fill="none"
-                                        stroke="#6366f1"
+                                        stroke={THEME_COLORS.indigo500}
                                         strokeWidth="2.5"
                                         strokeLinecap="round"
                                         strokeLinejoin="round"
@@ -179,7 +180,7 @@ export function MemberDetailSidebar({
                                         cx="100"
                                         cy={100 - ((simulatedMta - 2.0) / 3.0 * 100)}
                                         r="3"
-                                        fill="#6366f1"
+                                        fill={THEME_COLORS.indigo500}
                                         className="animate-pulse"
                                     />
                                 )}
