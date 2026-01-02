@@ -37,7 +37,8 @@ export function ReportsManager() {
 
     // Update Handler
     const handleUpdateReport = (reportId: string, newAverage: number) => {
-        updateProjection(reportId, newAverage);
+        if (!selectedGroupId) return; // Needs context
+        updateProjection(selectedGroupId, reportId, newAverage);
     };
 
 

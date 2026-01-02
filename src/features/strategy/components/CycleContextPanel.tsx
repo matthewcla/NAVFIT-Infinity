@@ -361,7 +361,7 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
                         onUpdateMTA={(id, val) => {
                             const report = activeGroup.reports.find(r => r.memberId === id);
                             if (report) {
-                                updateProjection(report.id, val);
+                                updateProjection(activeGroup.id, report.id, val);
                             }
                         }}
                         onUpdatePromRec={(id, rec) => {

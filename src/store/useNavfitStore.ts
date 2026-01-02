@@ -3,7 +3,10 @@ import type { Tab } from '../components/layout/Sidebar';
 import type { RosterMember, ReportingSeniorConfig } from '@/types/roster';
 import { INITIAL_ROSTER, INITIAL_RS_CONFIG } from '../data/initialRoster';
 
-import { calculateOutcomeBasedGrades, type Member } from '@/features/strategy/logic/autoPlan';
+import { type Member } from '@/features/strategy/logic/autoPlan';
+import { useRedistributionStore } from './useRedistributionStore';
+import { DEFAULT_CONSTRAINTS } from '@/domain/rsca/constants';
+import type { Member as DomainMember } from '@/domain/rsca/types';
 
 import type { SummaryGroup } from '@/types';
 
@@ -47,7 +50,7 @@ interface NavfitStore {
 
     // Feature State
     projections: Record<string, number>;
-    updateProjection: (reportId: string, value: number) => void;
+    updateProjection: (groupId: string, reportId: string, value: number) => void;
 
 
     // Cross-Component Requests
@@ -149,21 +152,34 @@ export const useNavfitStore = create<NavfitStore>((set) => ({
             };
         })
     })),
-    toggleReportLock: (groupId, reportId) => set((state) => ({
-        summaryGroups: state.summaryGroups.map((group) => {
-            if (group.id !== groupId) return group;
-            return {
-                ...group,
-                reports: group.reports.map((report) => {
-                    if (report.id !== reportId) return report;
-                    return {
-                        ...report,
-                        isLocked: !report.isLocked
-                    };
-                })
-            };
-        })
-    })),
+    toggleReportLock: (groupId, reportId) => {
+        set((state) => ({
+            summaryGroups: state.summaryGroups.map((group) => {
+                if (group.id !== groupId) return group;
+                return {
+                    ...group,
+                    reports: group.reports.map((report) => {
+                        if (report.id !== reportId) return report;
+                        return {
+                            ...report,
+                            isLocked: !report.isLocked
+                        };
+                    })
+                };
+            })
+        }));
+
+        // Trigger Redistribution for Anchor Update
+        const state = useNavfitStore.getState(); // Get fresh state
+        const group = state.summaryGroups.find(g => g.id === groupId);
+        if (group) {
+             const anchors: Record<string, number> = {};
+             group.reports.forEach(r => {
+                 if (r.isLocked) anchors[r.id] = r.traitAverage;
+             });
+             useRedistributionStore.getState().setAnchors(groupId, anchors);
+        }
+    },
     reorderMember: (memberId, newIndex) => set((state) => {
         // Legacy Roster Reorder (Keep for Member Detail View if needed, but primary is now Group-based)
         const currentRoster = [...state.roster];
@@ -213,50 +229,44 @@ export const useNavfitStore = create<NavfitStore>((set) => ({
             updatedReportList = currentReports;
         }
 
-        // 3. Prepare Auto-Plan Input
-        const autoPlanInput: Member[] = updatedReportList.map((r, index) => ({
-            id: r.id,
-            rankOrder: index + 1,
-            reportsRemaining: r.reportsRemaining || 1,
-            status: r.isAdverse ? 'Adverse' : 'Promotable',
-            proposedTraitAverage: r.traitAverage,
-            isLocked: r.isLocked
-        }));
-
-        // 4. Calculate Grades
-        const rscaTarget = state.rsConfig.targetRsca || 4.20;
-        const calculatedResults = calculateOutcomeBasedGrades(autoPlanInput, rscaTarget);
-
-        // 5. Update Reports with Results & Promo Recs
+        // 3. Update Order Optimistically (Keep old MTA values for now)
         const finalReports = updatedReportList.map((report, index) => {
-            const result = calculatedResults.find(res => res.id === report.id);
-
             // EP Logic: Rank #1 is EP, others MP (User specified heuristic)
+            // We keep this simple logic here for immediate feedback, but MTA is handled by engine.
             let newPromo: 'EP' | 'MP' | 'P' | 'Prog' | 'SP' | 'NOB' = index === 0 ? 'EP' : 'MP';
             if (report.isAdverse) newPromo = 'SP';
 
             return {
                 ...report,
-                traitAverage: result?.proposedTraitAverage ?? report.traitAverage,
                 promotionRecommendation: newPromo,
             };
         });
 
-        // 6. Update State
+        // 4. Update State
         const newSummaryGroups = [...state.summaryGroups];
         newSummaryGroups[groupIndex] = {
             ...group,
             reports: finalReports
         };
 
-        const newProjections = { ...state.projections };
-        finalReports.forEach(r => {
-            newProjections[r.id] = r.traitAverage;
-        });
+        // 5. Trigger Redistribution Engine
+        // Convert to Domain Members
+        const domainMembers: DomainMember[] = finalReports.map((r, i) => ({
+            id: r.id,
+            rank: i + 1,
+            mta: r.traitAverage, // Send current MTA as baseline
+            isAnchor: r.isLocked,
+            anchorValue: r.traitAverage,
+            name: `${r.firstName} ${r.lastName}`
+        }));
+
+        // Do NOT call setRankOrder to avoid cycle (setRankOrder calls reorderMembers)
+        // Call requestRedistribution directly
+        useRedistributionStore.getState().requestRedistribution(groupId, domainMembers, DEFAULT_CONSTRAINTS, state.rsConfig.targetRsca);
 
         return {
             summaryGroups: newSummaryGroups,
-            projections: newProjections
+            // Projections will be updated by the store subscription/callback
         };
     }),
 
@@ -265,13 +275,37 @@ export const useNavfitStore = create<NavfitStore>((set) => ({
 
     // Feature
     projections: {},
-    updateProjection: (reportId, value) =>
+    updateProjection: (groupId, reportId, value) => {
+        // Optimistic Update with Locking
         set((state) => ({
             projections: {
                 ...state.projections,
                 [reportId]: value
-            }
-        })),
+            },
+            summaryGroups: state.summaryGroups.map(g => {
+                if (g.id !== groupId) return g;
+                return {
+                    ...g,
+                    reports: g.reports.map(r => r.id === reportId ? { ...r, traitAverage: value, isLocked: true } : r)
+                };
+            })
+        }));
+
+        // Trigger Engine
+        const state = useNavfitStore.getState();
+        const group = state.summaryGroups.find(g => g.id === groupId);
+        if (group) {
+             const domainMembers: DomainMember[] = group.reports.map((r, i) => ({
+                 id: r.id,
+                 rank: i + 1,
+                 mta: r.traitAverage,
+                 isAnchor: r.isLocked,
+                 anchorValue: r.traitAverage,
+                 name: `${r.firstName} ${r.lastName}`
+             }));
+             useRedistributionStore.getState().requestRedistribution(groupId, domainMembers, DEFAULT_CONSTRAINTS, state.rsConfig.targetRsca);
+        }
+    },
 
     // Requests
     pendingReportRequest: null,

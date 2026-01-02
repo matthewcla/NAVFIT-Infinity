@@ -15,8 +15,9 @@ export function QuickReportTuner() {
 
     const handleTraitChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const value = parseFloat(e.target.value);
-        if (selectedReportId) {
-            updateProjection(selectedReportId, value);
+        const group = summaryGroups.find(g => g.reports.some(r => r.id === selectedReportId));
+        if (selectedReportId && group) {
+            updateProjection(group.id, selectedReportId, value);
         }
     };
 
