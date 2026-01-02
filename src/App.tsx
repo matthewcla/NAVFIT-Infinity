@@ -7,8 +7,14 @@ import { SelectionBoardsManager } from '@/features/boards/components/SelectionBo
 import { CommandAdmin } from '@/features/admin/components/CommandAdmin';
 import { SailorProfiles } from '@/features/roster/components/SailorProfiles';
 import { useNavfitStore } from '@/store/useNavfitStore';
+import { useRedistributionStore } from '@/store/useRedistributionStore';
 
 function App() {
+  // Initialize Redistribution Worker
+  useEffect(() => {
+    useRedistributionStore.getState().initWorker();
+  }, []);
+
   // const [isWorkspaceOpen, setIsWorkspaceOpen] = useState(false);  <-- Removed local state
   const {
     activeTab,
