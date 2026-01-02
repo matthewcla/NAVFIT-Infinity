@@ -31,6 +31,12 @@ interface NavfitStore {
     summaryGroups: SummaryGroup[];
     setSummaryGroups: (groups: SummaryGroup[]) => void;
     addSummaryGroup: (group: SummaryGroup) => void;
+    // State for persistence (Deletions)
+    deletedGroupIds: string[];
+    deletedReportIds: string[];
+
+    deleteSummaryGroup: (groupId: string) => void;
+    deleteReport: (groupId: string, reportId: string) => void;
 
     rsConfig: ReportingSeniorConfig;
     setRsConfig: (config: ReportingSeniorConfig) => void;
@@ -38,6 +44,7 @@ interface NavfitStore {
     // Feature State
     projections: Record<string, number>;
     updateProjection: (reportId: string, value: number) => void;
+
 
     // Cross-Component Requests
     pendingReportRequest: {
@@ -83,6 +90,13 @@ interface NavfitStore {
     // History View State
     cycleListPhase: 'Active' | 'Archive' | 'Projected';
     setCycleListPhase: (phase: 'Active' | 'Archive' | 'Projected') => void;
+    // Drag State
+    draggingItemType: string | null;
+    setDraggingItemType: (type: string | null) => void;
+
+    // UI Mode State
+    isRankMode: boolean;
+    setRankMode: (isRankMode: boolean) => void;
 }
 
 export const useNavfitStore = create<NavfitStore>((set) => ({
@@ -112,6 +126,24 @@ export const useNavfitStore = create<NavfitStore>((set) => ({
     setSummaryGroups: (groups) => set({ summaryGroups: groups }),
     addSummaryGroup: (group) => set((state) => ({
         summaryGroups: [...state.summaryGroups, group]
+    })),
+    // Deletion Persistence
+    deletedGroupIds: [],
+    deletedReportIds: [],
+
+    deleteSummaryGroup: (groupId) => set((state) => ({
+        deletedGroupIds: [...state.deletedGroupIds, groupId],
+        summaryGroups: state.summaryGroups.filter((g) => g.id !== groupId)
+    })),
+    deleteReport: (groupId, reportId) => set((state) => ({
+        deletedReportIds: [...state.deletedReportIds, reportId],
+        summaryGroups: state.summaryGroups.map((group) => {
+            if (group.id !== groupId) return group;
+            return {
+                ...group,
+                reports: group.reports.filter((r) => r.id !== reportId)
+            };
+        })
     })),
     reorderMember: (memberId, newIndex) => set((state) => {
         const currentRoster = [...state.roster];
@@ -237,6 +269,14 @@ export const useNavfitStore = create<NavfitStore>((set) => ({
     setCycleFilter: (filter) => set({ cycleFilter: filter }),
     setCycleSort: (sort) => set({ cycleSort: sort }),
     setStrategyViewMode: (mode) => set({ strategyViewMode: mode }),
+
+    // Drag State
+    draggingItemType: null,
+    setDraggingItemType: (type) => set({ draggingItemType: type }),
+
+    // UI Mode State
+    isRankMode: false,
+    setRankMode: (isRankMode) => set({ isRankMode }),
 }));
 
 export const selectActiveCycle = (state: NavfitStore): SummaryGroup | null => {

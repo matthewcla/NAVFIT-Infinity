@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { useNavfitStore } from '@/store/useNavfitStore';
 import type { SummaryGroup } from '@/types';
 import { StrategyGroupCard } from './StrategyGroupCard';
 import { ChevronRight, Filter } from 'lucide-react';
@@ -10,6 +11,7 @@ interface ActiveCyclesListProps {
 }
 
 export function ActiveCyclesList({ groups, onSelect, selectedGroupId }: ActiveCyclesListProps) {
+    const { setDraggingItemType } = useNavfitStore();
     const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({});
 
     // Group by Competitive Group Key
@@ -111,6 +113,12 @@ export function ActiveCyclesList({ groups, onSelect, selectedGroupId }: ActiveCy
                                                     isSelected={selectedGroupId === group.id}
                                                     distribution={dist}
                                                     onClick={() => onSelect(group)}
+                                                    draggable={true}
+                                                    onDragStart={(e) => {
+                                                        setDraggingItemType('summary_group');
+                                                        e.dataTransfer.setData('summary_group', group.id);
+                                                    }}
+                                                    onDragEnd={() => setDraggingItemType(null)}
                                                 />
                                             );
                                         })}

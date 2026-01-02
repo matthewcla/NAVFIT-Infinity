@@ -12,6 +12,9 @@ interface StrategyGroupCardProps {
     isSelected?: boolean;
     onClick?: () => void;
     distribution?: Record<string, number>;
+    draggable?: boolean;
+    onDragStart?: (e: React.DragEvent<HTMLDivElement>) => void;
+    onDragEnd?: (e: React.DragEvent<HTMLDivElement>) => void;
 }
 
 
@@ -25,7 +28,10 @@ export function StrategyGroupCard({
     isSelected = false,
     onClick,
     workflowStatus,
-    distribution
+    distribution,
+    draggable,
+    onDragStart,
+    onDragEnd
 }: StrategyGroupCardProps & { workflowStatus?: string; distribution?: Record<string, number> }) {
 
 
@@ -75,6 +81,9 @@ export function StrategyGroupCard({
 
     return (
         <div
+            draggable={draggable}
+            onDragStart={onDragStart}
+            onDragEnd={onDragEnd}
             onClick={onClick}
             className={`
                 group relative rounded-lg border transition-all cursor-pointer overflow-hidden flex flex-col
