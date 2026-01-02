@@ -4,6 +4,8 @@ import type { RosterMember } from '@/types/roster';
 import type { SummaryGroup } from '@/types';
 import { Lock, AlertCircle } from 'lucide-react';
 import { useNavfitStore } from '@/store/useNavfitStore';
+import { THEME_COLORS } from '@/styles/theme';
+import { useScatterLayout, type RSCAReport } from '../hooks/useScatterLayout';
 
 // --- MOCK DATA FOR PROTOTYPING ---
 const MOCK_START_DATE = new Date('2025-01-01');
@@ -11,28 +13,11 @@ const MOCK_START_DATE = new Date('2025-01-01');
 const INITIAL_RSCA = 3.85;
 const INITIAL_SIGNED_COUNT = 45;
 
-interface RSCAReport {
-    id: string;
-    memberId: string;
-    memberName: string;
-    rawName: string;
-    rank: string;
-    summaryGroup: string;
-    date: string;
-    monthIndex: number;
-    type: 'Periodic' | 'Promotion' | 'Transfer' | 'Special' | 'Gain' | 'Detachment';
-    traitAverage: number;
-    isNOB: boolean;
-    initialTraitAverage: number;
-    draftStatus?: 'Draft' | 'Review' | 'Submitted' | 'Final' | 'Projected';
-}
+// Types now imported from hook
 
-interface ScatterPoint {
-    id: string;
-    x: number; // pixel (render)
-    y: number; // pixel (render)
-    report: RSCAReport;
-}
+
+// Types now imported from hook
+
 
 interface StrategyScattergramProps {
     summaryGroups?: SummaryGroup[];
@@ -267,37 +252,14 @@ export function StrategyScattergram({ summaryGroups = EMPTY_SUMMARY_GROUPS, rost
         return projectRSCA(INITIAL_RSCA, INITIAL_SIGNED_COUNT, itas);
     }, [displayReports]);
 
-    const points: ScatterPoint[] = useMemo(() => {
-        const rawPoints = displayReports.map(r => ({
-            id: r.id,
-            // Shift +3 months to align with display timeline start
-            x: monthToX(r.monthIndex + 3),
-            y: traitToY((r.isNOB || r.type === 'Gain') ? NOB_VALUE : r.traitAverage),
-            report: r
-        }));
-
-        // Collision Handling
-        const COLLISION_RADIUS = 22;
-
-        const sortedPointsRaw = [...rawPoints].sort((a, b) => a.x - b.x);
-
-        for (let iter = 0; iter < 3; iter++) {
-            for (let i = 0; i < sortedPointsRaw.length; i++) {
-                const p1 = sortedPointsRaw[i];
-                for (let j = i + 1; j < sortedPointsRaw.length; j++) {
-                    const p2 = sortedPointsRaw[j];
-                    if (p2.x - p1.x > COLLISION_RADIUS) break;
-                    if (Math.abs(p1.y - p2.y) < COLLISION_RADIUS) {
-                        const overlap = COLLISION_RADIUS - (p2.x - p1.x);
-                        const shift = Math.max(0.5, overlap / 2);
-                        p1.x -= shift;
-                        p2.x += shift;
-                    }
-                }
-            }
-        }
-        return sortedPointsRaw;
-    }, [displayReports, traitToY]);
+    // --- USE CUSTOM LAYOUT HOOK ---
+    const { points, trendLines, impactConnections } = useScatterLayout({
+        displayReports,
+        startDate: MOCK_START_DATE,
+        traitToY,
+        monthToX,
+        chartTotalWidth: CHART_TOTAL_WIDTH
+    });
 
     const sortedPoints = useMemo(() => {
         if (zOrder.length === 0) return points;
@@ -310,77 +272,6 @@ export function StrategyScattergram({ summaryGroups = EMPTY_SUMMARY_GROUPS, rost
     }, [points, zOrder]);
 
 
-    // Stepped RSCA Trend Lines & Connections
-    const { trendLines, impactConnections } = useMemo(() => {
-        const lines: { x1: number, x2: number, y: number, value: number }[] = [];
-        let currentRSCA = INITIAL_RSCA;
-        const RSCA_LAG_MONTHS = 3;
-
-        const impacts = new Map<number, number[]>();
-        displayReports.forEach(r => {
-            if (r.isNOB) return;
-            const impactMonth = r.monthIndex + RSCA_LAG_MONTHS;
-            if (!impacts.has(impactMonth)) impacts.set(impactMonth, []);
-            impacts.get(impactMonth)?.push(r.traitAverage);
-        });
-
-        let lastX = 0;
-
-        for (let m = 0; m < NUM_MONTHS + RSCA_LAG_MONTHS; m++) {
-            const chartMonthIndex = m;
-            const realMonthIndex = chartMonthIndex - 3;
-
-            if (impacts.has(realMonthIndex)) {
-                const thisX = monthToX(chartMonthIndex);
-
-                lines.push({
-                    x1: lastX,
-                    x2: thisX,
-                    y: traitToY(currentRSCA),
-                    value: currentRSCA
-                });
-
-                const newItas = impacts.get(realMonthIndex) || [];
-                const avgNew = newItas.reduce((a, b) => a + b, 0) / newItas.length;
-                const diff = (avgNew - currentRSCA) * 0.1;
-                const nextRSCA = currentRSCA + diff;
-
-                currentRSCA = nextRSCA;
-                lastX = thisX;
-            }
-        }
-
-        lines.push({
-            x1: lastX,
-            x2: CHART_TOTAL_WIDTH,
-            y: traitToY(currentRSCA),
-            value: currentRSCA
-        });
-
-        const finalConnections = displayReports.map(r => {
-            if (r.isNOB) return null;
-            const impactChartMonth = (r.monthIndex + 3) + RSCA_LAG_MONTHS;
-            const impactX = monthToX(impactChartMonth);
-
-            const lineAtImpact = lines.find(l => l.x1 <= impactX && l.x2 >= impactX);
-            const impactY = lineAtImpact ? lineAtImpact.y : traitToY(currentRSCA);
-
-            const reportX = monthToX(r.monthIndex + 3);
-            const reportY = traitToY(r.traitAverage);
-
-            return {
-                id: r.id,
-                x1: reportX,
-                y1: reportY,
-                x2: impactX,
-                y2: impactY,
-                color: r.traitAverage >= impactY ? '#22c55e' : '#ef4444'
-            };
-        }).filter(Boolean) as { id: string, x1: number, y1: number, x2: number, y2: number, color: string }[];
-
-        return { trendLines: lines, impactConnections: finalConnections };
-    }, [displayReports, traitToY, CHART_TOTAL_WIDTH]);
-
     // --- UTILS ---
     const formatName = (memberName: string) => {
         const parts = memberName.split(' ');
@@ -390,13 +281,13 @@ export function StrategyScattergram({ summaryGroups = EMPTY_SUMMARY_GROUPS, rost
 
     const getPointColor = (type: string) => {
         switch (type) {
-            case 'Periodic': return '#3b82f6';
-            case 'Transfer': return '#ef4444';
-            case 'Detachment': return '#ef4444';
-            case 'Gain': return '#64748b';
-            case 'Special': return '#eab308';
-            case 'Promotion': return '#22c55e';
-            default: return '#64748b';
+            case 'Periodic': return THEME_COLORS.periodic;
+            case 'Transfer': return THEME_COLORS.transfer;
+            case 'Detachment': return THEME_COLORS.transfer;
+            case 'Gain': return THEME_COLORS.gain;
+            case 'Special': return THEME_COLORS.special;
+            case 'Promotion': return THEME_COLORS.promotion;
+            default: return THEME_COLORS.gain;
         }
     };
 
@@ -583,18 +474,18 @@ export function StrategyScattergram({ summaryGroups = EMPTY_SUMMARY_GROUPS, rost
                                         y={traitToY(IDEAL_RSCA_MAX)}
                                         width={CHART_TOTAL_WIDTH}
                                         height={traitToY(IDEAL_RSCA_MIN) - traitToY(IDEAL_RSCA_MAX)}
-                                        fill="#10b981"
+                                        fill={THEME_COLORS.success}
                                         fillOpacity="0.1"
                                     />
                                     <line
                                         x1={0} y1={traitToY(IDEAL_RSCA_MAX)}
                                         x2={CHART_TOTAL_WIDTH} y2={traitToY(IDEAL_RSCA_MAX)}
-                                        stroke="#10b981" strokeWidth={1} strokeDasharray="4 4" strokeOpacity="0.5"
+                                        stroke={THEME_COLORS.success} strokeWidth={1} strokeDasharray="4 4" strokeOpacity="0.5"
                                     />
                                     <line
                                         x1={0} y1={traitToY(IDEAL_RSCA_MIN)}
                                         x2={CHART_TOTAL_WIDTH} y2={traitToY(IDEAL_RSCA_MIN)}
-                                        stroke="#10b981" strokeWidth={1} strokeDasharray="4 4" strokeOpacity="0.5"
+                                        stroke={THEME_COLORS.success} strokeWidth={1} strokeDasharray="4 4" strokeOpacity="0.5"
                                     />
 
                                     {/* NOB Line */}
@@ -692,7 +583,7 @@ export function StrategyScattergram({ summaryGroups = EMPTY_SUMMARY_GROUPS, rost
                                     {sortedPoints.map(p => {
                                         const isDragging = activeDragId === p.id;
                                         // Flight Path Override: Red if Over Limit
-                                        let strokeColor = '#eab308';
+                                        let strokeColor: string = THEME_COLORS.special;
 
                                         // Highlight Selected Member if in Flight Path Mode
                                         const isSelected = selectedMemberId === p.report.memberId;
@@ -702,12 +593,12 @@ export function StrategyScattergram({ summaryGroups = EMPTY_SUMMARY_GROUPS, rost
                                         if (p.report.isNOB) {
                                             strokeColor = 'white';
                                         } else if (p.report.traitAverage > projectedRSCAVal) {
-                                            strokeColor = '#22c55e';
+                                            strokeColor = THEME_COLORS.promotion;
                                         }
 
                                         // Flight Path Override
                                         if (flightPathData && p.report.id === flightPathData.currentReport.id && flightPathData.isOverLimit) {
-                                            strokeColor = '#ef4444'; // Red
+                                            strokeColor = THEME_COLORS.danger; // Red
                                         }
 
                                         const baseColor = getPointColor(p.report.type);
@@ -723,7 +614,7 @@ export function StrategyScattergram({ summaryGroups = EMPTY_SUMMARY_GROUPS, rost
                                                 >
                                                     <path
                                                         d="M0 -18 V18 M-18 0 H18"
-                                                        stroke="#22c55e"
+                                                        stroke={THEME_COLORS.promotion}
                                                         strokeWidth={4}
                                                         strokeLinecap="round"
                                                     />

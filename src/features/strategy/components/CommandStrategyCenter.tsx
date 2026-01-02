@@ -127,7 +127,7 @@ export function CommandStrategyCenter() {
             <div className="flex-1 flex overflow-hidden">
 
                 {/* Left Panel: Active Cycles Stream */}
-                <div className="w-[420px] bg-slate-50 border-r border-slate-200 flex flex-col shrink-0 z-10 relative">
+                <div className="w-sidebar-standard bg-slate-50 border-r border-slate-200 flex flex-col shrink-0 z-infinity-sidebar relative">
 
                     {/* Panel Header - Restored */}
                     <div className="px-6 py-4 border-b border-slate-200 bg-white/50 backdrop-blur-sm sticky top-0 z-10 space-y-4">

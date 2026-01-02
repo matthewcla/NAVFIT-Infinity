@@ -46,7 +46,7 @@ export const Tooltip: React.FC<TooltipProps> = ({ content, children }) => {
             {children}
             {isVisible && createPortal(
                 <div
-                    className="fixed z-[9999] bg-slate-800 text-white text-xs rounded-lg p-3 shadow-xl border border-slate-700 w-64 animate-in fade-in zoom-in-95 duration-200 pointer-events-none"
+                    className="fixed z-infinity-tooltip bg-slate-800 text-white text-xs rounded-lg p-3 shadow-xl border border-slate-700 w-64 animate-in fade-in zoom-in-95 duration-200 pointer-events-none"
                     style={{
                         top: position.top,
                         left: position.left,

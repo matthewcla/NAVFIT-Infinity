@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import {
     X,
     User,
@@ -79,8 +80,8 @@ export function MemberDetailSidebar({
         onNavigateNext();
     };
 
-    return (
-        <div className="flex flex-col h-full bg-white border-l border-slate-200 shadow-2xl w-[400px] fixed right-0 top-0 bottom-0 z-50 animate-in slide-in-from-right duration-300">
+    return createPortal(
+        <div className="flex flex-col h-full bg-white border-l border-slate-200 shadow-2xl w-member-sidebar fixed right-0 top-0 bottom-0 z-infinity-slideover animate-in slide-in-from-right duration-300">
 
             {/* --- Header (Sticky) --- */}
             <div className="flex-none bg-white z-10 border-b border-slate-200 p-4">
@@ -145,7 +146,7 @@ export function MemberDetailSidebar({
                             <span>Flight Path</span>
                         </div>
                         <div className="text-xs font-medium text-slate-400">
-                            {currentReport?.reportsRemaining !== undefined ? `${currentReport.reportsRemaining} Rpts Left` : 'PRD Unknown'}
+                            {currentReport?.reportsRemaining !== undefined ? `${currentReport?.reportsRemaining} Rpts Left` : 'PRD Unknown'}
                         </div>
                     </div>
 
@@ -394,5 +395,5 @@ export function MemberDetailSidebar({
             </div>
 
         </div>
-    );
+        , document.body);
 }

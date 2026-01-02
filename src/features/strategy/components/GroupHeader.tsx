@@ -1,4 +1,5 @@
 import { ChevronDown, Activity, AlertTriangle, CheckCircle, TrendingUp } from 'lucide-react';
+import { THEME_COLORS } from '@/styles/theme';
 import { Tooltip } from '@/components/ui/Tooltip';
 
 interface GroupHeaderProps {
@@ -84,8 +85,8 @@ export const GroupHeader = ({
                         <span className="text-[10px] uppercase text-slate-400 font-bold tracking-wider mb-0.5">Current RSCA</span>
                         <div className="flex items-center space-x-2">
                             <div className={`p-1 rounded-full ${status === 'Risk' ? 'bg-red-100 text-red-600' :
-                                    status === 'Safe' ? 'bg-green-100 text-green-600' :
-                                        'bg-blue-100 text-blue-600'
+                                status === 'Safe' ? 'bg-green-100 text-green-600' :
+                                    'bg-blue-100 text-blue-600'
                                 }`}>
                                 {status === 'Risk' ? <AlertTriangle size={12} /> :
                                     status === 'Safe' ? <Activity size={12} /> :
@@ -120,7 +121,7 @@ export const GroupHeader = ({
                         <div className="flex items-center space-x-1">
                             <TrendingUp size={12} className={sequencing === 'Optimal' ? 'text-green-500' : 'text-slate-400'} />
                             <span className={`text-[10px] font-bold ${sequencing === 'Optimal' ? 'text-green-600' :
-                                    sequencing === 'Inverted' ? 'text-red-500' : 'text-yellow-600'
+                                sequencing === 'Inverted' ? 'text-red-500' : 'text-yellow-600'
                                 }`}>
                                 {sequencing} Seq
                             </span>
@@ -157,12 +158,12 @@ export const GroupHeader = ({
                         y={getY(targetRange.max)}
                         width={CHART_W}
                         height={getY(targetRange.min) - getY(targetRange.max)}
-                        fill="#10b981" // Emerald-500
+                        fill={THEME_COLORS.success} // Emerald-500
                         fillOpacity="0.1"
                     />
                     {/* Dashed Lines for Target Range Boundaries */}
-                    <line x1="0" y1={getY(targetRange.max)} x2={CHART_W} y2={getY(targetRange.max)} stroke="#10b981" strokeWidth="1" strokeDasharray="4 4" strokeOpacity="0.5" />
-                    <line x1="0" y1={getY(targetRange.min)} x2={CHART_W} y2={getY(targetRange.min)} stroke="#10b981" strokeWidth="1" strokeDasharray="4 4" strokeOpacity="0.5" />
+                    <line x1="0" y1={getY(targetRange.max)} x2={CHART_W} y2={getY(targetRange.max)} stroke={THEME_COLORS.success} strokeWidth="1" strokeDasharray="4 4" strokeOpacity="0.5" />
+                    <line x1="0" y1={getY(targetRange.min)} x2={CHART_W} y2={getY(targetRange.min)} stroke={THEME_COLORS.success} strokeWidth="1" strokeDasharray="4 4" strokeOpacity="0.5" />
 
                     {/* 3. Trend Line */}
                     {/* 3. Trend Line (Segments for dashed support) */}
@@ -176,7 +177,7 @@ export const GroupHeader = ({
                                 y1={getY(prev.value)}
                                 x2={getX(p.monthIndex)}
                                 y2={getY(p.value)}
-                                stroke="#3b82f6"
+                                stroke={THEME_COLORS.periodic}
                                 strokeWidth="3"
                                 strokeLinecap="round"
                                 strokeDasharray={p.isProjected ? "4 4" : ""}
@@ -195,8 +196,8 @@ export const GroupHeader = ({
                                         cx={getX(p.monthIndex)}
                                         cy={getY(p.value)}
                                         r={p.isProjected ? 3 : 4}
-                                        fill={p.isProjected ? "white" : "#3b82f6"}
-                                        stroke="#3b82f6"
+                                        fill={p.isProjected ? "white" : THEME_COLORS.periodic}
+                                        stroke={THEME_COLORS.periodic}
                                         strokeWidth="2"
                                     />
                                     <text
