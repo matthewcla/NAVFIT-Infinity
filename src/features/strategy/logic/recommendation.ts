@@ -1,5 +1,6 @@
-import { Report, SummaryGroup } from '@/types';
-import { Paygrade, SummaryGroupContext, PromotionRecommendation, RankCategory, PolicyViolation } from '@/domain/policy/types';
+import type { Report, SummaryGroup } from '@/types';
+import { Paygrade, PromotionRecommendation, RankCategory } from '@/domain/policy/types';
+import type { SummaryGroupContext } from '@/domain/policy/types';
 import { computeEpMax, computeMpMax } from '@/domain/policy/quotas';
 import { validateRecommendationAgainstTraits, validateEnsignLTJGCap } from '@/domain/policy/validation';
 
@@ -29,7 +30,7 @@ export function getContextFromGroup(group: SummaryGroup): SummaryGroupContext | 
     const isCWO = designator.startsWith('7') || ['W1', 'W2', 'W3', 'W4', 'W5'].includes(paygrade);
 
     // Rank Category
-    let rankCategory = RankCategory.OFFICER;
+    let rankCategory: RankCategory = RankCategory.OFFICER;
     if (paygrade.startsWith('E')) rankCategory = RankCategory.ENLISTED;
     if (paygrade.startsWith('W')) rankCategory = RankCategory.WARRANT;
 
@@ -126,12 +127,12 @@ export function assignRecommendationsByRank(reports: Report[], group: SummaryGro
 
         // Fallback: Promotable (or Prog/SP if blocked?)
         if (!isBlocked(report, PromotionRecommendation.PROMOTABLE, context)) {
-             report.promotionRecommendation = PromotionRecommendation.PROMOTABLE;
+            report.promotionRecommendation = PromotionRecommendation.PROMOTABLE;
         } else {
             // Force SP if blocked for P
             if (report.promotionRecommendation !== PromotionRecommendation.SIGNIFICANT_PROBLEMS &&
                 report.promotionRecommendation !== PromotionRecommendation.PROGRESSING) {
-                 report.promotionRecommendation = PromotionRecommendation.SIGNIFICANT_PROBLEMS;
+                report.promotionRecommendation = PromotionRecommendation.SIGNIFICANT_PROBLEMS;
             }
         }
     }
