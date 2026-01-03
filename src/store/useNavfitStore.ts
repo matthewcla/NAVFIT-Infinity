@@ -7,6 +7,7 @@ import { INITIAL_ROSTER, INITIAL_RS_CONFIG } from '../data/initialRoster';
 import { useRedistributionStore } from './useRedistributionStore';
 import { useAuditStore } from './useAuditStore';
 import { DEFAULT_CONSTRAINTS } from '@/domain/rsca/constants';
+import { defaultAnchorIndices } from '@/domain/rsca/redistribution';
 import type { Member as DomainMember } from '@/domain/rsca/types';
 import { validateReportState, checkQuota, createSummaryGroupContext } from '@/features/strategy/logic/validation';
 
@@ -36,6 +37,7 @@ interface NavfitStore {
 
     // Summary Group / Ranking Mode Actions
     reorderMembers: (groupId: string, draggedId: string, targetIdOrOrder: string | string[]) => void;
+    applyDefaultAnchors: (groupId: string) => void;
 
     summaryGroups: SummaryGroup[];
     setSummaryGroups: (groups: SummaryGroup[]) => void;
@@ -137,9 +139,13 @@ export const useNavfitStore = create<NavfitStore>((set) => ({
 
     summaryGroups: [],
     setSummaryGroups: (groups) => set({ summaryGroups: groups }),
-    addSummaryGroup: (group) => set((state) => ({
-        summaryGroups: [...state.summaryGroups, group]
-    })),
+    addSummaryGroup: (group) => {
+        set((state) => ({
+            summaryGroups: [...state.summaryGroups, group]
+        }));
+        // Apply default anchors immediately for new group
+        useNavfitStore.getState().applyDefaultAnchors(group.id);
+    },
     updateGroupStatus: (groupId, status) => set((state) => ({
         summaryGroups: state.summaryGroups.map((group) => {
             if (group.id !== groupId) return group;
@@ -220,6 +226,86 @@ export const useNavfitStore = create<NavfitStore>((set) => ({
         currentRoster.splice(newIndex, 0, movedMember);
         return { roster: currentRoster };
     }),
+
+    applyDefaultAnchors: (groupId) => {
+        set((state) => {
+            const groupIndex = state.summaryGroups.findIndex(g => g.id === groupId);
+            if (groupIndex === -1) return {};
+
+            const group = state.summaryGroups[groupIndex];
+            const N = group.reports.length;
+            if (N === 0) return {};
+
+            const { top, bottom } = defaultAnchorIndices(N);
+            const anchorIndices = new Set([...top, ...bottom]);
+
+            const newReports = group.reports.map((r, i) => {
+                if (anchorIndices.has(i)) {
+                    return { ...r, isLocked: true };
+                }
+                return r; // Don't unlock if already locked? Or strictly reset?
+                // Requirement says "provide default anchor selection".
+                // Usually implies resetting to this default state.
+                // If I'm calling this explicitly (or on creation), I should probably set them.
+                // However, if I call this during reorder (which I am not currently planning to enforce every time),
+                // it might be disruptive.
+                // Since this function is `applyDefaultAnchors`, it implies "Applying" them.
+                // I will strictly Apply them (meaning, these become anchors, others might not be).
+                // But let's look at `isLocked`.
+                // If I strictly set isLocked based on indices, I might unlock someone the user manually locked?
+                // For "Default", yes. It's a reset.
+                // return { ...r, isLocked: anchorIndices.has(i) };
+            });
+
+            // Note: Currently, map above doesn't clear others.
+            // If we want strict "Default", we should clear others.
+            // But if we use it as "Ensure Default Anchors exist", we might keep others.
+            // Prompt says: "The system shall provide default anchor selection...".
+            // I will implement it as "Set these as anchors". I will not strictly unlock others unless intended as a full reset.
+            // But for a clean "Start", usually you want exactly these.
+
+            const updatedReports = group.reports.map((r, i) => ({
+                ...r,
+                isLocked: anchorIndices.has(i)
+            }));
+
+            const newSummaryGroups = [...state.summaryGroups];
+            newSummaryGroups[groupIndex] = { ...group, reports: updatedReports };
+
+            // Trigger Engine
+            // We need to convert to domain members and call requestRedistribution
+            // We can do this outside the set in a useEffect, but here we can just do it after state update or immediately.
+            // But `set` callback returns partial state. We need to trigger side effect.
+            // Side effect:
+            setTimeout(() => {
+                const updatedGroup = useNavfitStore.getState().summaryGroups[groupIndex];
+                if (!updatedGroup) return;
+
+                 const domainMembers: DomainMember[] = updatedGroup.reports.map((r, i) => ({
+                    id: r.id,
+                    rank: i + 1,
+                    mta: r.traitAverage,
+                    isAnchor: !!r.isLocked,
+                    anchorValue: r.traitAverage,
+                    name: `${r.firstName} ${r.lastName}`
+                }));
+
+                useAuditStore.getState().addLog('ANCHOR_SELECTION_CHANGE', {
+                    groupId,
+                    message: "Applied Default Anchors (Top/Bottom 10%)"
+                });
+
+                useRedistributionStore.getState().requestRedistribution(
+                    groupId,
+                    domainMembers,
+                    DEFAULT_CONSTRAINTS,
+                    state.rsConfig.targetRsca
+                );
+            }, 0);
+
+            return { summaryGroups: newSummaryGroups };
+        });
+    },
 
     reorderMembers: (groupId, draggedId, targetIdOrOrder) => set((state) => {
         const groupIndex = state.summaryGroups.findIndex(g => g.id === groupId);
