@@ -1,6 +1,6 @@
 
 import { redistributeMTA } from './redistribution';
-import { Member, Constraints } from './types';
+import type { Member, Constraints } from './types';
 
 // Simple benchmark harness
 console.log('Running RSCA Redistribution Benchmark...');
@@ -25,9 +25,9 @@ const runBenchmark = (n: number, iterations = 100) => {
   const members = createMembers(n);
   // Add some anchors to make it interesting
   if (n > 2) {
-      members[0].isAnchor = true; members[0].anchorValue = 5.0;
-      members[n-1].isAnchor = true; members[n-1].anchorValue = 2.0;
-      members[Math.floor(n/2)].isAnchor = true; members[Math.floor(n/2)].anchorValue = 4.0;
+    members[0].isAnchor = true; members[0].anchorValue = 5.0;
+    members[n - 1].isAnchor = true; members[n - 1].anchorValue = 2.0;
+    members[Math.floor(n / 2)].isAnchor = true; members[Math.floor(n / 2)].anchorValue = 4.0;
   }
 
   const start = performance.now();

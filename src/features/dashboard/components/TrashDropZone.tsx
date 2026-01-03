@@ -3,6 +3,7 @@ import { Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface TrashDropZoneProps {
+    /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
     onDrop: (data: any) => void;
     acceptTypes: string[];
     caption?: string;

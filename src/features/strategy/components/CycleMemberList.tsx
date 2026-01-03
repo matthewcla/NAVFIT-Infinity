@@ -1,6 +1,7 @@
 import { GripVertical } from 'lucide-react';
 import { PromotionBadge } from './PromotionBadge';
 import { MemberReportRow } from './MemberReportRow';
+import type { Report } from '@/types';
 
 export interface RankedMember {
     id: string;
@@ -13,7 +14,7 @@ export interface RankedMember {
     delta: number;
     rscaMargin: number;
     reportsRemaining: number | undefined;
-    report: any;
+    report: Report;
 }
 
 interface CycleMemberListProps {

@@ -445,7 +445,7 @@ export function redistributeMTA(
     }
 
     const diff = targetMean - finalMean;
-    let shiftAmount = diff;
+    const shiftAmount = diff;
 
     // Only shift non-anchors
     for (let i = 0; i < n; i++) {

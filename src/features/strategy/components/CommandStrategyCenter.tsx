@@ -137,7 +137,7 @@ export function CommandStrategyCenter() {
                             {['Active', 'Projected', 'Archive'].map((phase) => (
                                 <button
                                     key={phase}
-                                    onClick={() => setCycleListPhase(phase as any)}
+                                    onClick={() => setCycleListPhase(phase as 'Active' | 'Projected' | 'Archive')}
                                     className={`flex-1 px-3 py-1.5 text-xs font-semibold rounded-md transition-all ${cycleListPhase === phase
                                         ? 'bg-white text-slate-900 shadow-sm'
                                         : 'text-slate-500 hover:text-slate-700'
@@ -155,7 +155,7 @@ export function CommandStrategyCenter() {
                                 {['All', 'Officer', 'Enlisted'].map((filter) => (
                                     <button
                                         key={filter}
-                                        onClick={() => setCycleFilter(filter as any)}
+                                        onClick={() => setCycleFilter(filter as 'All' | 'Officer' | 'Enlisted')}
                                         className={`px-2.5 py-1 rounded text-[11px] font-semibold border transition-colors ${cycleFilter === filter
                                             ? 'bg-slate-800 text-white border-slate-800'
                                             : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300'
