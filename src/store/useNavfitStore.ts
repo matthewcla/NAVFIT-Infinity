@@ -11,6 +11,7 @@ import type { Member as DomainMember } from '@/domain/rsca/types';
 import { validateReportState, checkQuota } from '@/features/strategy/logic/validation';
 
 import type { SummaryGroup, Report } from '@/types';
+import { assignRecommendationsByRank } from '@/features/strategy/logic/recommendation';
 
 interface NavfitStore {
     // Navigation State
@@ -259,18 +260,8 @@ export const useNavfitStore = create<NavfitStore>((set) => ({
             updatedReportList = currentReports;
         }
 
-        // 3. Update Order Optimistically (Keep old MTA values for now)
-        const finalReports = updatedReportList.map((report, index) => {
-            // EP Logic: Rank #1 is EP, others MP (User specified heuristic)
-            // We keep this simple logic here for immediate feedback, but MTA is handled by engine.
-            let newPromo: 'EP' | 'MP' | 'P' | 'Prog' | 'SP' | 'NOB' = index === 0 ? 'EP' : 'MP';
-            if (report.isAdverse) newPromo = 'SP';
-
-            return {
-                ...report,
-                promotionRecommendation: newPromo,
-            };
-        });
+        // 3. Auto-Assign Recommendations based on Rank and Policy
+        const finalReports = assignRecommendationsByRank(updatedReportList, group);
 
         // 4. Update State
         const newSummaryGroups = [...state.summaryGroups];

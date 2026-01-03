@@ -1,7 +1,8 @@
 export const PromotionRecommendation = {
   NOB: 'NOB',
-  SIGNIFICANT_PROBLEMS: 'SIGNIFICANT_PROBLEMS',
-  PROMOTABLE: 'PROMOTABLE',
+  SIGNIFICANT_PROBLEMS: 'SP',
+  PROGRESSING: 'Prog',
+  PROMOTABLE: 'P',
   MUST_PROMOTE: 'MP',
   EARLY_PROMOTE: 'EP',
 } as const;
