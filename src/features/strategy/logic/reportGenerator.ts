@@ -1,6 +1,7 @@
 import type { RosterMember, ReportingSeniorConfig } from '@/types/roster';
 import type { SummaryGroup, Report } from '@/types';
 import { PERIODIC_SCHEDULE } from '@/lib/constants';
+import { getCompetitiveCategory, getCategoryLabel } from './competitiveGroupUtils';
 
 const formatISODate = (year: number, monthIndex: number, day: number) => {
     // Month Index is 0-based
@@ -14,43 +15,34 @@ interface CompGroupKey {
     designator: string;
     promotionStatus: 'REGULAR' | 'FROCKED' | 'SELECTED' | 'SPOT';
     label: string;
+    categoryCode: string; // Add category code for grouping ID
 }
 
 const getCompetitiveGroup = (member: RosterMember): CompGroupKey => {
     const { rank, designator, promotionStatus = 'REGULAR' } = member;
 
-    // Normalize Category for Label
-    let category = '';
     const isOfficer = rank.startsWith('O') || rank.startsWith('W');
+    let categoryLabel = '';
+    let categoryCode = '';
 
-    if (isOfficer) {
-        if (designator) {
-            if (['1110', '1120', '1310', '1320', '1300'].includes(designator)) category = 'URL';
-            else if (['1200', '1800', '1810', '1820', '1830'].includes(designator)) category = 'RL';
-            else if (['6410', '6130', '6160', '6180'].includes(designator)) category = 'LDO';
-            else if (designator.startsWith('7')) category = 'CWO';
-            else category = 'STAFF';
-        }
-    } else {
-        // Enlisted: No designator suffix in label
-        category = '';
+    if (isOfficer && designator) {
+        const cat = getCompetitiveCategory(designator);
+        categoryLabel = getCategoryLabel(cat);
+        categoryCode = cat.code;
     }
 
     // Label Construction
     // Officers: "O-3 URL" or "O-3 STAFF"
     // Enlisted: "E-6" (No designator)
-    const labelBase = isOfficer && category ? `${rank} ${category}` : rank;
+    const labelBase = isOfficer && categoryLabel ? `${rank} ${categoryLabel}` : rank;
     const label = `${labelBase} ${promotionStatus !== 'REGULAR' ? promotionStatus : ''}`.trim();
-
-    // Key Construction (used for grouping)
-    // We update this to match the label logic so grouping works as expected visually
-    // const groupKeyLabel = labelBase; // Removed unused variable
 
     return {
         paygrade: rank,
         designator: designator,
         promotionStatus: promotionStatus,
-        label: label
+        label: label,
+        categoryCode: categoryCode
     };
 };
 
@@ -111,9 +103,10 @@ export const generateSummaryGroups = (
     // Helper to get-or-create Group
     const ensureGroup = (key: CompGroupKey, endDate: string): SummaryGroup => {
         // Unique ID must include all segmentation factors
+        // Use categoryCode instead of raw designator to group "1110" and "1310" together under "URL"
         const idParts = [
             key.paygrade,
-            key.designator,
+            key.categoryCode || key.designator || 'NODESIG', // Fallback for Enlisted or missing
             key.promotionStatus,
             endDate
         ].join('|');
@@ -129,9 +122,10 @@ export const generateSummaryGroups = (
                 reports: [],
                 paygrade: key.paygrade,
                 designator: key.designator,
-                // Update key to use the constructed label base (e.g. "O-3 URL") instead of raw designator
-                // This ensures "O-3 1110" and "O-3 1310" group together under "O-3 URL"
-                competitiveGroupKey: key.paygrade + (['O', 'W'].some(p => key.paygrade.startsWith(p)) && key.designator ? ` ${key.label.split(' ')[1] || 'STAFF'}` : ''),
+                // The key needs to be human readable but unique per group logic
+                // For Officers: "O-3 URL"
+                // For Enlisted: "E-6"
+                competitiveGroupKey: key.label,
                 promotionStatus: key.promotionStatus
             });
         }
