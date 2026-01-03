@@ -3,6 +3,7 @@ import { debounce } from 'lodash';
 import type { Member, Constraints, RedistributionResult } from '@/domain/rsca/types';
 import { DEFAULT_CONSTRAINTS } from '@/domain/rsca/constants';
 import { useNavfitStore } from './useNavfitStore';
+import { useAuditStore } from './useAuditStore';
 import { redistributeMTA } from '@/domain/rsca/redistribution'; // Fallback
 import type { WorkerInput, WorkerOutput, AnchorMap, StrategyParams } from '@/features/strategy/workers/types';
 import RedistributionWorker from '@/features/strategy/workers/redistribution.worker?worker';
@@ -43,6 +44,21 @@ function generateUUID() {
 export const useRedistributionStore = create<RedistributionStoreState>((set, get) => {
 
     const handleSuccess = (groupId: string, result: RedistributionResult) => {
+        // Log Redistribution Run
+        useAuditStore.getState().addLog('REDISTRIBUTION_RUN', {
+            groupId,
+            rsca: result.rsca,
+            isFeasible: result.isFeasible,
+            updatedMembersCount: result.updatedMembers.length
+        });
+
+        if (!result.isFeasible && result.infeasibilityReport) {
+            useAuditStore.getState().addLog('INFEASIBILITY_DETECTED', {
+                groupId,
+                infeasibilityReport: result.infeasibilityReport
+            });
+        }
+
         set((state) => ({
             isCalculating: false,
             latestResult: {
