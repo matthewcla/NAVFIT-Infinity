@@ -34,12 +34,6 @@ function getMpColumnKey(paygrade: Paygrade, isLDO: boolean): 'low' | 'mid' | 'hi
     return 'top';
   }
 
-  // Fallback for unexpected paygrades (e.g. O7+)
-  // Safest default is to assume they might follow top officer rules or have no quota (handled elsewhere).
-  // For safety in this table context, let's return 'top' if it's an Officer O7+, else null?
-  // But usually O7+ don't use this table.
-  // Returning 'top' was the issue in review.
-  // If undefined paygrade, let's return null to be safe (0 MP).
   return null;
 }
 
@@ -72,7 +66,7 @@ export function computeEpMax(groupSize: number, context: SummaryGroupContext): n
 
 /**
  * Computes the combined EP + MP maximum limit.
- * Used primarily for large groups (N > 30).
+ * Used primarily for large groups (N > 30) but logic applies generally for % limits.
  */
 export function computeEpMpCombinedMax(groupSize: number, context: SummaryGroupContext): number {
   if (groupSize <= 0) return 0;
@@ -80,11 +74,6 @@ export function computeEpMpCombinedMax(groupSize: number, context: SummaryGroupC
   const mpKey = getMpColumnKey(context.paygrade, context.isLDO);
 
   if (mpKey === null) {
-    // If MP is not allowed (e.g. non-LDO O1/O2), combined is just EP max?
-    // But for non-LDO O1/O2, EP is also 0. So combined is 0.
-    // Wait, is Promotable limited? The prompt Table 1-2 has a Promotable column limit for O1-O2.
-    // But this function is "computeEpMpCombinedMax". It implies EP+MP.
-    // If EP=0, MP=0, then Combined=0.
     return 0;
   }
 
@@ -93,10 +82,14 @@ export function computeEpMpCombinedMax(groupSize: number, context: SummaryGroupC
     return groupSize;
   }
 
-  let combinedPct = 0.60;
-  if (mpKey === 'top') {
-    // O5-O6
+  let combinedPct = 0.60; // Default for 'mid' (E5-E6, O3)
+
+  if (mpKey === 'high') {
+    // E7-E9, W3-W5, O4 -> 50%
     combinedPct = 0.50;
+  } else if (mpKey === 'top') {
+    // O5-O6 -> 40%
+    combinedPct = 0.40;
   }
 
   return Math.ceil(groupSize * combinedPct);
@@ -128,12 +121,8 @@ export function computeMpMax(groupSize: number, context: SummaryGroupContext, ep
       return groupSize - epUsed;
     }
 
-    // Special case: Group of 2.
-    // Table says MP=1 for most categories.
-    // "All summary groups of two may receive one Early Promote and one Must Promote."
-    // For size 2: EP limit 1. If EP used 0, unused is 1. MP limit = 1 + 1 = 2.
-
     // Standard calculation for N<=30 (including size 2 logic via table values):
+    // Table 1-2 Note: "MP limits may be increased by one for each unused EP allocation."
     const epMax = computeEpMax(groupSize, context);
     const unusedEp = Math.max(0, epMax - epUsed);
 
@@ -142,7 +131,10 @@ export function computeMpMax(groupSize: number, context: SummaryGroupContext, ep
 
   // N > 30
   const epMpMax = computeEpMpCombinedMax(groupSize, context);
-  const epMaxForCalc = Math.ceil(groupSize * 0.20);
 
-  return epMpMax - epMaxForCalc;
+  // Note: The variable epMaxForCalc was removed because it was unused in this scope
+  // If the policy requires MP = Combined - EP_Max (static), we would use it.
+  // But we are using the dynamic MP = Combined - EP_Used rule.
+
+  return Math.max(0, epMpMax - epUsed);
 }

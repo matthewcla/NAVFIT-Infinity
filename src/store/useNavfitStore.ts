@@ -8,7 +8,7 @@ import { useRedistributionStore } from './useRedistributionStore';
 import { useAuditStore } from './useAuditStore';
 import { DEFAULT_CONSTRAINTS } from '@/domain/rsca/constants';
 import type { Member as DomainMember } from '@/domain/rsca/types';
-import { validateReportState, checkQuota } from '@/features/strategy/logic/validation';
+import { validateReportState, checkQuota, createSummaryGroupContext } from '@/features/strategy/logic/validation';
 
 import type { SummaryGroup, Report } from '@/types';
 import { assignRecommendationsByRank } from '@/features/strategy/logic/recommendation';
@@ -383,9 +383,15 @@ export const useNavfitStore = create<NavfitStore>((set) => ({
 
             const epCount = tempReports.filter(r => r.promotionRecommendation === 'EP').length;
             const mpCount = tempReports.filter(r => r.promotionRecommendation === 'MP').length;
-            const groupSize = group.reports.length;
 
-            const quotaResult = checkQuota(groupSize, epCount, mpCount);
+            // Generate Context for Validation
+            const context = createSummaryGroupContext(group, updatedReport);
+
+            // Ensure size matches report array
+            // Note: If we just added a report, group.reports might be outdated if we don't use tempReports,
+            // but updateReport assumes report exists.
+            const quotaResult = checkQuota(context, epCount, mpCount);
+
             if (!quotaResult.isValid && quotaResult.message) {
                 violations.push({
                     code: 'QUOTA_EXCEEDED',
