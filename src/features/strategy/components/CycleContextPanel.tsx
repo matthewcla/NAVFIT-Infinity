@@ -227,8 +227,16 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
                                 </div>
                             </div>
 
-                            {/* Status Badges (Moved to Top Right) */}
                             <div className="flex flex-col items-end gap-1.5">
+                                <button
+                                    onClick={() => setIsSubmitModalOpen(true)}
+                                    disabled={!latestResult[activeGroup.id] || activeGroup.status === 'Submitted'}
+                                    className="flex items-center gap-2 px-4 py-1.5 bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-200 disabled:text-slate-400 text-white rounded shadow-sm text-xs font-bold uppercase tracking-wide transition-all"
+                                    title="Submit Strategy to Review"
+                                >
+                                    <Send className="w-3.5 h-3.5" />
+                                    <span>Submit Strategy</span>
+                                </button>
                                 {gap > 0 && (
                                     <div className="flex items-center gap-1.5 px-2.5 py-1 bg-amber-50 rounded text-xs font-semibold text-amber-700 border border-amber-200">
                                         {gap} Attention Needed
@@ -324,16 +332,6 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
                                                 <span>Waterfall</span>
                                             </button>
 
-                                            {/* Submit Button */}
-                                            <button
-                                                onClick={() => setIsSubmitModalOpen(true)}
-                                                disabled={!latestResult[activeGroup.id]}
-                                                className="flex items-center justify-center gap-2 px-3 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-200 disabled:text-slate-400 text-white border border-transparent rounded-lg transition-colors text-xs font-medium shadow-sm ml-2"
-                                                title="Submit Strategy"
-                                            >
-                                                <Send className="w-3.5 h-3.5" />
-                                                <span>Submit</span>
-                                            </button>
                                         </>
                                     )}
                                 </div>
@@ -392,7 +390,7 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
                                 ...m,
                                 name: `${m.lastName}, ${m.firstName}`,
                                 history: m.history || [],
-                                status: (m.status as any) || 'Onboard' // Ensure status matches expected union
+                                status: (m.status as Member['status']) || 'Onboard' // Ensure status matches expected union
                             } as unknown as Member;
                         })()}
                         currentReport={activeGroup.reports.find(r => r.memberId === selectedMemberId)}
@@ -403,18 +401,26 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
                             const index = rankedMembers.findIndex(m => m.id === selectedMemberId);
                             if (index === -1) return undefined;
 
-                            // "Next Rank" (Ahead, Higher Sort Index, so LOWER array index)
-                            // e.g. Rank 1 is at index 0. Rank 2 is at index 1.
-                            // If I am at index 5 (Rank 6), my "Next Rank" (Rank 5) is at index 4.
-                            const nextRankMta = index > 0 ? rankedMembers[index - 1].mta : undefined;
+                            // "Next Rank" (Ahead/Better) - Lower indices
+                            // Get up to 5 members before current index (reversed to be closest first)
+                            const nextStart = Math.max(0, index - 5);
+                            const nextRanks = rankedMembers.slice(nextStart, index).reverse().map((m, i) => ({
+                                mta: m.mta,
+                                rank: index - i // index is current rank-1. So neighbor is rank (index-i)
+                            }));
 
-                            // "Prev Rank" (Behind, Lower Sort Index, so HIGHER array index)
-                            const prevRankMta = index < rankedMembers.length - 1 ? rankedMembers[index + 1].mta : undefined;
+                            // "Prev Rank" (Behind/Worse) - Higher indices
+                            // Get up to 5 members after current index
+                            const prevEnd = Math.min(rankedMembers.length, index + 6);
+                            const prevRanks = rankedMembers.slice(index + 1, prevEnd).map((m, i) => ({
+                                mta: m.mta,
+                                rank: index + 2 + i // index+1 is next rank (#index+2)
+                            }));
 
                             return {
                                 currentRank: index + 1,
-                                nextRankMta,
-                                prevRankMta
+                                nextRanks,
+                                prevRanks
                             };
                         })()}
 

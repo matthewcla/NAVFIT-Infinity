@@ -10,7 +10,7 @@ import { redistributeMTA } from '@/domain/rsca/redistribution';
 vi.mock('@/domain/rsca/redistribution', async (importOriginal) => {
     const actual = await importOriginal();
     return {
-        // @ts-ignore
+        // @ts-expect-error Mocking partial implementation
         ...actual,
         redistributeMTA: vi.fn((members) => {
             // Simple mock implementation

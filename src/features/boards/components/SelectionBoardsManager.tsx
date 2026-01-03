@@ -9,10 +9,6 @@ export function SelectionBoardsManager() {
     const [loading, setLoading] = useState(false);
     const [year, setYear] = useState(new Date().getFullYear());
 
-    useEffect(() => {
-        loadData();
-    }, [loadData]);
-
     const loadData = useCallback(async () => {
         setLoading(true);
         try {
@@ -24,6 +20,10 @@ export function SelectionBoardsManager() {
             setLoading(false);
         }
     }, [year]);
+
+    useEffect(() => {
+        loadData();
+    }, [loadData]);
 
     const handleAddCustomBoard = async () => {
         const name = prompt("Enter Custom Board Name:");

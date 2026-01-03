@@ -213,7 +213,7 @@ export function ReportEditor({ report, onClose, onBack, readOnly = false }: Repo
                                                             type="checkbox"
                                                             className="w-6 h-6 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 transition-colors cursor-pointer"
                                                             checked={isChecked}
-                                                            onChange={() => setFormData({ ...formData, dutyStatus: status.includes('AT') ? 'AT/ADSW/265' : value as any })}
+                                                            onChange={() => setFormData({ ...formData, dutyStatus: status.includes('AT') ? 'AT/ADSW/265' : value as Report['dutyStatus'] })}
                                                         />
                                                     </div>
                                                 );

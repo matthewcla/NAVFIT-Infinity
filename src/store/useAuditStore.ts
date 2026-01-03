@@ -12,7 +12,7 @@ export interface SessionAuditEvent {
   id: string;
   timestamp: string;
   type: SessionAuditEventType;
-  details: Record<string, any>;
+  details: Record<string, unknown>;
 }
 
 export interface SessionExportData {
@@ -27,7 +27,7 @@ export interface SessionExportData {
 
 interface AuditStore {
   logs: SessionAuditEvent[];
-  addLog: (type: SessionAuditEventType, details: Record<string, any>) => void;
+  addLog: (type: SessionAuditEventType, details: Record<string, unknown>) => void;
   clearLogs: () => void;
 }
 
@@ -37,7 +37,7 @@ function generateUUID() {
     return crypto.randomUUID();
   }
   return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
-    var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
+    const r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
     return v.toString(16);
   });
 }

@@ -28,8 +28,8 @@ interface MemberDetailSidebarProps {
 
     rankContext?: {
         currentRank: number;
-        nextRankMta?: number;
-        prevRankMta?: number;
+        nextRanks: { mta: number; rank: number }[];
+        prevRanks: { mta: number; rank: number }[];
     };
 }
 
@@ -47,7 +47,7 @@ export function MemberDetailSidebar({
 
     // --- State Management ---
     const initialMta = currentReport?.traitAverage || 3.00;
-    const initialRec = (currentReport?.promotionRecommendation as any) || 'P';
+    const initialRec = currentReport?.promotionRecommendation || 'P';
 
     const [simulatedMta, setSimulatedMta] = useState<number>(initialMta);
     const [simulatedRec, setSimulatedRec] = useState<'EP' | 'MP' | 'P' | 'Prog' | 'SP' | 'NOB'>(initialRec);
@@ -62,11 +62,11 @@ export function MemberDetailSidebar({
     useEffect(() => {
         setTimeout(() => {
             setSimulatedMta(currentReport?.traitAverage || 3.00);
-            setSimulatedRec((currentReport?.promotionRecommendation as any) || 'P');
+            setSimulatedRec(currentReport?.promotionRecommendation || 'P');
             setIsLocked(false);
             setShowWarning(false);
+            setPendingMta(null);
         }, 0);
-        setPendingMta(null);
     }, [memberId, currentReport]);
 
 
@@ -77,8 +77,11 @@ export function MemberDetailSidebar({
         // Tolerance for floating point/slider precision (optional, but good for UX not to be too annoying)
         // const tolerance = 0.01; 
 
-        // Check Upward Rank Change (Higher MTA > Next Rank's MTA)
-        if (rankContext?.nextRankMta !== undefined && newValue > rankContext.nextRankMta) {
+        // Check Upward Rank Change (Higher MTA > ANY Next Rank's MTA)
+        // We only care about the immediate next rank for the warning, or potentially all of them?
+        // Usually, crossing the *immediate* next rank is the trigger.
+        const immediateNext = rankContext?.nextRanks?.[0];
+        if (immediateNext && newValue > immediateNext.mta) {
             setPendingMta(newValue);
             setWarningDirection('up');
             setShowWarning(true);
@@ -86,7 +89,8 @@ export function MemberDetailSidebar({
         }
 
         // Check Downward Rank Change (Lower MTA < Prev Rank's MTA)
-        if (rankContext?.prevRankMta !== undefined && newValue < rankContext.prevRankMta) {
+        const immediatePrev = rankContext?.prevRanks?.[0];
+        if (immediatePrev && newValue < immediatePrev.mta) {
             setPendingMta(newValue);
             setWarningDirection('down');
             setShowWarning(true);
@@ -144,12 +148,7 @@ export function MemberDetailSidebar({
     // Calculate Slider Positions (Scale 3.00 - 5.00)
     const getPercent = (val: number) => ((Math.max(3.0, Math.min(5.0, val)) - 3.0) / 2.0) * 100;
 
-    // Check overlaps for labels
-    const labelsOverlap = (() => {
-        if (!rankContext?.nextRankMta || !rankContext?.prevRankMta) return false;
-        // If difference is small, they overlap
-        return Math.abs(rankContext.nextRankMta - rankContext.prevRankMta) < 0.25;
-    })();
+
 
     return createPortal(
         <div className="flex flex-col h-full bg-white border-l border-slate-200 shadow-2xl w-[530px] fixed right-0 top-0 bottom-0 !z-[100] animate-in slide-in-from-right duration-300">
@@ -365,8 +364,8 @@ export function MemberDetailSidebar({
 
                                 {/* Rank Safe Zone & Thresholds */}
                                 {(() => {
-                                    const next = rankContext?.nextRankMta;
-                                    const prev = rankContext?.prevRankMta;
+                                    const next = rankContext?.nextRanks?.[0]?.mta;
+                                    const prev = rankContext?.prevRanks?.[0]?.mta;
 
                                     // Safe Zone Calculation - Scale 3.0 to 5.0
                                     // Range is 2.0 (5-3)
@@ -425,37 +424,83 @@ export function MemberDetailSidebar({
                                     />
                                 )}
 
-                                {/* Threshold Markers with Labels */}
-                                {rankContext?.nextRankMta !== undefined && rankContext.nextRankMta >= 3.0 && rankContext.nextRankMta <= 5.0 && (
-                                    <div
-                                        className="absolute z-10 pointer-events-none flex flex-col items-center gap-1 transition-all"
-                                        style={{
-                                            left: `${getPercent(rankContext.nextRankMta)}%`,
-                                            transform: 'translateX(-50%)',
-                                            top: '50%'
-                                        }}
-                                    >
-                                        <div className="w-0.5 h-8 bg-emerald-400/40 opacity-70" />
-                                        <span className="text-xs font-black text-emerald-700 uppercase tracking-widest whitespace-nowrap bg-white/80 px-1 rounded backdrop-blur-sm -mt-1 shadow-sm">
-                                            #{rankContext.currentRank - 1}
-                                        </span>
-                                    </div>
-                                )}
-                                {rankContext?.prevRankMta !== undefined && rankContext.prevRankMta >= 3.0 && rankContext.prevRankMta <= 5.0 && (
-                                    <div
-                                        className="absolute z-10 pointer-events-none flex flex-col items-center gap-1 transition-all"
-                                        style={{
-                                            left: `${getPercent(rankContext.prevRankMta)}%`,
-                                            transform: 'translateX(-50%)',
-                                            top: '50%'
-                                        }}
-                                    >
-                                        <div className={cn("w-0.5 bg-red-400/40 opacity-70 transition-all", labelsOverlap ? "h-20" : "h-8")} />
-                                        <span className="text-xs font-black text-red-700 uppercase tracking-widest whitespace-nowrap bg-white/80 px-1 rounded backdrop-blur-sm -mt-1 shadow-sm">
-                                            #{rankContext.currentRank + 1}
-                                        </span>
-                                    </div>
-                                )}
+                                {/* Combined Rank Markers with Collision Detection */}
+                                {(() => {
+                                    if (!rankContext?.nextRanks && !rankContext?.prevRanks) return null;
+
+                                    const next = rankContext?.nextRanks || [];
+                                    const prev = rankContext?.prevRanks || [];
+
+                                    // Combine and sort by Rank (Best/Smallest # to Worst/Largest #)
+                                    // e.g. #1, #2, #3...
+                                    // This ensures Higher Ranks (smaller numbers) get priority for the top position.
+                                    const allMarkers = [
+                                        ...next.map(r => ({ ...r, type: 'next' as const })),
+                                        ...prev.map(r => ({ ...r, type: 'prev' as const }))
+                                    ].sort((a, b) => a.rank - b.rank);
+
+                                    // Compute offsets
+                                    // Compute offsets
+                                    // Use explicit type definition to handle the array construction
+                                    const positionedMarkers: (typeof allMarkers[0] & { pct: number; level: number })[] = [];
+
+                                    allMarkers.forEach((marker, i) => {
+                                        const pct = getPercent(marker.mta);
+                                        let level = 0;
+
+                                        // Check against all *previously processed* (aka Higher Rank) markers
+                                        for (let j = 0; j < i; j++) {
+                                            const other = positionedMarkers[j];
+                                            // 3.5% threshold for collision (approx visual width of label)
+                                            if (Math.abs(pct - other.pct) < 4.0) {
+                                                // If we overlap with someone at level X, we must be at least X + 1
+                                                level = Math.max(level, other.level + 1);
+                                            }
+                                        }
+
+                                        positionedMarkers.push({ ...marker, pct, level });
+                                    });
+
+                                    return positionedMarkers.map((marker) => {
+                                        if (marker.mta < 3.0 || marker.mta > 5.0) return null;
+
+                                        const isNext = marker.type === 'next';
+                                        const colorClass = isNext ? "text-emerald-700 border-emerald-100/50" : "text-red-700 border-red-100/50";
+                                        const lineColor = isNext ? "bg-emerald-400/40" : "bg-red-400/40"; // No opacity calculation mess, cleaner
+
+                                        // Vertical Stagger Calculation
+                                        // "Lower rank label sits lower"
+                                        const verticalShift = marker.level * 24; // 24px per level of overlap
+
+                                        return (
+                                            <div
+                                                key={`${marker.type}-${marker.rank}`}
+                                                className="absolute z-10 pointer-events-none flex flex-col items-center gap-1 transition-all duration-300"
+                                                style={{
+                                                    left: `${marker.pct}%`,
+                                                    transform: 'translateX(-50%)',
+                                                    top: '50%',
+                                                }}
+                                            >
+                                                {/* Connector Line - Grows to meet the label */}
+                                                <div
+                                                    className={cn("w-0.5 transition-all opacity-70", lineColor)}
+                                                    style={{ height: `${32 + verticalShift}px` }}
+                                                />
+
+                                                {/* Label */}
+                                                <span
+                                                    className={cn(
+                                                        "text-[10px] font-black uppercase tracking-widest whitespace-nowrap bg-white/80 px-1 rounded backdrop-blur-sm shadow-sm border -mt-1",
+                                                        colorClass
+                                                    )}
+                                                >
+                                                    #{marker.rank}
+                                                </span>
+                                            </div>
+                                        );
+                                    });
+                                })()}
 
                                 {/* Range Input (Invisible overlay for interaction) */}
                                 <input

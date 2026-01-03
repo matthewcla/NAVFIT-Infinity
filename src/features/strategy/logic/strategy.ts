@@ -49,7 +49,7 @@ export interface OptimizableReport {
     rank: string; // "O-3", "E-6" etc
     type: string; // 'Periodic', 'Transfer', 'Gain', 'Special', 'Promotion'
     traitAverage: number;
-    [key: string]: any; // Allow other props to pass through
+    [key: string]: unknown; // Allow other props to pass through
 }
 
 const RANK_VALUE: Record<string, number> = {
@@ -112,6 +112,7 @@ export const optimizeStrategy = <T extends OptimizableReport>(
         newTrait = Math.round(newTrait * 100) / 100;
 
         // Remove temporary score
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         const { _priorityScore, ...rest } = r;
         return { ...rest, traitAverage: newTrait } as unknown as T;
     });

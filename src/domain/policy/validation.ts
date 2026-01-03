@@ -12,6 +12,7 @@ const isO1O2 = (p: Paygrade) => p === Paygrade.O1 || p === Paygrade.O2;
 export function validateRecommendationAgainstTraits(
   traits: TraitGradeSet,
   rec: PromotionRecommendation,
+  /* eslint-disable-next-line @typescript-eslint/no-unused-vars */
   _context: SummaryGroupContext
 ): PolicyViolation[] {
   const violations: PolicyViolation[] = [];

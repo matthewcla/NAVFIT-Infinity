@@ -68,6 +68,7 @@ const getCompetitiveGroup = (member: RosterMember): CompGroupKey => {
 const calculateStartValue = (
     member: RosterMember,
     reportType: string,
+    /* eslint-disable-next-line @typescript-eslint/no-unused-vars */
     _rsConfig: ReportingSeniorConfig
 ): number => {
     // 1. Establish Baseline based on Rank (Seniority)
