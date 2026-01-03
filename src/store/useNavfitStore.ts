@@ -8,8 +8,9 @@ import { useRedistributionStore } from './useRedistributionStore';
 import { useAuditStore } from './useAuditStore';
 import { DEFAULT_CONSTRAINTS } from '@/domain/rsca/constants';
 import type { Member as DomainMember } from '@/domain/rsca/types';
+import { validateReportState, checkQuota } from '@/features/strategy/logic/validation';
 
-import type { SummaryGroup } from '@/types';
+import type { SummaryGroup, Report } from '@/types';
 
 interface NavfitStore {
     // Navigation State
@@ -54,6 +55,7 @@ interface NavfitStore {
     // Feature State
     projections: Record<string, number>;
     updateProjection: (groupId: string, reportId: string, value: number) => void;
+    updateReport: (groupId: string, reportId: string, updates: Partial<Report>) => void;
 
 
     // Cross-Component Requests
@@ -346,6 +348,74 @@ export const useNavfitStore = create<NavfitStore>((set) => ({
             useRedistributionStore.getState().requestRedistribution(groupId, domainMembers, DEFAULT_CONSTRAINTS, state.rsConfig.targetRsca);
         }
     },
+
+    updateReport: (groupId, reportId, updates) => set((state) => {
+        const groupIndex = state.summaryGroups.findIndex(g => g.id === groupId);
+        if (groupIndex === -1) return {};
+
+        const group = state.summaryGroups[groupIndex];
+        const reports = [...group.reports];
+        const reportIndex = reports.findIndex(r => r.id === reportId);
+        if (reportIndex === -1) return {};
+
+        // 1. Apply Updates
+        const originalReport = reports[reportIndex];
+        const updatedReport: Report = {
+            ...originalReport,
+            ...updates
+        };
+
+        // 2. Validate Domain Policy (Traits, NOB, SP, O1/O2)
+        // Find previous report for SP logic (simplified: looking in roster or ignoring for now if complexity too high)
+        // Ideally we check history in roster.
+        const rosterMember = state.roster.find(m => m.id === updatedReport.memberId);
+        // Sort history by date desc, find one before this report's period
+        // For now, passing undefined to validateReportState unless we strictly need SP withdrawal check to work.
+        // Prompt requires it.
+        let previousReport: Report | undefined;
+        if (rosterMember && rosterMember.history) {
+             // Basic sort
+             const sorted = [...rosterMember.history].sort((a, b) => new Date(b.periodEndDate).getTime() - new Date(a.periodEndDate).getTime());
+             // The report being edited might be in history or not? If it's a draft, maybe not fully in history array or is the latest.
+             // We look for the first one strictly before this report's end date.
+             const currentEndDate = new Date(updatedReport.periodEndDate);
+             previousReport = sorted.find(r => new Date(r.periodEndDate) < currentEndDate);
+        }
+
+        const violations = validateReportState(updatedReport, group, previousReport);
+
+        // 3. Validate Quotas (Group Level)
+        // If recommendation changed to EP or MP, we need to check limits.
+        if (updates.promotionRecommendation) {
+             const tempReports = [...reports];
+             tempReports[reportIndex] = updatedReport;
+
+             const epCount = tempReports.filter(r => r.promotionRecommendation === 'EP').length;
+             const mpCount = tempReports.filter(r => r.promotionRecommendation === 'MP').length;
+             const groupSize = group.reports.length;
+
+             const quotaResult = checkQuota(groupSize, epCount, mpCount);
+             if (!quotaResult.isValid && quotaResult.message) {
+                 violations.push({
+                     code: 'QUOTA_EXCEEDED',
+                     message: quotaResult.message,
+                     severity: 'ERROR',
+                     affectedFields: ['promotionRecommendation']
+                 });
+             }
+        }
+
+        updatedReport.violations = violations;
+        reports[reportIndex] = updatedReport;
+
+        const newSummaryGroups = [...state.summaryGroups];
+        newSummaryGroups[groupIndex] = {
+            ...group,
+            reports
+        };
+
+        return { summaryGroups: newSummaryGroups };
+    }),
 
     // Requests
     pendingReportRequest: null,
