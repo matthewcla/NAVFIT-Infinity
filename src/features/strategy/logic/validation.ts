@@ -7,6 +7,7 @@ import {
     validateNOBJustification,
     validateSignificantProblemsWithdrawal,
 } from '@/domain/policy/validation';
+import { getCompetitiveCategory } from './competitiveGroupUtils';
 
 const ONE_DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -110,12 +111,22 @@ function createSummaryGroupContext(group: SummaryGroup, report: Report): Summary
     const rankCategory = getRankCategory(paygrade);
 
     // Check if LDO/CWO
-    // LDO designators: 61xx, 62xx, 63xx, 64xx... usually 6xxx.
-    // CWO designators: 7xxx, 8xxx.
-    // Assuming designator string
+    // We use the same robust logic as group generation to identify LDO/CWO
     const desig = report.designator || group.designator || '';
-    const isLDO = desig.startsWith('6');
-    const isCWO = desig.startsWith('7') || desig.startsWith('8');
+
+    // Check using our new utility or maintain simple check?
+    // The utility is safer.
+    const cat = getCompetitiveCategory(desig);
+
+    // isLDO includes both Active and Reserve LDOs
+    const isLDO = cat.code === 'LDO_ACTIVE' || cat.code === 'LDO_CWO_RESERVE';
+
+    // isCWO includes Active CWOs and Reserve CWOs (which are in LDO_CWO_RESERVE bucket or CWO_ACTIVE)
+    // Note: LDO_CWO_RESERVE bucket includes both. But here we just need boolean flags.
+    // However, the rule for O1/O2 exemption says "LDO 6XXX".
+    // CWOs are W ranks, so O1/O2 rule won't trigger anyway.
+    // But for completeness:
+    const isCWO = cat.code === 'CWO_ACTIVE' || (cat.code === 'LDO_CWO_RESERVE' && desig.startsWith('7'));
 
     return {
         size: group.reports.length,
