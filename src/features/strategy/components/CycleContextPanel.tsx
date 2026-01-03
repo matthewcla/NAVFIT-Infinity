@@ -227,21 +227,21 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
                                 </div>
                             </div>
 
-                            <div className="flex flex-col items-end gap-1.5">
+                            <div className="flex flex-col items-end gap-1.5 pl-4">
+                                {/* Submit Control - Morphing Style */}
                                 <button
                                     onClick={() => setIsSubmitModalOpen(true)}
                                     disabled={!latestResult[activeGroup.id] || activeGroup.status === 'Submitted'}
-                                    className="flex items-center gap-2 px-4 py-1.5 bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-200 disabled:text-slate-400 text-white rounded shadow-sm text-xs font-bold uppercase tracking-wide transition-all"
+                                    className="group relative flex items-center justify-center h-11 bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-200 disabled:text-slate-400 text-white rounded-full shadow-sm transition-all duration-300 ease-in-out w-11 hover:w-36 overflow-hidden"
                                     title="Submit Strategy to Review"
                                 >
-                                    <Send className="w-3.5 h-3.5" />
-                                    <span>Submit Strategy</span>
-                                </button>
-                                {gap > 0 && (
-                                    <div className="flex items-center gap-1.5 px-2.5 py-1 bg-amber-50 rounded text-xs font-semibold text-amber-700 border border-amber-200">
-                                        {gap} Attention Needed
+                                    <div className="absolute left-0 w-11 h-11 flex items-center justify-center shrink-0">
+                                        <Send className="w-5 h-5" />
                                     </div>
-                                )}
+                                    <span className="whitespace-nowrap font-bold text-xs uppercase tracking-wide opacity-0 group-hover:opacity-100 transition-opacity duration-300 pl-10 pr-4 delay-75">
+                                        Submit Group
+                                    </span>
+                                </button>
                             </div>
                         </div>
 
@@ -336,8 +336,9 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
                                     )}
                                 </div>
 
-                                {/* Right: Workspace Control */}
-                                <div className="flex items-center gap-2 text-[10px] px-2">
+                                {/* Right: Workspace Control & Alerts */}
+                                <div className="flex items-center gap-3 text-[10px] px-2">
+
                                     {!isRankingMode && (
                                         <button
                                             onClick={onOpenWorkspace}
@@ -346,6 +347,13 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
                                             <ArrowRight className="w-3.5 h-3.5 text-slate-500" />
                                             <span>Workspace</span>
                                         </button>
+                                    )}
+
+                                    {/* Moved Alert Badge - Adjusted to be Right-Most Edge */}
+                                    {gap > 0 && (
+                                        <div className="flex items-center gap-1.5 px-2.5 py-1.5 bg-amber-50 rounded-md text-xs font-bold text-amber-700 border border-amber-200 shadow-sm animate-in fade-in slide-in-from-right-2">
+                                            <span>{gap} Attention Needed</span>
+                                        </div>
                                     )}
                                 </div>
                             </div>
