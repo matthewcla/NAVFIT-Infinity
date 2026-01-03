@@ -114,13 +114,39 @@ export function MemberDetailSidebar({
     const history = (rosterMember.history || []).slice(-3); // Last 3 reports
 
     // --- Helpers ---
+    const getRecStyle = (rec: string, isSelected: boolean, locked: boolean) => {
+        if (locked && !isSelected) return "text-slate-300 bg-slate-50 opacity-50 cursor-not-allowed border-transparent";
+        if (locked && isSelected) return "bg-slate-200 text-slate-500 border-slate-300 cursor-not-allowed opacity-80";
 
+        const base = "border transition-all duration-200";
+        const selected = isSelected ? "shadow-md ring-1 ring-black/5 scale-[1.02] font-extrabold" : "opacity-60 hover:opacity-100 hover:shadow-sm bg-white";
+
+        switch (rec) {
+            case 'EP': return cn(base, selected, isSelected ? "bg-emerald-100 text-emerald-800 border-emerald-300" : "text-emerald-700 border-emerald-100 hover:bg-emerald-50");
+            case 'MP': return cn(base, selected, isSelected ? "bg-yellow-100 text-yellow-800 border-yellow-300" : "text-yellow-700 border-yellow-100 hover:bg-yellow-50");
+            case 'P': return cn(base, selected, isSelected ? "bg-slate-100 text-slate-700 border-slate-300" : "text-slate-600 border-slate-100 hover:bg-slate-50");
+            case 'Prog': return cn(base, selected, isSelected ? "bg-orange-100 text-orange-700 border-orange-300" : "text-orange-600 border-orange-100 hover:bg-orange-50");
+            case 'SP': return cn(base, selected, isSelected ? "bg-red-100 text-red-700 border-red-300" : "text-red-600 border-red-100 hover:bg-red-50");
+            case 'NOB': return cn(base, selected, isSelected ? "bg-gray-100 text-gray-500 border-gray-300" : "text-gray-500 border-gray-100 hover:bg-gray-50");
+            default: return cn(base, selected, "bg-white border-slate-200 text-slate-500");
+        }
+    };
 
     const handleApply = () => {
         onUpdateMTA(memberId, simulatedMta);
         onUpdatePromRec(memberId, simulatedRec);
         onNavigateNext();
     };
+
+    // Calculate Slider Positions (Scale 3.00 - 5.00)
+    const getPercent = (val: number) => ((Math.max(3.0, Math.min(5.0, val)) - 3.0) / 2.0) * 100;
+
+    // Check overlaps for labels
+    const labelsOverlap = (() => {
+        if (!rankContext?.nextRankMta || !rankContext?.prevRankMta) return false;
+        // If difference is small, they overlap
+        return Math.abs(rankContext.nextRankMta - rankContext.prevRankMta) < 0.25;
+    })();
 
     return createPortal(
         <div className="flex flex-col h-full bg-white border-l border-slate-200 shadow-2xl w-[530px] fixed right-0 top-0 bottom-0 !z-[100] animate-in slide-in-from-right duration-300">
@@ -206,7 +232,7 @@ export function MemberDetailSidebar({
 
 
                 {/* --- Section A: The Trajectory --- */}
-                <div className="p-5 border-b border-slate-100 bg-slate-50/50">
+                <div className="p-5 border-b border-slate-100 bg-slate-50/50 mt-2.5">
                     <div className="flex items-center justify-between mb-3">
                         <div className="flex items-center gap-2 text-xs font-bold uppercase text-slate-500 tracking-wider">
                             <TrendingUp className="w-3.5 h-3.5" />
@@ -258,18 +284,17 @@ export function MemberDetailSidebar({
                 <div className="p-5 space-y-6">
 
                     {/* Promotion Recommendation */}
-                    <div className="space-y-3">
+                    <div className="space-y-3 mb-6">
                         <label className="text-xs font-bold text-slate-700 uppercase tracking-wide">Recommendation</label>
-                        <div className="flex bg-slate-100 p-1 rounded-lg shadow-inner">
+                        <div className="flex gap-1 p-0.5 rounded-lg">
                             {(['NOB', 'SP', 'Prog', 'P', 'MP', 'EP'] as const).map((rec) => (
                                 <button
                                     key={rec}
-                                    onClick={() => setSimulatedRec(rec)}
+                                    onClick={() => !isLocked && setSimulatedRec(rec)}
+                                    disabled={isLocked}
                                     className={cn(
                                         "flex-1 py-1.5 text-xs font-bold rounded-md transition-all",
-                                        simulatedRec === rec
-                                            ? "bg-white text-indigo-600 shadow-sm ring-1 ring-black/5 scale-[1.02]"
-                                            : "text-slate-500 hover:text-slate-700 hover:bg-slate-200/50"
+                                        getRecStyle(rec, simulatedRec === rec, isLocked)
                                     )}
                                 >
                                     {rec === 'Prog' ? 'PR' : rec}
@@ -279,34 +304,34 @@ export function MemberDetailSidebar({
                     </div>
 
                     {/* Trait Average Tuner */}
-                    <div className="space-y-4">
+                    <div className="space-y-4 mt-6"> {/* Increased top margin (approx 10px more than before) */}
                         <div className="flex items-end justify-between">
                             <div className="flex flex-col gap-2">
                                 <label className="text-xs font-bold text-slate-700 uppercase tracking-wide">
-                                    Trait Average
+                                    Trait Average Adjustment
                                 </label>
                             </div>
 
-                            <div className="flex items-center gap-3">
+                            <div className="flex flex-col items-end gap-2">
                                 {/* Lock moved to header, simplified input here */}
                                 <input
                                     type="number"
                                     step="0.01"
-                                    min="1.00"
+                                    min="3.00"
                                     max="5.00"
                                     value={simulatedMta}
                                     onChange={(e) => handleMtaChange(parseFloat(e.target.value))}
                                     disabled={isLocked}
-                                    className="w-20 text-right text-xl font-bold text-slate-900 bg-transparent border-b-2 border-slate-200 focus:border-indigo-500 focus:outline-none p-0 focus:ring-0 disabled:opacity-50 font-mono"
+                                    className="w-24 text-right text-2xl font-black text-slate-900 bg-transparent border-b-2 border-slate-200 focus:border-indigo-500 focus:outline-none p-0 focus:ring-0 disabled:opacity-50 font-mono"
                                 />
                             </div>
                         </div>
 
                         {/* Robust Slider Control */}
-                        <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-3 mt-2.5">
                             <button
-                                onClick={() => handleMtaChange(Math.max(1.00, simulatedMta - 0.01))}
-                                disabled={isLocked || simulatedMta <= 1.00}
+                                onClick={() => handleMtaChange(Math.max(3.00, simulatedMta - 0.01))}
+                                disabled={isLocked || simulatedMta <= 3.00}
                                 className="p-1 rounded-md text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 border border-transparent hover:border-indigo-200 transition-all disabled:opacity-30 disabled:pointer-events-none"
                             >
                                 <Minus className="w-4 h-4" />
@@ -321,47 +346,122 @@ export function MemberDetailSidebar({
                                             "h-full transition-all duration-75",
                                             isLocked ? "bg-slate-300" : "bg-indigo-500"
                                         )}
-                                        style={{ width: `${((simulatedMta - 1.0) / 4.0) * 100}%` }}
+                                        style={{ width: `${getPercent(simulatedMta)}%` }}
                                     />
                                 </div>
 
-                                {/* Ticks / Grid (Every 0.5 or 1.0) */}
-                                {[3.0, 4.0, 5.0].map(val => (
-                                    <div
-                                        key={val}
-                                        className="absolute top-1/2 -translate-y-1/2 w-px h-3 bg-slate-300 pointer-events-none z-0"
-                                        style={{ left: `${((val - 1.0) / 4.0) * 100}%` }}
-                                    />
+                                {/* Rank Safe Zone & Thresholds */}
+                                {(() => {
+                                    const next = rankContext?.nextRankMta;
+                                    const prev = rankContext?.prevRankMta;
+
+                                    // Safe Zone Calculation - Scale 3.0 to 5.0
+                                    // Range is 2.0 (5-3)
+                                    // Formula: (val - 3.0) / 2.0 * 100
+
+                                    if (next !== undefined && prev !== undefined) {
+                                        const start = Math.max(3.0, Math.min(next, prev));
+                                        const end = Math.min(5.0, Math.max(next, prev));
+
+                                        // If outside visible range
+                                        if (end < 3.0 || start > 5.0) return null;
+
+                                        const leftStart = getPercent(start);
+                                        const width = getPercent(end) - leftStart;
+
+                                        return (
+                                            <>
+                                                {/* Safe Zone Highlight */}
+                                                <div
+                                                    className="absolute top-1/2 -translate-y-1/2 h-4 bg-emerald-50/80 border-x border-emerald-100 z-0 pointer-events-none"
+                                                    style={{
+                                                        left: `${leftStart}%`,
+                                                        width: `${width}%`
+                                                    }}
+                                                />
+                                            </>
+                                        );
+                                    }
+                                    return null;
+                                })()}
+
+
+                                {/* Ticks / Grid (Every 0.5) */}
+                                {[3.0, 3.5, 4.0, 4.5, 5.0].map(val => (
+                                    <div key={val} className="absolute inset-0 pointer-events-none z-0">
+                                        <div
+                                            className="absolute top-1/2 -translate-y-1/2 w-0.5 h-3 bg-slate-200"
+                                            style={{ left: `${getPercent(val)}%` }}
+                                        />
+                                        <div
+                                            className="absolute top-6 -translate-x-1/2 text-xs font-bold text-slate-300"
+                                            style={{ left: `${getPercent(val)}%` }}
+                                        >
+                                            {val.toFixed(1)}
+                                        </div>
+                                    </div>
                                 ))}
 
 
                                 {/* Ghost Value Marker (Initial) */}
-                                <div
-                                    className="absolute top-1/2 -translate-y-1/2 w-1.5 h-4 bg-slate-300/80 rounded-sm pointer-events-none z-10 hover:bg-slate-400 transition-colors"
-                                    style={{ left: `${((initialMta - 1.0) / 4.0) * 100}%` }}
-                                    title={`Initial: ${initialMta.toFixed(2)}`}
-                                />
-
-                                {/* Rank Thresholds */}
-                                {rankContext?.nextRankMta && (
+                                {initialMta >= 3.0 && initialMta <= 5.0 && (
                                     <div
-                                        className="absolute top-1/2 -translate-y-1/2 w-0.5 h-5 bg-emerald-500/60 z-10 pointer-events-none"
-                                        style={{ left: `${((rankContext.nextRankMta - 1.0) / 4.0) * 100}%` }}
-                                        title="Next Rank Threshold"
+                                        className="absolute top-1/2 -translate-y-1/2 w-1.5 h-4 bg-slate-200/50 rounded-sm pointer-events-none z-0"
+                                        style={{ left: `${getPercent(initialMta)}%` }}
+                                        title={`Initial: ${initialMta.toFixed(2)}`}
                                     />
                                 )}
-                                {rankContext?.prevRankMta && (
+
+                                {/* Threshold Markers with Labels */}
+                                {rankContext?.nextRankMta !== undefined && rankContext.nextRankMta >= 3.0 && rankContext.nextRankMta <= 5.0 && (
                                     <div
-                                        className="absolute top-1/2 -translate-y-1/2 w-0.5 h-5 bg-red-500/60 z-10 pointer-events-none"
-                                        style={{ left: `${((rankContext.prevRankMta - 1.0) / 4.0) * 100}%` }}
-                                        title="Prev Rank Threshold"
-                                    />
+                                        className="absolute h-10 -top-6 z-10 pointer-events-none flex flex-col items-center gap-1 transition-all"
+                                        style={{
+                                            left: `${getPercent(rankContext.nextRankMta)}%`,
+                                            transform: 'translateX(-50%)',
+                                            top: -24 // Increased spacing
+                                        }}
+                                    >
+                                        <div className="w-0.5 h-full bg-emerald-400/40 opacity-70" />
+                                        <span className="text-xs font-black text-emerald-700 uppercase tracking-widest whitespace-nowrap bg-white/80 px-1 rounded backdrop-blur-sm -mt-1 shadow-sm">
+                                            #{rankContext.currentRank - 1}
+                                        </span>
+                                    </div>
+                                )}
+                                {rankContext?.prevRankMta !== undefined && rankContext.prevRankMta >= 3.0 && rankContext.prevRankMta <= 5.0 && (
+                                    <div
+                                        className="absolute h-10 -top-3 z-10 pointer-events-none flex flex-col items-center gap-1 transition-all"
+                                        style={{
+                                            left: `${getPercent(rankContext.prevRankMta)}%`,
+                                            transform: 'translateX(-50%)',
+                                            // Conditional offset for overlap prevention
+                                            top: labelsOverlap && (rankContext.prevRankMta < (rankContext.nextRankMta || 0)) ? 24 : -24
+                                        }}
+                                    >
+                                        {/* Inverted layout if pushed down, or normal if up */}
+                                        {labelsOverlap && (rankContext.prevRankMta < (rankContext.nextRankMta || 0)) ? (
+                                            <>
+                                                <span className="text-xs font-black text-red-700 uppercase tracking-widest whitespace-nowrap bg-white/80 px-1 rounded backdrop-blur-sm mt-1 shadow-sm order-2">
+                                                    #{rankContext.currentRank + 1}
+                                                </span>
+                                                <div className="w-0.5 h-full bg-red-400/40 opacity-70 order-1" />
+                                            </>
+                                        ) : (
+                                            <>
+                                                <div className="w-0.5 h-full bg-red-400/40 opacity-70" />
+                                                <span className="text-xs font-black text-red-700 uppercase tracking-widest whitespace-nowrap bg-white/80 px-1 rounded backdrop-blur-sm -mt-1 shadow-sm">
+                                                    #{rankContext.currentRank + 1}
+                                                </span>
+                                            </>
+                                        )}
+
+                                    </div>
                                 )}
 
                                 {/* Range Input (Invisible overlay for interaction) */}
                                 <input
                                     type="range"
-                                    min="1.00"
+                                    min="3.00"
                                     max="5.00"
                                     step="0.01"
                                     value={simulatedMta}
@@ -376,7 +476,9 @@ export function MemberDetailSidebar({
                                         "absolute top-1/2 -translate-y-1/2 w-5 h-5 bg-white border-2 rounded-full shadow-md pointer-events-none z-10 transition-transform duration-75 ease-out flex items-center justify-center",
                                         isLocked ? "border-slate-300" : "border-indigo-600 scale-100 group-hover:scale-110"
                                     )}
-                                    style={{ left: `calc(${((simulatedMta - 1.0) / 4.0) * 100}% - 10px)` }}
+                                    // Scale 3.0 -> 5.0 (Range 2.0)
+                                    // Val - 3.0 / 2.0
+                                    style={{ left: `calc(${getPercent(simulatedMta)}% - 10px)` }}
                                 >
                                     <div className={cn("w-1.5 h-1.5 rounded-full", isLocked ? "bg-slate-300" : "bg-indigo-600")} />
                                 </div>
