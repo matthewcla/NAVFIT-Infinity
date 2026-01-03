@@ -38,6 +38,8 @@ interface NavfitStore {
     summaryGroups: SummaryGroup[];
     setSummaryGroups: (groups: SummaryGroup[]) => void;
     addSummaryGroup: (group: SummaryGroup) => void;
+    updateGroupStatus: (groupId: string, status: string) => void;
+
     // State for persistence (Deletions)
     deletedGroupIds: string[];
     deletedReportIds: string[];
@@ -134,6 +136,23 @@ export const useNavfitStore = create<NavfitStore>((set) => ({
     setSummaryGroups: (groups) => set({ summaryGroups: groups }),
     addSummaryGroup: (group) => set((state) => ({
         summaryGroups: [...state.summaryGroups, group]
+    })),
+    updateGroupStatus: (groupId, status) => set((state) => ({
+        summaryGroups: state.summaryGroups.map((group) => {
+            if (group.id !== groupId) return group;
+
+            // Also update status on all reports
+            const updatedReports = group.reports.map(r => ({
+                ...r,
+                draftStatus: status
+            }));
+
+            return {
+                ...group,
+                status,
+                reports: updatedReports
+            };
+        })
     })),
     // Deletion Persistence
     deletedGroupIds: [],
