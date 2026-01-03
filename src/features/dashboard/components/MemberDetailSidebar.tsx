@@ -8,7 +8,8 @@ import {
     Unlock,
     TrendingUp,
     Minus,
-    Plus
+    Plus,
+    Edit
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { RankChangeModal } from './RankChangeModal';
@@ -216,11 +217,21 @@ export function MemberDetailSidebar({
                                 </div>
                             </div>
 
-                            {/* Reports Planned - Moved Here */}
-                            <div className="text-xs font-semibold text-slate-400 bg-slate-50 px-2 py-1 rounded border border-slate-100 whitespace-nowrap">
-                                {currentReport?.reportsRemaining !== undefined
-                                    ? `${currentReport.reportsRemaining} ${currentReport.reportsRemaining === 1 ? 'Report' : 'Reports'} Planned`
-                                    : 'PRD Unknown'}
+                            <div className="flex flex-col items-end gap-1">
+                                {/* Edit Report Button (Moved from Footer) */}
+                                <button
+                                    className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
+                                    title="Edit Report Details"
+                                >
+                                    <Edit className="w-4 h-4" />
+                                </button>
+
+                                {/* Reports Planned */}
+                                <div className="text-xs font-semibold text-slate-400 bg-slate-50 px-2 py-1 rounded border border-slate-100 whitespace-nowrap">
+                                    {currentReport?.reportsRemaining !== undefined
+                                        ? `${currentReport.reportsRemaining} ${currentReport.reportsRemaining === 1 ? 'Report' : 'Reports'} Planned`
+                                        : 'PRD Unknown'}
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -304,7 +315,7 @@ export function MemberDetailSidebar({
                     </div>
 
                     {/* Trait Average Tuner */}
-                    <div className="space-y-4 mt-6"> {/* Increased top margin (approx 10px more than before) */}
+                    <div className="space-y-4"> {/* Reverted top margin to keep label aligned */}
                         <div className="flex items-end justify-between">
                             <div className="flex flex-col gap-2">
                                 <label className="text-xs font-bold text-slate-700 uppercase tracking-wide">
@@ -328,7 +339,7 @@ export function MemberDetailSidebar({
                         </div>
 
                         {/* Robust Slider Control */}
-                        <div className="flex items-center gap-3 mt-2.5">
+                        <div className="flex items-center gap-3 mt-8"> {/* Increased specific slider margin (32px) */}
                             <button
                                 onClick={() => handleMtaChange(Math.max(3.00, simulatedMta - 0.01))}
                                 disabled={isLocked || simulatedMta <= 3.00}
@@ -415,14 +426,14 @@ export function MemberDetailSidebar({
                                 {/* Threshold Markers with Labels */}
                                 {rankContext?.nextRankMta !== undefined && rankContext.nextRankMta >= 3.0 && rankContext.nextRankMta <= 5.0 && (
                                     <div
-                                        className="absolute h-10 -top-6 z-10 pointer-events-none flex flex-col items-center gap-1 transition-all"
+                                        className="absolute z-10 pointer-events-none flex flex-col items-center gap-1 transition-all"
                                         style={{
                                             left: `${getPercent(rankContext.nextRankMta)}%`,
                                             transform: 'translateX(-50%)',
-                                            top: -24 // Increased spacing
+                                            top: '50%'
                                         }}
                                     >
-                                        <div className="w-0.5 h-full bg-emerald-400/40 opacity-70" />
+                                        <div className="w-0.5 h-8 bg-emerald-400/40 opacity-70" />
                                         <span className="text-xs font-black text-emerald-700 uppercase tracking-widest whitespace-nowrap bg-white/80 px-1 rounded backdrop-blur-sm -mt-1 shadow-sm">
                                             #{rankContext.currentRank - 1}
                                         </span>
@@ -430,31 +441,17 @@ export function MemberDetailSidebar({
                                 )}
                                 {rankContext?.prevRankMta !== undefined && rankContext.prevRankMta >= 3.0 && rankContext.prevRankMta <= 5.0 && (
                                     <div
-                                        className="absolute h-10 -top-3 z-10 pointer-events-none flex flex-col items-center gap-1 transition-all"
+                                        className="absolute z-10 pointer-events-none flex flex-col items-center gap-1 transition-all"
                                         style={{
                                             left: `${getPercent(rankContext.prevRankMta)}%`,
                                             transform: 'translateX(-50%)',
-                                            // Conditional offset for overlap prevention
-                                            top: labelsOverlap && (rankContext.prevRankMta < (rankContext.nextRankMta || 0)) ? 24 : -24
+                                            top: '50%'
                                         }}
                                     >
-                                        {/* Inverted layout if pushed down, or normal if up */}
-                                        {labelsOverlap && (rankContext.prevRankMta < (rankContext.nextRankMta || 0)) ? (
-                                            <>
-                                                <span className="text-xs font-black text-red-700 uppercase tracking-widest whitespace-nowrap bg-white/80 px-1 rounded backdrop-blur-sm mt-1 shadow-sm order-2">
-                                                    #{rankContext.currentRank + 1}
-                                                </span>
-                                                <div className="w-0.5 h-full bg-red-400/40 opacity-70 order-1" />
-                                            </>
-                                        ) : (
-                                            <>
-                                                <div className="w-0.5 h-full bg-red-400/40 opacity-70" />
-                                                <span className="text-xs font-black text-red-700 uppercase tracking-widest whitespace-nowrap bg-white/80 px-1 rounded backdrop-blur-sm -mt-1 shadow-sm">
-                                                    #{rankContext.currentRank + 1}
-                                                </span>
-                                            </>
-                                        )}
-
+                                        <div className={cn("w-0.5 bg-red-400/40 opacity-70 transition-all", labelsOverlap ? "h-20" : "h-8")} />
+                                        <span className="text-xs font-black text-red-700 uppercase tracking-widest whitespace-nowrap bg-white/80 px-1 rounded backdrop-blur-sm -mt-1 shadow-sm">
+                                            #{rankContext.currentRank + 1}
+                                        </span>
                                     </div>
                                 )}
 
@@ -516,11 +513,7 @@ export function MemberDetailSidebar({
                     {/* Spacer */}
                     <div className="flex-1" />
 
-                    <button
-                        className="px-4 py-2.5 text-sm font-semibold text-slate-700 hover:text-slate-900 hover:bg-slate-100 rounded-lg border border-slate-200 transition-colors"
-                    >
-                        Edit Report
-                    </button>
+                    {/* Edit Report Moved to Header */}
                     <button
                         onClick={handleApply}
                         className="px-6 py-2.5 bg-indigo-600 text-white text-sm font-bold rounded-lg hover:bg-indigo-700 shadow-md hover:shadow-lg active:transform active:scale-[0.98] transition-all flex items-center gap-2"
