@@ -18,7 +18,7 @@ import { RankChangeModal } from './RankChangeModal';
 import type { Member, Report } from '@/types';
 import { checkQuota } from '@/features/strategy/logic/validation';
 import { validateRecommendationAgainstTraits } from '@/domain/policy/validation';
-import { PromotionRecommendation, type TraitGradeSet } from '@/domain/policy/types';
+import { PromotionRecommendation, type TraitGradeSet, type SummaryGroupContext } from '@/domain/policy/types';
 
 interface MemberDetailSidebarProps {
     memberId: string;
@@ -41,6 +41,7 @@ interface MemberDetailSidebarProps {
         distribution: { EP: number; MP: number; [key: string]: number };
         totalReports: number;
     };
+    groupContext?: SummaryGroupContext;
     isRankingMode?: boolean;
 }
 
@@ -55,6 +56,7 @@ export function MemberDetailSidebar({
     currentReport,
     rankContext,
     quotaContext,
+    groupContext,
     isRankingMode = false
 }: MemberDetailSidebarProps) {
 
@@ -156,7 +158,7 @@ export function MemberDetailSidebar({
         }
 
         // 2. Quota Validation (Only in Rank Order Mode as per requirements)
-        if (isRankingMode && quotaContext) {
+        if (isRankingMode && quotaContext && groupContext) {
             const { distribution, totalReports } = quotaContext;
 
             // Calculate hypothetical distribution if we switch to 'rec'
@@ -176,7 +178,10 @@ export function MemberDetailSidebar({
             if (rec === 'EP') epCount++;
             if (rec === 'MP') mpCount++;
 
-            const check = checkQuota(totalReports, epCount, mpCount);
+            // Ensure context has correct size for current view
+            const effectiveContext = { ...groupContext, size: totalReports };
+
+            const check = checkQuota(effectiveContext, epCount, mpCount);
             if (!check.isValid) {
                 return { blocked: true, reason: check.message };
             }

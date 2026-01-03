@@ -23,6 +23,7 @@ import { StatusBadge } from './StatusBadge';
 import { QuotaHeadsUpDisplay } from './QuotaHeadsUpDisplay';
 import { CycleMemberList, type RankedMember } from './CycleMemberList';
 import { SubmissionConfirmationModal } from './SubmissionConfirmationModal';
+import { createSummaryGroupContext } from '@/features/strategy/logic/validation';
 
 
 interface CycleContextPanelProps {
@@ -136,6 +137,9 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
             else if (rec === 'EP') distribution.EP++;
         });
 
+        // Create Domain Context
+        const domainContext = createSummaryGroupContext(activeGroup);
+
         return {
             cumulativeRsca,
             rank,
@@ -144,6 +148,7 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
             mainDraftStatus,
             rankedMembers,
             distribution,
+            domainContext,
             eotRsca: calculateEotRsca(
                 roster,
                 cumulativeRsca,
@@ -171,7 +176,7 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
         );
     }
 
-    const { cumulativeRsca, gap, mainDraftStatus, rankedMembers, distribution, eotRsca, totalReports } = contextData;
+    const { cumulativeRsca, gap, mainDraftStatus, rankedMembers, distribution, eotRsca, totalReports, domainContext } = contextData;
 
     // Helper for Badge
     const getPromotionStatusBadge = (s?: string) => {
@@ -262,7 +267,7 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
                             {/* 2B. Promotion Recommendation Quota HUD (Right) - Framed & Flexible */}
                             <div className="flex-1 rounded-xl border border-slate-200 shadow-sm overflow-hidden bg-white/50">
                                 <div className="h-full bg-white/95 backdrop-blur-sm transition-all duration-300">
-                                    <QuotaHeadsUpDisplay distribution={distribution} totalReports={totalReports} />
+                                    <QuotaHeadsUpDisplay distribution={distribution} totalReports={totalReports} context={domainContext} />
                                 </div>
                             </div>
                         </div>
@@ -398,6 +403,7 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
                             distribution,
                             totalReports
                         }}
+                        groupContext={domainContext}
                         isRankingMode={isRankingMode}
 
                         // Pass Rank Context

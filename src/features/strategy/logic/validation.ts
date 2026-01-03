@@ -8,6 +8,7 @@ import {
     validateSignificantProblemsWithdrawal,
 } from '@/domain/policy/validation';
 import { getCompetitiveCategory } from './competitiveGroupUtils';
+import { computeEpMax, computeEpMpCombinedMax } from '@/domain/policy/quotas';
 
 const ONE_DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -42,16 +43,17 @@ export const checkZeroGap = (prevEndDateStr: string, newStartDateStr: string): {
 
 /**
  * Forced Distribution (Quota) Check
- * Max EP = 20% (Rounded)
- * Max EP+MP = 60% (Rounded)
+ * Delegates to domain policy logic.
  */
 export const checkQuota = (
-    groupSize: number,
+    context: SummaryGroupContext,
     epCount: number,
     mpCount: number
 ): { isValid: boolean; epLimit: number; combinedLimit: number; message?: string } => {
-    const epLimit = Math.round(groupSize * 0.20);
-    const combinedLimit = Math.round(groupSize * 0.60);
+    const groupSize = context.size;
+
+    const epLimit = computeEpMax(groupSize, context);
+    const combinedLimit = computeEpMpCombinedMax(groupSize, context);
 
     if (epCount > epLimit) {
         return {
@@ -106,13 +108,13 @@ function getRankCategory(paygrade: Paygrade): RankCategory {
     return RankCategory.ENLISTED;
 }
 
-function createSummaryGroupContext(group: SummaryGroup, report: Report): SummaryGroupContext {
-    const paygrade = mapPaygrade(report.grade || group.paygrade);
+export function createSummaryGroupContext(group: SummaryGroup, report: Report | null = null): SummaryGroupContext {
+    const paygrade = mapPaygrade(report?.grade || group.paygrade);
     const rankCategory = getRankCategory(paygrade);
 
     // Check if LDO/CWO
     // We use the same robust logic as group generation to identify LDO/CWO
-    const desig = report.designator || group.designator || '';
+    const desig = report?.designator || group.designator || '';
 
     // Check using our new utility or maintain simple check?
     // The utility is safer.
@@ -122,10 +124,6 @@ function createSummaryGroupContext(group: SummaryGroup, report: Report): Summary
     const isLDO = cat.code === 'LDO_ACTIVE' || cat.code === 'LDO_CWO_RESERVE';
 
     // isCWO includes Active CWOs and Reserve CWOs (which are in LDO_CWO_RESERVE bucket or CWO_ACTIVE)
-    // Note: LDO_CWO_RESERVE bucket includes both. But here we just need boolean flags.
-    // However, the rule for O1/O2 exemption says "LDO 6XXX".
-    // CWOs are W ranks, so O1/O2 rule won't trigger anyway.
-    // But for completeness:
     const isCWO = cat.code === 'CWO_ACTIVE' || (cat.code === 'LDO_CWO_RESERVE' && desig.startsWith('7'));
 
     return {

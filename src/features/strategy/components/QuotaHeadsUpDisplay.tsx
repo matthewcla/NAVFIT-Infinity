@@ -2,26 +2,28 @@ import { useMemo } from 'react';
 import { Info } from 'lucide-react';
 import { checkQuota } from '@/features/strategy/logic/validation';
 import { clsx } from 'clsx';
+import type { SummaryGroupContext } from '@/domain/policy/types';
 
 interface QuotaHeadsUpDisplayProps {
     distribution: { EP: number; MP: number;[key: string]: number };
     totalReports: number;
+    context: SummaryGroupContext;
 }
 
-export function QuotaHeadsUpDisplay({ distribution, totalReports }: QuotaHeadsUpDisplayProps) {
+export function QuotaHeadsUpDisplay({ distribution, totalReports, context }: QuotaHeadsUpDisplayProps) {
 
     // Calculate limits and validation state
     const validation = useMemo(() => {
-        return checkQuota(totalReports, distribution.EP, distribution.MP);
-    }, [totalReports, distribution.EP, distribution.MP]);
+        // Ensure context size matches totalReports if not already synced, though context usually comes from group
+        const effectiveContext = { ...context, size: totalReports };
+        return checkQuota(effectiveContext, distribution.EP, distribution.MP);
+    }, [totalReports, distribution.EP, distribution.MP, context]);
 
     const { epLimit, combinedLimit } = validation;
 
     const epUsed = distribution.EP || 0;
     const mpUsed = distribution.MP || 0;
     const combinedUsed = epUsed + mpUsed;
-
-
 
     // EP Status
     const epOver = epUsed > epLimit;
@@ -40,7 +42,7 @@ export function QuotaHeadsUpDisplay({ distribution, totalReports }: QuotaHeadsUp
 
             {/* EP Quota */}
             <div className="group relative flex flex-col items-center justify-center px-3 py-1.5 rounded-lg border min-w-[80px] transition-colors hover:bg-white hover:shadow-md cursor-help"
-                title={`Early Promote: ${epUsed} assigned of ${epLimit} allowed (20% rule)`}
+                title={`Early Promote: ${epUsed} assigned of ${epLimit} allowed`}
             >
                 <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">EP Limit</div>
                 <div className={clsx(
@@ -62,7 +64,7 @@ export function QuotaHeadsUpDisplay({ distribution, totalReports }: QuotaHeadsUp
 
             {/* Combined Quota */}
             <div className="group relative flex flex-col items-center justify-center px-3 py-1.5 rounded-lg border min-w-[90px] transition-colors hover:bg-white hover:shadow-md cursor-help"
-                title={`Combined (EP + MP): ${combinedUsed} assigned of ${combinedLimit} allowed (60% rule)`}
+                title={`Combined (EP + MP): ${combinedUsed} assigned of ${combinedLimit} allowed`}
             >
                 <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Combined</div>
                 <div className={clsx(
@@ -75,7 +77,7 @@ export function QuotaHeadsUpDisplay({ distribution, totalReports }: QuotaHeadsUp
             </div>
 
             {/* Rule Info Icon (Hover Trigger) */}
-            <div className="ml-1 text-slate-300 hover:text-indigo-500 transition-colors cursor-help" title="Quotas are calculated based on the total number of summary group reports. EP cannot exceed 20%. Combined EP & MP cannot exceed 60%.">
+            <div className="ml-1 text-slate-300 hover:text-indigo-500 transition-colors cursor-help" title="Quotas are calculated based on group size and paygrade policy.">
                 <Info className="w-4 h-4" />
             </div>
 
