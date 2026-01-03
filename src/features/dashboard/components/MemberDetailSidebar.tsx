@@ -60,10 +60,12 @@ export function MemberDetailSidebar({
 
     // Reset state when member changes
     useEffect(() => {
-        setSimulatedMta(currentReport?.traitAverage || 3.00);
-        setSimulatedRec((currentReport?.promotionRecommendation as any) || 'P');
-        setIsLocked(false);
-        setShowWarning(false);
+        setTimeout(() => {
+            setSimulatedMta(currentReport?.traitAverage || 3.00);
+            setSimulatedRec((currentReport?.promotionRecommendation as any) || 'P');
+            setIsLocked(false);
+            setShowWarning(false);
+        }, 0);
         setPendingMta(null);
     }, [memberId, currentReport]);
 

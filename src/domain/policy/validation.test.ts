@@ -9,7 +9,7 @@ import {
   PromotionRecommendation,
   Paygrade,
   TraitId,
-  SummaryGroupContext,
+  type SummaryGroupContext,
   RankCategory
 } from './types';
 

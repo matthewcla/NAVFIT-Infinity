@@ -1,4 +1,4 @@
-import { Paygrade, PromotionRecommendation, SummaryGroupContext, TraitGradeSet, PolicyViolation, TraitId } from './types';
+import { Paygrade, PromotionRecommendation, type SummaryGroupContext, type TraitGradeSet, type PolicyViolation, TraitId } from './types';
 
 const EO_TRAIT_IDS = [TraitId.COMMAND_CLIMATE_EO, 'EO', 'CLIMATE']; // Handle variations if needed
 const CHARACTER_TRAIT_IDS = [TraitId.MILITARY_BEARING_CHARACTER, 'CHARACTER'];
@@ -7,22 +7,20 @@ const isEO = (traitId: string) => EO_TRAIT_IDS.some(id => traitId.toUpperCase().
 const isCharacter = (traitId: string) => CHARACTER_TRAIT_IDS.some(id => traitId.toUpperCase().includes(id) || traitId.toUpperCase() === 'CHARACTER');
 
 // Helpers for Paygrade
-const isEnlisted = (p: Paygrade) => p.startsWith('E');
-const isOfficer = (p: Paygrade) => p.startsWith('O') || p.startsWith('W'); // Warrant is usually Officer
 const isO1O2 = (p: Paygrade) => p === Paygrade.O1 || p === Paygrade.O2;
 
 export function validateRecommendationAgainstTraits(
   traits: TraitGradeSet,
   rec: PromotionRecommendation,
-  context: SummaryGroupContext
+  _context: SummaryGroupContext
 ): PolicyViolation[] {
   const violations: PolicyViolation[] = [];
   const grades = Object.values(traits);
-  const traitKeys = Object.keys(traits);
+  // const traitKeys = Object.keys(traits);
 
   // Any 1.0 blocks Promotable/MP/EP
   const has1_0 = grades.some(g => g === 1.0);
-  if (has1_0 && [PromotionRecommendation.PROMOTABLE, PromotionRecommendation.MUST_PROMOTE, PromotionRecommendation.EARLY_PROMOTE].includes(rec)) {
+  if (has1_0 && ([PromotionRecommendation.PROMOTABLE, PromotionRecommendation.MUST_PROMOTE, PromotionRecommendation.EARLY_PROMOTE] as PromotionRecommendation[]).includes(rec)) {
     violations.push({
       code: 'BLOCKS_PROMOTABLE_PLUS_ON_1_0',
       message: 'Any trait grade of 1.0 prevents Promotable, Must Promote, or Early Promote recommendations.',
@@ -33,7 +31,7 @@ export function validateRecommendationAgainstTraits(
 
   // Any 2.0 blocks MP/EP
   const has2_0 = grades.some(g => g === 2.0);
-  if (has2_0 && [PromotionRecommendation.MUST_PROMOTE, PromotionRecommendation.EARLY_PROMOTE].includes(rec)) {
+  if (has2_0 && ([PromotionRecommendation.MUST_PROMOTE, PromotionRecommendation.EARLY_PROMOTE] as PromotionRecommendation[]).includes(rec)) {
     violations.push({
       code: 'BLOCKS_MP_EP_ON_2_0',
       message: 'Any trait grade of 2.0 prevents Must Promote or Early Promote recommendations.',
@@ -59,7 +57,7 @@ export function validateRecommendationAgainstTraits(
   }
 
   if (rec === PromotionRecommendation.PROMOTABLE && count2_0_non_restricted > 2) {
-     violations.push({
+    violations.push({
       code: 'MAX_TWO_2_0_FOR_PROMOTABLE',
       message: 'Promotable recommendation allows at most two 2.0 grades (excluding Character/EO).',
       severity: 'ERROR',
@@ -78,15 +76,15 @@ export function validateRecommendationAgainstTraits(
   // Let's find the EO trait grade.
   for (const [key, grade] of Object.entries(traits)) {
     if (isEO(key) && grade < 3.0) {
-       // If grade < 3.0, Rec MUST be SP. (NOB doesn't have grades usually, but if it did...)
-       if (rec !== PromotionRecommendation.SIGNIFICANT_PROBLEMS && rec !== PromotionRecommendation.NOB) {
-         violations.push({
-            code: 'EO_MUST_BE_3_0_OR_SP',
-            message: 'Command Climate/Equal Opportunity grade below 3.0 requires a Significant Problems recommendation.',
-            severity: 'ERROR',
-            affectedFields: ['recommendation', key]
-         });
-       }
+      // If grade < 3.0, Rec MUST be SP. (NOB doesn't have grades usually, but if it did...)
+      if (rec !== PromotionRecommendation.SIGNIFICANT_PROBLEMS && rec !== PromotionRecommendation.NOB) {
+        violations.push({
+          code: 'EO_MUST_BE_3_0_OR_SP',
+          message: 'Command Climate/Equal Opportunity grade below 3.0 requires a Significant Problems recommendation.',
+          severity: 'ERROR',
+          affectedFields: ['recommendation', key]
+        });
+      }
     }
   }
 
@@ -96,12 +94,12 @@ export function validateRecommendationAgainstTraits(
 export function validateNOBJustification(isPartialNOB: boolean, justificationText?: string): PolicyViolation[] {
   const violations: PolicyViolation[] = [];
   if (isPartialNOB && (!justificationText || justificationText.trim().length === 0)) {
-     violations.push({
-       code: 'NOB_REQUIRES_JUSTIFICATION',
-       message: 'Partial NOB evaluations require justification text.',
-       severity: 'ERROR',
-       affectedFields: ['justification']
-     });
+    violations.push({
+      code: 'NOB_REQUIRES_JUSTIFICATION',
+      message: 'Partial NOB evaluations require justification text.',
+      severity: 'ERROR',
+      affectedFields: ['justification']
+    });
   }
   return violations;
 }
@@ -110,13 +108,13 @@ export function validateEnsignLTJGCap(context: SummaryGroupContext, rec: Promoti
   const violations: PolicyViolation[] = [];
   // Ensign (O1) and LTJG (O2)
   if (isO1O2(context.paygrade) && !context.isLDO) {
-    if ([PromotionRecommendation.MUST_PROMOTE, PromotionRecommendation.EARLY_PROMOTE].includes(rec)) {
-       violations.push({
-         code: 'O1_O2_MAX_PROMOTABLE',
-         message: 'Ensign and LTJG (non-LDO) cannot receive higher than Promotable.',
-         severity: 'ERROR',
-         affectedFields: ['recommendation']
-       });
+    if (([PromotionRecommendation.MUST_PROMOTE, PromotionRecommendation.EARLY_PROMOTE] as PromotionRecommendation[]).includes(rec)) {
+      violations.push({
+        code: 'O1_O2_MAX_PROMOTABLE',
+        message: 'Ensign and LTJG (non-LDO) cannot receive higher than Promotable.',
+        severity: 'ERROR',
+        affectedFields: ['recommendation']
+      });
     }
   }
   return violations;
@@ -129,11 +127,13 @@ export function validateSignificantProblemsWithdrawal(
 ): PolicyViolation[] {
   const violations: PolicyViolation[] = [];
 
-  const isPreviousPromotableOrHigher = previousRec && [
+  const promotableOrHigher = [
     PromotionRecommendation.PROMOTABLE,
     PromotionRecommendation.MUST_PROMOTE,
     PromotionRecommendation.EARLY_PROMOTE
-  ].includes(previousRec);
+  ] as PromotionRecommendation[];
+
+  const isPreviousPromotableOrHigher = previousRec && promotableOrHigher.includes(previousRec);
 
   if (isPreviousPromotableOrHigher && newRec === PromotionRecommendation.SIGNIFICANT_PROBLEMS) {
     if (!withdrawalRecorded) {

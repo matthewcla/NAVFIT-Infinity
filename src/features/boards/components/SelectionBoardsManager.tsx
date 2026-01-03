@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import type { Board } from '@/types';
 import { cn } from '@/lib/utils';
 import { RefreshCw, Calendar, Users, Plus, ChevronRight, Filter } from 'lucide-react';
@@ -11,9 +11,9 @@ export function SelectionBoardsManager() {
 
     useEffect(() => {
         loadData();
-    }, [year]);
+    }, [loadData]);
 
-    const loadData = async () => {
+    const loadData = useCallback(async () => {
         setLoading(true);
         try {
             const schedule = await BoardService.getSchedule(year);
@@ -23,7 +23,7 @@ export function SelectionBoardsManager() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [year]);
 
     const handleAddCustomBoard = async () => {
         const name = prompt("Enter Custom Board Name:");

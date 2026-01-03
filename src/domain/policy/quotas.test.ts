@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { computeEpMax, computeMpMax, computeEpMpCombinedMax } from './quotas';
-import { Paygrade, RankCategory, SummaryGroupContext } from './types';
+import { Paygrade, RankCategory, type SummaryGroupContext } from './types';
 
 const mockContext = (paygrade: Paygrade, isLDO = false): SummaryGroupContext => ({
   size: 0,
@@ -50,9 +50,9 @@ describe('Quota Calculations', () => {
 
   describe('computeEpMpCombinedMax', () => {
     it('returns size for low MP columns (E1-E4, etc) -> "No Limit"', () => {
-       expect(computeEpMpCombinedMax(40, mockContext(Paygrade.E4))).toBe(40);
-       expect(computeEpMpCombinedMax(40, mockContext(Paygrade.W2))).toBe(40);
-       expect(computeEpMpCombinedMax(40, mockContext(Paygrade.O2, true))).toBe(40);
+      expect(computeEpMpCombinedMax(40, mockContext(Paygrade.E4))).toBe(40);
+      expect(computeEpMpCombinedMax(40, mockContext(Paygrade.W2))).toBe(40);
+      expect(computeEpMpCombinedMax(40, mockContext(Paygrade.O2, true))).toBe(40);
     });
 
     it('returns 60% for E5-E9, O3, O4', () => {
@@ -69,8 +69,8 @@ describe('Quota Calculations', () => {
     });
 
     it('returns 0 for non-LDO O1/O2 (No MP allowed)', () => {
-        expect(computeEpMpCombinedMax(40, mockContext(Paygrade.O1))).toBe(0);
-        expect(computeEpMpCombinedMax(40, mockContext(Paygrade.O2))).toBe(0);
+      expect(computeEpMpCombinedMax(40, mockContext(Paygrade.O1))).toBe(0);
+      expect(computeEpMpCombinedMax(40, mockContext(Paygrade.O2))).toBe(0);
     });
   });
 
@@ -93,21 +93,21 @@ describe('Quota Calculations', () => {
       });
 
       it('returns 0 for non-LDO O1/O2', () => {
-         // Should be 0 regardless of size or EP used
-         expect(computeMpMax(10, mockContext(Paygrade.O1), 0)).toBe(0);
-         expect(computeMpMax(2, mockContext(Paygrade.O1), 0)).toBe(0);
+        // Should be 0 regardless of size or EP used
+        expect(computeMpMax(10, mockContext(Paygrade.O1), 0)).toBe(0);
+        expect(computeMpMax(2, mockContext(Paygrade.O1), 0)).toBe(0);
       });
     });
 
     describe('N > 30', () => {
       it('uses formula epMpMax - epMax', () => {
-         // E5 (60%). N=40.
-         // epMpMax = 24. epMax = 8. mpMax = 16.
-         expect(computeMpMax(40, mockContext(Paygrade.E5), 8)).toBe(16);
+        // E5 (60%). N=40.
+        // epMpMax = 24. epMax = 8. mpMax = 16.
+        expect(computeMpMax(40, mockContext(Paygrade.E5), 8)).toBe(16);
       });
 
       it('returns 0 for non-LDO O1/O2', () => {
-         expect(computeMpMax(40, mockContext(Paygrade.O1), 0)).toBe(0);
+        expect(computeMpMax(40, mockContext(Paygrade.O1), 0)).toBe(0);
       });
     });
   });

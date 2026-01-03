@@ -14,12 +14,15 @@ class MockWorker {
                 const { members } = data;
                 this.onmessage({
                     data: {
+                        requestId: data.requestId,
+                        success: true,
                         result: {
                             mtaVector: members.map((m: any) => m.mta), // Return same MTA for simplicity
                             finalRSCA: 4.0,
                             isFeasible: true,
                             deltas: [],
                             explanation: 'Mock Success',
+                            updatedMembers: members, // Mock updated members
                             changedMembers: [],
                             reasonCodes: []
                         }
@@ -78,7 +81,7 @@ describe('useRedistributionStore', () => {
 
         // Initially calculating
         // Note: debounce might delay this.
-        await new Promise(r => setTimeout(r, 150)); // Wait for debounce
+        await new Promise(r => setTimeout(r, 400)); // Wait for debounce
 
         // Wait for worker mock response
         await new Promise(r => setTimeout(r, 100));

@@ -153,20 +153,20 @@ export function validateReportState(
 
     // 4. NOB Justification
     if (rec === PromotionRecommendation.NOB && report.traitAverage === 0) { // Assuming Partial NOB logic check needs refinement
-       // If isPartialNOB is true. How do we know? usually NOB means check box 16 is checked.
-       // Or if traitAverage is calculated.
-       // The validator asks "isPartialNOB".
-       // If report.promotionRecommendation is NOB, and notObservedReport is true?
-       // Let's assume for now we check justification if NOB.
-       // report.notObservedReport
-       const isPartial = false; // TODO: Determine from data if partial NOB is supported.
-       // If it's a full NOB (Block 16 checked), justification might be needed?
-       // "Partial NOB evaluations require justification text."
-       // If we don't have partial NOB concept in UI yet, skip?
-       // If traitAverage > 0 but Rec is NOB, that's partial?
-       const isPartialNOB = report.promotionRecommendation === 'NOB' && report.traitAverage > 0;
+        // If isPartialNOB is true. How do we know? usually NOB means check box 16 is checked.
+        // Or if traitAverage is calculated.
+        // The validator asks "isPartialNOB".
+        // If report.promotionRecommendation is NOB, and notObservedReport is true?
+        // Let's assume for now we check justification if NOB.
+        // report.notObservedReport
+        // const isPartial = false; // TODO: Determine from data if partial NOB is supported.
+        // If it's a full NOB (Block 16 checked), justification might be needed?
+        // "Partial NOB evaluations require justification text."
+        // If we don't have partial NOB concept in UI yet, skip?
+        // If traitAverage > 0 but Rec is NOB, that's partial?
+        const isPartialNOB = report.promotionRecommendation === 'NOB' && report.traitAverage > 0;
 
-       violations.push(...validateNOBJustification(isPartialNOB, report.comments));
+        violations.push(...validateNOBJustification(isPartialNOB, report.comments));
     }
 
     // 5. Significant Problems Withdrawal

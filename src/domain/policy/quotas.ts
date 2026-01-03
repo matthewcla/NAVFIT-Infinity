@@ -1,4 +1,4 @@
-import { Paygrade, SummaryGroupContext } from './types';
+import { Paygrade, type SummaryGroupContext } from './types';
 import { TABLE_1_2 } from './table1_2';
 
 /**
@@ -16,7 +16,7 @@ function getMpColumnKey(paygrade: Paygrade, isLDO: boolean): 'low' | 'mid' | 'hi
 
   // Non-LDO O1/O2 -> Not in MP columns.
   if (paygrade === Paygrade.O1 || paygrade === Paygrade.O2) {
-      return null;
+    return null;
   }
 
   // E5–E6, O3 -> 'mid'
@@ -57,7 +57,7 @@ export function computeEpMax(groupSize: number, context: SummaryGroupContext): n
 
   // Special case: Group of 2 allows 1 EP.
   if (groupSize === 2) {
-      return 1;
+    return 1;
   }
 
   if (groupSize <= 30) {
@@ -80,23 +80,23 @@ export function computeEpMpCombinedMax(groupSize: number, context: SummaryGroupC
   const mpKey = getMpColumnKey(context.paygrade, context.isLDO);
 
   if (mpKey === null) {
-      // If MP is not allowed (e.g. non-LDO O1/O2), combined is just EP max?
-      // But for non-LDO O1/O2, EP is also 0. So combined is 0.
-      // Wait, is Promotable limited? The prompt Table 1-2 has a Promotable column limit for O1-O2.
-      // But this function is "computeEpMpCombinedMax". It implies EP+MP.
-      // If EP=0, MP=0, then Combined=0.
-      return 0;
+    // If MP is not allowed (e.g. non-LDO O1/O2), combined is just EP max?
+    // But for non-LDO O1/O2, EP is also 0. So combined is 0.
+    // Wait, is Promotable limited? The prompt Table 1-2 has a Promotable column limit for O1-O2.
+    // But this function is "computeEpMpCombinedMax". It implies EP+MP.
+    // If EP=0, MP=0, then Combined=0.
+    return 0;
   }
 
   if (mpKey === 'low') {
-      // No Limit for MP.
-      return groupSize;
+    // No Limit for MP.
+    return groupSize;
   }
 
   let combinedPct = 0.60;
   if (mpKey === 'top') {
-      // O5-O6
-      combinedPct = 0.50;
+    // O5-O6
+    combinedPct = 0.50;
   }
 
   return Math.ceil(groupSize * combinedPct);
@@ -114,7 +114,7 @@ export function computeMpMax(groupSize: number, context: SummaryGroupContext, ep
 
   // If paygrade is not in MP columns (e.g. non-LDO O1/O2), MP Max is 0.
   if (mpKey === null) {
-      return 0;
+    return 0;
   }
 
   if (groupSize <= 30) {
@@ -125,7 +125,7 @@ export function computeMpMax(groupSize: number, context: SummaryGroupContext, ep
 
     // "No Limit" case
     if (baseMp === null) {
-        return groupSize - epUsed;
+      return groupSize - epUsed;
     }
 
     // Special case: Group of 2.

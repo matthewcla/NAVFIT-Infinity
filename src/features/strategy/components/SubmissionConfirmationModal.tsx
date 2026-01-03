@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { X, AlertTriangle, CheckCircle, Lock, ArrowRight, ShieldAlert } from 'lucide-react';
-import type { RedistributionResult, Member } from '@/domain/rsca/types';
+import type { RedistributionResult } from '@/domain/rsca/types';
 import { useRedistributionStore } from '@/store/useRedistributionStore';
 import { useNavfitStore } from '@/store/useNavfitStore';
 

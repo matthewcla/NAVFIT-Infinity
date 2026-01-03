@@ -39,7 +39,7 @@ interface NavfitStore {
     summaryGroups: SummaryGroup[];
     setSummaryGroups: (groups: SummaryGroup[]) => void;
     addSummaryGroup: (group: SummaryGroup) => void;
-    updateGroupStatus: (groupId: string, status: string) => void;
+    updateGroupStatus: (groupId: string, status: 'Draft' | 'Review' | 'Submitted' | 'Final' | 'Projected') => void;
 
     // State for persistence (Deletions)
     deletedGroupIds: string[];
@@ -374,12 +374,12 @@ export const useNavfitStore = create<NavfitStore>((set) => ({
         // Prompt requires it.
         let previousReport: Report | undefined;
         if (rosterMember && rosterMember.history) {
-             // Basic sort
-             const sorted = [...rosterMember.history].sort((a, b) => new Date(b.periodEndDate).getTime() - new Date(a.periodEndDate).getTime());
-             // The report being edited might be in history or not? If it's a draft, maybe not fully in history array or is the latest.
-             // We look for the first one strictly before this report's end date.
-             const currentEndDate = new Date(updatedReport.periodEndDate);
-             previousReport = sorted.find(r => new Date(r.periodEndDate) < currentEndDate);
+            // Basic sort
+            const sorted = [...rosterMember.history].sort((a, b) => new Date(b.periodEndDate).getTime() - new Date(a.periodEndDate).getTime());
+            // The report being edited might be in history or not? If it's a draft, maybe not fully in history array or is the latest.
+            // We look for the first one strictly before this report's end date.
+            const currentEndDate = new Date(updatedReport.periodEndDate);
+            previousReport = sorted.find(r => new Date(r.periodEndDate) < currentEndDate);
         }
 
         const violations = validateReportState(updatedReport, group, previousReport);
@@ -387,22 +387,22 @@ export const useNavfitStore = create<NavfitStore>((set) => ({
         // 3. Validate Quotas (Group Level)
         // If recommendation changed to EP or MP, we need to check limits.
         if (updates.promotionRecommendation) {
-             const tempReports = [...reports];
-             tempReports[reportIndex] = updatedReport;
+            const tempReports = [...reports];
+            tempReports[reportIndex] = updatedReport;
 
-             const epCount = tempReports.filter(r => r.promotionRecommendation === 'EP').length;
-             const mpCount = tempReports.filter(r => r.promotionRecommendation === 'MP').length;
-             const groupSize = group.reports.length;
+            const epCount = tempReports.filter(r => r.promotionRecommendation === 'EP').length;
+            const mpCount = tempReports.filter(r => r.promotionRecommendation === 'MP').length;
+            const groupSize = group.reports.length;
 
-             const quotaResult = checkQuota(groupSize, epCount, mpCount);
-             if (!quotaResult.isValid && quotaResult.message) {
-                 violations.push({
-                     code: 'QUOTA_EXCEEDED',
-                     message: quotaResult.message,
-                     severity: 'ERROR',
-                     affectedFields: ['promotionRecommendation']
-                 });
-             }
+            const quotaResult = checkQuota(groupSize, epCount, mpCount);
+            if (!quotaResult.isValid && quotaResult.message) {
+                violations.push({
+                    code: 'QUOTA_EXCEEDED',
+                    message: quotaResult.message,
+                    severity: 'ERROR',
+                    affectedFields: ['promotionRecommendation']
+                });
+            }
         }
 
         updatedReport.violations = violations;

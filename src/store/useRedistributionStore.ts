@@ -36,7 +36,7 @@ function generateUUID() {
         return crypto.randomUUID();
     }
     return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
-        var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
+        let r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
         return v.toString(16);
     });
 }
@@ -252,7 +252,7 @@ export const useRedistributionStore = create<RedistributionStoreState>((set, get
 
             const group = navfitStore.summaryGroups[groupIndex];
             const newReports = group.reports.map(r => {
-                if (anchorMap.hasOwnProperty(r.id)) {
+                if (Object.prototype.hasOwnProperty.call(anchorMap, r.id)) {
                     return { ...r, isLocked: true, traitAverage: anchorMap[r.id] };
                 }
                 return r;
