@@ -11,7 +11,6 @@ import type { Member as DomainMember } from '@/domain/rsca/types';
 import { validateReportState, checkQuota } from '@/features/strategy/logic/validation';
 
 import type { SummaryGroup, Report } from '@/types';
-import { assignRecommendationsByRank } from '@/features/strategy/logic/recommendation';
 
 interface NavfitStore {
     // Navigation State
@@ -261,7 +260,9 @@ export const useNavfitStore = create<NavfitStore>((set) => ({
         }
 
         // 3. Auto-Assign Recommendations based on Rank and Policy
-        const finalReports = assignRecommendationsByRank(updatedReportList, group);
+        // const finalReports = assignRecommendationsByRank(updatedReportList, group);
+        // Temporarily disabled/removed during refactor.
+        const finalReports = updatedReportList;
 
         // 4. Update State
         const newSummaryGroups = [...state.summaryGroups];

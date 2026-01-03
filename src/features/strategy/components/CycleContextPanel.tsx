@@ -3,6 +3,7 @@ import { useNavfitStore } from '@/store/useNavfitStore';
 import { useRedistributionStore } from '@/store/useRedistributionStore';
 import type { SummaryGroup, Member } from '@/types';
 import { RscaHeadsUpDisplay } from './RscaHeadsUpDisplay';
+import { QuotaHeadsUpDisplay } from './QuotaHeadsUpDisplay';
 import { generateSummaryGroups } from '@/features/strategy/logic/reportGenerator';
 import { calculateCumulativeRSCA, calculateEotRsca } from '@/features/strategy/logic/rsca';
 
@@ -19,7 +20,6 @@ import {
 
 import { MemberDetailSidebar } from '@/features/dashboard/components/MemberDetailSidebar';
 import { StatusBadge } from './StatusBadge';
-import { PromotionBadge } from './PromotionBadge';
 import { CycleMemberList, type RankedMember } from './CycleMemberList';
 import { SubmissionConfirmationModal } from './SubmissionConfirmationModal';
 
@@ -170,7 +170,7 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
         );
     }
 
-    const { cumulativeRsca, gap, mainDraftStatus, rankedMembers, distribution, eotRsca } = contextData;
+    const { cumulativeRsca, gap, mainDraftStatus, rankedMembers, eotRsca } = contextData;
 
     // Helper for Badge
     const getPromotionStatusBadge = (s?: string) => {
@@ -260,20 +260,7 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
 
                             {/* 2B. Promotion Recommendation Scoreboard (Right) - Framed & Flexible */}
                             <div className="flex-1 rounded-xl border border-slate-200 shadow-sm overflow-hidden bg-white/50">
-                                <div className="flex items-center justify-around h-full px-4 bg-white/95 backdrop-blur-sm transition-all duration-300">
-                                    {['SP', 'PR', 'P', 'MP', 'EP'].map((key) => (
-                                        <div key={key} className="flex flex-col items-center gap-1 min-w-[32px]">
-                                            <span className="text-xl font-bold text-slate-700 leading-none">
-                                                {distribution[key] || 0}
-                                            </span>
-                                            <PromotionBadge
-                                                recommendation={key}
-                                                size="sm"
-                                                className="rounded-[3px] !text-[10px] !py-0.5 !px-2 h-auto min-h-0 uppercase tracking-wider"
-                                            />
-                                        </div>
-                                    ))}
-                                </div>
+                                <QuotaHeadsUpDisplay group={activeGroup} />
                             </div>
                         </div>
                     </div>
@@ -382,6 +369,7 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
                 selectedMemberId && (
                     <MemberDetailSidebar
                         memberId={selectedMemberId}
+                        group={activeGroup}
                         rosterMember={(() => {
                             const m = roster.find(memb => memb.id === selectedMemberId);
                             if (!m) {

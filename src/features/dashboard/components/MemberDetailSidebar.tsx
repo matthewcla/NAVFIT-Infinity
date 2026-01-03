@@ -14,10 +14,14 @@ import {
 import { cn } from '@/lib/utils';
 import { RankChangeModal } from './RankChangeModal';
 
-import type { Member, Report } from '@/types';
+import type { Member, Report, SummaryGroup } from '@/types';
+import { computeEpMax, computeMpMax, computeEpMpCombinedMax } from '@/domain/policy/quotas';
+import { Paygrade, RankCategory, PromotionRecommendation } from '@/domain/policy/types';
+import { validateRecommendationAgainstTraits } from '@/domain/policy/validation';
 
 interface MemberDetailSidebarProps {
     memberId: string;
+    group?: SummaryGroup; // Needed for quota context, optional for non-group contexts
     onClose: () => void;
     onUpdateMTA: (memberId: string, newMta: number) => void;
     onUpdatePromRec: (memberId: string, rec: 'EP' | 'MP' | 'P' | 'Prog' | 'SP' | 'NOB') => void;
@@ -35,6 +39,7 @@ interface MemberDetailSidebarProps {
 
 export function MemberDetailSidebar({
     memberId,
+    group,
     onClose,
     onUpdateMTA,
     onUpdatePromRec,
@@ -120,8 +125,101 @@ export function MemberDetailSidebar({
     // --- Derived Metrics ---
     const history = (rosterMember.history || []).slice(-3); // Last 3 reports
 
+    // --- Quota & Constraint Logic ---
+    const checkConstraints = (rec: string) => {
+        if (!group) return { disabled: false, reason: null };
+        const reports = group.reports;
+        const total = reports.length;
+
+        // Exclude current member's existing rec from usage counts
+        const otherReports = reports.filter(r => r.memberId !== memberId);
+        const epUsed = otherReports.filter(r => r.promotionRecommendation === 'EP').length;
+        const mpUsed = otherReports.filter(r => r.promotionRecommendation === 'MP').length;
+
+        const paygrade = (group.paygrade?.replace('-', '') || 'O1') as Paygrade;
+        const context = {
+            size: total,
+            paygrade,
+            rankCategory: paygrade.startsWith('W') ? RankCategory.WARRANT : paygrade.startsWith('E') ? RankCategory.ENLISTED : RankCategory.OFFICER,
+            isLDO: (group.designator || '').startsWith('6'),
+            isCWO: (group.designator || '').startsWith('7') || (group.designator || '').startsWith('8')
+        };
+
+        // 1. Quota Checks
+        const epMax = computeEpMax(total, context);
+        // Note: MP Max depends on EP used. If I select EP, EP usage increases.
+        // If I select MP, MP usage increases.
+        // But MP max formula: max MP = combinedMax - (EP used).
+        // If I select MP, EP used is `epUsed` (others).
+        const mpMax = computeMpMax(total, context, epUsed);
+
+        // Combined Check
+        const combinedMax = computeEpMpCombinedMax(total, context);
+
+        if (rec === 'EP') {
+            // Check EP limit
+            if (epUsed >= epMax) {
+                return { disabled: true, reason: `EP Quota Full (${epUsed}/${epMax})` };
+            }
+            // Check Combined limit (EP+MP)
+            if ((epUsed + 1) + mpUsed > combinedMax) {
+                return { disabled: true, reason: `Combined Quota Full (${epUsed + mpUsed}/${combinedMax})` };
+            }
+        }
+
+        if (rec === 'MP') {
+            // Check MP limit
+            if (mpUsed >= mpMax) {
+                 return { disabled: true, reason: `MP Quota Full (${mpUsed}/${mpMax})` };
+            }
+             // Check Combined limit
+            if (epUsed + (mpUsed + 1) > combinedMax) {
+                return { disabled: true, reason: `Combined Quota Full (${epUsed + mpUsed}/${combinedMax})` };
+            }
+        }
+
+        // 2. Trait Validation Checks
+        if (currentReport?.traitGrades) {
+            let domainRec: PromotionRecommendation;
+            switch(rec) {
+                case 'EP': domainRec = PromotionRecommendation.EARLY_PROMOTE; break;
+                case 'MP': domainRec = PromotionRecommendation.MUST_PROMOTE; break;
+                case 'P': domainRec = PromotionRecommendation.PROMOTABLE; break;
+                case 'Prog': domainRec = PromotionRecommendation.SIGNIFICANT_PROBLEMS; break; // Prog mapped to SP usually? Or distinct? Domain validation uses SP.
+                // Wait, validation.ts treats Prog/SP as SP usually, or distinct.
+                // Let's assume validation expects standard ENUMS.
+                // UI 'Prog' usually is 'Progressing'. 'SP' is 'Significant Problems'.
+                // If domain validation has checks for 'Prog', we map it.
+                // Domain types has 'PROMOTABLE', 'MUST_PROMOTE', 'EARLY_PROMOTE', 'SIGNIFICANT_PROBLEMS', 'NOB'.
+                // 'Progressing' is only for Enlisted E1-E6 usually.
+                // If mapRecommendation in validation.ts maps 'Prog' -> SP, that's wrong strictly speaking, but let's stick to simple mapping for block checks.
+                // The blocking rules (1.0 blocks P/MP/EP, 2.0 blocks MP/EP) apply to upper recs.
+                // So checking P, MP, EP is enough.
+                case 'SP': domainRec = PromotionRecommendation.SIGNIFICANT_PROBLEMS; break;
+                case 'NOB': domainRec = PromotionRecommendation.NOB; break;
+                default: domainRec = PromotionRecommendation.PROMOTABLE;
+            }
+
+            // Map 'Prog' to something safe or handle explicitly?
+            // If validation doesn't support Progressing, we skip for Prog.
+            if (rec !== 'Prog') {
+                 const violations = validateRecommendationAgainstTraits(currentReport.traitGrades, domainRec, context);
+                 if (violations.length > 0) {
+                     // Just show the first reason
+                     return { disabled: true, reason: violations[0].message };
+                 }
+            }
+        }
+
+        return { disabled: false, reason: null };
+    };
+
     // --- Helpers ---
-    const getRecStyle = (rec: string, isSelected: boolean, locked: boolean) => {
+    const getRecStyle = (rec: string, isSelected: boolean, locked: boolean, constraint: { disabled: boolean, reason: string | null }) => {
+        if (constraint.disabled && !isSelected) {
+            return "opacity-40 cursor-not-allowed bg-slate-100 text-slate-400 border-slate-200 grayscale";
+        }
+
         if (locked && !isSelected) return "text-slate-300 bg-slate-50 opacity-50 cursor-not-allowed border-transparent";
         if (locked && isSelected) return "bg-slate-200 text-slate-500 border-slate-300 cursor-not-allowed opacity-80";
 
@@ -299,19 +397,30 @@ export function MemberDetailSidebar({
                     <div className="space-y-3 mb-6">
                         <label className="text-xs font-bold text-slate-700 uppercase tracking-wide">Recommendation</label>
                         <div className="flex gap-1 p-0.5 rounded-lg">
-                            {(['NOB', 'SP', 'Prog', 'P', 'MP', 'EP'] as const).map((rec) => (
-                                <button
-                                    key={rec}
-                                    onClick={() => !isLocked && setSimulatedRec(rec)}
-                                    disabled={isLocked}
-                                    className={cn(
-                                        "flex-1 py-1.5 text-xs font-bold rounded-md transition-all",
-                                        getRecStyle(rec, simulatedRec === rec, isLocked)
-                                    )}
-                                >
-                                    {rec === 'Prog' ? 'PR' : rec}
-                                </button>
-                            ))}
+                            {(['NOB', 'SP', 'Prog', 'P', 'MP', 'EP'] as const).map((rec) => {
+                                const constraint = checkConstraints(rec);
+                                return (
+                                    <div key={rec} className="flex-1 group/tooltip relative">
+                                        <button
+                                            onClick={() => !isLocked && !constraint.disabled && setSimulatedRec(rec)}
+                                            disabled={isLocked || constraint.disabled}
+                                            className={cn(
+                                                "w-full py-1.5 text-xs font-bold rounded-md transition-all",
+                                                getRecStyle(rec, simulatedRec === rec, isLocked, constraint)
+                                            )}
+                                        >
+                                            {rec === 'Prog' ? 'PR' : rec}
+                                        </button>
+                                        {/* Tooltip for Disabled State */}
+                                        {constraint.disabled && (
+                                            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-slate-800 text-white text-[10px] rounded shadow-lg opacity-0 group-hover/tooltip:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-50">
+                                                {constraint.reason}
+                                                <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-slate-800"></div>
+                                            </div>
+                                        )}
+                                    </div>
+                                );
+                            })}
                         </div>
                     </div>
 
