@@ -19,7 +19,7 @@ import {
 
 import { MemberDetailSidebar } from '@/features/dashboard/components/MemberDetailSidebar';
 import { StatusBadge } from './StatusBadge';
-import { PromotionBadge } from './PromotionBadge';
+
 import { QuotaHeadsUpDisplay } from './QuotaHeadsUpDisplay';
 import { CycleMemberList, type RankedMember } from './CycleMemberList';
 import { SubmissionConfirmationModal } from './SubmissionConfirmationModal';
@@ -126,7 +126,7 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
             });
 
         // Calculate Distribution
-        const distribution: Record<string, number> = { SP: 0, PR: 0, P: 0, MP: 0, EP: 0 };
+        const distribution: { [key: string]: number; SP: number; PR: number; P: number; MP: number; EP: number; } = { SP: 0, PR: 0, P: 0, MP: 0, EP: 0 };
         activeGroup.reports.forEach(r => {
             const rec = r.promotionRecommendation;
             if (rec === 'SP') distribution.SP++;
@@ -171,7 +171,7 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
         );
     }
 
-    const { cumulativeRsca, gap, mainDraftStatus, rankedMembers, distribution, eotRsca } = contextData;
+    const { cumulativeRsca, gap, mainDraftStatus, rankedMembers, distribution, eotRsca, totalReports } = contextData;
 
     // Helper for Badge
     const getPromotionStatusBadge = (s?: string) => {

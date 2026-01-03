@@ -1,10 +1,10 @@
 import { describe, it, expect } from 'vitest';
-import { assignRecommendationsByRank, getContextFromGroup } from './recommendation';
-import { Report, SummaryGroup } from '@/types';
-import { Paygrade, PromotionRecommendation, TraitId } from '@/domain/policy/types';
+import { assignRecommendationsByRank } from './recommendation';
+import type { Report, SummaryGroup } from '@/types';
+import { PromotionRecommendation, TraitId } from '@/domain/policy/types';
 
 // Helper to create mock reports
-function createMockReport(id: string, rank: number, traits: Record<string, number> = {}, existingRec: PromotionRecommendation = PromotionRecommendation.MUST_PROMOTE): Report {
+function createMockReport(id: string, _rank: number, traits: Record<string, number> = {}, existingRec: PromotionRecommendation = PromotionRecommendation.MUST_PROMOTE): Report {
     return {
         id,
         memberId: id,
@@ -25,7 +25,7 @@ function createMockGroup(size: number, paygrade: string, designator: string = '1
         paygrade,
         designator,
         competitiveGroupKey: `${paygrade} ${designator}`,
-        reports: Array.from({ length: size }, (_, i) => createMockReport(`m${i+1}`, i+1)),
+        reports: Array.from({ length: size }, (_, i) => createMockReport(`m${i + 1}`, i + 1)),
         periodEndDate: '2023-12-31',
     } as SummaryGroup;
 }
