@@ -16,14 +16,14 @@ export default {
       },
       spacing: {
         'sidebar-standard': '420px',
-        'member-sidebar': '400px',
+        'member-sidebar': '480px',
         'header-height': '85px',
         'chart-header': '40px',
         'row-standard': '50px',
       },
       width: {
         'sidebar-standard': '420px',
-        'member-sidebar': '400px',
+        'member-sidebar': '480px',
       },
       minHeight: {
         'header-height': '85px',

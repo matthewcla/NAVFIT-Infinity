@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { calculateOutcomeBasedGrades, Member, StrategyConfig, DEFAULT_STRATEGY_CONFIG } from './autoPlan';
+import { calculateOutcomeBasedGrades, type Member, type StrategyConfig, DEFAULT_STRATEGY_CONFIG } from './autoPlan';
 
 describe('calculateOutcomeBasedGrades', () => {
     // Helper to create basic members
@@ -119,14 +119,14 @@ describe('calculateOutcomeBasedGrades', () => {
     });
 
     it('should not lower Retiring status if grade is already below target', () => {
-         // Arrange
-         const roster: Member[] = [
-             createMember('1', 'Promotable', 1), // Ceiling ~4.20
-             createMember('2', 'Retiring', 1),   // Should be lower
-             createMember('3', 'Promotable', 1)  // Floor
-         ];
-         const rscaTarget = 4.00;
-         const config: StrategyConfig = {
+        // Arrange
+        const roster: Member[] = [
+            createMember('1', 'Promotable', 1), // Ceiling ~4.20
+            createMember('2', 'Retiring', 1),   // Should be lower
+            createMember('3', 'Promotable', 1)  // Floor
+        ];
+        const rscaTarget = 4.00;
+        const config: StrategyConfig = {
             ...DEFAULT_STRATEGY_CONFIG,
             ballastDeduction: 1.00 // Force low floor
         };
@@ -136,14 +136,14 @@ describe('calculateOutcomeBasedGrades', () => {
         // #2 is halfway? (4.20 + 3.60)/2 = 3.90.
         // #2 is Retiring. 3.90 <= 4.00. Should remain 3.90.
 
-         // Act
-         const result = calculateOutcomeBasedGrades(roster, rscaTarget, config);
+        // Act
+        const result = calculateOutcomeBasedGrades(roster, rscaTarget, config);
 
-         // Assert
-         // We can't be sure of exact interpolation without doing the math, but we know it should NOT be clamped to 4.00 if it's already below.
-         // And since we added a 3rd member, index 1 is now sandwiched.
-         expect(result[1].proposedTraitAverage).toBeLessThanOrEqual(4.00);
-         expect(result[1].proposedTraitAverage).toBeGreaterThan(3.60);
+        // Assert
+        // We can't be sure of exact interpolation without doing the math, but we know it should NOT be clamped to 4.00 if it's already below.
+        // And since we added a 3rd member, index 1 is now sandwiched.
+        expect(result[1].proposedTraitAverage).toBeLessThanOrEqual(4.00);
+        expect(result[1].proposedTraitAverage).toBeGreaterThan(3.60);
     });
 
     it('should not modify locked members', () => {

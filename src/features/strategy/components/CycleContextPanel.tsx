@@ -1,5 +1,6 @@
-import React, { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useNavfitStore } from '@/store/useNavfitStore';
+import { useRedistributionStore } from '@/store/useRedistributionStore';
 import type { SummaryGroup, Member } from '@/types';
 import { RscaHeadsUpDisplay } from './RscaHeadsUpDisplay';
 import { generateSummaryGroups } from '@/features/strategy/logic/reportGenerator';
@@ -13,12 +14,14 @@ import {
     Calendar,
     Check,
     X,
+    Send
 } from 'lucide-react';
 
 import { MemberDetailSidebar } from '@/features/dashboard/components/MemberDetailSidebar';
 import { StatusBadge } from './StatusBadge';
 import { PromotionBadge } from './PromotionBadge';
 import { CycleMemberList, type RankedMember } from './CycleMemberList';
+import { SubmissionConfirmationModal } from './SubmissionConfirmationModal';
 
 
 interface CycleContextPanelProps {
@@ -34,15 +37,37 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
         projections,
 
         reorderMembers,
+        addSummaryGroup,
+        summaryGroups,
+
         selectedMemberId,
         selectMember,
         setDraggingItemType,
-        updateProjection
+        updateProjection,
+        updateGroupStatus
     } = useNavfitStore();
+
+    const { latestResult } = useRedistributionStore();
+
     // Reactivity Fix: Ensure we use the latest group state from store, even if parent prop is stale
     const latestGroup = useNavfitStore(state =>
         group ? state.summaryGroups.find(g => g.id === group.id) || group : null
     );
+
+    const handleReorderMembers = (groupId: string, droppedId: string, newOrderIds: string[]) => {
+        // Fix: If this is an auto-generated group (not in store), we must persist it first.
+        const existingGroup = summaryGroups.find(g => g.id === groupId);
+
+        if (!existingGroup && group) {
+            // It's transient. Add it to store first.
+            addSummaryGroup(group);
+            // Now reorder (store will find it by ID)
+            reorderMembers(groupId, droppedId, newOrderIds);
+        } else {
+            // Normal path
+            reorderMembers(groupId, droppedId, newOrderIds);
+        }
+    };
 
     // Use latestGroup for all derived logic
     const activeGroup = latestGroup || group;
@@ -128,15 +153,12 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
     }, [activeGroup, roster, rsConfig, projections]); // Depend on activeGroup
 
     // Local Rank Mode State
-    const [isRankingMode, setIsRankingMode] = React.useState(false);
+    const [isRankingMode, setIsRankingMode] = useState(false);
+    const [isSubmitModalOpen, setIsSubmitModalOpen] = useState(false);
 
     // Local Drag State for Live Reordering (iOS-style)
-    // Initialize as null. When dragging starts, populate with current list.
-    // While dragging, this local list is what gets mutated and rendered.
-    // On drop, we just read the final order from here and dispatch to store.
-
-    const [localOrderedMembers, setLocalOrderedMembers] = React.useState<RankedMember[] | null>(null);
-    const [draggedReportId, setDraggedReportId] = React.useState<string | null>(null);
+    const [localOrderedMembers, setLocalOrderedMembers] = useState<RankedMember[] | null>(null);
+    const [draggedReportId, setDraggedReportId] = useState<string | null>(null);
 
 
     if (!activeGroup || !contextData) {
@@ -172,6 +194,13 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
 
     const formattedDate = new Date(activeGroup.periodEndDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
 
+    const handleConfirmSubmit = () => {
+        // Use the newly implemented store action to update status to "Submitted"
+        if (updateGroupStatus && activeGroup) {
+            updateGroupStatus(activeGroup.id, "Submitted");
+        }
+        setIsSubmitModalOpen(false);
+    };
 
 
     return (
@@ -294,6 +323,17 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
                                                 <BarChart className="w-3.5 h-3.5 text-slate-500" />
                                                 <span>Waterfall</span>
                                             </button>
+
+                                            {/* Submit Button */}
+                                            <button
+                                                onClick={() => setIsSubmitModalOpen(true)}
+                                                disabled={!latestResult[activeGroup.id]}
+                                                className="flex items-center justify-center gap-2 px-3 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-200 disabled:text-slate-400 text-white border border-transparent rounded-lg transition-colors text-xs font-medium shadow-sm ml-2"
+                                                title="Submit Strategy"
+                                            >
+                                                <Send className="w-3.5 h-3.5" />
+                                                <span>Submit</span>
+                                            </button>
                                         </>
                                     )}
                                 </div>
@@ -326,7 +366,7 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
                     activeGroupId={activeGroup.id}
                     selectedMemberId={selectedMemberId}
                     onSelectMember={selectMember}
-                    onReorderMembers={reorderMembers}
+                    onReorderMembers={handleReorderMembers}
                     setDraggingItemType={setDraggingItemType}
                 />
             </div>
@@ -356,12 +396,33 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
                             } as unknown as Member;
                         })()}
                         currentReport={activeGroup.reports.find(r => r.memberId === selectedMemberId)}
-                        groupStats={{ currentRSCA: cumulativeRsca, projectedRSCA: cumulativeRsca }} // TODO: Calculate actual proj RSCA
+
+
+                        // Pass Rank Context
+                        rankContext={(() => {
+                            const index = rankedMembers.findIndex(m => m.id === selectedMemberId);
+                            if (index === -1) return undefined;
+
+                            // "Next Rank" (Ahead, Higher Sort Index, so LOWER array index)
+                            // e.g. Rank 1 is at index 0. Rank 2 is at index 1.
+                            // If I am at index 5 (Rank 6), my "Next Rank" (Rank 5) is at index 4.
+                            const nextRankMta = index > 0 ? rankedMembers[index - 1].mta : undefined;
+
+                            // "Prev Rank" (Behind, Lower Sort Index, so HIGHER array index)
+                            const prevRankMta = index < rankedMembers.length - 1 ? rankedMembers[index + 1].mta : undefined;
+
+                            return {
+                                currentRank: index + 1,
+                                nextRankMta,
+                                prevRankMta
+                            };
+                        })()}
+
                         onClose={() => selectMember(null)}
                         onUpdateMTA={(id, val) => {
                             const report = activeGroup.reports.find(r => r.memberId === id);
                             if (report) {
-                                updateProjection(report.id, val);
+                                updateProjection(activeGroup.id, report.id, val);
                             }
                         }}
                         onUpdatePromRec={(id, rec) => {
@@ -380,6 +441,15 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
                 )
             }
 
+            {latestResult[activeGroup.id] && (
+                <SubmissionConfirmationModal
+                    isOpen={isSubmitModalOpen}
+                    onClose={() => setIsSubmitModalOpen(false)}
+                    onConfirm={handleConfirmSubmit}
+                    groupId={activeGroup.id}
+                    result={latestResult[activeGroup.id]!}
+                />
+            )}
 
         </div >
     );
