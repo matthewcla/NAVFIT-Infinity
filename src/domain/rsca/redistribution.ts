@@ -431,7 +431,7 @@ export function redistributeMTA(
 
   let resultVector: number[] = [];
   let iterations = 0;
-  const maxIterations = 20;
+  const maxIterations = 50;
   const tolerance = 0.0001; // tolerance for RSCA mean
 
   let finalMean = 0;
