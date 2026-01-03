@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useNavfitStore } from '@/store/useNavfitStore';
 import { useRedistributionStore } from '@/store/useRedistributionStore';
 import type { SummaryGroup, Member } from '@/types';
@@ -396,7 +396,28 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
                             } as unknown as Member;
                         })()}
                         currentReport={activeGroup.reports.find(r => r.memberId === selectedMemberId)}
-                        groupStats={{ currentRSCA: cumulativeRsca, projectedRSCA: cumulativeRsca }} // TODO: Calculate actual proj RSCA
+
+
+                        // Pass Rank Context
+                        rankContext={(() => {
+                            const index = rankedMembers.findIndex(m => m.id === selectedMemberId);
+                            if (index === -1) return undefined;
+
+                            // "Next Rank" (Ahead, Higher Sort Index, so LOWER array index)
+                            // e.g. Rank 1 is at index 0. Rank 2 is at index 1.
+                            // If I am at index 5 (Rank 6), my "Next Rank" (Rank 5) is at index 4.
+                            const nextRankMta = index > 0 ? rankedMembers[index - 1].mta : undefined;
+
+                            // "Prev Rank" (Behind, Lower Sort Index, so HIGHER array index)
+                            const prevRankMta = index < rankedMembers.length - 1 ? rankedMembers[index + 1].mta : undefined;
+
+                            return {
+                                currentRank: index + 1,
+                                nextRankMta,
+                                prevRankMta
+                            };
+                        })()}
+
                         onClose={() => selectMember(null)}
                         onUpdateMTA={(id, val) => {
                             const report = activeGroup.reports.find(r => r.memberId === id);
