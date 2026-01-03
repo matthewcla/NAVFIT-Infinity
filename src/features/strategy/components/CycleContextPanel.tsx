@@ -20,6 +20,7 @@ import {
 import { MemberDetailSidebar } from '@/features/dashboard/components/MemberDetailSidebar';
 import { StatusBadge } from './StatusBadge';
 import { PromotionBadge } from './PromotionBadge';
+import { QuotaHeadsUpDisplay } from './QuotaHeadsUpDisplay';
 import { CycleMemberList, type RankedMember } from './CycleMemberList';
 import { SubmissionConfirmationModal } from './SubmissionConfirmationModal';
 
@@ -258,21 +259,10 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
                                 />
                             </div>
 
-                            {/* 2B. Promotion Recommendation Scoreboard (Right) - Framed & Flexible */}
+                            {/* 2B. Promotion Recommendation Quota HUD (Right) - Framed & Flexible */}
                             <div className="flex-1 rounded-xl border border-slate-200 shadow-sm overflow-hidden bg-white/50">
-                                <div className="flex items-center justify-around h-full px-4 bg-white/95 backdrop-blur-sm transition-all duration-300">
-                                    {['SP', 'PR', 'P', 'MP', 'EP'].map((key) => (
-                                        <div key={key} className="flex flex-col items-center gap-1 min-w-[32px]">
-                                            <span className="text-xl font-bold text-slate-700 leading-none">
-                                                {distribution[key] || 0}
-                                            </span>
-                                            <PromotionBadge
-                                                recommendation={key}
-                                                size="sm"
-                                                className="rounded-[3px] !text-[10px] !py-0.5 !px-2 h-auto min-h-0 uppercase tracking-wider"
-                                            />
-                                        </div>
-                                    ))}
+                                <div className="h-full bg-white/95 backdrop-blur-sm transition-all duration-300">
+                                    <QuotaHeadsUpDisplay distribution={distribution} totalReports={totalReports} />
                                 </div>
                             </div>
                         </div>
@@ -403,6 +393,12 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
                         })()}
                         currentReport={activeGroup.reports.find(r => r.memberId === selectedMemberId)}
 
+                        // Pass Quota Context
+                        quotaContext={{
+                            distribution,
+                            totalReports
+                        }}
+                        isRankingMode={isRankingMode}
 
                         // Pass Rank Context
                         rankContext={(() => {

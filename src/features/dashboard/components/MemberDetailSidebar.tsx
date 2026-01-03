@@ -9,12 +9,16 @@ import {
     TrendingUp,
     Minus,
     Plus,
-    Edit
+    Edit,
+    AlertCircle
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { RankChangeModal } from './RankChangeModal';
 
 import type { Member, Report } from '@/types';
+import { checkQuota } from '@/features/strategy/logic/validation';
+import { validateRecommendationAgainstTraits } from '@/domain/policy/validation';
+import { PromotionRecommendation, type TraitGradeSet } from '@/domain/policy/types';
 
 interface MemberDetailSidebarProps {
     memberId: string;
@@ -31,6 +35,13 @@ interface MemberDetailSidebarProps {
         nextRanks: { mta: number; rank: number }[];
         prevRanks: { mta: number; rank: number }[];
     };
+
+    // New Props for Quota & Validation
+    quotaContext?: {
+        distribution: { EP: number; MP: number; [key: string]: number };
+        totalReports: number;
+    };
+    isRankingMode?: boolean;
 }
 
 export function MemberDetailSidebar({
@@ -42,7 +53,9 @@ export function MemberDetailSidebar({
     onNavigatePrev,
     rosterMember,
     currentReport,
-    rankContext
+    rankContext,
+    quotaContext,
+    isRankingMode = false
 }: MemberDetailSidebarProps) {
 
     // --- State Management ---
@@ -74,12 +87,8 @@ export function MemberDetailSidebar({
     const handleMtaChange = (newValue: number) => {
         if (isLocked) return;
 
-        // Tolerance for floating point/slider precision (optional, but good for UX not to be too annoying)
-        // const tolerance = 0.01; 
-
+        // Tolerance for floating point/slider precision
         // Check Upward Rank Change (Higher MTA > ANY Next Rank's MTA)
-        // We only care about the immediate next rank for the warning, or potentially all of them?
-        // Usually, crossing the *immediate* next rank is the trigger.
         const immediateNext = rankContext?.nextRanks?.[0];
         if (immediateNext && newValue > immediateNext.mta) {
             setPendingMta(newValue);
@@ -112,16 +121,75 @@ export function MemberDetailSidebar({
     const cancelMtaChange = () => {
         setShowWarning(false);
         setPendingMta(null);
-        // Snap back to boundary? Or just stay at current?
-        // Staying at current simulatedMta is safest.
     };
 
 
     // --- Derived Metrics ---
     const history = (rosterMember.history || []).slice(-3); // Last 3 reports
 
+    // --- Validation Logic (Blocking) ---
+    const getBlockingStatus = (rec: string): { blocked: boolean; reason?: string } => {
+        // 1. Trait Validation (Always Active)
+        if (currentReport?.traitGrades) {
+             // Map string rec to Enum
+             let enumRec: PromotionRecommendation | null = null;
+             switch (rec) {
+                 case 'EP': enumRec = PromotionRecommendation.EARLY_PROMOTE; break;
+                 case 'MP': enumRec = PromotionRecommendation.MUST_PROMOTE; break;
+                 case 'P': enumRec = PromotionRecommendation.PROMOTABLE; break;
+                 case 'Prog': enumRec = PromotionRecommendation.SIGNIFICANT_PROBLEMS; break; // Assuming Prog -> SP or similar?
+                 case 'SP': enumRec = PromotionRecommendation.SIGNIFICANT_PROBLEMS; break;
+                 case 'NOB': enumRec = PromotionRecommendation.NOB; break;
+             }
+
+             if (enumRec) {
+                 // We pass empty context because trait validation doesn't use it in current implementation
+                 const violations = validateRecommendationAgainstTraits(
+                     currentReport.traitGrades as TraitGradeSet,
+                     enumRec,
+                     {} as any
+                 );
+                 if (violations.length > 0) {
+                     return { blocked: true, reason: violations[0].message };
+                 }
+             }
+        }
+
+        // 2. Quota Validation (Only in Rank Order Mode as per requirements)
+        if (isRankingMode && quotaContext) {
+            const { distribution, totalReports } = quotaContext;
+
+            // Calculate hypothetical distribution if we switch to 'rec'
+            const currentAssignedRec = currentReport?.promotionRecommendation;
+
+            // If we are already this rec, no change
+            if (currentAssignedRec === rec) return { blocked: false };
+
+            let epCount = distribution.EP || 0;
+            let mpCount = distribution.MP || 0;
+
+            // Remove current assignment from counts
+            if (currentAssignedRec === 'EP') epCount--;
+            if (currentAssignedRec === 'MP') mpCount--;
+
+            // Add new assignment
+            if (rec === 'EP') epCount++;
+            if (rec === 'MP') mpCount++;
+
+            const check = checkQuota(totalReports, epCount, mpCount);
+            if (!check.isValid) {
+                return { blocked: true, reason: check.message };
+            }
+        }
+
+        return { blocked: false };
+    };
+
+
     // --- Helpers ---
-    const getRecStyle = (rec: string, isSelected: boolean, locked: boolean) => {
+    const getRecStyle = (rec: string, isSelected: boolean, locked: boolean, blocked: boolean) => {
+        if (blocked) return "text-slate-300 bg-slate-50 opacity-40 cursor-not-allowed border-transparent decoration-slice"; // Blocked style
+
         if (locked && !isSelected) return "text-slate-300 bg-slate-50 opacity-50 cursor-not-allowed border-transparent";
         if (locked && isSelected) return "bg-slate-200 text-slate-500 border-slate-300 cursor-not-allowed opacity-80";
 
@@ -148,8 +216,6 @@ export function MemberDetailSidebar({
     // Calculate Slider Positions (Scale 3.00 - 5.00)
     const getPercent = (val: number) => ((Math.max(3.0, Math.min(5.0, val)) - 3.0) / 2.0) * 100;
 
-
-
     return createPortal(
         <div className="flex flex-col h-full bg-white border-l border-slate-200 shadow-2xl w-[530px] fixed right-0 top-0 bottom-0 !z-[100] animate-in slide-in-from-right duration-300">
 
@@ -165,7 +231,6 @@ export function MemberDetailSidebar({
                         </button>
                     </div>
                     <div className="flex items-center gap-2">
-                        {/* Removed Reports Planned from here */}
                         <div className="flex items-center gap-1">
                             <button
                                 onClick={onNavigatePrev}
@@ -184,7 +249,6 @@ export function MemberDetailSidebar({
                 </div>
 
                 <div className="flex items-center gap-4">
-                    {/* Replaced User Icon with Prominent Lock Control */}
                     <button
                         onClick={() => setIsLocked(!isLocked)}
                         className={cn(
@@ -202,7 +266,6 @@ export function MemberDetailSidebar({
                         <div className="flex items-start justify-between">
                             <div className="flex flex-col">
                                 <div className="flex items-center gap-2 mb-0.5">
-                                    {/* Status Badges */}
                                     {currentReport?.promotionStatus === 'FROCKED' && (
                                         <span className="px-1.5 py-0.5 text-[10px] font-bold bg-amber-100 text-amber-800 rounded border border-amber-200">FROCKED</span>
                                     )}
@@ -219,7 +282,6 @@ export function MemberDetailSidebar({
                             </div>
 
                             <div className="flex flex-col items-end gap-1">
-                                {/* Edit Report Button (Moved from Footer) */}
                                 <button
                                     className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
                                     title="Edit Report Details"
@@ -227,7 +289,6 @@ export function MemberDetailSidebar({
                                     <Edit className="w-4 h-4" />
                                 </button>
 
-                                {/* Reports Planned */}
                                 <div className="text-xs font-semibold text-slate-400 bg-slate-50 px-2 py-1 rounded border border-slate-100 whitespace-nowrap">
                                     {currentReport?.reportsRemaining !== undefined
                                         ? `${currentReport.reportsRemaining} ${currentReport.reportsRemaining === 1 ? 'Report' : 'Reports'} Planned`
@@ -242,7 +303,6 @@ export function MemberDetailSidebar({
             {/* --- Scrollable Content --- */}
             <div className="flex-1 overflow-y-auto">
 
-
                 {/* --- Section A: The Trajectory --- */}
                 <div className="p-5 border-b border-slate-100 bg-slate-50/50 mt-2.5">
                     <div className="flex items-center justify-between mb-3">
@@ -253,19 +313,14 @@ export function MemberDetailSidebar({
                     </div>
 
                     <div className="flex gap-4 h-28">
-                        {/* Chart Area */}
                         <div className="flex-1 bg-white rounded-lg border border-slate-200 p-2 relative">
-                            {/* Simple SVG Sparkline */}
                             <svg className="w-full h-full overflow-visible" viewBox="0 0 100 100" preserveAspectRatio="none">
-                                {/* Baseline (RSCA) - Grey Line at 50% for mock */}
                                 <line x1="0" y1="50" x2="100" y2="50" stroke="#cbd5e1" strokeWidth="2" strokeDasharray="4 2" />
-
-                                {/* History Line */}
                                 {history.length > 0 && (
                                     <polyline
                                         points={history.map((h, i) => {
                                             const x = (i / (Math.max(1, history.length - 1))) * 100;
-                                            const y = 100 - ((h.traitAverage - 2.0) / 3.0 * 100); // Scale 2.0-5.0
+                                            const y = 100 - ((h.traitAverage - 2.0) / 3.0 * 100);
                                             return `${x},${y}`;
                                         }).join(' ')}
                                         fill="none"
@@ -275,7 +330,6 @@ export function MemberDetailSidebar({
                                         strokeLinejoin="round"
                                     />
                                 )}
-                                {/* Current Projected Point */}
                                 {history.length > 0 && (
                                     <circle
                                         cx="100"
@@ -287,8 +341,6 @@ export function MemberDetailSidebar({
                                 )}
                             </svg>
                         </div>
-
-                        {/* Current Delta Metrics (Removed) */}
                     </div>
                 </div>
 
@@ -299,24 +351,43 @@ export function MemberDetailSidebar({
                     <div className="space-y-3 mb-6">
                         <label className="text-xs font-bold text-slate-700 uppercase tracking-wide">Recommendation</label>
                         <div className="flex gap-1 p-0.5 rounded-lg">
-                            {(['NOB', 'SP', 'Prog', 'P', 'MP', 'EP'] as const).map((rec) => (
-                                <button
-                                    key={rec}
-                                    onClick={() => !isLocked && setSimulatedRec(rec)}
-                                    disabled={isLocked}
-                                    className={cn(
-                                        "flex-1 py-1.5 text-xs font-bold rounded-md transition-all",
-                                        getRecStyle(rec, simulatedRec === rec, isLocked)
-                                    )}
-                                >
-                                    {rec === 'Prog' ? 'PR' : rec}
-                                </button>
-                            ))}
+                            {(['NOB', 'SP', 'Prog', 'P', 'MP', 'EP'] as const).map((rec) => {
+                                const { blocked, reason } = getBlockingStatus(rec);
+
+                                return (
+                                    <div key={rec} className="flex-1 relative group/tooltip">
+                                        <button
+                                            onClick={() => !isLocked && !blocked && setSimulatedRec(rec)}
+                                            disabled={isLocked || blocked}
+                                            className={cn(
+                                                "w-full py-1.5 text-xs font-bold rounded-md transition-all",
+                                                getRecStyle(rec, simulatedRec === rec, isLocked, blocked)
+                                            )}
+                                        >
+                                            {rec === 'Prog' ? 'PR' : rec}
+                                        </button>
+
+                                        {/* Inline Reason / Tooltip for Blocked Actions */}
+                                        {blocked && (
+                                            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-max max-w-[200px] z-50 hidden group-hover/tooltip:block animate-in fade-in slide-in-from-bottom-1">
+                                                <div className="bg-slate-800 text-white text-[10px] rounded px-2 py-1.5 shadow-lg relative">
+                                                    <div className="flex items-start gap-1.5">
+                                                        <AlertCircle className="w-3 h-3 text-red-400 shrink-0 mt-0.5" />
+                                                        <span className="font-medium">{reason}</span>
+                                                    </div>
+                                                    {/* Arrow */}
+                                                    <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-slate-800 rotate-45" />
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                );
+                            })}
                         </div>
                     </div>
 
                     {/* Trait Average Tuner */}
-                    <div className="space-y-4"> {/* Reverted top margin to keep label aligned */}
+                    <div className="space-y-4">
                         <div className="flex items-end justify-between">
                             <div className="flex flex-col gap-2">
                                 <label className="text-xs font-bold text-slate-700 uppercase tracking-wide">
@@ -325,7 +396,6 @@ export function MemberDetailSidebar({
                             </div>
 
                             <div className="flex flex-col items-end gap-2">
-                                {/* Lock moved to header, simplified input here */}
                                 <input
                                     type="number"
                                     step="0.01"
@@ -340,7 +410,7 @@ export function MemberDetailSidebar({
                         </div>
 
                         {/* Robust Slider Control */}
-                        <div className="flex items-center gap-3 mt-8"> {/* Increased specific slider margin (32px) */}
+                        <div className="flex items-center gap-3 mt-8">
                             <button
                                 onClick={() => handleMtaChange(Math.max(3.00, simulatedMta - 0.01))}
                                 disabled={isLocked || simulatedMta <= 3.00}
@@ -350,9 +420,7 @@ export function MemberDetailSidebar({
                             </button>
 
                             <div className="relative flex-1 h-8 flex items-center group touch-none select-none">
-                                {/* Track Background */}
                                 <div className="absolute left-0 right-0 h-2 bg-slate-100 rounded-full overflow-hidden border border-slate-200">
-                                    {/* Fill */}
                                     <div
                                         className={cn(
                                             "h-full transition-all duration-75",
@@ -362,20 +430,14 @@ export function MemberDetailSidebar({
                                     />
                                 </div>
 
-                                {/* Rank Safe Zone & Thresholds */}
                                 {(() => {
                                     const next = rankContext?.nextRanks?.[0]?.mta;
                                     const prev = rankContext?.prevRanks?.[0]?.mta;
-
-                                    // Safe Zone Calculation - Scale 3.0 to 5.0
-                                    // Range is 2.0 (5-3)
-                                    // Formula: (val - 3.0) / 2.0 * 100
 
                                     if (next !== undefined && prev !== undefined) {
                                         const start = Math.max(3.0, Math.min(next, prev));
                                         const end = Math.min(5.0, Math.max(next, prev));
 
-                                        // If outside visible range
                                         if (end < 3.0 || start > 5.0) return null;
 
                                         const leftStart = getPercent(start);
@@ -383,7 +445,6 @@ export function MemberDetailSidebar({
 
                                         return (
                                             <>
-                                                {/* Safe Zone Highlight */}
                                                 <div
                                                     className="absolute top-1/2 -translate-y-1/2 h-4 bg-emerald-50/80 border-x border-emerald-100 z-0 pointer-events-none"
                                                     style={{
@@ -398,7 +459,6 @@ export function MemberDetailSidebar({
                                 })()}
 
 
-                                {/* Ticks / Grid (Every 0.5) */}
                                 {[3.0, 3.5, 4.0, 4.5, 5.0].map(val => (
                                     <div key={val} className="absolute inset-0 pointer-events-none z-0">
                                         <div
@@ -415,7 +475,6 @@ export function MemberDetailSidebar({
                                 ))}
 
 
-                                {/* Ghost Value Marker (Initial) */}
                                 {initialMta >= 3.0 && initialMta <= 5.0 && (
                                     <div
                                         className="absolute top-1/2 -translate-y-1/2 w-1.5 h-4 bg-slate-200/50 rounded-sm pointer-events-none z-0"
@@ -424,40 +483,28 @@ export function MemberDetailSidebar({
                                     />
                                 )}
 
-                                {/* Combined Rank Markers with Collision Detection */}
                                 {(() => {
                                     if (!rankContext?.nextRanks && !rankContext?.prevRanks) return null;
 
                                     const next = rankContext?.nextRanks || [];
                                     const prev = rankContext?.prevRanks || [];
 
-                                    // Combine and sort by Rank (Best/Smallest # to Worst/Largest #)
-                                    // e.g. #1, #2, #3...
-                                    // This ensures Higher Ranks (smaller numbers) get priority for the top position.
                                     const allMarkers = [
                                         ...next.map(r => ({ ...r, type: 'next' as const })),
                                         ...prev.map(r => ({ ...r, type: 'prev' as const }))
                                     ].sort((a, b) => a.rank - b.rank);
 
-                                    // Compute offsets
-                                    // Compute offsets
-                                    // Use explicit type definition to handle the array construction
                                     const positionedMarkers: (typeof allMarkers[0] & { pct: number; level: number })[] = [];
 
                                     allMarkers.forEach((marker, i) => {
                                         const pct = getPercent(marker.mta);
                                         let level = 0;
-
-                                        // Check against all *previously processed* (aka Higher Rank) markers
                                         for (let j = 0; j < i; j++) {
                                             const other = positionedMarkers[j];
-                                            // 3.5% threshold for collision (approx visual width of label)
                                             if (Math.abs(pct - other.pct) < 4.0) {
-                                                // If we overlap with someone at level X, we must be at least X + 1
                                                 level = Math.max(level, other.level + 1);
                                             }
                                         }
-
                                         positionedMarkers.push({ ...marker, pct, level });
                                     });
 
@@ -466,11 +513,8 @@ export function MemberDetailSidebar({
 
                                         const isNext = marker.type === 'next';
                                         const colorClass = isNext ? "text-emerald-700 border-emerald-100/50" : "text-red-700 border-red-100/50";
-                                        const lineColor = isNext ? "bg-emerald-400/40" : "bg-red-400/40"; // No opacity calculation mess, cleaner
-
-                                        // Vertical Stagger Calculation
-                                        // "Lower rank label sits lower"
-                                        const verticalShift = marker.level * 24; // 24px per level of overlap
+                                        const lineColor = isNext ? "bg-emerald-400/40" : "bg-red-400/40";
+                                        const verticalShift = marker.level * 24;
 
                                         return (
                                             <div
@@ -482,13 +526,10 @@ export function MemberDetailSidebar({
                                                     top: '50%',
                                                 }}
                                             >
-                                                {/* Connector Line - Grows to meet the label */}
                                                 <div
                                                     className={cn("w-0.5 transition-all opacity-70", lineColor)}
                                                     style={{ height: `${32 + verticalShift}px` }}
                                                 />
-
-                                                {/* Label */}
                                                 <span
                                                     className={cn(
                                                         "text-[10px] font-black uppercase tracking-widest whitespace-nowrap bg-white/80 px-1 rounded backdrop-blur-sm shadow-sm border -mt-1",
@@ -502,7 +543,6 @@ export function MemberDetailSidebar({
                                     });
                                 })()}
 
-                                {/* Range Input (Invisible overlay for interaction) */}
                                 <input
                                     type="range"
                                     min="3.00"
@@ -514,14 +554,11 @@ export function MemberDetailSidebar({
                                     className="absolute inset-0 w-full h-full opacity-0 cursor-grab active:cursor-grabbing z-20 disabled:cursor-not-allowed"
                                 />
 
-                                {/* Custom Thumb (Visual only, follows value) */}
                                 <div
                                     className={cn(
                                         "absolute top-1/2 -translate-y-1/2 w-5 h-5 bg-white border-2 rounded-full shadow-md pointer-events-none z-10 transition-transform duration-75 ease-out flex items-center justify-center",
                                         isLocked ? "border-slate-300" : "border-indigo-600 scale-100 group-hover:scale-110"
                                     )}
-                                    // Scale 3.0 -> 5.0 (Range 2.0)
-                                    // Val - 3.0 / 2.0
                                     style={{ left: `calc(${getPercent(simulatedMta)}% - 10px)` }}
                                 >
                                     <div className={cn("w-1.5 h-1.5 rounded-full", isLocked ? "bg-slate-300" : "bg-indigo-600")} />
@@ -539,9 +576,6 @@ export function MemberDetailSidebar({
                     </div>
                 </div>
 
-                {/* --- Section C: Impact Analysis (Removed) --- */}
-                {/* <div className="p-5 bg-slate-50 border-t border-slate-100 mb-20">
-                </div> */}
                 <div className="mb-20"></div>
             </div>
 
@@ -557,10 +591,8 @@ export function MemberDetailSidebar({
                     >
                         Reset
                     </button>
-                    {/* Spacer */}
                     <div className="flex-1" />
 
-                    {/* Edit Report Moved to Header */}
                     <button
                         onClick={handleApply}
                         className="px-6 py-2.5 bg-indigo-600 text-white text-sm font-bold rounded-lg hover:bg-indigo-700 shadow-md hover:shadow-lg active:transform active:scale-[0.98] transition-all flex items-center gap-2"
