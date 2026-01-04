@@ -1,4 +1,5 @@
 import type { RosterMember, ReportingSeniorConfig, PayGrade, Designator } from '../types/roster';
+import { getRankTitle } from '@/utils/rankMap';
 
 const FIRST_NAMES = [
     'James', 'Mary', 'John', 'Patricia', 'Robert', 'Jennifer', 'Michael', 'Linda', 'William', 'Elizabeth',
@@ -47,7 +48,7 @@ const addYears = (dateStr: string, years: number): string => {
  * Generate a list of members based on criteria
  */
 const generateMember = (
-    rank: PayGrade,
+    payGrade: PayGrade,
     designator: Designator | '0000',
     promotionStatus: 'REGULAR' | 'FROCKED' | 'SELECTED' | 'SPOT',
     count: number
@@ -66,10 +67,11 @@ const generateMember = (
         const lastTrait = parseFloat((Math.random() * (4.80 - 3.50) + 3.50).toFixed(2));
 
         members.push({
-            id: `m-${rank}-${promotionStatus.substring(0, 3)}-${Date.now()}-${i}-${Math.random().toString(36).substr(2, 5)}`,
+            id: `m-${payGrade}-${promotionStatus.substring(0, 3)}-${Date.now()}-${i}-${Math.random().toString(36).substr(2, 5)}`,
             firstName,
             lastName,
-            rank,
+            rank: getRankTitle(payGrade),
+            payGrade,
             designator: designator as Designator, // Casting for 0000 since Designator type might technically be strict, but '0000' is requested for enlisted
             promotionStatus,
             dateReported,

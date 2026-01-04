@@ -36,12 +36,45 @@ export const DevTools: React.FC = () => {
 
     const handleLoadRobustData = async () => {
         try {
-            const response = await fetch('/summary_groups_test_data.json');
-            if (!response.ok) throw new Error('Failed to fetch test data');
-            const json = await response.json();
+            const [summaryResponse, detailsResponse] = await Promise.all([
+                fetch('/summary_groups_test_data.json'),
+                fetch('/member_details.json')
+            ]);
+
+            if (!summaryResponse.ok) throw new Error('Failed to fetch summary groups data');
+
+            const json = await summaryResponse.json();
+            const memberDetails = detailsResponse.ok ? await detailsResponse.json() : {};
+
              if (json.roster && json.summaryGroups && json.rsConfig) {
+                // Hydrate Roster with Details
+                const hydratedRoster = json.roster.map((member: any) => {
+                    const details = memberDetails[member.id];
+                    if (details) {
+                        return {
+                            ...member,
+                            firstName: details.firstName,
+                            lastName: details.lastName,
+                            name: `${details.firstName} ${details.lastName}`,
+                            rank: details.rank, // Title (e.g. Ensign)
+                            payGrade: details.payGrade, // Code (e.g. O-1)
+                            designator: details.designator,
+                            dateReported: details.dateReported,
+                            prd: details.prd,
+                        };
+                    }
+                    return member;
+                });
+
+                // Hydrate Summary Groups if needed (reports inside might need names for display if they were stripped)
+                // Note: The migration script ONLY stripped the top-level roster.
+                // The reports inside 'history' and 'summaryGroups' were left untouched in the JSON.
+                // However, consistent with the "Source of Truth" philosophy, we should ideally use the Member ID to pull current details
+                // for the Roster view. Summary Groups often use snapshots.
+                // If the App relies on the Store's `roster` for the main list, `hydratedRoster` is sufficient.
+
                 loadState({
-                    roster: json.roster,
+                    roster: hydratedRoster,
                     summaryGroups: json.summaryGroups,
                     rsConfig: json.rsConfig
                 });
@@ -49,7 +82,7 @@ export const DevTools: React.FC = () => {
             }
         } catch (err) {
             console.error(err);
-            alert('Failed to load summary groups test data. Ensure summary_groups_test_data.json is in public folder.');
+            alert('Failed to load data. Ensure summary_groups_test_data.json and member_details.json are in public folder.');
         }
     };
 
