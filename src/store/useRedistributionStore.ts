@@ -25,6 +25,7 @@ interface RedistributionStoreState {
     setAnchorMTA: (groupId: string, memberId: string, value: number) => void;
     setConstraints: (groupId: string, constraints: Constraints) => void;
     getRedistributionResult: (groupId: string) => RedistributionResult | null;
+    reset: () => void;
 }
 
 // Map to store context for pending requests (RequestId -> Context)
@@ -219,6 +220,15 @@ export const useRedistributionStore = create<RedistributionStoreState>((set, get
         },
 
         getRedistributionResult: (groupId) => get().latestResult[groupId] || null,
+
+        reset: () => {
+            set({
+                isCalculating: false,
+                latestResult: {},
+                error: null,
+                latestRequestId: null,
+            });
+        },
 
         // -- Requested API --
 

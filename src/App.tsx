@@ -11,9 +11,10 @@ import { useRedistributionStore } from '@/store/useRedistributionStore';
 import { DevTools } from '@/features/dev/DevTools';
 
 function App() {
-  // Initialize Redistribution Worker
+  // Initialize Data
   useEffect(() => {
     useRedistributionStore.getState().initWorker();
+    useNavfitStore.getState().initializeRoster();
   }, []);
 
   // const [isWorkspaceOpen, setIsWorkspaceOpen] = useState(false);  <-- Removed local state
