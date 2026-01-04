@@ -71,6 +71,7 @@ export function MemberDetailSidebar({
 
     const [simulatedMta, setSimulatedMta] = useState<number>(initialMta);
     const [simulatedRec, setSimulatedRec] = useState<'EP' | 'MP' | 'P' | 'Prog' | 'SP' | 'NOB'>(initialRec);
+    const [previousMta, setPreviousMta] = useState<number | null>(null);
 
     // Warning Modal State
     const [showWarning, setShowWarning] = useState(false);
@@ -84,6 +85,7 @@ export function MemberDetailSidebar({
         setTimeout(() => {
             setSimulatedMta(currentReport?.traitAverage || 3.00);
             setSimulatedRec(currentReport?.promotionRecommendation || 'P');
+            setPreviousMta(null);
             setShowWarning(false);
             setPendingMta(null);
             setShowCollisionWarning(false);
@@ -94,7 +96,7 @@ export function MemberDetailSidebar({
 
     // --- Rank Change Logic ---
     const handleMtaChange = (newValue: number) => {
-        if (isLocked) return;
+        if (isLocked || simulatedRec === 'NOB') return;
 
         // 1. Check for MTA Collision (Strict Uniqueness)
         // Check if ANY other member has this MTA
@@ -207,6 +209,30 @@ export function MemberDetailSidebar({
     const history = (rosterMember.history || []).slice(-3); // Last 3 reports
 
     // --- Validation Logic (Blocking) ---
+    const handleRecChange = (newRec: 'EP' | 'MP' | 'P' | 'Prog' | 'SP' | 'NOB') => {
+        if (isLocked) return;
+        const { blocked } = getBlockingStatus(newRec);
+        if (blocked) return;
+
+        if (newRec === 'NOB') {
+            if (simulatedRec !== 'NOB') {
+                if (simulatedMta > 0) {
+                    setPreviousMta(simulatedMta);
+                }
+                setSimulatedMta(0.00);
+            }
+        } else {
+            if (simulatedRec === 'NOB') {
+                if (previousMta !== null) {
+                    setSimulatedMta(previousMta);
+                } else {
+                    setSimulatedMta(3.00);
+                }
+            }
+        }
+        setSimulatedRec(newRec);
+    };
+
     const getBlockingStatus = (rec: string): { blocked: boolean; reason?: string } => {
         // 1. Trait Validation (Always Active)
         if (currentReport?.traitGrades) {
@@ -443,7 +469,7 @@ export function MemberDetailSidebar({
                                 return (
                                     <div key={rec} className="flex-1 relative group/tooltip">
                                         <button
-                                            onClick={() => !isLocked && !blocked && setSimulatedRec(rec)}
+                                            onClick={() => handleRecChange(rec)}
                                             disabled={isLocked || blocked}
                                             className={cn(
                                                 "w-full py-1.5 text-xs font-bold rounded-md transition-all",
@@ -489,7 +515,7 @@ export function MemberDetailSidebar({
                                     max="5.00"
                                     value={simulatedMta}
                                     onChange={(e) => handleMtaChange(parseFloat(e.target.value))}
-                                    disabled={isLocked}
+                                    disabled={isLocked || simulatedRec === 'NOB'}
                                     className="w-24 text-right text-2xl font-black text-slate-900 bg-transparent border-b-2 border-slate-200 focus:border-indigo-500 focus:outline-none p-0 focus:ring-0 disabled:opacity-50 font-mono"
                                 />
                             </div>
@@ -499,7 +525,7 @@ export function MemberDetailSidebar({
                         <div className="flex items-center gap-3 mt-8">
                             <button
                                 onClick={() => handleMtaChange(Math.max(3.00, simulatedMta - 0.01))}
-                                disabled={isLocked || simulatedMta <= 3.00}
+                                disabled={isLocked || simulatedMta <= 3.00 || simulatedRec === 'NOB'}
                                 className="p-1 rounded-md text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 border border-transparent hover:border-indigo-200 transition-all disabled:opacity-30 disabled:pointer-events-none"
                             >
                                 <Minus className="w-4 h-4" />
@@ -510,7 +536,7 @@ export function MemberDetailSidebar({
                                     <div
                                         className={cn(
                                             "h-full transition-all duration-75",
-                                            isLocked ? "bg-slate-300" : "bg-indigo-500"
+                                            isLocked || simulatedRec === 'NOB' ? "bg-slate-300" : "bg-indigo-500"
                                         )}
                                         style={{ width: `${getPercent(simulatedMta)}%` }}
                                     />
@@ -636,24 +662,24 @@ export function MemberDetailSidebar({
                                     step="0.01"
                                     value={simulatedMta}
                                     onChange={(e) => handleMtaChange(parseFloat(e.target.value))}
-                                    disabled={isLocked}
+                                    disabled={isLocked || simulatedRec === 'NOB'}
                                     className="absolute inset-0 w-full h-full opacity-0 cursor-grab active:cursor-grabbing z-20 disabled:cursor-not-allowed"
                                 />
 
                                 <div
                                     className={cn(
                                         "absolute top-1/2 -translate-y-1/2 w-5 h-5 bg-white border-2 rounded-full shadow-md pointer-events-none z-10 transition-transform duration-75 ease-out flex items-center justify-center",
-                                        isLocked ? "border-slate-300" : "border-indigo-600 scale-100 group-hover:scale-110"
+                                        isLocked || simulatedRec === 'NOB' ? "border-slate-300" : "border-indigo-600 scale-100 group-hover:scale-110"
                                     )}
                                     style={{ left: `calc(${getPercent(simulatedMta)}% - 10px)` }}
                                 >
-                                    <div className={cn("w-1.5 h-1.5 rounded-full", isLocked ? "bg-slate-300" : "bg-indigo-600")} />
+                                    <div className={cn("w-1.5 h-1.5 rounded-full", isLocked || simulatedRec === 'NOB' ? "bg-slate-300" : "bg-indigo-600")} />
                                 </div>
                             </div>
 
                             <button
                                 onClick={() => handleMtaChange(Math.min(5.00, simulatedMta + 0.01))}
-                                disabled={isLocked || simulatedMta >= 5.00}
+                                disabled={isLocked || simulatedMta >= 5.00 || simulatedRec === 'NOB'}
                                 className="p-1 rounded-md text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 border border-transparent hover:border-indigo-200 transition-all disabled:opacity-30 disabled:pointer-events-none"
                             >
                                 <Plus className="w-4 h-4" />
