@@ -1,6 +1,8 @@
 import { useRef, useState } from 'react';
 import { PromotionBadge } from './PromotionBadge';
-import { GripVertical } from 'lucide-react';
+import { GripVertical, Lock, Unlock } from 'lucide-react';
+import { useNavfitStore } from '@/store/useNavfitStore';
+import { cn } from '@/lib/utils';
 
 interface DragData {
     type: string;
@@ -51,8 +53,15 @@ export function MemberReportRow({
 }: MemberReportRowProps) {
     const dragPreviewRef = useRef<HTMLDivElement>(null);
     const [isDragging, setIsDragging] = useState(false);
+    const { toggleReportLock, summaryGroups } = useNavfitStore();
+    const isLocked = summaryGroups.find(g => g.id === groupId)?.reports.find(r => r.id === reportId)?.isLocked;
+
 
     const handleDragStart = (e: React.DragEvent<HTMLTableRowElement>) => {
+        if (isLocked) {
+             e.preventDefault();
+             return;
+        }
         setIsDragging(true);
 
         if (isRankMode) {
@@ -113,11 +122,39 @@ export function MemberReportRow({
                     {index + 1}
                 </td>
 
-                {/* 2. Drag Handle Column */}
-                <td className="w-8 px-0 py-3 text-center align-middle touch-none">
-                    <div className={`flex items-center justify-center p-1 rounded transition-colors ${isRankMode ? 'cursor-grab hover:bg-slate-200/50 text-slate-400 group-hover:text-slate-600' : 'invisible'}`}>
-                        <GripVertical className="w-4 h-4" />
-                    </div>
+                {/* 2. Lock/Drag Column (Replaces Spacer/Grip) */}
+                <td className="w-8 px-0 py-3 text-center align-middle touch-none relative">
+                    {/* In Rank Mode: Show Grip (unless locked). In List Mode: Show Lock Toggle */}
+                    {isRankMode ? (
+                         isLocked ? (
+                             // Rank Mode + Locked = Show Lock Icon (Cannot Drag)
+                             <div className="flex items-center justify-center p-1 text-red-400">
+                                 <Lock className="w-3.5 h-3.5" />
+                             </div>
+                         ) : (
+                             // Rank Mode + Unlocked = Grip
+                            <div className="flex items-center justify-center p-1 rounded transition-colors cursor-grab hover:bg-slate-200/50 text-slate-400 group-hover:text-slate-600">
+                                <GripVertical className="w-4 h-4" />
+                            </div>
+                         )
+                    ) : (
+                        // List Mode: Always show Lock Toggle
+                         <button
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                toggleReportLock(groupId, reportId);
+                            }}
+                            className={cn(
+                                "flex items-center justify-center p-1 rounded transition-colors mx-auto",
+                                isLocked
+                                    ? "text-red-500 hover:bg-red-50"
+                                    : "text-slate-300 hover:text-slate-500 hover:bg-slate-100 opacity-0 group-hover:opacity-100 focus:opacity-100" // Hide unlock unless hover/focus in list mode
+                            )}
+                            title={isLocked ? "Unlock Rank" : "Lock Rank"}
+                        >
+                            {isLocked ? <Lock className="w-3.5 h-3.5" /> : <Unlock className="w-3.5 h-3.5" />}
+                        </button>
+                    )}
                 </td>
 
                 <td className="px-4 py-3 text-sm font-semibold text-slate-700 text-left">{name}</td>
