@@ -92,12 +92,12 @@ interface NavfitStore {
     activeCompetitiveGroup: string | null; // e.g., "O-3 1110"
     isContextPanelOpen: boolean;
     cycleFilter: 'All' | 'Officer' | 'Enlisted';
-    cycleSort: 'DueDate' | 'Status';
+    cycleSort: 'DueDate' | 'Status' | 'CompGroup';
 
     selectCycle: (cycleId: string, competitiveGroupKey: string) => void;
     clearSelection: () => void;
     setCycleFilter: (filter: 'All' | 'Officer' | 'Enlisted') => void;
-    setCycleSort: (sort: 'DueDate' | 'Status') => void;
+    setCycleSort: (sort: 'DueDate' | 'Status' | 'CompGroup') => void;
 
     // Drill-Down Navigation State
     strategyViewMode: 'landing' | 'workspace';
@@ -141,12 +141,17 @@ export const useNavfitStore = create<NavfitStore>((set) => ({
     setRoster: (roster) => set({ roster }),
     initializeRoster: async () => {
         try {
-            const response = await fetch('/member_details.json');
-            const data = await response.json();
+            const [rosterRes, summaryRes] = await Promise.all([
+                fetch('/member_details.json'),
+                fetch('/summary_groups_test_data.json')
+            ]);
+
+            const rosterData = await rosterRes.json();
+            const summaryData = await summaryRes.json();
 
             const ratings = ["ET", "BM", "OS", "YN", "PS", "CS", "MA", "IT"];
 
-            const roster: RosterMember[] = Object.values(data).map((m: any) => {
+            const roster: RosterMember[] = Object.values(rosterData).map((m: any) => {
                 let designator = m.designator;
 
                 if (m.payGrade && m.payGrade.startsWith('E')) {
@@ -185,9 +190,18 @@ export const useNavfitStore = create<NavfitStore>((set) => ({
                 };
             });
 
-            set({ roster });
+            // Parse Summary Groups
+            // The JSON structure is { roster: [], summaryGroups: [] }
+            // We are using the roster from member_details.json (as per plan/existing logic)
+            // But we use summaryGroups from the new file.
+            const data = summaryData as { summaryGroups: SummaryGroup[] };
+
+            set({
+                roster,
+                summaryGroups: data.summaryGroups || []
+            });
         } catch (error) {
-            console.error("Failed to load roster data:", error);
+            console.error("Failed to load data:", error);
         }
     },
 
@@ -293,30 +307,8 @@ export const useNavfitStore = create<NavfitStore>((set) => ({
             const { top, bottom } = defaultAnchorIndices(N);
             const anchorIndices = new Set([...top, ...bottom]);
 
-            const newReports = group.reports.map((r, i) => {
-                if (anchorIndices.has(i)) {
-                    return { ...r, isLocked: true };
-                }
-                return r; // Don't unlock if already locked? Or strictly reset?
-                // Requirement says "provide default anchor selection".
-                // Usually implies resetting to this default state.
-                // If I'm calling this explicitly (or on creation), I should probably set them.
-                // However, if I call this during reorder (which I am not currently planning to enforce every time),
-                // it might be disruptive.
-                // Since this function is `applyDefaultAnchors`, it implies "Applying" them.
-                // I will strictly Apply them (meaning, these become anchors, others might not be).
-                // But let's look at `isLocked`.
-                // If I strictly set isLocked based on indices, I might unlock someone the user manually locked?
-                // For "Default", yes. It's a reset.
-                // return { ...r, isLocked: anchorIndices.has(i) };
-            });
-
-            // Note: Currently, map above doesn't clear others.
-            // If we want strict "Default", we should clear others.
-            // But if we use it as "Ensure Default Anchors exist", we might keep others.
-            // Prompt says: "The system shall provide default anchor selection...".
-            // I will implement it as "Set these as anchors". I will not strictly unlock others unless intended as a full reset.
-            // But for a clean "Start", usually you want exactly these.
+            // Requirement says "provide default anchor selection".
+            // We strictly set the calculated indices as anchors and unlock others to ensure a clean default state.
 
             const updatedReports = group.reports.map((r, i) => ({
                 ...r,
@@ -335,7 +327,7 @@ export const useNavfitStore = create<NavfitStore>((set) => ({
                 const updatedGroup = useNavfitStore.getState().summaryGroups[groupIndex];
                 if (!updatedGroup) return;
 
-                 const domainMembers: DomainMember[] = updatedGroup.reports.map((r, i) => ({
+                const domainMembers: DomainMember[] = updatedGroup.reports.map((r, i) => ({
                     id: r.id,
                     rank: i + 1,
                     mta: r.traitAverage,

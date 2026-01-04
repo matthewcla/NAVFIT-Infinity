@@ -14,35 +14,59 @@ interface ActiveCyclesListProps {
 }
 
 export function ActiveCyclesList({ groups, onSelect, selectedGroupId, onAddClick }: ActiveCyclesListProps) {
-    const { setDraggingItemType, deleteSummaryGroup, deleteReport, draggingItemType } = useNavfitStore();
+    const { setDraggingItemType, deleteSummaryGroup, deleteReport, draggingItemType, cycleSort } = useNavfitStore();
     const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({});
-    // We can rely on global draggingItemType now, but StrategyGroupCard still sets isDraggingGroup local via setIsDraggingGroup.
-    // Ideally StrategyGroupCard should just set global store. But for now we sync or just ignore the local isDraggingGroup for the "Show Trash" logic if global is available?
-    // Actually, StrategyGroupCard calls `setDraggingItemType('summary_group')` in onDragStart. So we can rely on that.
-    // But we need to keep `setIsDraggingGroup` for the local state if it's used elsewhere? It is used to set `isDraggingGroup` state but that state is ONLY used for showing the trash can.
-    // So we can remove the local `isDraggingGroup` state entirely and use `draggingItemType`.
 
-    const [groupToDelete, setGroupToDelete] = useState<string | null>(null);
-    const [reportToDelete, setReportToDelete] = useState<{ groupId: string; reportId: string } | null>(null);
-
-    // Group by Competitive Group Key
+    // Grouping Logic Dynamic
     const groupedMap = useMemo(() => {
         const map = new Map<string, SummaryGroup[]>();
         groups.forEach(g => {
-            const key = g.competitiveGroupKey || 'Uncategorized';
+            let key = 'Uncategorized';
+
+            if (cycleSort === 'CompGroup') {
+                key = g.competitiveGroupKey || 'Uncategorized';
+            } else if (cycleSort === 'Status') {
+                // Map specific statuses to broad categories if needed, or use raw status
+                key = g.status || 'Draft';
+            } else {
+                // DueDate - Group by Month Year
+                const date = new Date(g.periodEndDate);
+                key = date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+            }
+
             if (!map.has(key)) map.set(key, []);
             map.get(key)!.push(g);
         });
         return map;
-    }, [groups]);
+    }, [groups, cycleSort]);
 
-    const sortedKeys = Array.from(groupedMap.keys()).sort();
+    // Sorting the Groups (Keys)
+    const sortedKeys = useMemo(() => {
+        const keys = Array.from(groupedMap.keys());
+        if (cycleSort === 'DueDate') {
+            // Sort by Date Value
+            return keys.sort((a, b) => new Date(a).getTime() - new Date(b).getTime());
+        }
+        return keys.sort(); // Alphabetical for others
+    }, [groupedMap, cycleSort]);
+
+
+    const [groupToDelete, setGroupToDelete] = useState<string | null>(null);
+    const [reportToDelete, setReportToDelete] = useState<{ groupId: string; reportId: string } | null>(null);
+
 
     const toggleGroup = (key: string) => {
         setCollapsedGroups(prev => ({
             ...prev,
             [key]: !prev[key]
         }));
+    };
+
+    const handleExpandAll = () => setCollapsedGroups({});
+    const handleCollapseAll = () => {
+        const all: Record<string, boolean> = {};
+        sortedKeys.forEach(k => all[k] = true);
+        setCollapsedGroups(all);
     };
 
     const handleConfirmDeleteGroup = () => {
@@ -64,6 +88,19 @@ export function ActiveCyclesList({ groups, onSelect, selectedGroupId, onAddClick
 
     return (
         <div className="relative h-full flex flex-col">
+
+            {/* Header / Controls */}
+            <div className="px-6 py-3 flex justify-between items-center bg-slate-50 border-b border-slate-100 mb-2">
+                <div className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+                    {cycleSort === 'CompGroup' ? 'Competitive Groups' : cycleSort === 'Status' ? 'By Status' : 'TIMELINE'}
+                </div>
+                <div className="flex gap-2 text-[10px] font-medium text-slate-500">
+                    <button onClick={handleExpandAll} className="hover:text-indigo-600 transition-colors">Expand All</button>
+                    <span className="text-slate-300">|</span>
+                    <button onClick={handleCollapseAll} className="hover:text-indigo-600 transition-colors">Collapse All</button>
+                </div>
+            </div>
+
             {/* Scrollable List Container */}
             <div className="flex-1 overflow-y-auto custom-scrollbar pb-24 px-0 [scrollbar-gutter:stable]">
                 {groups.length === 0 ? (
@@ -81,16 +118,16 @@ export function ActiveCyclesList({ groups, onSelect, selectedGroupId, onAddClick
                                 <div key={key} className="flex flex-col gap-3 px-4">
                                     <button
                                         onClick={() => toggleGroup(key)}
-                                        className="flex items-center gap-2 pl-2 w-full hover:bg-slate-100 p-1 rounded transition-colors group sticky top-0 z-10 bg-slate-50 backdrop-blur-sm shadow-sm"
+                                        className="flex items-center gap-2 pl-2 w-full hover:bg-slate-100 p-1 rounded transition-colors group sticky top-0 z-10 bg-slate-50/95 backdrop-blur-sm shadow-sm border border-slate-100/50"
                                     >
                                         <ChevronRight
                                             className={`w-4 h-4 text-slate-400 transition-transform duration-200 ${!isCollapsed ? 'rotate-90' : ''}`}
                                         />
-                                        <span className="text-xs font-bold text-slate-500 uppercase tracking-widest group-hover:text-slate-700">
+                                        <span className="text-xs font-bold text-slate-600 uppercase tracking-widest group-hover:text-slate-800">
                                             {key}
                                         </span>
-                                        <span className="text-xs text-slate-400 ml-auto font-medium">
-                                            {subGroups.length} Summary Groups
+                                        <span className="text-xs text-slate-400 ml-auto font-medium bg-slate-100 px-1.5 py-0.5 rounded-full">
+                                            {subGroups.length}
                                         </span>
                                     </button>
 

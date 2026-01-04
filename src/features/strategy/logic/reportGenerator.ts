@@ -22,7 +22,8 @@ const getCompetitiveGroup = (member: RosterMember): CompGroupKey => {
     const { rank, payGrade, designator, promotionStatus = 'REGULAR' } = member;
 
     // Robust Fallback: Rank Title might be missing. Use PayGrade as fallback.
-    const displayRank = rank || payGrade;
+    // User requested "URL O-1", "E-6". Prefer PayGrade (Code) over Rank (Title) for the Group Label.
+    const displayRank = payGrade || rank;
 
     // Robust Logic: Is Officer?
     // Check PAYGRADE (e.g. O-1, W-2). Rank (Title) is unreliable for this check.
@@ -38,10 +39,9 @@ const getCompetitiveGroup = (member: RosterMember): CompGroupKey => {
     }
 
     // Label Construction
-    // Officers: "O-3 URL" or "O-3 STAFF" -> actually wants Rank Title if avail usually.
-    // Changing requirement slightly: use displayRank (Title) if Officer? 
-    // "Ensign URL" vs "O-1 URL". Usually "Ensign".
-    const labelBase = isOfficer && categoryLabel ? `${displayRank} ${categoryLabel}` : displayRank;
+    // Officers: "URL O-3" or "STAFF O-3"
+    // Enlisted: "E-6" (No designator)
+    const labelBase = isOfficer && categoryLabel ? `${categoryLabel} ${displayRank}` : displayRank;
     const label = `${labelBase} ${promotionStatus !== 'REGULAR' ? promotionStatus : ''}`.trim();
 
     return {
