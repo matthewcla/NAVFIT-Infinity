@@ -278,7 +278,7 @@ const main = async () => {
         timestamp: new Date().toISOString()
     };
 
-    const path = resolve('public/robust_test_data.json');
+    const path = resolve('public/summary_groups_test_data.json');
     await writeFile(path, JSON.stringify(output, null, 2));
     console.log(`Generated ${roster.length} members and ${summaryGroups.length} summary groups to ${path}`);
 };

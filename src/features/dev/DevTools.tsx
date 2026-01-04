@@ -36,7 +36,7 @@ export const DevTools: React.FC = () => {
 
     const handleLoadRobustData = async () => {
         try {
-            const response = await fetch('/robust_test_data.json');
+            const response = await fetch('/summary_groups_test_data.json');
             if (!response.ok) throw new Error('Failed to fetch test data');
             const json = await response.json();
              if (json.roster && json.summaryGroups && json.rsConfig) {
@@ -45,11 +45,11 @@ export const DevTools: React.FC = () => {
                     summaryGroups: json.summaryGroups,
                     rsConfig: json.rsConfig
                 });
-                alert('Robust Test Data loaded successfully!');
+                alert('Summary Groups Test Data loaded successfully!');
             }
         } catch (err) {
             console.error(err);
-            alert('Failed to load robust test data. Ensure robust_test_data.json is in public folder.');
+            alert('Failed to load summary groups test data. Ensure summary_groups_test_data.json is in public folder.');
         }
     };
 
