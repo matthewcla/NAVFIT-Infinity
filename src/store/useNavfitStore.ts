@@ -112,6 +112,9 @@ interface NavfitStore {
     // UI Mode State
     isRankMode: boolean;
     setRankMode: (isRankMode: boolean) => void;
+
+    // Data Management
+    loadState: (state: { roster: RosterMember[]; summaryGroups: SummaryGroup[]; rsConfig: ReportingSeniorConfig }) => void;
 }
 
 export const useNavfitStore = create<NavfitStore>((set) => ({
@@ -570,6 +573,20 @@ export const useNavfitStore = create<NavfitStore>((set) => ({
     // UI Mode State
     isRankMode: false,
     setRankMode: (isRankMode) => set({ isRankMode }),
+
+    // Data Management
+    loadState: (loadedState) => set({
+        roster: loadedState.roster,
+        summaryGroups: loadedState.summaryGroups,
+        rsConfig: loadedState.rsConfig,
+        // Reset selections and temporary state
+        selectedCycleId: null,
+        activeCompetitiveGroup: null,
+        selectedReportId: null,
+        selectedMemberId: null,
+        isContextPanelOpen: false,
+        projections: {},
+    }),
 }));
 
 export const selectActiveCycle = (state: NavfitStore): SummaryGroup | null => {
