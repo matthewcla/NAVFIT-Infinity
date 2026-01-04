@@ -347,6 +347,36 @@ export const useNavfitStore = create<NavfitStore>((set) => ({
             const [draggedItem] = currentReports.splice(draggedIndex, 1);
             currentReports.splice(targetIndex, 0, draggedItem);
             updatedReportList = currentReports;
+
+            // 2b. Auto-Calculate MTA for the moved item (Interpolation)
+            // Note: We use targetIndex because draggedItem is now at targetIndex
+            const prevReport = updatedReportList[targetIndex - 1];
+            const nextReport = updatedReportList[targetIndex + 1];
+
+            let newMta = draggedItem.traitAverage;
+
+            if (prevReport && nextReport) {
+                newMta = (prevReport.traitAverage + nextReport.traitAverage) / 2;
+            } else if (prevReport) {
+                // Moved to bottom (or end)
+                newMta = Math.max(2.0, prevReport.traitAverage - 0.1);
+            } else if (nextReport) {
+                // Moved to top
+                newMta = Math.min(5.0, nextReport.traitAverage + 0.1);
+            }
+
+            // Simple Collision Avoidance (Nudge if identical)
+            if (prevReport && newMta >= prevReport.traitAverage) {
+                newMta = prevReport.traitAverage - 0.01;
+            }
+            if (nextReport && newMta <= nextReport.traitAverage) {
+                newMta = nextReport.traitAverage + 0.01;
+            }
+
+            updatedReportList[targetIndex] = {
+                ...draggedItem,
+                traitAverage: parseFloat(newMta.toFixed(2))
+            };
         }
 
         // 3. Auto-Assign Recommendations based on Rank and Policy
@@ -392,20 +422,30 @@ export const useNavfitStore = create<NavfitStore>((set) => ({
     // Feature
     projections: {},
     updateProjection: (groupId, reportId, value) => {
-        // Optimistic Update with Locking
-        set((state) => ({
-            projections: {
-                ...state.projections,
-                [reportId]: value
-            },
-            summaryGroups: state.summaryGroups.map(g => {
-                if (g.id !== groupId) return g;
-                return {
-                    ...g,
-                    reports: g.reports.map(r => r.id === reportId ? { ...r, traitAverage: value, isLocked: true } : r)
-                };
-            })
-        }));
+        // Optimistic Update with Locking and Strict Sorting
+        set((state) => {
+            const groupIndex = state.summaryGroups.findIndex(g => g.id === groupId);
+            if (groupIndex === -1) return {};
+
+            const group = state.summaryGroups[groupIndex];
+
+            // 1. Update the value
+            const updatedReports = group.reports.map(r => r.id === reportId ? { ...r, traitAverage: value, isLocked: true } : r);
+
+            // 2. Strict Sort by MTA (Descending)
+            updatedReports.sort((a, b) => b.traitAverage - a.traitAverage);
+
+            const newSummaryGroups = [...state.summaryGroups];
+            newSummaryGroups[groupIndex] = { ...group, reports: updatedReports };
+
+            return {
+                projections: {
+                    ...state.projections,
+                    [reportId]: value
+                },
+                summaryGroups: newSummaryGroups
+            };
+        });
 
         // Trigger Engine
         const state = useNavfitStore.getState();

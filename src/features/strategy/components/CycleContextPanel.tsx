@@ -14,7 +14,8 @@ import {
     Calendar,
     Check,
     X,
-    Send
+    Send,
+    Sparkles
 } from 'lucide-react';
 
 import { MemberDetailSidebar } from '@/features/dashboard/components/MemberDetailSidebar';
@@ -24,6 +25,7 @@ import { QuotaHeadsUpDisplay } from './QuotaHeadsUpDisplay';
 import { CycleMemberList, type RankedMember } from './CycleMemberList';
 import { SubmissionConfirmationModal } from './SubmissionConfirmationModal';
 import { createSummaryGroupContext } from '@/features/strategy/logic/validation';
+import { DEFAULT_CONSTRAINTS } from '@/domain/rsca/constants';
 
 
 interface CycleContextPanelProps {
@@ -49,12 +51,37 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
         updateGroupStatus
     } = useNavfitStore();
 
-    const { latestResult } = useRedistributionStore();
+    const { latestResult, requestRedistribution } = useRedistributionStore();
 
     // Reactivity Fix: Ensure we use the latest group state from store, even if parent prop is stale
     const latestGroup = useNavfitStore(state =>
         group ? state.summaryGroups.find(g => g.id === group.id) || group : null
     );
+
+    const activeGroup = latestGroup || group;
+
+    const handleOptimize = () => {
+        if (!activeGroup || !rsConfig) return;
+
+        // Ensure strict sorting based on current state before optimizing
+        const sortedReports = [...activeGroup.reports].sort((a, b) => b.traitAverage - a.traitAverage);
+
+        const domainMembers = sortedReports.map((r, i) => ({
+             id: r.id,
+             rank: i + 1,
+             mta: r.traitAverage,
+             isAnchor: !!r.isLocked,
+             anchorValue: r.traitAverage,
+             name: `${r.firstName} ${r.lastName}`
+        }));
+
+        requestRedistribution(
+            activeGroup.id,
+            domainMembers,
+            DEFAULT_CONSTRAINTS,
+            rsConfig.targetRsca
+        );
+    };
 
     const handleReorderMembers = (groupId: string, droppedId: string, newOrderIds: string[]) => {
         // Fix: If this is an auto-generated group (not in store), we must persist it first.
@@ -72,7 +99,7 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
     };
 
     // Use latestGroup for all derived logic
-    const activeGroup = latestGroup || group;
+    // const activeGroup = latestGroup || group; // Moved up for usage in handleOptimize
 
     // Derived Stats using the "Dashboard" logic for advanced metrics
     const contextData = useMemo(() => {
@@ -124,7 +151,9 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
                     reportsRemaining: report.reportsRemaining,
                     report
                 };
-            });
+            })
+            // Ensure Strict Sorting for Display
+            .sort((a, b) => b.mta - a.mta);
 
         // Calculate Distribution
         const distribution: { [key: string]: number; SP: number; PR: number; P: number; MP: number; EP: number; } = { SP: 0, PR: 0, P: 0, MP: 0, EP: 0 };
@@ -325,6 +354,16 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
                                             >
                                                 <BarChart className="w-3.5 h-3.5 text-slate-500" />
                                                 <span>Waterfall</span>
+                                            </button>
+
+                                            {/* Optimize Button */}
+                                            <button
+                                                onClick={handleOptimize}
+                                                className="flex items-center justify-center gap-2 px-3 py-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 rounded-lg transition-colors text-xs font-medium"
+                                                title="Optimize MTA Distribution"
+                                            >
+                                                <Sparkles className="w-3.5 h-3.5 text-indigo-500" />
+                                                <span>Optimize</span>
                                             </button>
 
                                         </>
