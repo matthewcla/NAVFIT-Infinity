@@ -75,6 +75,7 @@ describe('NavfitStore', () => {
             const group1: SummaryGroup = {
                 id: 'group1',
                 name: 'Test Group',
+                paygrade: 'O-3',
                 competitiveGroupKey: 'group1-key',
                 periodEndDate: '2023-12-31',
                 reports: [
@@ -139,6 +140,7 @@ describe('NavfitStore', () => {
             const group1: SummaryGroup = {
                 id: 'group1',
                 name: 'Test Group',
+                paygrade: 'O-3',
                 competitiveGroupKey: 'group1-key',
                 periodEndDate: '2023-12-31',
                 reports: [

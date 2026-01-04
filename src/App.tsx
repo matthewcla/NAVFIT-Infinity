@@ -8,6 +8,7 @@ import { CommandAdmin } from '@/features/admin/components/CommandAdmin';
 import { SailorProfiles } from '@/features/roster/components/SailorProfiles';
 import { useNavfitStore } from '@/store/useNavfitStore';
 import { useRedistributionStore } from '@/store/useRedistributionStore';
+import { DevTools } from '@/features/dev/DevTools';
 
 function App() {
   // Initialize Redistribution Worker
@@ -62,6 +63,7 @@ function App() {
       onToggleCollapse={toggleSidebar}
     >
       {renderContent()}
+      <DevTools />
     </AppLayout>
   );
 }
