@@ -19,9 +19,15 @@ interface CompGroupKey {
 }
 
 const getCompetitiveGroup = (member: RosterMember): CompGroupKey => {
-    const { rank, designator, promotionStatus = 'REGULAR' } = member;
+    const { rank, payGrade, designator, promotionStatus = 'REGULAR' } = member;
 
-    const isOfficer = rank.startsWith('O') || rank.startsWith('W');
+    // Robust Fallback: Rank Title might be missing. Use PayGrade as fallback.
+    const displayRank = rank || payGrade;
+
+    // Robust Logic: Is Officer?
+    // Check PAYGRADE (e.g. O-1, W-2). Rank (Title) is unreliable for this check.
+    const isOfficer = payGrade ? (payGrade.startsWith('O') || payGrade.startsWith('W')) : false;
+
     let categoryLabel = '';
     let categoryCode = '';
 
@@ -32,13 +38,14 @@ const getCompetitiveGroup = (member: RosterMember): CompGroupKey => {
     }
 
     // Label Construction
-    // Officers: "O-3 URL" or "O-3 STAFF"
-    // Enlisted: "E-6" (No designator)
-    const labelBase = isOfficer && categoryLabel ? `${rank} ${categoryLabel}` : rank;
+    // Officers: "O-3 URL" or "O-3 STAFF" -> actually wants Rank Title if avail usually.
+    // Changing requirement slightly: use displayRank (Title) if Officer? 
+    // "Ensign URL" vs "O-1 URL". Usually "Ensign".
+    const labelBase = isOfficer && categoryLabel ? `${displayRank} ${categoryLabel}` : displayRank;
     const label = `${labelBase} ${promotionStatus !== 'REGULAR' ? promotionStatus : ''}`.trim();
 
     return {
-        paygrade: rank,
+        paygrade: payGrade || rank, // Prefer code
         designator: designator,
         promotionStatus: promotionStatus,
         label: label,

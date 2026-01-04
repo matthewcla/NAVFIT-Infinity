@@ -16,5 +16,20 @@ export const DEFAULT_CONSTRAINTS = {
     mtaLowerBound: DEFAULT_MTA_MIN,
     mtaUpperBound: DEFAULT_MTA_MAX,
     tolerance: DEFAULT_TOLERANCE,
-    maxIterations: DEFAULT_MAX_ITERATIONS
+    maxIterations: DEFAULT_MAX_ITERATIONS,
+    alpha: 0.1, // Default redistribution factor
+    tau: 0.05,  // Default threshold
+    delta: 0.1, // Default power-law delta
+    p: 1.0      // Default power-law exponent
+};
+
+import type { ReportingSeniorConfig } from '@/types/roster';
+
+export const INITIAL_RS_CONFIG: ReportingSeniorConfig = {
+    name: 'CAPT J. T. Kirk',
+    rank: 'O-6',
+    title: 'CO',
+    changeOfCommandDate: '2025-06-01',
+    targetRsca: 4.10,
+    totalReports: 124,
 };

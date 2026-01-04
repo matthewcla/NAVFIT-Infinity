@@ -8,7 +8,8 @@ export interface RosterMember {
     firstName: string;
     lastName: string;
     middleInitial?: string;
-    rank: PayGrade;
+    rank: string; // Title (e.g. Ensign)
+    payGrade: PayGrade; // Code (e.g. O-1)
     designator: Designator;
     promotionStatus?: 'REGULAR' | 'FROCKED' | 'SELECTED' | 'SPOT'; // Defaults to REGULAR if undefined
     // For Enlisted, would be rating. Keeping simple for Officers first.

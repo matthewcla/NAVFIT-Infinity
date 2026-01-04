@@ -71,7 +71,11 @@ export function CycleMemberList({
                             <th className="px-4 py-3 border-b border-slate-200 w-12 text-center">#</th>
                             <th className="w-8 px-0 py-3 border-b border-slate-200"></th> {/* Spacer for Handle */}
                             <th className="px-4 py-3 border-b border-slate-200 text-left">Name</th>
-                            <th className="px-4 py-3 border-b border-slate-200 text-center">Rate/Des</th>
+                            <th className="px-4 py-3 border-b border-slate-200 text-center">
+                                {membersToRender.length > 0 && membersToRender[0].report?.grade?.startsWith('E')
+                                    ? 'Rate/Rank'
+                                    : 'Desig'}
+                            </th>
                             <th className="px-4 py-3 border-b border-slate-200 text-center" title="Projected reports remaining until PRD"># Rpts</th>
                             <th className="px-4 py-3 border-b border-slate-200 text-center">Rec</th>
                             <th className="px-4 py-3 border-b border-slate-200 text-center">MTA</th>

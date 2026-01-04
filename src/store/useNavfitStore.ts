@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import type { Tab } from '../components/layout/Sidebar';
-import type { RosterMember, ReportingSeniorConfig } from '@/types/roster';
-import { INITIAL_ROSTER, INITIAL_RS_CONFIG } from '../data/initialRoster';
+import type { RosterMember, ReportingSeniorConfig, PayGrade } from '@/types/roster';
+import { INITIAL_RS_CONFIG } from '../domain/rsca/constants';
 
 // import { type Member } from '@/features/strategy/logic/autoPlan';
 import { useRedistributionStore } from './useRedistributionStore';
@@ -33,6 +33,7 @@ interface NavfitStore {
     // Data State
     roster: RosterMember[];
     setRoster: (roster: RosterMember[]) => void;
+    initializeRoster: () => Promise<void>;
     reorderMember: (memberId: string, newIndex: number) => void; // Legacy roster reorder? Or keep for completeness
 
     // Summary Group / Ranking Mode Actions
@@ -133,12 +134,62 @@ export const useNavfitStore = create<NavfitStore>((set) => ({
 
     // History View State
     cycleListPhase: 'Active',
-    setCycleListPhase: (phase) => set({ cycleListPhase: phase }),
 
 
     // Data
-    roster: INITIAL_ROSTER,
+    roster: [], // Initialized empty
     setRoster: (roster) => set({ roster }),
+    initializeRoster: async () => {
+        try {
+            const response = await fetch('/member_details.json');
+            const data = await response.json();
+
+            const ratings = ["ET", "BM", "OS", "YN", "PS", "CS", "MA", "IT"];
+
+            const roster: RosterMember[] = Object.values(data).map((m: any) => {
+                let designator = m.designator;
+
+                if (m.payGrade && m.payGrade.startsWith('E')) {
+                    const rating = ratings[Math.floor(Math.random() * ratings.length)];
+                    const grade = m.payGrade; // e.g. E-6
+                    let rateRank = "";
+
+                    if (grade === 'E-9') rateRank = `${rating}CM`; // ETCM
+                    else if (grade === 'E-8') rateRank = `${rating}CS`; // ETCS
+                    else if (grade === 'E-7') rateRank = `${rating}C`;  // ETC
+                    else if (grade === 'E-6') rateRank = `${rating}1`;  // ET1
+                    else if (grade === 'E-5') rateRank = `${rating}2`;  // ET2
+                    else if (grade === 'E-4') rateRank = `${rating}3`;  // ET3
+                    else if (grade === 'E-3') rateRank = `${rating}SN`; // ETSN (Simplified)
+                    else if (grade === 'E-2') rateRank = `${rating}SA`; // ETSA
+                    else if (grade === 'E-1') rateRank = `${rating}SR`; // ETSR
+                    else rateRank = `${rating}${grade.split('-')[1] || ''}`; // Fallback
+
+                    designator = rateRank;
+                }
+
+                // Random last trait between 3.50 and 4.80
+                const lastTrait = parseFloat((Math.random() * (4.80 - 3.50) + 3.50).toFixed(2));
+
+                return {
+                    id: m.id,
+                    firstName: m.firstName,
+                    lastName: m.lastName,
+                    rank: m.rank,
+                    payGrade: m.payGrade as PayGrade,
+                    designator: designator, // Contains Rate for Enlisted
+                    dateReported: m.dateReported || new Date().toISOString().split('T')[0],
+                    prd: m.prd || new Date(new Date().setFullYear(new Date().getFullYear() + 2)).toISOString().split('T')[0],
+                    lastTrait, // Added for UI completeness
+                    status: 'Onboard'
+                };
+            });
+
+            set({ roster });
+        } catch (error) {
+            console.error("Failed to load roster data:", error);
+        }
+    },
 
     summaryGroups: [],
     setSummaryGroups: (groups) => set({ summaryGroups: groups }),
@@ -605,6 +656,7 @@ export const useNavfitStore = create<NavfitStore>((set) => ({
     setCycleFilter: (filter) => set({ cycleFilter: filter }),
     setCycleSort: (sort) => set({ cycleSort: sort }),
     setStrategyViewMode: (mode) => set({ strategyViewMode: mode }),
+    setCycleListPhase: (phase) => set({ cycleListPhase: phase }),
 
     // Drag State
     draggingItemType: null,
