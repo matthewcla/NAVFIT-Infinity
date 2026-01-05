@@ -48,7 +48,8 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
         selectMember,
         setDraggingItemType,
         updateProjection,
-        updateGroupStatus
+        updateGroupStatus,
+        updateReport
     } = useNavfitStore();
 
     const { latestResult, requestRedistribution } = useRedistributionStore();
@@ -481,8 +482,10 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
                             }
                         }}
                         onUpdatePromRec={(id, rec) => {
-                            // TODO: Integrate with store action
-                            console.log('Update PromRec:', id, rec);
+                            const report = activeGroup.reports.find(r => r.memberId === id);
+                            if (report) {
+                                updateReport(activeGroup.id, report.id, { promotionRecommendation: rec });
+                            }
                         }}
                         onNavigatePrev={() => {
                             const idx = rankedMembers.findIndex(m => m.id === selectedMemberId);
