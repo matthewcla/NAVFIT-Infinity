@@ -73,7 +73,7 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
             mta: r.traitAverage,
             isAnchor: !!r.isLocked,
             anchorValue: r.traitAverage,
-            name: `${r.firstName} ${r.lastName}`
+            name: r.memberName || 'Unknown'
         }));
 
         requestRedistribution(
@@ -111,6 +111,9 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
 
         // Derive Rank from competitiveGroupKey (e.g., "O-3 1110" -> "O-3") or use paygrade
         const rank = activeGroup.paygrade || (activeGroup.competitiveGroupKey ? activeGroup.competitiveGroupKey.split(' ')[0] : 'Unknown');
+        // Robust Enlisted Check: Start with E or explicitly matched paygrades
+        const isEnlisted = rank.startsWith('E') || ['E-1', 'E-2', 'E-3', 'E-4', 'E-5', 'E-6', 'E-7', 'E-8', 'E-9'].includes(activeGroup.paygrade || '');
+
 
         // Calculate Rank-Wide Cumulative Average (Current State of all reports)
         const cumulativeRsca = calculateCumulativeRSCA(allGroups, rank);
@@ -139,12 +142,22 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
                 const currentMta = projections[report.id] || report.traitAverage || 0;
                 const rscaMargin = currentMta - cumulativeRsca;
 
+                // Robust Fallback: Use Report Snapshot if Roster Lookup Fails
+                const name = member
+                    ? `${member.lastName}, ${member.firstName}`
+                    : (report.memberName || 'Unknown');
+
+                // For Enlisted: strictly use member.rank (e.g. "BM1") if available.
+                // Fallback to report.memberRank, then to paygrade "rank" variable.
+                const memberRank = member?.rank || report.memberRank || report.grade || rank;
+                const memberDesignator = member?.designator || report.designator || '';
+
                 return {
                     id: report.memberId, // Use memberId for selection
                     reportId: report.id,
-                    name: member ? `${member.lastName}, ${member.firstName}` : 'Unknown',
-                    rank: member?.rank || rank,
-                    designator: member?.designator || '',
+                    name,
+                    rank: memberRank,
+                    designator: memberDesignator,
                     promRec: report.promotionRecommendation || 'NOB',
                     mta: currentMta,
                     delta: 0, // Placeholder for delta logic if history exists
@@ -184,7 +197,8 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
                 cumulativeRsca,
                 rsConfig.totalReports || 100, // Fallback if 0
                 rsConfig.changeOfCommandDate
-            )
+            ),
+            isEnlisted
         };
     }, [activeGroup, roster, rsConfig, projections]); // Depend on activeGroup
 
@@ -206,7 +220,7 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
         );
     }
 
-    const { cumulativeRsca, gap, mainDraftStatus, rankedMembers, distribution, eotRsca, totalReports, domainContext } = contextData;
+    const { cumulativeRsca, gap, mainDraftStatus, rankedMembers, distribution, eotRsca, totalReports, domainContext, isEnlisted } = contextData;
 
     // Helper for Badge
     const getPromotionStatusBadge = (s?: string) => {
@@ -399,6 +413,7 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
                 {/* 3. Member List (Scrollable Main) */}
                 <CycleMemberList
                     isRankingMode={isRankingMode}
+                    isEnlisted={isEnlisted}
                     rankedMembers={rankedMembers as RankedMember[]}
                     localOrderedMembers={localOrderedMembers}
                     setLocalOrderedMembers={setLocalOrderedMembers}

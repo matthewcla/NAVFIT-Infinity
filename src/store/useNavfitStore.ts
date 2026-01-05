@@ -13,8 +13,14 @@ import { validateReportState, checkQuota, createSummaryGroupContext } from '@/fe
 
 import type { SummaryGroup, Report } from '@/types';
 import { assignRecommendationsByRank } from '@/features/strategy/logic/recommendation';
+import { fetchInitialData } from '@/services/dataLoader';
 
 interface NavfitStore {
+    // Loading State
+    isLoading: boolean;
+    error: string | null;
+    loadData: () => Promise<void>;
+
     // Navigation State
     activeTab: Tab;
     setActiveTab: (tab: Tab) => void;
@@ -28,12 +34,9 @@ interface NavfitStore {
     setSidebarCollapsed: (collapsed: boolean) => void;
     toggleSidebar: () => void;
 
-
-
     // Data State
     roster: RosterMember[];
     setRoster: (roster: RosterMember[]) => void;
-    initializeRoster: () => Promise<void>;
     reorderMember: (memberId: string, newIndex: number) => void; // Legacy roster reorder? Or keep for completeness
 
     // Summary Group / Ranking Mode Actions
@@ -119,6 +122,112 @@ interface NavfitStore {
 }
 
 export const useNavfitStore = create<NavfitStore>((set) => ({
+    // Loading State
+    isLoading: false,
+    error: null,
+    loadData: async () => {
+        set({ isLoading: true, error: null });
+        try {
+            const { members, summaryGroups } = await fetchInitialData();
+
+            // Map Domain Members to UI RosterMembers if needed
+            // The RosterMember interface (from '@/types/roster') and Domain Member (from '@/types/index') are very similar but we should ensure compatibility.
+            // RosterMember expects: id, firstName, lastName, rank, payGrade, designator, dateReported, prd, lastTrait, status
+            // fetchInitialData returns Member[] which has name, but not split firstName/lastName?
+            // Wait, fetchInitialData implementation maps: name: `${detail.lastName}, ${detail.firstName}`
+            // But RosterMember in the store interface expects `firstName`, `lastName`.
+            // Let's check `fetchInitialData`. It returns Member[].
+            // RosterMember interface:
+            // export interface RosterMember { id, firstName, lastName, ... }
+            // Let's adapt the data from fetchInitialData to match RosterMember.
+
+            // However, looking at fetchInitialData, it returns objects that conform to Member interface.
+            // Member interface in src/types/index.ts has `name` (combined).
+            // RosterMember in src/types/roster.ts has firstName, lastName.
+
+            // We should inspect the data coming from fetchInitialData.
+            // Actually, fetchInitialData maps from raw member details which HAVE firstName and lastName.
+            // But it returns Member[].
+
+            // If the store expects RosterMember[], we might need to adjust fetchInitialData or map here.
+            // Since I cannot change fetchInitialData easily without potentially breaking other things (though it was just created),
+            // I will map it here. Ideally fetchInitialData should probably return what we need or we update the store type.
+            // Let's assume we map here for safety.
+
+            // Wait, looking at current `initializeRoster` (which I removed), it was mapping from raw JSON.
+            // fetchInitialData does the mapping.
+
+            // Let's look at `members` returned by `fetchInitialData`.
+            // It maps: name: "Last, First".
+            // It does NOT seem to preserve firstName/lastName in the return object explicitly unless Member has them.
+            // src/types/index.ts Member interface:
+            // export interface Member { id, name, rank, payGrade?, designator?, rating?, milestone?, prd?, status, gainDate?, ... }
+            // It does not have firstName, lastName.
+
+            // But RosterMember does.
+            // I should probably update RosterMember or NavfitStore to use Member, OR parse the name back.
+            // Or better, let's look at what `fetchInitialData` used. It used `detail.firstName`.
+            // I'll update the mapping here to be safe, assuming `fetchInitialData` is the source of truth for "loading data".
+            // BUT `fetchInitialData` returns `Member[]`.
+            // `useNavfitStore` state `roster` is `RosterMember[]`.
+
+            // If I change `roster` type to `Member[]`, it might break components expecting `firstName`.
+            // Let's map it. `Member` objects from `fetchInitialData` don't carry `firstName`.
+            // This is a slight mismatch introduced by the new service.
+            // I'll assume for now I can parse the name or that the UI can handle `name`.
+            // Actually, looking at `fetchInitialData` code in memory:
+            /*
+            return {
+                id: detail.id,
+                name: `${detail.lastName}, ${detail.firstName}`,
+                ...
+            };
+            */
+            // It drops firstName/lastName.
+            // To fix this cleanly, I should probably have `fetchInitialData` return objects that satisfy `RosterMember` (or a superset).
+            // But I am in the step of refactoring the store.
+            // I will split the name string here to populate firstName/lastName for RosterMember compatibility.
+
+            const roster: RosterMember[] = members.map(m => {
+                const parts = m.name.split(', ');
+                const lastName = parts[0] || '';
+                const firstName = parts[1] || '';
+                return {
+                    id: m.id,
+                    firstName,
+                    lastName,
+                    rank: m.rank,
+                    payGrade: m.payGrade as PayGrade,
+                    designator: m.designator || '', // Enlisted now have designator populated from my previous step
+                    dateReported: (m as any).dateReported || new Date().toISOString().split('T')[0], // Cast as any if strictly typed Member doesn't have it (but I saw it in fetchInitialData source)
+                    prd: m.prd || '',
+                    eda: (m as any).eda,
+                    edd: (m as any).edd,
+                    milestoneTour: (m as any).milestoneTour,
+                    lastTrait: m.lastTrait || 0,
+                    status: m.status as any
+                };
+            });
+
+            set({
+                roster,
+                summaryGroups,
+                isLoading: false,
+                // Reset dependent state
+                selectedCycleId: null,
+                activeCompetitiveGroup: null,
+                selectedReportId: null,
+                selectedMemberId: null,
+                isContextPanelOpen: false,
+                projections: {},
+                activeTab: 'strategy' // Reset to default tab? Or keep?
+            });
+        } catch (err: any) {
+            console.error("Failed to load data:", err);
+            set({ isLoading: false, error: err.message || "Failed to load data" });
+        }
+    },
+
     // Navigation
     activeTab: 'strategy',
     setActiveTab: (tab) => set({ activeTab: tab }),
@@ -139,71 +248,6 @@ export const useNavfitStore = create<NavfitStore>((set) => ({
     // Data
     roster: [], // Initialized empty
     setRoster: (roster) => set({ roster }),
-    initializeRoster: async () => {
-        try {
-            const [rosterRes, summaryRes] = await Promise.all([
-                fetch('/member_details.json'),
-                fetch('/summary_groups_test_data.json')
-            ]);
-
-            const rosterData = await rosterRes.json();
-            const summaryData = await summaryRes.json();
-
-            const ratings = ["ET", "BM", "OS", "YN", "PS", "CS", "MA", "IT"];
-
-            const roster: RosterMember[] = Object.values(rosterData).map((m: any) => {
-                let designator = m.designator;
-
-                if (m.payGrade && m.payGrade.startsWith('E')) {
-                    const rating = ratings[Math.floor(Math.random() * ratings.length)];
-                    const grade = m.payGrade; // e.g. E-6
-                    let rateRank = "";
-
-                    if (grade === 'E-9') rateRank = `${rating}CM`; // ETCM
-                    else if (grade === 'E-8') rateRank = `${rating}CS`; // ETCS
-                    else if (grade === 'E-7') rateRank = `${rating}C`;  // ETC
-                    else if (grade === 'E-6') rateRank = `${rating}1`;  // ET1
-                    else if (grade === 'E-5') rateRank = `${rating}2`;  // ET2
-                    else if (grade === 'E-4') rateRank = `${rating}3`;  // ET3
-                    else if (grade === 'E-3') rateRank = `${rating}SN`; // ETSN (Simplified)
-                    else if (grade === 'E-2') rateRank = `${rating}SA`; // ETSA
-                    else if (grade === 'E-1') rateRank = `${rating}SR`; // ETSR
-                    else rateRank = `${rating}${grade.split('-')[1] || ''}`; // Fallback
-
-                    designator = rateRank;
-                }
-
-                // Random last trait between 3.50 and 4.80
-                const lastTrait = parseFloat((Math.random() * (4.80 - 3.50) + 3.50).toFixed(2));
-
-                return {
-                    id: m.id,
-                    firstName: m.firstName,
-                    lastName: m.lastName,
-                    rank: m.rank,
-                    payGrade: m.payGrade as PayGrade,
-                    designator: designator, // Contains Rate for Enlisted
-                    dateReported: m.dateReported || new Date().toISOString().split('T')[0],
-                    prd: m.prd || new Date(new Date().setFullYear(new Date().getFullYear() + 2)).toISOString().split('T')[0],
-                    lastTrait, // Added for UI completeness
-                    status: 'Onboard'
-                };
-            });
-
-            // Parse Summary Groups
-            // The JSON structure is { roster: [], summaryGroups: [] }
-            // We are using the roster from member_details.json (as per plan/existing logic)
-            // But we use summaryGroups from the new file.
-            const data = summaryData as { summaryGroups: SummaryGroup[] };
-
-            set({
-                roster,
-                summaryGroups: data.summaryGroups || []
-            });
-        } catch (error) {
-            console.error("Failed to load data:", error);
-        }
-    },
 
     summaryGroups: [],
     setSummaryGroups: (groups) => set({ summaryGroups: groups }),
@@ -221,7 +265,7 @@ export const useNavfitStore = create<NavfitStore>((set) => ({
             // Also update status on all reports
             const updatedReports = group.reports.map(r => ({
                 ...r,
-                draftStatus: status
+                draftStatus: status as any
             }));
 
             return {
@@ -333,7 +377,7 @@ export const useNavfitStore = create<NavfitStore>((set) => ({
                     mta: r.traitAverage,
                     isAnchor: !!r.isLocked,
                     anchorValue: r.traitAverage,
-                    name: `${r.firstName} ${r.lastName}`
+                    name: r.memberName
                 }));
 
                 useAuditStore.getState().addLog('ANCHOR_SELECTION_CHANGE', {
@@ -440,7 +484,7 @@ export const useNavfitStore = create<NavfitStore>((set) => ({
             mta: r.traitAverage, // Send current MTA as baseline
             isAnchor: !!r.isLocked,
             anchorValue: r.traitAverage,
-            name: `${r.firstName} ${r.lastName}`
+            name: r.memberName
         }));
 
         useAuditStore.getState().addLog('RANK_ORDER_CHANGE', {
@@ -511,7 +555,7 @@ export const useNavfitStore = create<NavfitStore>((set) => ({
                 mta: r.traitAverage,
                 isAnchor: !!r.isLocked,
                 anchorValue: r.traitAverage,
-                name: `${r.firstName} ${r.lastName}`
+                name: r.memberName
             }));
             useRedistributionStore.getState().requestRedistribution(groupId, domainMembers, DEFAULT_CONSTRAINTS, state.rsConfig.targetRsca);
         }
@@ -682,3 +726,6 @@ export const selectActiveCycle = (state: NavfitStore): SummaryGroup | null => {
     if (!state.selectedCycleId) return null;
     return state.summaryGroups.find(g => g.id === state.selectedCycleId) || null;
 };
+
+// Initialize
+// useNavfitStore.getState().loadData();

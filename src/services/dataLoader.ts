@@ -1,4 +1,4 @@
-import { Member, SummaryGroup, Report, PayGrade, Designator } from '@/types/index';
+import type { Member, SummaryGroup, Report } from '@/types/index';
 
 // Interfaces matching public/member_details.json
 export interface RawMemberDetail {
@@ -31,6 +31,8 @@ export interface RawReport {
     promotionRecommendation: 'EP' | 'MP' | 'P' | 'Prog' | 'SP' | 'NOB';
     firstName?: string;
     lastName?: string;
+    memberName?: string;
+    memberRank?: string;
     rank?: string;
     designator?: string;
     draftStatus?: string;
@@ -99,7 +101,9 @@ export async function fetchInitialData(): Promise<{ members: Member[]; summaryGr
             ...rawReport,
             type: (rawReport.type as any) || 'Periodic', // Default
             traitGrades: rawReport.traitGrades || {}, // Default empty
-            draftStatus: (rawReport.draftStatus as any) || 'Final'
+            draftStatus: (rawReport.draftStatus as any) || 'Final',
+            memberRank: detail.rank || '',
+            memberName: `${detail.lastName}, ${detail.firstName}`
         }));
 
         return {
@@ -110,6 +114,8 @@ export async function fetchInitialData(): Promise<{ members: Member[]; summaryGr
             designator: detail.designator,
             milestone: detail.milestoneTour,
             prd: detail.prd,
+            eda: detail.eda,
+            edd: detail.edd,
             status: 'Onboard', // Defaulting as these seem to be active
             gainDate: detail.gainDate,
             dateReported: detail.dateReported, // Extended field mapping
@@ -119,12 +125,17 @@ export async function fetchInitialData(): Promise<{ members: Member[]; summaryGr
 
     // Map Summary Groups
     const summaryGroups: SummaryGroup[] = summaryGroupsData.summaryGroups.map(rawGroup => {
-        const reports: Report[] = rawGroup.reports.map(rawReport => ({
-            ...rawReport,
-            type: (rawReport.type as any) || 'Periodic',
-            traitGrades: rawReport.traitGrades || {},
-            draftStatus: (rawReport.draftStatus as any) || 'Draft'
-        }));
+        const reports: Report[] = rawGroup.reports.map(rawReport => {
+            const member = members.find(m => m.id === rawReport.memberId);
+            return {
+                ...rawReport,
+                type: (rawReport.type as any) || 'Periodic',
+                traitGrades: rawReport.traitGrades || {},
+                draftStatus: (rawReport.draftStatus as any) || 'Draft',
+                memberRank: member?.rank || rawReport.memberRank || rawReport.rank || '',
+                memberName: member?.name || rawReport.memberName || (rawReport.firstName && rawReport.lastName ? `${rawReport.lastName}, ${rawReport.firstName}` : '') || ''
+            };
+        });
 
         return {
             ...rawGroup,

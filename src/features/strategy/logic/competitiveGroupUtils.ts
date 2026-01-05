@@ -40,21 +40,6 @@ const matchesAnyPattern = (designator: string, patterns: string[]): string | und
 const PATTERNS_URL = ['11xx', '13xx', '19xx'];
 
 // RL has specific named subgroups
-const PATTERNS_RL = [
-    { pattern: '120x', name: 'Special Duty (Human Resources)' }, // 12xx in prompt, but usually HR is 1200. Prompt says "12xx". Let's use 12xx if it covers all.
-    // Wait, prompt says: "Special Duty (Human Resources): 12xx".
-    // "Special Duty (Permanent Military Professor): 123X".
-    // If I use 12xx for HR, it overlaps 123X.
-    // I should check specific patterns first?
-    // Or just check if it matches the broad bucket.
-    // The prompt groups them all under "Competitive Group: Restricted Line".
-    // So for the *Category* bucket, I just need to know it's RL.
-    // The specific sub-name might be nice but the Competitive Group Name is "Restricted Line".
-    // I will return the Category Name.
-    // The prompt asks to "Map member designator codes to competitive category buckets".
-    // And "Ensure competitive group context includes competitive category codes".
-    // I will define the lists as provided.
-];
 
 const DEFINITIONS_RL = [
     '12xx', // HR (Note: this overlaps 123x, 128x. Order matters if we want specific sub-labels, but for Grouping RL, it's fine)
