@@ -12,7 +12,9 @@ export interface RosterMember {
     payGrade: PayGrade; // Code (e.g. O-1)
     designator: Designator;
     promotionStatus?: 'REGULAR' | 'FROCKED' | 'SELECTED' | 'SPOT'; // Defaults to REGULAR if undefined
-    // For Enlisted, would be rating. Keeping simple for Officers first.
+
+    // Enlisted Rating (e.g. "BM", "IT"). Undefined for Officers or unrated/undesignated (E-1 to E-3).
+    rating?: string;
 
     dateReported: string; // YYYY-MM-DD
     prd: string;          // Projected Rotation Date
