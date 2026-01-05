@@ -4674,7 +4674,7 @@
     "dateOfRank": "2025-01-04",
     "firstName": "Brian",
     "lastName": "Miller",
-    "designator": "0000",
+    "designator": "SR",
     "dateReported": "2021-01-07",
     "payGrade": "E-1",
     "rank": "SR"
@@ -4692,7 +4692,7 @@
     "dateOfRank": "2022-01-05",
     "firstName": "Daniel",
     "lastName": "Nelson",
-    "designator": "0000",
+    "designator": "SR",
     "dateReported": "2021-02-03",
     "payGrade": "E-1",
     "rank": "SR"
@@ -4710,7 +4710,7 @@
     "dateOfRank": "2022-01-05",
     "firstName": "Karen",
     "lastName": "Martinez",
-    "designator": "0000",
+    "designator": "SR",
     "dateReported": "2022-10-16",
     "payGrade": "E-1",
     "rank": "SR"
@@ -4728,7 +4728,7 @@
     "dateOfRank": "2025-01-04",
     "firstName": "Kevin",
     "lastName": "Rivera",
-    "designator": "0000",
+    "designator": "SR",
     "dateReported": "2022-09-14",
     "payGrade": "E-1",
     "rank": "SR"
@@ -4746,7 +4746,7 @@
     "dateOfRank": "2025-01-04",
     "firstName": "Melissa",
     "lastName": "Jackson",
-    "designator": "0000",
+    "designator": "SR",
     "dateReported": "2022-08-05",
     "payGrade": "E-1",
     "rank": "SR"
@@ -4764,7 +4764,7 @@
     "dateOfRank": "2022-01-05",
     "firstName": "Christopher",
     "lastName": "Thomas",
-    "designator": "0000",
+    "designator": "SR",
     "dateReported": "2021-03-17",
     "payGrade": "E-1",
     "rank": "SR"
@@ -4782,7 +4782,7 @@
     "dateOfRank": "2025-01-04",
     "firstName": "Margaret",
     "lastName": "Torres",
-    "designator": "0000",
+    "designator": "SR",
     "dateReported": "2021-05-19",
     "payGrade": "E-1",
     "rank": "SR"
@@ -4800,7 +4800,7 @@
     "dateOfRank": "2024-01-05",
     "firstName": "Jessica",
     "lastName": "Ramirez",
-    "designator": "0000",
+    "designator": "SR",
     "dateReported": "2022-09-14",
     "payGrade": "E-1",
     "rank": "SR"
@@ -4818,7 +4818,7 @@
     "dateOfRank": "2024-01-05",
     "firstName": "Richard",
     "lastName": "Scott",
-    "designator": "0000",
+    "designator": "SR",
     "dateReported": "2022-08-18",
     "payGrade": "E-1",
     "rank": "SR"
@@ -4836,7 +4836,7 @@
     "dateOfRank": "2023-01-05",
     "firstName": "Elizabeth",
     "lastName": "Hernandez",
-    "designator": "0000",
+    "designator": "SR",
     "dateReported": "2021-12-14",
     "payGrade": "E-1",
     "rank": "SR"
@@ -4854,7 +4854,7 @@
     "dateOfRank": "2024-01-05",
     "firstName": "Thomas",
     "lastName": "Williams",
-    "designator": "0000",
+    "designator": "SR",
     "dateReported": "2021-09-24",
     "payGrade": "E-1",
     "rank": "SR"
@@ -4872,7 +4872,7 @@
     "dateOfRank": "2022-01-05",
     "firstName": "Karen",
     "lastName": "Williams",
-    "designator": "0000",
+    "designator": "SA",
     "dateReported": "2022-10-22",
     "payGrade": "E-2",
     "rank": "SA"
@@ -4890,7 +4890,7 @@
     "dateOfRank": "2022-01-05",
     "firstName": "William",
     "lastName": "Green",
-    "designator": "0000",
+    "designator": "SA",
     "dateReported": "2021-10-02",
     "payGrade": "E-2",
     "rank": "SA"
@@ -4908,7 +4908,7 @@
     "dateOfRank": "2023-01-05",
     "firstName": "Emily",
     "lastName": "Clark",
-    "designator": "0000",
+    "designator": "SA",
     "dateReported": "2022-12-08",
     "payGrade": "E-2",
     "rank": "SA"
@@ -4926,7 +4926,7 @@
     "dateOfRank": "2022-01-05",
     "firstName": "Michelle",
     "lastName": "Adams",
-    "designator": "0000",
+    "designator": "SA",
     "dateReported": "2021-08-10",
     "payGrade": "E-2",
     "rank": "SA"
@@ -4944,7 +4944,7 @@
     "dateOfRank": "2024-01-05",
     "firstName": "Joseph",
     "lastName": "Martinez",
-    "designator": "0000",
+    "designator": "SA",
     "dateReported": "2022-07-10",
     "payGrade": "E-2",
     "rank": "SA"
@@ -4962,7 +4962,7 @@
     "dateOfRank": "2025-01-04",
     "firstName": "Richard",
     "lastName": "Clark",
-    "designator": "0000",
+    "designator": "SA",
     "dateReported": "2022-08-01",
     "payGrade": "E-2",
     "rank": "SA"
@@ -4980,7 +4980,7 @@
     "dateOfRank": "2022-01-05",
     "firstName": "Edward",
     "lastName": "Davis",
-    "designator": "0000",
+    "designator": "SA",
     "dateReported": "2021-08-22",
     "payGrade": "E-2",
     "rank": "SA"
@@ -4998,7 +4998,7 @@
     "dateOfRank": "2024-01-05",
     "firstName": "Joseph",
     "lastName": "Campbell",
-    "designator": "0000",
+    "designator": "SA",
     "dateReported": "2022-02-10",
     "payGrade": "E-2",
     "rank": "SA"
@@ -5016,7 +5016,7 @@
     "dateOfRank": "2025-01-04",
     "firstName": "Joshua",
     "lastName": "Smith",
-    "designator": "0000",
+    "designator": "SA",
     "dateReported": "2021-04-20",
     "payGrade": "E-2",
     "rank": "SA"
@@ -5034,7 +5034,7 @@
     "dateOfRank": "2025-01-04",
     "firstName": "Elizabeth",
     "lastName": "Lopez",
-    "designator": "0000",
+    "designator": "SA",
     "dateReported": "2021-02-01",
     "payGrade": "E-2",
     "rank": "SA"
@@ -5052,7 +5052,7 @@
     "dateOfRank": "2025-01-04",
     "firstName": "Kenneth",
     "lastName": "Jackson",
-    "designator": "0000",
+    "designator": "SA",
     "dateReported": "2022-04-21",
     "payGrade": "E-2",
     "rank": "SA"
@@ -5070,7 +5070,7 @@
     "dateOfRank": "2022-01-05",
     "firstName": "Thomas",
     "lastName": "Garcia",
-    "designator": "0000",
+    "designator": "SA",
     "dateReported": "2021-08-10",
     "payGrade": "E-2",
     "rank": "SA"
@@ -5088,7 +5088,7 @@
     "dateOfRank": "2022-01-05",
     "firstName": "Margaret",
     "lastName": "Nelson",
-    "designator": "0000",
+    "designator": "SA",
     "dateReported": "2022-04-25",
     "payGrade": "E-2",
     "rank": "SA"
@@ -5106,7 +5106,7 @@
     "dateOfRank": "2022-01-05",
     "firstName": "Christopher",
     "lastName": "Campbell",
-    "designator": "0000",
+    "designator": "SA",
     "dateReported": "2022-04-13",
     "payGrade": "E-2",
     "rank": "SA"
@@ -5124,7 +5124,7 @@
     "dateOfRank": "2024-01-05",
     "firstName": "Anthony",
     "lastName": "King",
-    "designator": "0000",
+    "designator": "SA",
     "dateReported": "2022-04-16",
     "payGrade": "E-2",
     "rank": "SA"
@@ -5142,7 +5142,7 @@
     "dateOfRank": "2023-01-05",
     "firstName": "Kenneth",
     "lastName": "Scott",
-    "designator": "0000",
+    "designator": "SA",
     "dateReported": "2021-08-08",
     "payGrade": "E-2",
     "rank": "SA"
@@ -5160,7 +5160,7 @@
     "dateOfRank": "2022-01-05",
     "firstName": "Andrew",
     "lastName": "Lewis",
-    "designator": "0000",
+    "designator": "SA",
     "dateReported": "2022-12-18",
     "payGrade": "E-2",
     "rank": "SA"
@@ -5178,7 +5178,7 @@
     "dateOfRank": "2022-01-05",
     "firstName": "Andrew",
     "lastName": "Rodriguez",
-    "designator": "0000",
+    "designator": "SA",
     "dateReported": "2022-11-23",
     "payGrade": "E-2",
     "rank": "SA"
@@ -5196,7 +5196,7 @@
     "dateOfRank": "2024-01-05",
     "firstName": "Kimberly",
     "lastName": "King",
-    "designator": "0000",
+    "designator": "SA",
     "dateReported": "2022-10-25",
     "payGrade": "E-2",
     "rank": "SA"
@@ -5214,7 +5214,7 @@
     "dateOfRank": "2025-01-04",
     "firstName": "Dorothy",
     "lastName": "Robinson",
-    "designator": "0000",
+    "designator": "SA",
     "dateReported": "2021-02-27",
     "payGrade": "E-2",
     "rank": "SA"
@@ -5232,7 +5232,7 @@
     "dateOfRank": "2024-01-05",
     "firstName": "Michael",
     "lastName": "Flores",
-    "designator": "0000",
+    "designator": "SN",
     "dateReported": "2021-05-27",
     "payGrade": "E-3",
     "rank": "SN"
@@ -5250,7 +5250,7 @@
     "dateOfRank": "2025-01-04",
     "firstName": "Amanda",
     "lastName": "Mitchell",
-    "designator": "0000",
+    "designator": "SN",
     "dateReported": "2021-03-18",
     "payGrade": "E-3",
     "rank": "SN"
@@ -5268,7 +5268,7 @@
     "dateOfRank": "2024-01-05",
     "firstName": "Brian",
     "lastName": "Hernandez",
-    "designator": "0000",
+    "designator": "SN",
     "dateReported": "2021-11-05",
     "payGrade": "E-3",
     "rank": "SN"
@@ -5286,7 +5286,7 @@
     "dateOfRank": "2025-01-04",
     "firstName": "Christopher",
     "lastName": "Miller",
-    "designator": "0000",
+    "designator": "SN",
     "dateReported": "2022-12-15",
     "payGrade": "E-3",
     "rank": "SN"
@@ -5304,7 +5304,7 @@
     "dateOfRank": "2023-01-05",
     "firstName": "Jennifer",
     "lastName": "Torres",
-    "designator": "0000",
+    "designator": "SN",
     "dateReported": "2021-09-29",
     "payGrade": "E-3",
     "rank": "SN"
@@ -5322,7 +5322,7 @@
     "dateOfRank": "2024-01-05",
     "firstName": "Mary",
     "lastName": "Walker",
-    "designator": "0000",
+    "designator": "SN",
     "dateReported": "2022-10-03",
     "payGrade": "E-3",
     "rank": "SN"
@@ -5340,7 +5340,7 @@
     "dateOfRank": "2023-01-05",
     "firstName": "Paul",
     "lastName": "Wilson",
-    "designator": "0000",
+    "designator": "SN",
     "dateReported": "2021-08-11",
     "payGrade": "E-3",
     "rank": "SN"
@@ -5358,7 +5358,7 @@
     "dateOfRank": "2022-01-05",
     "firstName": "Sandra",
     "lastName": "Smith",
-    "designator": "0000",
+    "designator": "SN",
     "dateReported": "2021-03-27",
     "payGrade": "E-3",
     "rank": "SN"
@@ -5376,7 +5376,7 @@
     "dateOfRank": "2022-01-05",
     "firstName": "Michelle",
     "lastName": "Walker",
-    "designator": "0000",
+    "designator": "SN",
     "dateReported": "2021-10-04",
     "payGrade": "E-3",
     "rank": "SN"
@@ -5394,7 +5394,7 @@
     "dateOfRank": "2022-01-05",
     "firstName": "Ashley",
     "lastName": "Scott",
-    "designator": "0000",
+    "designator": "SN",
     "dateReported": "2021-07-27",
     "payGrade": "E-3",
     "rank": "SN"
@@ -5412,7 +5412,7 @@
     "dateOfRank": "2025-01-04",
     "firstName": "Daniel",
     "lastName": "Green",
-    "designator": "0000",
+    "designator": "SN",
     "dateReported": "2021-10-20",
     "payGrade": "E-3",
     "rank": "SN"
@@ -5430,7 +5430,7 @@
     "dateOfRank": "2025-01-04",
     "firstName": "Elizabeth",
     "lastName": "Jones",
-    "designator": "0000",
+    "designator": "SN",
     "dateReported": "2022-11-17",
     "payGrade": "E-3",
     "rank": "SN"
@@ -5448,7 +5448,7 @@
     "dateOfRank": "2024-01-05",
     "firstName": "Michelle",
     "lastName": "Rodriguez",
-    "designator": "0000",
+    "designator": "SN",
     "dateReported": "2021-02-04",
     "payGrade": "E-3",
     "rank": "SN"
@@ -5466,7 +5466,7 @@
     "dateOfRank": "2023-01-05",
     "firstName": "Ashley",
     "lastName": "Carter",
-    "designator": "0000",
+    "designator": "SN",
     "dateReported": "2021-04-12",
     "payGrade": "E-3",
     "rank": "SN"
@@ -5484,7 +5484,7 @@
     "dateOfRank": "2024-01-05",
     "firstName": "Linda",
     "lastName": "Rodriguez",
-    "designator": "0000",
+    "designator": "SN",
     "dateReported": "2022-02-09",
     "payGrade": "E-3",
     "rank": "SN"
@@ -5502,7 +5502,7 @@
     "dateOfRank": "2023-01-05",
     "firstName": "Karen",
     "lastName": "Adams",
-    "designator": "0000",
+    "designator": "SN",
     "dateReported": "2022-08-28",
     "payGrade": "E-3",
     "rank": "SN"
@@ -5520,7 +5520,7 @@
     "dateOfRank": "2024-01-05",
     "firstName": "Joshua",
     "lastName": "Mitchell",
-    "designator": "0000",
+    "designator": "MA3",
     "dateReported": "2021-09-28",
     "payGrade": "E-4",
     "rank": "MA3"
@@ -5538,7 +5538,7 @@
     "dateOfRank": "2022-01-05",
     "firstName": "William",
     "lastName": "White",
-    "designator": "0000",
+    "designator": "MA3",
     "dateReported": "2022-10-14",
     "payGrade": "E-4",
     "rank": "MA3"
@@ -5556,7 +5556,7 @@
     "dateOfRank": "2025-01-04",
     "firstName": "Patricia",
     "lastName": "Lopez",
-    "designator": "0000",
+    "designator": "MA3",
     "dateReported": "2021-05-17",
     "payGrade": "E-4",
     "rank": "MA3"
@@ -5574,7 +5574,7 @@
     "dateOfRank": "2023-01-05",
     "firstName": "Ashley",
     "lastName": "Lee",
-    "designator": "0000",
+    "designator": "ET3",
     "dateReported": "2021-04-07",
     "payGrade": "E-4",
     "rank": "ET3"
@@ -5592,7 +5592,7 @@
     "dateOfRank": "2024-01-05",
     "firstName": "William",
     "lastName": "Nguyen",
-    "designator": "0000",
+    "designator": "OS3",
     "dateReported": "2022-07-20",
     "payGrade": "E-4",
     "rank": "OS3"
@@ -5610,7 +5610,7 @@
     "dateOfRank": "2024-01-05",
     "firstName": "Daniel",
     "lastName": "Miller",
-    "designator": "0000",
+    "designator": "QM3",
     "dateReported": "2022-03-29",
     "payGrade": "E-4",
     "rank": "QM3"
@@ -5628,7 +5628,7 @@
     "dateOfRank": "2023-01-05",
     "firstName": "Donna",
     "lastName": "Hernandez",
-    "designator": "0000",
+    "designator": "BM3",
     "dateReported": "2021-02-14",
     "payGrade": "E-4",
     "rank": "BM3"
@@ -5646,7 +5646,7 @@
     "dateOfRank": "2023-01-05",
     "firstName": "Jennifer",
     "lastName": "Ramirez",
-    "designator": "0000",
+    "designator": "ET3",
     "dateReported": "2022-11-24",
     "payGrade": "E-4",
     "rank": "ET3"
@@ -5664,7 +5664,7 @@
     "dateOfRank": "2022-01-05",
     "firstName": "Melissa",
     "lastName": "Perez",
-    "designator": "0000",
+    "designator": "OS3",
     "dateReported": "2021-05-26",
     "payGrade": "E-4",
     "rank": "OS3"
@@ -5682,7 +5682,7 @@
     "dateOfRank": "2024-01-05",
     "firstName": "Richard",
     "lastName": "Sanchez",
-    "designator": "0000",
+    "designator": "MA3",
     "dateReported": "2021-08-04",
     "payGrade": "E-4",
     "rank": "MA3"
@@ -5700,7 +5700,7 @@
     "dateOfRank": "2023-01-05",
     "firstName": "George",
     "lastName": "Baker",
-    "designator": "0000",
+    "designator": "MA3",
     "dateReported": "2022-07-14",
     "payGrade": "E-4",
     "rank": "MA3"
@@ -5718,7 +5718,7 @@
     "dateOfRank": "2024-01-05",
     "firstName": "Michael",
     "lastName": "Baker",
-    "designator": "0000",
+    "designator": "ET3",
     "dateReported": "2022-01-19",
     "payGrade": "E-4",
     "rank": "ET3"
@@ -5736,7 +5736,7 @@
     "dateOfRank": "2022-01-05",
     "firstName": "Joshua",
     "lastName": "Flores",
-    "designator": "0000",
+    "designator": "QM3",
     "dateReported": "2022-02-16",
     "payGrade": "E-4",
     "rank": "QM3"
@@ -5754,7 +5754,7 @@
     "dateOfRank": "2025-01-04",
     "firstName": "Betty",
     "lastName": "Smith",
-    "designator": "0000",
+    "designator": "ET3",
     "dateReported": "2022-04-24",
     "payGrade": "E-4",
     "rank": "ET3"
@@ -5772,7 +5772,7 @@
     "dateOfRank": "2022-01-05",
     "firstName": "Melissa",
     "lastName": "Wilson",
-    "designator": "0000",
+    "designator": "OS3",
     "dateReported": "2021-02-14",
     "payGrade": "E-4",
     "rank": "OS3"
@@ -5790,7 +5790,7 @@
     "dateOfRank": "2022-01-05",
     "firstName": "Jennifer",
     "lastName": "Johnson",
-    "designator": "0000",
+    "designator": "OS3",
     "dateReported": "2022-01-28",
     "payGrade": "E-4",
     "rank": "OS3"
@@ -5808,7 +5808,7 @@
     "dateOfRank": "2022-01-05",
     "firstName": "Steven",
     "lastName": "Rivera",
-    "designator": "0000",
+    "designator": "MA3",
     "dateReported": "2022-07-21",
     "payGrade": "E-4",
     "rank": "MA3"
@@ -5826,7 +5826,7 @@
     "dateOfRank": "2024-01-05",
     "firstName": "Michelle",
     "lastName": "Smith",
-    "designator": "0000",
+    "designator": "QM3",
     "dateReported": "2022-01-03",
     "payGrade": "E-4",
     "rank": "QM3"
@@ -5844,7 +5844,7 @@
     "dateOfRank": "2022-01-05",
     "firstName": "Barbara",
     "lastName": "Gonzalez",
-    "designator": "0000",
+    "designator": "QM2",
     "dateReported": "2022-01-06",
     "payGrade": "E-5",
     "rank": "QM2"
@@ -5862,7 +5862,7 @@
     "dateOfRank": "2022-01-05",
     "firstName": "Sandra",
     "lastName": "Hill",
-    "designator": "0000",
+    "designator": "OS2",
     "dateReported": "2021-02-28",
     "payGrade": "E-5",
     "rank": "OS2"
@@ -5880,7 +5880,7 @@
     "dateOfRank": "2023-01-05",
     "firstName": "Edward",
     "lastName": "Brown",
-    "designator": "0000",
+    "designator": "ET2",
     "dateReported": "2021-05-25",
     "payGrade": "E-5",
     "rank": "ET2"
@@ -5898,7 +5898,7 @@
     "dateOfRank": "2025-01-04",
     "firstName": "James",
     "lastName": "Scott",
-    "designator": "0000",
+    "designator": "MA2",
     "dateReported": "2021-09-22",
     "payGrade": "E-5",
     "rank": "MA2"
@@ -5916,7 +5916,7 @@
     "dateOfRank": "2025-01-04",
     "firstName": "Lisa",
     "lastName": "Hall",
-    "designator": "0000",
+    "designator": "OS2",
     "dateReported": "2021-09-12",
     "payGrade": "E-5",
     "rank": "OS2"
@@ -5934,7 +5934,7 @@
     "dateOfRank": "2024-01-05",
     "firstName": "Robert",
     "lastName": "Garcia",
-    "designator": "0000",
+    "designator": "BM2",
     "dateReported": "2021-10-09",
     "payGrade": "E-5",
     "rank": "BM2"
@@ -5952,7 +5952,7 @@
     "dateOfRank": "2023-01-05",
     "firstName": "George",
     "lastName": "Perez",
-    "designator": "0000",
+    "designator": "QM2",
     "dateReported": "2022-11-20",
     "payGrade": "E-5",
     "rank": "QM2"
@@ -5970,7 +5970,7 @@
     "dateOfRank": "2024-01-05",
     "firstName": "Jessica",
     "lastName": "Allen",
-    "designator": "0000",
+    "designator": "ET2",
     "dateReported": "2022-06-21",
     "payGrade": "E-5",
     "rank": "ET2"
@@ -5988,7 +5988,7 @@
     "dateOfRank": "2025-01-04",
     "firstName": "Kevin",
     "lastName": "Smith",
-    "designator": "0000",
+    "designator": "ET2",
     "dateReported": "2022-09-09",
     "payGrade": "E-5",
     "rank": "ET2"
@@ -6006,7 +6006,7 @@
     "dateOfRank": "2025-01-04",
     "firstName": "Melissa",
     "lastName": "Martinez",
-    "designator": "0000",
+    "designator": "ET2",
     "dateReported": "2022-10-13",
     "payGrade": "E-5",
     "rank": "ET2"
@@ -6024,7 +6024,7 @@
     "dateOfRank": "2024-01-05",
     "firstName": "Edward",
     "lastName": "Moore",
-    "designator": "0000",
+    "designator": "ET2",
     "dateReported": "2021-03-11",
     "payGrade": "E-5",
     "rank": "ET2"
@@ -6042,7 +6042,7 @@
     "dateOfRank": "2022-01-05",
     "firstName": "Kenneth",
     "lastName": "Hernandez",
-    "designator": "0000",
+    "designator": "ET2",
     "dateReported": "2022-05-04",
     "payGrade": "E-5",
     "rank": "ET2"
@@ -6060,7 +6060,7 @@
     "dateOfRank": "2023-01-05",
     "firstName": "Christopher",
     "lastName": "Roberts",
-    "designator": "0000",
+    "designator": "OS2",
     "dateReported": "2022-09-06",
     "payGrade": "E-5",
     "rank": "OS2"
@@ -6078,7 +6078,7 @@
     "dateOfRank": "2025-01-04",
     "firstName": "Betty",
     "lastName": "Baker",
-    "designator": "0000",
+    "designator": "ET2",
     "dateReported": "2022-03-26",
     "payGrade": "E-5",
     "rank": "ET2"
@@ -6096,7 +6096,7 @@
     "dateOfRank": "2024-01-05",
     "firstName": "Brian",
     "lastName": "Torres",
-    "designator": "0000",
+    "designator": "ET2",
     "dateReported": "2021-04-12",
     "payGrade": "E-5",
     "rank": "ET2"
@@ -6114,7 +6114,7 @@
     "dateOfRank": "2024-01-05",
     "firstName": "Kenneth",
     "lastName": "Roberts",
-    "designator": "0000",
+    "designator": "QM1",
     "dateReported": "2021-12-25",
     "payGrade": "E-6",
     "rank": "QM1"
@@ -6132,7 +6132,7 @@
     "dateOfRank": "2023-01-05",
     "firstName": "Patricia",
     "lastName": "Mitchell",
-    "designator": "0000",
+    "designator": "QM1",
     "dateReported": "2022-06-12",
     "payGrade": "E-6",
     "rank": "QM1"
@@ -6150,7 +6150,7 @@
     "dateOfRank": "2025-01-04",
     "firstName": "Ronald",
     "lastName": "Allen",
-    "designator": "0000",
+    "designator": "QM1",
     "dateReported": "2022-01-09",
     "payGrade": "E-6",
     "rank": "QM1"
@@ -6168,7 +6168,7 @@
     "dateOfRank": "2025-01-04",
     "firstName": "Thomas",
     "lastName": "Williams",
-    "designator": "0000",
+    "designator": "ET1",
     "dateReported": "2022-04-15",
     "payGrade": "E-6",
     "rank": "ET1"
@@ -6186,7 +6186,7 @@
     "dateOfRank": "2023-01-05",
     "firstName": "Linda",
     "lastName": "Taylor",
-    "designator": "0000",
+    "designator": "MA1",
     "dateReported": "2021-10-04",
     "payGrade": "E-6",
     "rank": "MA1"
@@ -6204,7 +6204,7 @@
     "dateOfRank": "2025-01-04",
     "firstName": "Kimberly",
     "lastName": "Allen",
-    "designator": "0000",
+    "designator": "BM1",
     "dateReported": "2021-01-15",
     "payGrade": "E-6",
     "rank": "BM1"
@@ -6222,7 +6222,7 @@
     "dateOfRank": "2022-01-05",
     "firstName": "Joshua",
     "lastName": "Anderson",
-    "designator": "0000",
+    "designator": "OS1",
     "dateReported": "2021-08-20",
     "payGrade": "E-6",
     "rank": "OS1"
@@ -6240,7 +6240,7 @@
     "dateOfRank": "2025-01-04",
     "firstName": "Barbara",
     "lastName": "Jones",
-    "designator": "0000",
+    "designator": "OS1",
     "dateReported": "2022-07-29",
     "payGrade": "E-6",
     "rank": "OS1"
@@ -6258,7 +6258,7 @@
     "dateOfRank": "2024-01-05",
     "firstName": "Barbara",
     "lastName": "Taylor",
-    "designator": "0000",
+    "designator": "OS1",
     "dateReported": "2021-10-06",
     "payGrade": "E-6",
     "rank": "OS1"
@@ -6276,7 +6276,7 @@
     "dateOfRank": "2025-01-04",
     "firstName": "Melissa",
     "lastName": "Lee",
-    "designator": "0000",
+    "designator": "ET1",
     "dateReported": "2021-10-04",
     "payGrade": "E-6",
     "rank": "ET1"
@@ -6294,7 +6294,7 @@
     "dateOfRank": "2023-01-05",
     "firstName": "Mark",
     "lastName": "Anderson",
-    "designator": "0000",
+    "designator": "QM1",
     "dateReported": "2021-07-19",
     "payGrade": "E-6",
     "rank": "QM1"
@@ -6312,7 +6312,7 @@
     "dateOfRank": "2025-01-04",
     "firstName": "Sarah",
     "lastName": "Scott",
-    "designator": "0000",
+    "designator": "ET1",
     "dateReported": "2021-04-10",
     "payGrade": "E-6",
     "rank": "ET1"
@@ -6330,7 +6330,7 @@
     "dateOfRank": "2022-01-05",
     "firstName": "James",
     "lastName": "Anderson",
-    "designator": "0000",
+    "designator": "BM1",
     "dateReported": "2021-09-07",
     "payGrade": "E-6",
     "rank": "BM1"
@@ -6348,7 +6348,7 @@
     "dateOfRank": "2023-01-05",
     "firstName": "Anthony",
     "lastName": "Lee",
-    "designator": "0000",
+    "designator": "ET1",
     "dateReported": "2021-08-20",
     "payGrade": "E-6",
     "rank": "ET1"
@@ -6366,7 +6366,7 @@
     "dateOfRank": "2022-01-05",
     "firstName": "Brian",
     "lastName": "Baker",
-    "designator": "0000",
+    "designator": "QM1",
     "dateReported": "2022-02-22",
     "payGrade": "E-6",
     "rank": "QM1"
@@ -6384,7 +6384,7 @@
     "dateOfRank": "2025-01-04",
     "firstName": "Ronald",
     "lastName": "Wilson",
-    "designator": "0000",
+    "designator": "OS1",
     "dateReported": "2021-05-31",
     "payGrade": "E-6",
     "rank": "OS1"
@@ -6402,7 +6402,7 @@
     "dateOfRank": "2025-01-04",
     "firstName": "Brian",
     "lastName": "Taylor",
-    "designator": "0000",
+    "designator": "ET1",
     "dateReported": "2021-03-06",
     "payGrade": "E-6",
     "rank": "ET1"
@@ -6420,7 +6420,7 @@
     "dateOfRank": "2025-01-04",
     "firstName": "Kevin",
     "lastName": "Hill",
-    "designator": "0000",
+    "designator": "QM1",
     "dateReported": "2021-07-04",
     "payGrade": "E-6",
     "rank": "QM1"
@@ -6438,7 +6438,7 @@
     "dateOfRank": "2025-01-04",
     "firstName": "Michelle",
     "lastName": "Moore",
-    "designator": "0000",
+    "designator": "ET1",
     "dateReported": "2022-04-14",
     "payGrade": "E-6",
     "rank": "ET1"
@@ -6456,7 +6456,7 @@
     "dateOfRank": "2024-01-05",
     "firstName": "Mark",
     "lastName": "White",
-    "designator": "0000",
+    "designator": "OS1",
     "dateReported": "2022-11-18",
     "payGrade": "E-6",
     "rank": "OS1"
@@ -6474,7 +6474,7 @@
     "dateOfRank": "2025-01-04",
     "firstName": "Susan",
     "lastName": "Davis",
-    "designator": "0000",
+    "designator": "BM1",
     "dateReported": "2021-02-13",
     "payGrade": "E-6",
     "rank": "BM1"
@@ -6492,7 +6492,7 @@
     "dateOfRank": "2024-01-05",
     "firstName": "Daniel",
     "lastName": "Smith",
-    "designator": "0000",
+    "designator": "QM1",
     "dateReported": "2021-11-05",
     "payGrade": "E-6",
     "rank": "QM1"
@@ -6510,7 +6510,7 @@
     "dateOfRank": "2025-01-04",
     "firstName": "Deborah",
     "lastName": "Harris",
-    "designator": "0000",
+    "designator": "BM1",
     "dateReported": "2022-06-25",
     "payGrade": "E-6",
     "rank": "BM1"
@@ -6528,7 +6528,7 @@
     "dateOfRank": "2023-01-05",
     "firstName": "Kevin",
     "lastName": "Martin",
-    "designator": "0000",
+    "designator": "ET1",
     "dateReported": "2022-01-12",
     "payGrade": "E-6",
     "rank": "ET1"
@@ -6546,7 +6546,7 @@
     "dateOfRank": "2025-01-04",
     "firstName": "Michael",
     "lastName": "King",
-    "designator": "0000",
+    "designator": "ETC",
     "dateReported": "2021-05-12",
     "payGrade": "E-7",
     "rank": "ETC"
@@ -6564,7 +6564,7 @@
     "dateOfRank": "2024-01-05",
     "firstName": "Christopher",
     "lastName": "Allen",
-    "designator": "0000",
+    "designator": "QMC",
     "dateReported": "2021-01-11",
     "payGrade": "E-7",
     "rank": "QMC"
@@ -6582,7 +6582,7 @@
     "dateOfRank": "2024-01-05",
     "firstName": "Christopher",
     "lastName": "Lewis",
-    "designator": "0000",
+    "designator": "MAC",
     "dateReported": "2021-12-28",
     "payGrade": "E-7",
     "rank": "MAC"
@@ -6600,7 +6600,7 @@
     "dateOfRank": "2024-01-05",
     "firstName": "Lisa",
     "lastName": "Scott",
-    "designator": "0000",
+    "designator": "QMC",
     "dateReported": "2021-06-22",
     "payGrade": "E-7",
     "rank": "QMC"
@@ -6618,7 +6618,7 @@
     "dateOfRank": "2024-01-05",
     "firstName": "Deborah",
     "lastName": "King",
-    "designator": "0000",
+    "designator": "OSC",
     "dateReported": "2022-02-14",
     "payGrade": "E-7",
     "rank": "OSC"
@@ -6636,7 +6636,7 @@
     "dateOfRank": "2025-01-04",
     "firstName": "Brian",
     "lastName": "Gonzalez",
-    "designator": "0000",
+    "designator": "MAC",
     "dateReported": "2022-03-02",
     "payGrade": "E-7",
     "rank": "MAC"
@@ -6654,7 +6654,7 @@
     "dateOfRank": "2025-01-04",
     "firstName": "William",
     "lastName": "Robinson",
-    "designator": "0000",
+    "designator": "BMC",
     "dateReported": "2021-04-04",
     "payGrade": "E-7",
     "rank": "BMC"
@@ -6672,7 +6672,7 @@
     "dateOfRank": "2023-01-05",
     "firstName": "Amanda",
     "lastName": "Clark",
-    "designator": "0000",
+    "designator": "QMC",
     "dateReported": "2022-03-27",
     "payGrade": "E-7",
     "rank": "QMC"
@@ -6690,7 +6690,7 @@
     "dateOfRank": "2025-01-04",
     "firstName": "Lisa",
     "lastName": "Wright",
-    "designator": "0000",
+    "designator": "ETC",
     "dateReported": "2021-02-12",
     "payGrade": "E-7",
     "rank": "ETC"
@@ -6708,7 +6708,7 @@
     "dateOfRank": "2025-01-04",
     "firstName": "Michelle",
     "lastName": "White",
-    "designator": "0000",
+    "designator": "ETC",
     "dateReported": "2022-02-27",
     "payGrade": "E-7",
     "rank": "ETC"
@@ -6726,7 +6726,7 @@
     "dateOfRank": "2022-01-05",
     "firstName": "Andrew",
     "lastName": "Harris",
-    "designator": "0000",
+    "designator": "MAC",
     "dateReported": "2021-05-13",
     "payGrade": "E-7",
     "rank": "MAC"
@@ -6744,7 +6744,7 @@
     "dateOfRank": "2025-01-04",
     "firstName": "Susan",
     "lastName": "Johnson",
-    "designator": "0000",
+    "designator": "ETC",
     "dateReported": "2022-01-28",
     "payGrade": "E-7",
     "rank": "ETC"
@@ -6762,7 +6762,7 @@
     "dateOfRank": "2023-01-05",
     "firstName": "David",
     "lastName": "Williams",
-    "designator": "0000",
+    "designator": "BMC",
     "dateReported": "2022-10-21",
     "payGrade": "E-7",
     "rank": "BMC"
@@ -6780,7 +6780,7 @@
     "dateOfRank": "2023-01-05",
     "firstName": "Betty",
     "lastName": "Lewis",
-    "designator": "0000",
+    "designator": "OSC",
     "dateReported": "2021-05-18",
     "payGrade": "E-7",
     "rank": "OSC"
@@ -6798,7 +6798,7 @@
     "dateOfRank": "2022-01-05",
     "firstName": "Kimberly",
     "lastName": "Johnson",
-    "designator": "0000",
+    "designator": "ETC",
     "dateReported": "2021-05-18",
     "payGrade": "E-7",
     "rank": "ETC"
@@ -6816,7 +6816,7 @@
     "dateOfRank": "2025-01-04",
     "firstName": "Melissa",
     "lastName": "Wright",
-    "designator": "0000",
+    "designator": "MAC",
     "dateReported": "2021-05-09",
     "payGrade": "E-7",
     "rank": "MAC"
@@ -6834,7 +6834,7 @@
     "dateOfRank": "2022-01-05",
     "firstName": "Anthony",
     "lastName": "Perez",
-    "designator": "0000",
+    "designator": "OSC",
     "dateReported": "2022-08-08",
     "payGrade": "E-7",
     "rank": "OSC"
@@ -6852,7 +6852,7 @@
     "dateOfRank": "2023-01-05",
     "firstName": "Daniel",
     "lastName": "Martin",
-    "designator": "0000",
+    "designator": "QMC",
     "dateReported": "2021-04-21",
     "payGrade": "E-7",
     "rank": "QMC"
@@ -6870,7 +6870,7 @@
     "dateOfRank": "2022-01-05",
     "firstName": "Richard",
     "lastName": "Jones",
-    "designator": "0000",
+    "designator": "ETC",
     "dateReported": "2021-08-14",
     "payGrade": "E-7",
     "rank": "ETC"
@@ -6888,7 +6888,7 @@
     "dateOfRank": "2024-01-05",
     "firstName": "Charles",
     "lastName": "Harris",
-    "designator": "0000",
+    "designator": "QMC",
     "dateReported": "2021-03-05",
     "payGrade": "E-7",
     "rank": "QMC"
@@ -6906,7 +6906,7 @@
     "dateOfRank": "2024-01-05",
     "firstName": "Lisa",
     "lastName": "Wright",
-    "designator": "0000",
+    "designator": "QMC",
     "dateReported": "2021-03-10",
     "payGrade": "E-7",
     "rank": "QMC"
@@ -6924,7 +6924,7 @@
     "dateOfRank": "2025-01-04",
     "firstName": "Lisa",
     "lastName": "Sanchez",
-    "designator": "0000",
+    "designator": "BMC",
     "dateReported": "2022-01-29",
     "payGrade": "E-7",
     "rank": "BMC"
@@ -6942,7 +6942,7 @@
     "dateOfRank": "2022-01-05",
     "firstName": "Brian",
     "lastName": "White",
-    "designator": "0000",
+    "designator": "MACS",
     "dateReported": "2021-09-22",
     "payGrade": "E-8",
     "rank": "MACS"
@@ -6960,7 +6960,7 @@
     "dateOfRank": "2022-01-05",
     "firstName": "Thomas",
     "lastName": "Robinson",
-    "designator": "0000",
+    "designator": "OSCS",
     "dateReported": "2021-01-27",
     "payGrade": "E-8",
     "rank": "OSCS"
@@ -6978,7 +6978,7 @@
     "dateOfRank": "2022-01-05",
     "firstName": "Sandra",
     "lastName": "King",
-    "designator": "0000",
+    "designator": "QMCS",
     "dateReported": "2021-08-09",
     "payGrade": "E-8",
     "rank": "QMCS"
@@ -6996,7 +6996,7 @@
     "dateOfRank": "2023-01-05",
     "firstName": "Joshua",
     "lastName": "Nguyen",
-    "designator": "0000",
+    "designator": "ETCS",
     "dateReported": "2021-07-12",
     "payGrade": "E-8",
     "rank": "ETCS"
@@ -7014,7 +7014,7 @@
     "dateOfRank": "2024-01-05",
     "firstName": "Anthony",
     "lastName": "Baker",
-    "designator": "0000",
+    "designator": "ETCS",
     "dateReported": "2022-12-16",
     "payGrade": "E-8",
     "rank": "ETCS"
@@ -7032,7 +7032,7 @@
     "dateOfRank": "2022-01-05",
     "firstName": "Michelle",
     "lastName": "Campbell",
-    "designator": "0000",
+    "designator": "ETCS",
     "dateReported": "2021-08-22",
     "payGrade": "E-8",
     "rank": "ETCS"
@@ -7050,7 +7050,7 @@
     "dateOfRank": "2024-01-05",
     "firstName": "Robert",
     "lastName": "Martin",
-    "designator": "0000",
+    "designator": "QMCS",
     "dateReported": "2021-04-24",
     "payGrade": "E-8",
     "rank": "QMCS"
@@ -7068,7 +7068,7 @@
     "dateOfRank": "2025-01-04",
     "firstName": "Sarah",
     "lastName": "Williams",
-    "designator": "0000",
+    "designator": "ETCS",
     "dateReported": "2022-11-25",
     "payGrade": "E-8",
     "rank": "ETCS"
@@ -7086,7 +7086,7 @@
     "dateOfRank": "2024-01-05",
     "firstName": "Sarah",
     "lastName": "Hernandez",
-    "designator": "0000",
+    "designator": "BMCS",
     "dateReported": "2021-08-12",
     "payGrade": "E-8",
     "rank": "BMCS"
@@ -7104,7 +7104,7 @@
     "dateOfRank": "2025-01-04",
     "firstName": "Margaret",
     "lastName": "Lee",
-    "designator": "0000",
+    "designator": "ETCS",
     "dateReported": "2022-09-22",
     "payGrade": "E-8",
     "rank": "ETCS"
@@ -7122,7 +7122,7 @@
     "dateOfRank": "2022-01-05",
     "firstName": "Kenneth",
     "lastName": "Clark",
-    "designator": "0000",
+    "designator": "BMCS",
     "dateReported": "2021-01-03",
     "payGrade": "E-8",
     "rank": "BMCS"
@@ -7140,7 +7140,7 @@
     "dateOfRank": "2022-01-05",
     "firstName": "Emily",
     "lastName": "Taylor",
-    "designator": "0000",
+    "designator": "QMCS",
     "dateReported": "2021-08-27",
     "payGrade": "E-8",
     "rank": "QMCS"
@@ -7158,7 +7158,7 @@
     "dateOfRank": "2023-01-05",
     "firstName": "Karen",
     "lastName": "Baker",
-    "designator": "0000",
+    "designator": "QMCM",
     "dateReported": "2021-07-05",
     "payGrade": "E-9",
     "rank": "QMCM"
@@ -7176,7 +7176,7 @@
     "dateOfRank": "2024-01-05",
     "firstName": "Mark",
     "lastName": "Young",
-    "designator": "0000",
+    "designator": "OSCM",
     "dateReported": "2021-10-25",
     "payGrade": "E-9",
     "rank": "OSCM"
@@ -7194,7 +7194,7 @@
     "dateOfRank": "2022-01-05",
     "firstName": "Deborah",
     "lastName": "Garcia",
-    "designator": "0000",
+    "designator": "OSCM",
     "dateReported": "2021-11-09",
     "payGrade": "E-9",
     "rank": "OSCM"
@@ -7212,7 +7212,7 @@
     "dateOfRank": "2025-01-04",
     "firstName": "David",
     "lastName": "Garcia",
-    "designator": "0000",
+    "designator": "BMCM",
     "dateReported": "2022-04-02",
     "payGrade": "E-9",
     "rank": "BMCM"
@@ -7230,7 +7230,7 @@
     "dateOfRank": "2025-01-04",
     "firstName": "Anthony",
     "lastName": "Mitchell",
-    "designator": "0000",
+    "designator": "ETCM",
     "dateReported": "2022-03-10",
     "payGrade": "E-9",
     "rank": "ETCM"
@@ -7248,7 +7248,7 @@
     "dateOfRank": "2025-01-04",
     "firstName": "Michael",
     "lastName": "Miller",
-    "designator": "0000",
+    "designator": "QMCM",
     "dateReported": "2021-03-06",
     "payGrade": "E-9",
     "rank": "QMCM"
@@ -7266,7 +7266,7 @@
     "dateOfRank": "2025-01-04",
     "firstName": "Joseph",
     "lastName": "Wright",
-    "designator": "0000",
+    "designator": "QMCM",
     "dateReported": "2022-08-22",
     "payGrade": "E-9",
     "rank": "QMCM"
@@ -7284,7 +7284,7 @@
     "dateOfRank": "2022-01-05",
     "firstName": "Margaret",
     "lastName": "Roberts",
-    "designator": "0000",
+    "designator": "BMCM",
     "dateReported": "2022-12-30",
     "payGrade": "E-9",
     "rank": "BMCM"
@@ -7302,7 +7302,7 @@
     "dateOfRank": "2022-01-05",
     "firstName": "Jennifer",
     "lastName": "Perez",
-    "designator": "0000",
+    "designator": "ETCM",
     "dateReported": "2022-10-10",
     "payGrade": "E-9",
     "rank": "ETCM"
@@ -7320,7 +7320,7 @@
     "dateOfRank": "2022-01-05",
     "firstName": "Mark",
     "lastName": "Allen",
-    "designator": "0000",
+    "designator": "ETCM",
     "dateReported": "2021-07-20",
     "payGrade": "E-9",
     "rank": "ETCM"
@@ -7338,7 +7338,7 @@
     "dateOfRank": "2023-01-05",
     "firstName": "Patricia",
     "lastName": "Scott",
-    "designator": "0000",
+    "designator": "OSCM",
     "dateReported": "2022-10-27",
     "payGrade": "E-9",
     "rank": "OSCM"
@@ -7356,7 +7356,7 @@
     "dateOfRank": "2022-01-05",
     "firstName": "Robert",
     "lastName": "Adams",
-    "designator": "0000",
+    "designator": "BMCM",
     "dateReported": "2021-02-02",
     "payGrade": "E-9",
     "rank": "BMCM"
@@ -7374,7 +7374,7 @@
     "dateOfRank": "2022-01-05",
     "firstName": "Joshua",
     "lastName": "Nelson",
-    "designator": "0000",
+    "designator": "OSCM",
     "dateReported": "2021-10-15",
     "payGrade": "E-9",
     "rank": "OSCM"
@@ -7392,7 +7392,7 @@
     "dateOfRank": "2022-01-05",
     "firstName": "Dorothy",
     "lastName": "White",
-    "designator": "0000",
+    "designator": "BMCM",
     "dateReported": "2022-02-10",
     "payGrade": "E-9",
     "rank": "BMCM"
@@ -7410,7 +7410,7 @@
     "dateOfRank": "2022-01-05",
     "firstName": "Joseph",
     "lastName": "Clark",
-    "designator": "0000",
+    "designator": "ETCM",
     "dateReported": "2021-09-13",
     "payGrade": "E-9",
     "rank": "ETCM"
@@ -7428,7 +7428,7 @@
     "dateOfRank": "2022-01-05",
     "firstName": "Jessica",
     "lastName": "Johnson",
-    "designator": "0000",
+    "designator": "MACM",
     "dateReported": "2022-08-25",
     "payGrade": "E-9",
     "rank": "MACM"
@@ -7446,7 +7446,7 @@
     "dateOfRank": "2024-01-05",
     "firstName": "Andrew",
     "lastName": "Rivera",
-    "designator": "0000",
+    "designator": "BMCM",
     "dateReported": "2022-05-10",
     "payGrade": "E-9",
     "rank": "BMCM"
@@ -7464,7 +7464,7 @@
     "dateOfRank": "2022-01-05",
     "firstName": "Jennifer",
     "lastName": "Taylor",
-    "designator": "0000",
+    "designator": "BMCM",
     "dateReported": "2021-03-03",
     "payGrade": "E-9",
     "rank": "BMCM"
@@ -7482,7 +7482,7 @@
     "dateOfRank": "2025-01-04",
     "firstName": "Michael",
     "lastName": "Adams",
-    "designator": "0000",
+    "designator": "QMCM",
     "dateReported": "2021-06-28",
     "payGrade": "E-9",
     "rank": "QMCM"
@@ -7500,7 +7500,7 @@
     "dateOfRank": "2025-01-04",
     "firstName": "Patricia",
     "lastName": "Roberts",
-    "designator": "0000",
+    "designator": "QMCM",
     "dateReported": "2022-10-13",
     "payGrade": "E-9",
     "rank": "QMCM"
@@ -7518,7 +7518,7 @@
     "dateOfRank": "2025-01-04",
     "firstName": "Charles",
     "lastName": "Sanchez",
-    "designator": "0000",
+    "designator": "OSCM",
     "dateReported": "2021-11-18",
     "payGrade": "E-9",
     "rank": "OSCM"
