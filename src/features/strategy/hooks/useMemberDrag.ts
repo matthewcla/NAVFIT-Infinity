@@ -6,30 +6,33 @@ export function useMemberDrag(initialGroups: Record<string, Member[]>) {
 
     // Sync groupOrder with incoming groups (maintenance of state)
     useEffect(() => {
-        setGroupOrder(prev => {
-            const newOrder = { ...prev };
-            let hasChanges = false;
+        const t = setTimeout(() => {
+            setGroupOrder(prev => {
+                const newOrder = { ...prev };
+                let hasChanges = false;
 
-            Object.entries(initialGroups).forEach(([key, list]) => {
-                if (!newOrder[key]) {
-                    // Initial sort alphabetical
-                    newOrder[key] = list
-                        .sort((a, b) => a.name.localeCompare(b.name))
-                        .map(m => m.id);
-                    hasChanges = true;
-                } else {
-                    // Check for new members not in order list
-                    const existingIds = new Set(newOrder[key]);
-                    const newMembers = list.filter(m => !existingIds.has(m.id));
-                    if (newMembers.length > 0) {
-                        newOrder[key] = [...newOrder[key], ...newMembers.map(m => m.id)];
+                Object.entries(initialGroups).forEach(([key, list]) => {
+                    if (!newOrder[key]) {
+                        // Initial sort alphabetical
+                        newOrder[key] = list
+                            .sort((a, b) => a.name.localeCompare(b.name))
+                            .map(m => m.id);
                         hasChanges = true;
+                    } else {
+                        // Check for new members not in order list
+                        const existingIds = new Set(newOrder[key]);
+                        const newMembers = list.filter(m => !existingIds.has(m.id));
+                        if (newMembers.length > 0) {
+                            newOrder[key] = [...newOrder[key], ...newMembers.map(m => m.id)];
+                            hasChanges = true;
+                        }
                     }
-                }
-            });
+                });
 
-            return hasChanges ? newOrder : prev;
-        });
+                return hasChanges ? newOrder : prev;
+            });
+        }, 0);
+        return () => clearTimeout(t);
     }, [initialGroups]);
 
     const handleDragStart = useCallback((e: React.DragEvent, memberId: string, groupKey: string) => {

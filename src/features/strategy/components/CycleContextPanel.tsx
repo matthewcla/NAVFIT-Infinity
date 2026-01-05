@@ -1,5 +1,6 @@
-import React, { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useNavfitStore } from '@/store/useNavfitStore';
+import { useRedistributionStore } from '@/store/useRedistributionStore';
 import type { SummaryGroup, Member } from '@/types';
 import { RscaHeadsUpDisplay } from './RscaHeadsUpDisplay';
 import { generateSummaryGroups } from '@/features/strategy/logic/reportGenerator';
@@ -13,12 +14,18 @@ import {
     Calendar,
     Check,
     X,
+    Send,
+    Sparkles
 } from 'lucide-react';
 
 import { MemberDetailSidebar } from '@/features/dashboard/components/MemberDetailSidebar';
 import { StatusBadge } from './StatusBadge';
-import { PromotionBadge } from './PromotionBadge';
+
+import { QuotaHeadsUpDisplay } from './QuotaHeadsUpDisplay';
 import { CycleMemberList, type RankedMember } from './CycleMemberList';
+import { SubmissionConfirmationModal } from './SubmissionConfirmationModal';
+import { createSummaryGroupContext } from '@/features/strategy/logic/validation';
+import { DEFAULT_CONSTRAINTS } from '@/domain/rsca/constants';
 
 
 interface CycleContextPanelProps {
@@ -34,18 +41,66 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
         projections,
 
         reorderMembers,
+        addSummaryGroup,
+        summaryGroups,
+
         selectedMemberId,
         selectMember,
         setDraggingItemType,
-        updateProjection
+        updateProjection,
+        updateGroupStatus,
+        updateReport
     } = useNavfitStore();
+
+    const { latestResult, requestRedistribution } = useRedistributionStore();
+
     // Reactivity Fix: Ensure we use the latest group state from store, even if parent prop is stale
     const latestGroup = useNavfitStore(state =>
         group ? state.summaryGroups.find(g => g.id === group.id) || group : null
     );
 
-    // Use latestGroup for all derived logic
     const activeGroup = latestGroup || group;
+
+    const handleOptimize = () => {
+        if (!activeGroup || !rsConfig) return;
+
+        // Ensure strict sorting based on current state before optimizing
+        const sortedReports = [...activeGroup.reports].sort((a, b) => b.traitAverage - a.traitAverage);
+
+        const domainMembers = sortedReports.map((r, i) => ({
+            id: r.id,
+            rank: i + 1,
+            mta: r.traitAverage,
+            isAnchor: !!r.isLocked,
+            anchorValue: r.traitAverage,
+            name: r.memberName || 'Unknown'
+        }));
+
+        requestRedistribution(
+            activeGroup.id,
+            domainMembers,
+            DEFAULT_CONSTRAINTS,
+            rsConfig.targetRsca
+        );
+    };
+
+    const handleReorderMembers = (groupId: string, droppedId: string, newOrderIds: string[]) => {
+        // Fix: If this is an auto-generated group (not in store), we must persist it first.
+        const existingGroup = summaryGroups.find(g => g.id === groupId);
+
+        if (!existingGroup && group) {
+            // It's transient. Add it to store first.
+            addSummaryGroup(group);
+            // Now reorder (store will find it by ID)
+            reorderMembers(groupId, droppedId, newOrderIds);
+        } else {
+            // Normal path
+            reorderMembers(groupId, droppedId, newOrderIds);
+        }
+    };
+
+    // Use latestGroup for all derived logic
+    // const activeGroup = latestGroup || group; // Moved up for usage in handleOptimize
 
     // Derived Stats using the "Dashboard" logic for advanced metrics
     const contextData = useMemo(() => {
@@ -56,6 +111,9 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
 
         // Derive Rank from competitiveGroupKey (e.g., "O-3 1110" -> "O-3") or use paygrade
         const rank = activeGroup.paygrade || (activeGroup.competitiveGroupKey ? activeGroup.competitiveGroupKey.split(' ')[0] : 'Unknown');
+        // Robust Enlisted Check: Start with E or explicitly matched paygrades
+        const isEnlisted = rank.startsWith('E') || ['E-1', 'E-2', 'E-3', 'E-4', 'E-5', 'E-6', 'E-7', 'E-8', 'E-9'].includes(activeGroup.paygrade || '');
+
 
         // Calculate Rank-Wide Cumulative Average (Current State of all reports)
         const cumulativeRsca = calculateCumulativeRSCA(allGroups, rank);
@@ -84,12 +142,22 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
                 const currentMta = projections[report.id] || report.traitAverage || 0;
                 const rscaMargin = currentMta - cumulativeRsca;
 
+                // Robust Fallback: Use Report Snapshot if Roster Lookup Fails
+                const name = member
+                    ? `${member.lastName}, ${member.firstName}`
+                    : (report.memberName || 'Unknown');
+
+                // For Enlisted: strictly use member.rank (e.g. "BM1") if available.
+                // Fallback to report.memberRank, then to paygrade "rank" variable.
+                const memberRank = member?.rank || report.memberRank || report.grade || rank;
+                const memberDesignator = member?.designator || report.designator || '';
+
                 return {
                     id: report.memberId, // Use memberId for selection
                     reportId: report.id,
-                    name: member ? `${member.lastName}, ${member.firstName}` : 'Unknown',
-                    rank: member?.rank || rank,
-                    designator: member?.designator || '',
+                    name,
+                    rank: memberRank,
+                    designator: memberDesignator,
                     promRec: report.promotionRecommendation || 'NOB',
                     mta: currentMta,
                     delta: 0, // Placeholder for delta logic if history exists
@@ -97,10 +165,12 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
                     reportsRemaining: report.reportsRemaining,
                     report
                 };
-            });
+            })
+            // Ensure Strict Sorting for Display
+            .sort((a, b) => b.mta - a.mta);
 
         // Calculate Distribution
-        const distribution: Record<string, number> = { SP: 0, PR: 0, P: 0, MP: 0, EP: 0 };
+        const distribution: { [key: string]: number; SP: number; PR: number; P: number; MP: number; EP: number; } = { SP: 0, PR: 0, P: 0, MP: 0, EP: 0 };
         activeGroup.reports.forEach(r => {
             const rec = r.promotionRecommendation;
             if (rec === 'SP') distribution.SP++;
@@ -110,6 +180,9 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
             else if (rec === 'EP') distribution.EP++;
         });
 
+        // Create Domain Context
+        const domainContext = createSummaryGroupContext(activeGroup);
+
         return {
             cumulativeRsca,
             rank,
@@ -118,25 +191,24 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
             mainDraftStatus,
             rankedMembers,
             distribution,
+            domainContext,
             eotRsca: calculateEotRsca(
                 roster,
                 cumulativeRsca,
                 rsConfig.totalReports || 100, // Fallback if 0
                 rsConfig.changeOfCommandDate
-            )
+            ),
+            isEnlisted
         };
     }, [activeGroup, roster, rsConfig, projections]); // Depend on activeGroup
 
     // Local Rank Mode State
-    const [isRankingMode, setIsRankingMode] = React.useState(false);
+    const [isRankingMode, setIsRankingMode] = useState(false);
+    const [isSubmitModalOpen, setIsSubmitModalOpen] = useState(false);
 
     // Local Drag State for Live Reordering (iOS-style)
-    // Initialize as null. When dragging starts, populate with current list.
-    // While dragging, this local list is what gets mutated and rendered.
-    // On drop, we just read the final order from here and dispatch to store.
-
-    const [localOrderedMembers, setLocalOrderedMembers] = React.useState<RankedMember[] | null>(null);
-    const [draggedReportId, setDraggedReportId] = React.useState<string | null>(null);
+    const [localOrderedMembers, setLocalOrderedMembers] = useState<RankedMember[] | null>(null);
+    const [draggedReportId, setDraggedReportId] = useState<string | null>(null);
 
 
     if (!activeGroup || !contextData) {
@@ -148,7 +220,7 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
         );
     }
 
-    const { cumulativeRsca, gap, mainDraftStatus, rankedMembers, distribution, eotRsca } = contextData;
+    const { cumulativeRsca, gap, mainDraftStatus, rankedMembers, distribution, eotRsca, totalReports, domainContext, isEnlisted } = contextData;
 
     // Helper for Badge
     const getPromotionStatusBadge = (s?: string) => {
@@ -172,6 +244,13 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
 
     const formattedDate = new Date(activeGroup.periodEndDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
 
+    const handleConfirmSubmit = () => {
+        // Use the newly implemented store action to update status to "Submitted"
+        if (updateGroupStatus && activeGroup) {
+            updateGroupStatus(activeGroup.id, "Submitted");
+        }
+        setIsSubmitModalOpen(false);
+    };
 
 
     return (
@@ -198,13 +277,21 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
                                 </div>
                             </div>
 
-                            {/* Status Badges (Moved to Top Right) */}
-                            <div className="flex flex-col items-end gap-1.5">
-                                {gap > 0 && (
-                                    <div className="flex items-center gap-1.5 px-2.5 py-1 bg-amber-50 rounded text-xs font-semibold text-amber-700 border border-amber-200">
-                                        {gap} Attention Needed
+                            <div className="flex flex-col items-end gap-1.5 pl-4">
+                                {/* Submit Control - Morphing Style */}
+                                <button
+                                    onClick={() => setIsSubmitModalOpen(true)}
+                                    disabled={!latestResult[activeGroup.id] || activeGroup.status === 'Submitted'}
+                                    className="group relative flex items-center justify-center h-11 bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-200 disabled:text-slate-400 text-white rounded-full shadow-sm transition-all duration-300 ease-in-out w-11 hover:w-36 overflow-hidden"
+                                    title="Submit Strategy to Review"
+                                >
+                                    <div className="absolute left-0 w-11 h-11 flex items-center justify-center shrink-0">
+                                        <Send className="w-5 h-5" />
                                     </div>
-                                )}
+                                    <span className="whitespace-nowrap font-bold text-xs uppercase tracking-wide opacity-0 group-hover:opacity-100 transition-opacity duration-300 pl-10 pr-4 delay-75">
+                                        Submit Group
+                                    </span>
+                                </button>
                             </div>
                         </div>
 
@@ -221,21 +308,10 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
                                 />
                             </div>
 
-                            {/* 2B. Promotion Recommendation Scoreboard (Right) - Framed & Flexible */}
+                            {/* 2B. Promotion Recommendation Quota HUD (Right) - Framed & Flexible */}
                             <div className="flex-1 rounded-xl border border-slate-200 shadow-sm overflow-hidden bg-white/50">
-                                <div className="flex items-center justify-around h-full px-4 bg-white/95 backdrop-blur-sm transition-all duration-300">
-                                    {['SP', 'PR', 'P', 'MP', 'EP'].map((key) => (
-                                        <div key={key} className="flex flex-col items-center gap-1 min-w-[32px]">
-                                            <span className="text-xl font-bold text-slate-700 leading-none">
-                                                {distribution[key] || 0}
-                                            </span>
-                                            <PromotionBadge
-                                                recommendation={key}
-                                                size="sm"
-                                                className="rounded-[3px] !text-[10px] !py-0.5 !px-2 h-auto min-h-0 uppercase tracking-wider"
-                                            />
-                                        </div>
-                                    ))}
+                                <div className="h-full bg-white/95 backdrop-blur-sm transition-all duration-300">
+                                    <QuotaHeadsUpDisplay distribution={distribution} totalReports={totalReports} context={domainContext} />
                                 </div>
                             </div>
                         </div>
@@ -294,12 +370,24 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
                                                 <BarChart className="w-3.5 h-3.5 text-slate-500" />
                                                 <span>Waterfall</span>
                                             </button>
+
+                                            {/* Optimize Button */}
+                                            <button
+                                                onClick={handleOptimize}
+                                                className="flex items-center justify-center gap-2 px-3 py-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 rounded-lg transition-colors text-xs font-medium"
+                                                title="Optimize MTA Distribution"
+                                            >
+                                                <Sparkles className="w-3.5 h-3.5 text-indigo-500" />
+                                                <span>Optimize</span>
+                                            </button>
+
                                         </>
                                     )}
                                 </div>
 
-                                {/* Right: Workspace Control */}
-                                <div className="flex items-center gap-2 text-[10px] px-2">
+                                {/* Right: Workspace Control & Alerts */}
+                                <div className="flex items-center gap-3 text-[10px] px-2">
+
                                     {!isRankingMode && (
                                         <button
                                             onClick={onOpenWorkspace}
@@ -308,6 +396,13 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
                                             <ArrowRight className="w-3.5 h-3.5 text-slate-500" />
                                             <span>Workspace</span>
                                         </button>
+                                    )}
+
+                                    {/* Moved Alert Badge - Adjusted to be Right-Most Edge */}
+                                    {gap > 0 && (
+                                        <div className="flex items-center gap-1.5 px-2.5 py-1.5 bg-amber-50 rounded-md text-xs font-bold text-amber-700 border border-amber-200 shadow-sm animate-in fade-in slide-in-from-right-2">
+                                            <span>{gap} Attention Needed</span>
+                                        </div>
                                     )}
                                 </div>
                             </div>
@@ -318,6 +413,7 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
                 {/* 3. Member List (Scrollable Main) */}
                 <CycleMemberList
                     isRankingMode={isRankingMode}
+                    isEnlisted={isEnlisted}
                     rankedMembers={rankedMembers as RankedMember[]}
                     localOrderedMembers={localOrderedMembers}
                     setLocalOrderedMembers={setLocalOrderedMembers}
@@ -326,7 +422,7 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
                     activeGroupId={activeGroup.id}
                     selectedMemberId={selectedMemberId}
                     onSelectMember={selectMember}
-                    onReorderMembers={reorderMembers}
+                    onReorderMembers={handleReorderMembers}
                     setDraggingItemType={setDraggingItemType}
                 />
             </div>
@@ -352,21 +448,62 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
                                 ...m,
                                 name: `${m.lastName}, ${m.firstName}`,
                                 history: m.history || [],
-                                status: (m.status as any) || 'Onboard' // Ensure status matches expected union
+                                status: (m.status as Member['status']) || 'Onboard' // Ensure status matches expected union
                             } as unknown as Member;
                         })()}
                         currentReport={activeGroup.reports.find(r => r.memberId === selectedMemberId)}
-                        groupStats={{ currentRSCA: cumulativeRsca, projectedRSCA: cumulativeRsca }} // TODO: Calculate actual proj RSCA
+
+                        quotaContext={{
+                            distribution,
+                            totalReports
+                        }}
+                        groupContext={domainContext}
+                        groupId={activeGroup.id}
+                        isRankingMode={isRankingMode}
+
+                        // Pass Rank Context
+                        rankContext={(() => {
+                            const index = rankedMembers.findIndex(m => m.id === selectedMemberId);
+                            if (index === -1) return undefined;
+
+                            // "Next Rank" (Ahead/Better) - Lower indices
+                            // Get up to 5 members before current index (reversed to be closest first)
+                            const nextStart = Math.max(0, index - 5);
+                            const nextRanks = rankedMembers.slice(nextStart, index).reverse().map((m, i) => ({
+                                mta: m.mta,
+                                rank: index - i // index is current rank-1. So neighbor is rank (index-i)
+                            }));
+
+                            // "Prev Rank" (Behind/Worse) - Higher indices
+                            // Get up to 5 members after current index
+                            const prevEnd = Math.min(rankedMembers.length, index + 6);
+                            const prevRanks = rankedMembers.slice(index + 1, prevEnd).map((m, i) => ({
+                                mta: m.mta,
+                                rank: index + 2 + i // index+1 is next rank (#index+2)
+                            }));
+
+                            return {
+                                currentRank: index + 1,
+                                nextRanks,
+                                prevRanks
+                            };
+                        })()}
+
                         onClose={() => selectMember(null)}
                         onUpdateMTA={(id, val) => {
                             const report = activeGroup.reports.find(r => r.memberId === id);
                             if (report) {
-                                updateProjection(report.id, val);
+                                updateProjection(activeGroup.id, report.id, val);
                             }
                         }}
                         onUpdatePromRec={(id, rec) => {
-                            // TODO: Integrate with store action
-                            console.log('Update PromRec:', id, rec);
+                            const report = activeGroup.reports.find(r => r.memberId === id);
+                            if (report) {
+                                // Manual Update: Call updateReport (Method 2)
+                                // This action includes quota validation but does not FORCE auto-assignment of others
+                                // preserving the "Manual" nature of this specific interaction.
+                                updateReport(activeGroup.id, report.id, { promotionRecommendation: rec });
+                            }
                         }}
                         onNavigatePrev={() => {
                             const idx = rankedMembers.findIndex(m => m.id === selectedMemberId);
@@ -380,6 +517,15 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
                 )
             }
 
+            {latestResult[activeGroup.id] && (
+                <SubmissionConfirmationModal
+                    isOpen={isSubmitModalOpen}
+                    onClose={() => setIsSubmitModalOpen(false)}
+                    onConfirm={handleConfirmSubmit}
+                    groupId={activeGroup.id}
+                    result={latestResult[activeGroup.id]!}
+                />
+            )}
 
         </div >
     );

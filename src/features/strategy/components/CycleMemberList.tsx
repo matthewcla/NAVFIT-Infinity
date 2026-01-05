@@ -1,6 +1,8 @@
-import { GripVertical } from 'lucide-react';
+import { GripVertical, Lock } from 'lucide-react';
 import { PromotionBadge } from './PromotionBadge';
 import { MemberReportRow } from './MemberReportRow';
+import type { Report } from '@/types';
+import { useNavfitStore } from '@/store/useNavfitStore';
 
 export interface RankedMember {
     id: string;
@@ -13,11 +15,12 @@ export interface RankedMember {
     delta: number;
     rscaMargin: number;
     reportsRemaining: number | undefined;
-    report: any;
+    report: Report;
 }
 
 interface CycleMemberListProps {
     isRankingMode: boolean;
+    isEnlisted: boolean; // Explicit control from parent
     rankedMembers: RankedMember[];
     localOrderedMembers: RankedMember[] | null;
     setLocalOrderedMembers: (members: RankedMember[] | null) => void;
@@ -32,6 +35,7 @@ interface CycleMemberListProps {
 
 export function CycleMemberList({
     isRankingMode,
+    isEnlisted,
     rankedMembers,
     localOrderedMembers,
     setLocalOrderedMembers,
@@ -45,6 +49,7 @@ export function CycleMemberList({
 }: CycleMemberListProps) {
 
     const membersToRender = localOrderedMembers || rankedMembers;
+    const { selectMember } = useNavfitStore(); // Used for close on drag
 
     return (
         <div className="flex-1 overflow-y-auto">
@@ -67,13 +72,15 @@ export function CycleMemberList({
                         <tr>
                             <th className="px-4 py-3 border-b border-slate-200 w-12 text-center">#</th>
                             <th className="w-8 px-0 py-3 border-b border-slate-200"></th> {/* Spacer for Handle */}
-                            <th className="px-4 py-3 border-b border-slate-200 text-left">Name</th>
-                            <th className="px-4 py-3 border-b border-slate-200 text-center">Rate/Des</th>
-                            <th className="px-4 py-3 border-b border-slate-200 text-center" title="Projected reports remaining until PRD"># Rpts</th>
-                            <th className="px-4 py-3 border-b border-slate-200 text-center">Rec</th>
-                            <th className="px-4 py-3 border-b border-slate-200 text-center">MTA</th>
-                            <th className="px-4 py-3 border-b border-slate-200 text-center">Delta</th>
-                            <th className="px-4 py-3 border-b border-slate-200 text-center">Margin</th>
+                            <th className="px-4 py-3 border-b border-slate-200 text-left w-[30%]">Name</th>
+                            <th className="px-4 py-3 border-b border-slate-200 text-center w-24">
+                                {isEnlisted ? 'Rate/Rank' : 'Desig'}
+                            </th>
+                            <th className="px-4 py-3 border-b border-slate-200 text-center w-16" title="Projected reports remaining until PRD"># Rpts</th>
+                            <th className="px-4 py-3 border-b border-slate-200 text-center w-16">Rec</th>
+                            <th className="px-4 py-3 border-b border-slate-200 text-center w-20">MTA</th>
+                            <th className="px-4 py-3 border-b border-slate-200 text-center w-20">Delta</th>
+                            <th className="px-4 py-3 border-b border-slate-200 text-center w-20">Margin</th>
                         </tr>
                     )}
                 </thead>
@@ -82,8 +89,15 @@ export function CycleMemberList({
                         membersToRender.map((member, idx) => (
                             <tr
                                 key={member.reportId}
-                                draggable
+                                draggable={!member.report.isLocked}
                                 onDragStart={(e) => {
+                                    if (member.report.isLocked) {
+                                        e.preventDefault();
+                                        return;
+                                    }
+                                    // Close Sidebar on Drag Start
+                                    selectMember(null);
+
                                     setLocalOrderedMembers(rankedMembers);
                                     setDraggedReportId(member.reportId);
                                     e.dataTransfer.setData('text/plain', member.reportId);
@@ -97,6 +111,13 @@ export function CycleMemberList({
 
                                     const draggedIndex = localOrderedMembers.findIndex(m => m.reportId === draggedReportId);
                                     const hoverIndex = idx;
+
+                                    // Check if target slot is occupied by a locked member?
+                                    // Reordering logic here is simple array splice.
+                                    // If I drop "above" a locked member, it should just shift.
+                                    // But if I "swap" with a locked member...
+                                    // This logic just reorders the list.
+                                    // Strict sorting will happen on drop when we calculate MTAs.
 
                                     if (draggedIndex === -1 || draggedIndex === hoverIndex) return;
 
@@ -119,7 +140,7 @@ export function CycleMemberList({
                                     setDraggedReportId(null);
                                     setLocalOrderedMembers(null);
                                 }}
-                                className={`group bg-white border-b border-slate-100 last:border-0 transition-colors cursor-move ${draggedReportId === member.reportId
+                                className={`group bg-white border-b border-slate-100 last:border-0 transition-colors ${member.report.isLocked ? 'cursor-default' : 'cursor-move'} ${draggedReportId === member.reportId
                                     ? 'opacity-50 bg-slate-50 ring-2 ring-inset ring-indigo-500/20 z-10 relative'
                                     : 'hover:bg-slate-50'
                                     }`}
@@ -128,9 +149,15 @@ export function CycleMemberList({
                                     {idx + 1}
                                 </td>
                                 <td className="w-10 px-2 py-3 text-center">
-                                    <div className="flex items-center justify-center p-1 rounded hover:bg-slate-200/50 text-slate-400 group-hover:text-slate-600 transition-colors cursor-grab active:cursor-grabbing">
-                                        <GripVertical className="w-4 h-4" />
-                                    </div>
+                                    {member.report.isLocked ? (
+                                        <div className="flex items-center justify-center p-1 text-red-400">
+                                            <Lock className="w-3.5 h-3.5" />
+                                        </div>
+                                    ) : (
+                                        <div className="flex items-center justify-center p-1 rounded hover:bg-slate-200/50 text-slate-400 group-hover:text-slate-600 transition-colors cursor-grab active:cursor-grabbing">
+                                            <GripVertical className="w-4 h-4" />
+                                        </div>
+                                    )}
                                 </td>
                                 <td className="px-4 py-3 text-sm font-medium text-slate-900">
                                     {member.name}
@@ -153,7 +180,8 @@ export function CycleMemberList({
                                 groupId={activeGroupId}
                                 index={idx}
                                 name={member.name}
-                                designator={member.designator}
+                                // Ensure Rate/Rank (member.rank) is used for Enlisted, falling back to designator for Officers
+                                designator={isEnlisted ? member.rank : member.designator}
                                 reportsRemaining={member.reportsRemaining}
                                 promRec={member.promRec}
                                 mta={member.mta}

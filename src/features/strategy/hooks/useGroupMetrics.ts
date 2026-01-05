@@ -12,7 +12,7 @@ export function useGroupMetrics({ groupList, projections, startDate }: GroupMetr
         // Calculate Trend Points (RSCA - Running Cumulative Average)
         // 1. Flatten and Apply Projections
         const allReports = groupList.flatMap(m => {
-            return m.history.map(r => ({
+            return (m.history || []).map(r => ({
                 ...r,
                 // Use projection if available, else original
                 effectiveAverage: (projections && projections[r.id] !== undefined)

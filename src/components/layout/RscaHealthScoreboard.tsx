@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { Activity } from 'lucide-react';
 import { useSummaryGroups } from '@/features/strategy/hooks/useSummaryGroups';
+import type { Report } from '@/types';
 
 // Color map for style
 const STATUS_STYLES = {
@@ -39,7 +40,7 @@ export function RscaHealthScoreboard() {
 
     const groupHealth = useMemo(() => {
         // 1. Group by Competitive Category (e.g. "O-3 URL")
-        const compGroups: Record<string, { reports: any[], members: Set<string> }> = {};
+        const compGroups: Record<string, { reports: Report[], members: Set<string> }> = {};
 
         summaryGroups.forEach(sg => {
             if (!compGroups[sg.name]) {

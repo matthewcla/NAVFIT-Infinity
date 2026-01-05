@@ -58,8 +58,10 @@ export function useGhostBaseline({
         if (currentGrade > 0 && previousGrade > 0 && currentGrade < previousGrade) {
             // Check if we already have the text to avoid overwriting user edits or looping
             if (!currentOpeningStatement && !currentComments) {
-                onApplyGhostText(GHOST_BASELINE_TEXT);
-                setShowGhostToast(true);
+                setTimeout(() => {
+                    onApplyGhostText(GHOST_BASELINE_TEXT);
+                    setShowGhostToast(true);
+                }, 0);
             }
         }
     }, [
