@@ -68,38 +68,24 @@ export const useRedistributionStore = create<RedistributionStoreState>((set, get
             }
         }));
 
-        // Update NavfitStore
+        // Update NavfitStore - Projections Only
+        // We do NOT update summaryGroups (Source of Truth) automatically.
+        // The engine provides a "Projection" (preview) which is stored in `projections`.
+        // The user must explicitly "Apply" or "Accept" changes to commit them to summaryGroups.
+        // This prevents the "Accept" action (single member edit) from accidentally overwriting
+        // the entire group with potentially unstable engine results.
+
         const navfitStore = useNavfitStore.getState();
-        const groupIndex = navfitStore.summaryGroups.findIndex(g => g.id === groupId);
+        const updatedMembers = result.updatedMembers;
 
-        if (groupIndex !== -1) {
-            const group = navfitStore.summaryGroups[groupIndex];
-            const updatedMembers = result.updatedMembers;
+        const newProjections = { ...navfitStore.projections };
+        updatedMembers.forEach(m => {
+            newProjections[m.id] = m.mta;
+        });
 
-            const newReports = group.reports.map(report => {
-                const updated = updatedMembers.find(m => m.id === report.id);
-                if (updated) {
-                    return {
-                        ...report,
-                        traitAverage: updated.mta,
-                    };
-                }
-                return report;
-            });
-
-            const newSummaryGroups = [...navfitStore.summaryGroups];
-            newSummaryGroups[groupIndex] = { ...group, reports: newReports };
-
-            const newProjections = { ...navfitStore.projections };
-            updatedMembers.forEach(m => {
-                newProjections[m.id] = m.mta;
-            });
-
-            useNavfitStore.setState({
-                summaryGroups: newSummaryGroups,
-                projections: newProjections
-            });
-        }
+        useNavfitStore.setState({
+            projections: newProjections
+        });
     };
 
     const debouncedCalculate = debounce((groupId: string, members: Member[], constraints: Constraints, targetRSCA?: number) => {
