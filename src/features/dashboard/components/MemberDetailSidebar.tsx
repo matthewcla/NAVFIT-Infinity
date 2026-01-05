@@ -10,7 +10,8 @@ import {
     Minus,
     Plus,
     Edit,
-    AlertCircle
+    AlertCircle,
+    Check
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { RankChangeModal } from './RankChangeModal';
@@ -85,7 +86,9 @@ export function MemberDetailSidebar({
     // Reset state when member changes
     useEffect(() => {
         setTimeout(() => {
-            setSimulatedMta(currentReport?.traitAverage || 3.00);
+            const mta = currentReport?.traitAverage || 3.00;
+            setSimulatedMta(mta);
+            setMtaInputValue(mta.toFixed(2)); // Init string value
             setSimulatedRec(currentReport?.promotionRecommendation || 'P');
             setPreviousMta(null);
             setShowWarning(false);
@@ -94,6 +97,17 @@ export function MemberDetailSidebar({
             setCollisionNudge(null);
         }, 0);
     }, [memberId, currentReport]);
+
+    // Local string state for input field to allow typing "3." without auto-formatting
+    const [mtaInputValue, setMtaInputValue] = useState((currentReport?.traitAverage || 3.00).toFixed(2));
+    const [isEditingMta, setIsEditingMta] = useState(false);
+
+    // Sync input with simulatedMta when not editing (e.g. slider usage)
+    useEffect(() => {
+        if (!isEditingMta) {
+            setMtaInputValue(simulatedMta.toFixed(2));
+        }
+    }, [simulatedMta, isEditingMta]);
 
 
     // --- Rank Change Logic ---
@@ -317,10 +331,38 @@ export function MemberDetailSidebar({
         }
     };
 
-    const handleApply = () => {
+    const handleAccept = () => {
         onUpdateMTA(memberId, simulatedMta);
         onUpdatePromRec(memberId, simulatedRec);
-        onNavigateNext();
+        onClose();
+    };
+
+    const handleMtaBlur = () => {
+        setIsEditingMta(false);
+        let val = parseFloat(mtaInputValue);
+        if (isNaN(val)) val = simulatedMta;
+
+        // Clamp to valid range if needed, or rely on handleMtaChange logic?
+        // Existing input had min 3.00 max 5.00.
+        val = Math.max(3.00, Math.min(5.00, val));
+
+        const formatted = val.toFixed(2);
+        setMtaInputValue(formatted);
+        handleMtaChange(parseFloat(formatted));
+    };
+
+    const handleMtaLocalChange = (strVal: string) => {
+        setMtaInputValue(strVal);
+        const floatVal = parseFloat(strVal);
+        if (!isNaN(floatVal)) {
+            // We don't strictly clamp here to allow typing, 
+            // but we can pass to handleMtaChange which handles logic
+            // prevent handleMtaChange from rejecting partial inputs like "3."?
+            // No, handleMtaChange takes a number. "3." is 3. 
+            // It updates simulatedMta. 
+            // Since isEditingMta=true, useEffect won't clobber input.
+            handleMtaChange(floatVal);
+        }
     };
 
     // Calculate Slider Positions (Scale 3.00 - 5.00)
@@ -511,12 +553,11 @@ export function MemberDetailSidebar({
 
                             <div className="flex flex-col items-end gap-2">
                                 <input
-                                    type="number"
-                                    step="0.01"
-                                    min="3.00"
-                                    max="5.00"
-                                    value={simulatedMta}
-                                    onChange={(e) => handleMtaChange(parseFloat(e.target.value))}
+                                    type="text"
+                                    value={mtaInputValue}
+                                    onChange={(e) => handleMtaLocalChange(e.target.value)}
+                                    onFocus={() => setIsEditingMta(true)}
+                                    onBlur={handleMtaBlur}
                                     disabled={isLocked || simulatedRec === 'NOB'}
                                     className="w-24 text-right text-2xl font-black text-slate-900 bg-transparent border-b-2 border-slate-200 focus:border-indigo-500 focus:outline-none p-0 focus:ring-0 disabled:opacity-50 font-mono"
                                 />
@@ -707,13 +748,22 @@ export function MemberDetailSidebar({
                     </button>
                     <div className="flex-1" />
 
-                    <button
-                        onClick={handleApply}
-                        className="px-6 py-2.5 bg-indigo-600 text-white text-sm font-bold rounded-lg hover:bg-indigo-700 shadow-md hover:shadow-lg active:transform active:scale-[0.98] transition-all flex items-center gap-2"
-                    >
-                        Apply & Next
-                        <ChevronRight className="w-4 h-4 opacity-70" />
-                    </button>
+                    {isLocked ? (
+                        <button
+                            onClick={onClose}
+                            className="px-6 py-2.5 bg-white text-slate-700 text-sm font-bold rounded-lg border border-slate-300 hover:bg-slate-50 shadow-sm transition-all"
+                        >
+                            Close
+                        </button>
+                    ) : (
+                        <button
+                            onClick={handleAccept}
+                            className="px-6 py-2.5 bg-indigo-600 text-white text-sm font-bold rounded-lg hover:bg-indigo-700 shadow-md hover:shadow-lg active:transform active:scale-[0.98] transition-all flex items-center gap-2"
+                        >
+                            <Check className="w-4 h-4" />
+                            Accept
+                        </button>
+                    )}
                 </div>
             </div>
 
