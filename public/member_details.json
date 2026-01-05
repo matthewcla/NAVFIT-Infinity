@@ -5523,7 +5523,8 @@
     "designator": "MA3",
     "dateReported": "2021-09-28",
     "payGrade": "E-4",
-    "rank": "MA3"
+    "rank": "MA3",
+    "rating": "MA"
   },
   "1fa34b6d-5293-44c1-a092-199ad1c2cf4a": {
     "id": "1fa34b6d-5293-44c1-a092-199ad1c2cf4a",
@@ -5541,7 +5542,8 @@
     "designator": "MA3",
     "dateReported": "2022-10-14",
     "payGrade": "E-4",
-    "rank": "MA3"
+    "rank": "MA3",
+    "rating": "MA"
   },
   "4b99e72e-d022-45ba-aa3f-23d085610f02": {
     "id": "4b99e72e-d022-45ba-aa3f-23d085610f02",
@@ -5559,7 +5561,8 @@
     "designator": "MA3",
     "dateReported": "2021-05-17",
     "payGrade": "E-4",
-    "rank": "MA3"
+    "rank": "MA3",
+    "rating": "MA"
   },
   "c1b57f00-6131-42c5-b92c-5ce9499f19ed": {
     "id": "c1b57f00-6131-42c5-b92c-5ce9499f19ed",
@@ -5577,7 +5580,8 @@
     "designator": "ET3",
     "dateReported": "2021-04-07",
     "payGrade": "E-4",
-    "rank": "ET3"
+    "rank": "ET3",
+    "rating": "ET"
   },
   "cf3a5f96-0d5d-4c1c-a1a8-fdae19486dc1": {
     "id": "cf3a5f96-0d5d-4c1c-a1a8-fdae19486dc1",
@@ -5595,7 +5599,8 @@
     "designator": "OS3",
     "dateReported": "2022-07-20",
     "payGrade": "E-4",
-    "rank": "OS3"
+    "rank": "OS3",
+    "rating": "OS"
   },
   "2baf912f-33cc-40ff-94f6-9eb1a18cc63a": {
     "id": "2baf912f-33cc-40ff-94f6-9eb1a18cc63a",
@@ -5613,7 +5618,8 @@
     "designator": "QM3",
     "dateReported": "2022-03-29",
     "payGrade": "E-4",
-    "rank": "QM3"
+    "rank": "QM3",
+    "rating": "QM"
   },
   "80949349-23e3-41e7-8e19-73499d9e4274": {
     "id": "80949349-23e3-41e7-8e19-73499d9e4274",
@@ -5631,7 +5637,8 @@
     "designator": "BM3",
     "dateReported": "2021-02-14",
     "payGrade": "E-4",
-    "rank": "BM3"
+    "rank": "BM3",
+    "rating": "BM"
   },
   "2a4294e5-5a39-4e1d-9eb8-ddebf0a0493a": {
     "id": "2a4294e5-5a39-4e1d-9eb8-ddebf0a0493a",
@@ -5649,7 +5656,8 @@
     "designator": "ET3",
     "dateReported": "2022-11-24",
     "payGrade": "E-4",
-    "rank": "ET3"
+    "rank": "ET3",
+    "rating": "ET"
   },
   "d89c6eac-b684-420b-9aed-3a1122254009": {
     "id": "d89c6eac-b684-420b-9aed-3a1122254009",
@@ -5667,7 +5675,8 @@
     "designator": "OS3",
     "dateReported": "2021-05-26",
     "payGrade": "E-4",
-    "rank": "OS3"
+    "rank": "OS3",
+    "rating": "OS"
   },
   "5d889434-7b33-4bcc-a7bf-18226fdbc18d": {
     "id": "5d889434-7b33-4bcc-a7bf-18226fdbc18d",
@@ -5685,7 +5694,8 @@
     "designator": "MA3",
     "dateReported": "2021-08-04",
     "payGrade": "E-4",
-    "rank": "MA3"
+    "rank": "MA3",
+    "rating": "MA"
   },
   "961a67a2-ad38-4b86-aef0-d4752d0edf7c": {
     "id": "961a67a2-ad38-4b86-aef0-d4752d0edf7c",
@@ -5703,7 +5713,8 @@
     "designator": "MA3",
     "dateReported": "2022-07-14",
     "payGrade": "E-4",
-    "rank": "MA3"
+    "rank": "MA3",
+    "rating": "MA"
   },
   "6953c4cc-863d-4f68-9d4f-0dbb92351204": {
     "id": "6953c4cc-863d-4f68-9d4f-0dbb92351204",
@@ -5721,7 +5732,8 @@
     "designator": "ET3",
     "dateReported": "2022-01-19",
     "payGrade": "E-4",
-    "rank": "ET3"
+    "rank": "ET3",
+    "rating": "ET"
   },
   "10d781dd-1db3-4e70-84f9-e1bc92ff27f5": {
     "id": "10d781dd-1db3-4e70-84f9-e1bc92ff27f5",
@@ -5739,7 +5751,8 @@
     "designator": "QM3",
     "dateReported": "2022-02-16",
     "payGrade": "E-4",
-    "rank": "QM3"
+    "rank": "QM3",
+    "rating": "QM"
   },
   "e2822399-d490-480c-b438-df4d10c81603": {
     "id": "e2822399-d490-480c-b438-df4d10c81603",
@@ -5757,7 +5770,8 @@
     "designator": "ET3",
     "dateReported": "2022-04-24",
     "payGrade": "E-4",
-    "rank": "ET3"
+    "rank": "ET3",
+    "rating": "ET"
   },
   "364040ea-aa41-4eae-9813-70fb295e782e": {
     "id": "364040ea-aa41-4eae-9813-70fb295e782e",
@@ -5775,7 +5789,8 @@
     "designator": "OS3",
     "dateReported": "2021-02-14",
     "payGrade": "E-4",
-    "rank": "OS3"
+    "rank": "OS3",
+    "rating": "OS"
   },
   "4f104aa1-711c-485b-ae04-bf0390c0380f": {
     "id": "4f104aa1-711c-485b-ae04-bf0390c0380f",
@@ -5793,7 +5808,8 @@
     "designator": "OS3",
     "dateReported": "2022-01-28",
     "payGrade": "E-4",
-    "rank": "OS3"
+    "rank": "OS3",
+    "rating": "OS"
   },
   "7a50259b-9faa-4dfe-b983-1031eb490d79": {
     "id": "7a50259b-9faa-4dfe-b983-1031eb490d79",
@@ -5811,7 +5827,8 @@
     "designator": "MA3",
     "dateReported": "2022-07-21",
     "payGrade": "E-4",
-    "rank": "MA3"
+    "rank": "MA3",
+    "rating": "MA"
   },
   "6b69ea34-aa44-4615-9404-1b6a947c7ce6": {
     "id": "6b69ea34-aa44-4615-9404-1b6a947c7ce6",
@@ -5829,7 +5846,8 @@
     "designator": "QM3",
     "dateReported": "2022-01-03",
     "payGrade": "E-4",
-    "rank": "QM3"
+    "rank": "QM3",
+    "rating": "QM"
   },
   "12ac748d-c2f0-435c-8d1c-f7b29d6a0926": {
     "id": "12ac748d-c2f0-435c-8d1c-f7b29d6a0926",
@@ -5847,7 +5865,8 @@
     "designator": "QM2",
     "dateReported": "2022-01-06",
     "payGrade": "E-5",
-    "rank": "QM2"
+    "rank": "QM2",
+    "rating": "QM"
   },
   "ba1eefae-3661-41b2-aa12-8204c7a44c5c": {
     "id": "ba1eefae-3661-41b2-aa12-8204c7a44c5c",
@@ -5865,7 +5884,8 @@
     "designator": "OS2",
     "dateReported": "2021-02-28",
     "payGrade": "E-5",
-    "rank": "OS2"
+    "rank": "OS2",
+    "rating": "OS"
   },
   "1167d9ba-70c9-4cb6-800e-ee3836f5daa2": {
     "id": "1167d9ba-70c9-4cb6-800e-ee3836f5daa2",
@@ -5883,7 +5903,8 @@
     "designator": "ET2",
     "dateReported": "2021-05-25",
     "payGrade": "E-5",
-    "rank": "ET2"
+    "rank": "ET2",
+    "rating": "ET"
   },
   "71541f73-11e6-4d05-a772-9dd8c007be3f": {
     "id": "71541f73-11e6-4d05-a772-9dd8c007be3f",
@@ -5901,7 +5922,8 @@
     "designator": "MA2",
     "dateReported": "2021-09-22",
     "payGrade": "E-5",
-    "rank": "MA2"
+    "rank": "MA2",
+    "rating": "MA"
   },
   "4aad4834-be1c-4b0d-a18d-f403521076f5": {
     "id": "4aad4834-be1c-4b0d-a18d-f403521076f5",
@@ -5919,7 +5941,8 @@
     "designator": "OS2",
     "dateReported": "2021-09-12",
     "payGrade": "E-5",
-    "rank": "OS2"
+    "rank": "OS2",
+    "rating": "OS"
   },
   "336f0ac1-1c5f-4a2f-8e7a-ba160a65830a": {
     "id": "336f0ac1-1c5f-4a2f-8e7a-ba160a65830a",
@@ -5937,7 +5960,8 @@
     "designator": "BM2",
     "dateReported": "2021-10-09",
     "payGrade": "E-5",
-    "rank": "BM2"
+    "rank": "BM2",
+    "rating": "BM"
   },
   "9699518c-d9c9-4fb9-96c9-3ba8a3f22841": {
     "id": "9699518c-d9c9-4fb9-96c9-3ba8a3f22841",
@@ -5955,7 +5979,8 @@
     "designator": "QM2",
     "dateReported": "2022-11-20",
     "payGrade": "E-5",
-    "rank": "QM2"
+    "rank": "QM2",
+    "rating": "QM"
   },
   "0e1e9d20-5f35-46dd-8838-b95de6494a43": {
     "id": "0e1e9d20-5f35-46dd-8838-b95de6494a43",
@@ -5973,7 +5998,8 @@
     "designator": "ET2",
     "dateReported": "2022-06-21",
     "payGrade": "E-5",
-    "rank": "ET2"
+    "rank": "ET2",
+    "rating": "ET"
   },
   "dc6fef9a-36b2-4b44-850e-614b9e0a368e": {
     "id": "dc6fef9a-36b2-4b44-850e-614b9e0a368e",
@@ -5991,7 +6017,8 @@
     "designator": "ET2",
     "dateReported": "2022-09-09",
     "payGrade": "E-5",
-    "rank": "ET2"
+    "rank": "ET2",
+    "rating": "ET"
   },
   "46faae9b-5d03-4bdd-bf32-8c80ccf63d49": {
     "id": "46faae9b-5d03-4bdd-bf32-8c80ccf63d49",
@@ -6009,7 +6036,8 @@
     "designator": "ET2",
     "dateReported": "2022-10-13",
     "payGrade": "E-5",
-    "rank": "ET2"
+    "rank": "ET2",
+    "rating": "ET"
   },
   "9e91f273-8ca6-4a06-87be-6fca44fd7035": {
     "id": "9e91f273-8ca6-4a06-87be-6fca44fd7035",
@@ -6027,7 +6055,8 @@
     "designator": "ET2",
     "dateReported": "2021-03-11",
     "payGrade": "E-5",
-    "rank": "ET2"
+    "rank": "ET2",
+    "rating": "ET"
   },
   "b6e63f1a-48a6-4390-9583-5d8ed8de7f6c": {
     "id": "b6e63f1a-48a6-4390-9583-5d8ed8de7f6c",
@@ -6045,7 +6074,8 @@
     "designator": "ET2",
     "dateReported": "2022-05-04",
     "payGrade": "E-5",
-    "rank": "ET2"
+    "rank": "ET2",
+    "rating": "ET"
   },
   "71dadc29-a4ea-4e11-901f-7ece68db4656": {
     "id": "71dadc29-a4ea-4e11-901f-7ece68db4656",
@@ -6063,7 +6093,8 @@
     "designator": "OS2",
     "dateReported": "2022-09-06",
     "payGrade": "E-5",
-    "rank": "OS2"
+    "rank": "OS2",
+    "rating": "OS"
   },
   "b71c52bf-47c0-49c5-9cd0-583d5eae4fa7": {
     "id": "b71c52bf-47c0-49c5-9cd0-583d5eae4fa7",
@@ -6081,7 +6112,8 @@
     "designator": "ET2",
     "dateReported": "2022-03-26",
     "payGrade": "E-5",
-    "rank": "ET2"
+    "rank": "ET2",
+    "rating": "ET"
   },
   "dbc95247-8906-46e5-b875-49ea91213dbf": {
     "id": "dbc95247-8906-46e5-b875-49ea91213dbf",
@@ -6099,7 +6131,8 @@
     "designator": "ET2",
     "dateReported": "2021-04-12",
     "payGrade": "E-5",
-    "rank": "ET2"
+    "rank": "ET2",
+    "rating": "ET"
   },
   "2dc898f8-6fd5-41c0-87d5-9c39110ee16b": {
     "id": "2dc898f8-6fd5-41c0-87d5-9c39110ee16b",
@@ -6117,7 +6150,8 @@
     "designator": "QM1",
     "dateReported": "2021-12-25",
     "payGrade": "E-6",
-    "rank": "QM1"
+    "rank": "QM1",
+    "rating": "QM"
   },
   "c77b1fa9-fb8d-4a1f-97e6-5fbdd6503fcf": {
     "id": "c77b1fa9-fb8d-4a1f-97e6-5fbdd6503fcf",
@@ -6135,7 +6169,8 @@
     "designator": "QM1",
     "dateReported": "2022-06-12",
     "payGrade": "E-6",
-    "rank": "QM1"
+    "rank": "QM1",
+    "rating": "QM"
   },
   "da563ff6-8e5f-4fad-91a9-bc02ab20294e": {
     "id": "da563ff6-8e5f-4fad-91a9-bc02ab20294e",
@@ -6153,7 +6188,8 @@
     "designator": "QM1",
     "dateReported": "2022-01-09",
     "payGrade": "E-6",
-    "rank": "QM1"
+    "rank": "QM1",
+    "rating": "QM"
   },
   "9bbb6f2b-2093-4ee2-9a05-3b229e02b058": {
     "id": "9bbb6f2b-2093-4ee2-9a05-3b229e02b058",
@@ -6171,7 +6207,8 @@
     "designator": "ET1",
     "dateReported": "2022-04-15",
     "payGrade": "E-6",
-    "rank": "ET1"
+    "rank": "ET1",
+    "rating": "ET"
   },
   "72e23977-3f4d-4818-9ada-aa04bac9b31f": {
     "id": "72e23977-3f4d-4818-9ada-aa04bac9b31f",
@@ -6189,7 +6226,8 @@
     "designator": "MA1",
     "dateReported": "2021-10-04",
     "payGrade": "E-6",
-    "rank": "MA1"
+    "rank": "MA1",
+    "rating": "MA"
   },
   "74c80e8b-2587-4bb8-9124-aed3423c53bd": {
     "id": "74c80e8b-2587-4bb8-9124-aed3423c53bd",
@@ -6207,7 +6245,8 @@
     "designator": "BM1",
     "dateReported": "2021-01-15",
     "payGrade": "E-6",
-    "rank": "BM1"
+    "rank": "BM1",
+    "rating": "BM"
   },
   "539aee33-6891-46f4-a031-6257b1f922d2": {
     "id": "539aee33-6891-46f4-a031-6257b1f922d2",
@@ -6225,7 +6264,8 @@
     "designator": "OS1",
     "dateReported": "2021-08-20",
     "payGrade": "E-6",
-    "rank": "OS1"
+    "rank": "OS1",
+    "rating": "OS"
   },
   "c8446bc7-c57b-41c5-ab31-c5e0c8c8b9ee": {
     "id": "c8446bc7-c57b-41c5-ab31-c5e0c8c8b9ee",
@@ -6243,7 +6283,8 @@
     "designator": "OS1",
     "dateReported": "2022-07-29",
     "payGrade": "E-6",
-    "rank": "OS1"
+    "rank": "OS1",
+    "rating": "OS"
   },
   "5162f6c2-8a3b-49af-b67d-7399a5fe8427": {
     "id": "5162f6c2-8a3b-49af-b67d-7399a5fe8427",
@@ -6261,7 +6302,8 @@
     "designator": "OS1",
     "dateReported": "2021-10-06",
     "payGrade": "E-6",
-    "rank": "OS1"
+    "rank": "OS1",
+    "rating": "OS"
   },
   "88640aad-61f7-452a-b9d0-0e1828826eef": {
     "id": "88640aad-61f7-452a-b9d0-0e1828826eef",
@@ -6279,7 +6321,8 @@
     "designator": "ET1",
     "dateReported": "2021-10-04",
     "payGrade": "E-6",
-    "rank": "ET1"
+    "rank": "ET1",
+    "rating": "ET"
   },
   "47d1c3df-bc30-4be4-a6b2-2aecdfd93ee8": {
     "id": "47d1c3df-bc30-4be4-a6b2-2aecdfd93ee8",
@@ -6297,7 +6340,8 @@
     "designator": "QM1",
     "dateReported": "2021-07-19",
     "payGrade": "E-6",
-    "rank": "QM1"
+    "rank": "QM1",
+    "rating": "QM"
   },
   "78f7bda6-2771-413b-bff5-4b87c1c35469": {
     "id": "78f7bda6-2771-413b-bff5-4b87c1c35469",
@@ -6315,7 +6359,8 @@
     "designator": "ET1",
     "dateReported": "2021-04-10",
     "payGrade": "E-6",
-    "rank": "ET1"
+    "rank": "ET1",
+    "rating": "ET"
   },
   "9e6890b1-6f9c-42db-b250-44e7b5e8e04a": {
     "id": "9e6890b1-6f9c-42db-b250-44e7b5e8e04a",
@@ -6333,7 +6378,8 @@
     "designator": "BM1",
     "dateReported": "2021-09-07",
     "payGrade": "E-6",
-    "rank": "BM1"
+    "rank": "BM1",
+    "rating": "BM"
   },
   "1036a2a9-90c1-450f-90fb-23ba70e462d3": {
     "id": "1036a2a9-90c1-450f-90fb-23ba70e462d3",
@@ -6351,7 +6397,8 @@
     "designator": "ET1",
     "dateReported": "2021-08-20",
     "payGrade": "E-6",
-    "rank": "ET1"
+    "rank": "ET1",
+    "rating": "ET"
   },
   "3c1c6edb-bb0b-43b2-a3ef-1f4d595d51aa": {
     "id": "3c1c6edb-bb0b-43b2-a3ef-1f4d595d51aa",
@@ -6369,7 +6416,8 @@
     "designator": "QM1",
     "dateReported": "2022-02-22",
     "payGrade": "E-6",
-    "rank": "QM1"
+    "rank": "QM1",
+    "rating": "QM"
   },
   "917bdc0d-911a-446c-af0c-b05d822ba0ef": {
     "id": "917bdc0d-911a-446c-af0c-b05d822ba0ef",
@@ -6387,7 +6435,8 @@
     "designator": "OS1",
     "dateReported": "2021-05-31",
     "payGrade": "E-6",
-    "rank": "OS1"
+    "rank": "OS1",
+    "rating": "OS"
   },
   "5fbf8353-f9bd-47fc-83f0-377d0f28a842": {
     "id": "5fbf8353-f9bd-47fc-83f0-377d0f28a842",
@@ -6405,7 +6454,8 @@
     "designator": "ET1",
     "dateReported": "2021-03-06",
     "payGrade": "E-6",
-    "rank": "ET1"
+    "rank": "ET1",
+    "rating": "ET"
   },
   "517076f5-2d1c-4227-bc0d-06766e828353": {
     "id": "517076f5-2d1c-4227-bc0d-06766e828353",
@@ -6423,7 +6473,8 @@
     "designator": "QM1",
     "dateReported": "2021-07-04",
     "payGrade": "E-6",
-    "rank": "QM1"
+    "rank": "QM1",
+    "rating": "QM"
   },
   "9c96730e-f55a-4819-b11e-0c74faba7f75": {
     "id": "9c96730e-f55a-4819-b11e-0c74faba7f75",
@@ -6441,7 +6492,8 @@
     "designator": "ET1",
     "dateReported": "2022-04-14",
     "payGrade": "E-6",
-    "rank": "ET1"
+    "rank": "ET1",
+    "rating": "ET"
   },
   "7e49a8a4-12c6-4328-bfa7-a23ab7c68d40": {
     "id": "7e49a8a4-12c6-4328-bfa7-a23ab7c68d40",
@@ -6459,7 +6511,8 @@
     "designator": "OS1",
     "dateReported": "2022-11-18",
     "payGrade": "E-6",
-    "rank": "OS1"
+    "rank": "OS1",
+    "rating": "OS"
   },
   "35fc8b1b-1467-4a88-ae5d-cbf4f01485a4": {
     "id": "35fc8b1b-1467-4a88-ae5d-cbf4f01485a4",
@@ -6477,7 +6530,8 @@
     "designator": "BM1",
     "dateReported": "2021-02-13",
     "payGrade": "E-6",
-    "rank": "BM1"
+    "rank": "BM1",
+    "rating": "BM"
   },
   "e7dd7b9a-f574-490f-8205-5ce6896561ad": {
     "id": "e7dd7b9a-f574-490f-8205-5ce6896561ad",
@@ -6495,7 +6549,8 @@
     "designator": "QM1",
     "dateReported": "2021-11-05",
     "payGrade": "E-6",
-    "rank": "QM1"
+    "rank": "QM1",
+    "rating": "QM"
   },
   "92f81239-10c4-4290-b89b-7d831d5a0463": {
     "id": "92f81239-10c4-4290-b89b-7d831d5a0463",
@@ -6513,7 +6568,8 @@
     "designator": "BM1",
     "dateReported": "2022-06-25",
     "payGrade": "E-6",
-    "rank": "BM1"
+    "rank": "BM1",
+    "rating": "BM"
   },
   "e19de360-706b-4c51-a2f9-e2fa43b05c6d": {
     "id": "e19de360-706b-4c51-a2f9-e2fa43b05c6d",
@@ -6531,7 +6587,8 @@
     "designator": "ET1",
     "dateReported": "2022-01-12",
     "payGrade": "E-6",
-    "rank": "ET1"
+    "rank": "ET1",
+    "rating": "ET"
   },
   "fc13c032-1660-4018-a019-e404a84639c3": {
     "id": "fc13c032-1660-4018-a019-e404a84639c3",
@@ -6549,7 +6606,8 @@
     "designator": "ETC",
     "dateReported": "2021-05-12",
     "payGrade": "E-7",
-    "rank": "ETC"
+    "rank": "ETC",
+    "rating": "ET"
   },
   "8f8191bc-fd90-442d-85d4-6a3277126047": {
     "id": "8f8191bc-fd90-442d-85d4-6a3277126047",
@@ -6567,7 +6625,8 @@
     "designator": "QMC",
     "dateReported": "2021-01-11",
     "payGrade": "E-7",
-    "rank": "QMC"
+    "rank": "QMC",
+    "rating": "QM"
   },
   "609d7991-407e-40f0-b932-355bc1d9693c": {
     "id": "609d7991-407e-40f0-b932-355bc1d9693c",
@@ -6585,7 +6644,8 @@
     "designator": "MAC",
     "dateReported": "2021-12-28",
     "payGrade": "E-7",
-    "rank": "MAC"
+    "rank": "MAC",
+    "rating": "MA"
   },
   "5a6bb9da-e84c-4bf5-bfac-56ebdcda28a3": {
     "id": "5a6bb9da-e84c-4bf5-bfac-56ebdcda28a3",
@@ -6603,7 +6663,8 @@
     "designator": "QMC",
     "dateReported": "2021-06-22",
     "payGrade": "E-7",
-    "rank": "QMC"
+    "rank": "QMC",
+    "rating": "QM"
   },
   "a76cfdc9-a9ca-4f95-86f0-674630b85ded": {
     "id": "a76cfdc9-a9ca-4f95-86f0-674630b85ded",
@@ -6621,7 +6682,8 @@
     "designator": "OSC",
     "dateReported": "2022-02-14",
     "payGrade": "E-7",
-    "rank": "OSC"
+    "rank": "OSC",
+    "rating": "OS"
   },
   "b935f589-050d-492a-ac3e-2b5a9dbcd3de": {
     "id": "b935f589-050d-492a-ac3e-2b5a9dbcd3de",
@@ -6639,7 +6701,8 @@
     "designator": "MAC",
     "dateReported": "2022-03-02",
     "payGrade": "E-7",
-    "rank": "MAC"
+    "rank": "MAC",
+    "rating": "MA"
   },
   "81d6e3a3-4259-4f06-a083-8542207f0e2e": {
     "id": "81d6e3a3-4259-4f06-a083-8542207f0e2e",
@@ -6657,7 +6720,8 @@
     "designator": "BMC",
     "dateReported": "2021-04-04",
     "payGrade": "E-7",
-    "rank": "BMC"
+    "rank": "BMC",
+    "rating": "BM"
   },
   "06938fa4-d785-4412-8ee3-13c6fde17e0d": {
     "id": "06938fa4-d785-4412-8ee3-13c6fde17e0d",
@@ -6675,7 +6739,8 @@
     "designator": "QMC",
     "dateReported": "2022-03-27",
     "payGrade": "E-7",
-    "rank": "QMC"
+    "rank": "QMC",
+    "rating": "QM"
   },
   "7a0ae536-7da0-4366-800e-56d87e755430": {
     "id": "7a0ae536-7da0-4366-800e-56d87e755430",
@@ -6693,7 +6758,8 @@
     "designator": "ETC",
     "dateReported": "2021-02-12",
     "payGrade": "E-7",
-    "rank": "ETC"
+    "rank": "ETC",
+    "rating": "ET"
   },
   "14b4334d-e91f-4a70-8b1e-721644214a7d": {
     "id": "14b4334d-e91f-4a70-8b1e-721644214a7d",
@@ -6711,7 +6777,8 @@
     "designator": "ETC",
     "dateReported": "2022-02-27",
     "payGrade": "E-7",
-    "rank": "ETC"
+    "rank": "ETC",
+    "rating": "ET"
   },
   "4d704fcb-eefc-46f1-a910-df95004d2a83": {
     "id": "4d704fcb-eefc-46f1-a910-df95004d2a83",
@@ -6729,7 +6796,8 @@
     "designator": "MAC",
     "dateReported": "2021-05-13",
     "payGrade": "E-7",
-    "rank": "MAC"
+    "rank": "MAC",
+    "rating": "MA"
   },
   "18534c68-cac4-489b-85c1-aedb38456d77": {
     "id": "18534c68-cac4-489b-85c1-aedb38456d77",
@@ -6747,7 +6815,8 @@
     "designator": "ETC",
     "dateReported": "2022-01-28",
     "payGrade": "E-7",
-    "rank": "ETC"
+    "rank": "ETC",
+    "rating": "ET"
   },
   "f4187545-2ca4-4f6f-8779-355175400000": {
     "id": "f4187545-2ca4-4f6f-8779-355175400000",
@@ -6765,7 +6834,8 @@
     "designator": "BMC",
     "dateReported": "2022-10-21",
     "payGrade": "E-7",
-    "rank": "BMC"
+    "rank": "BMC",
+    "rating": "BM"
   },
   "149ab6de-a765-4fa7-9805-288b29459a92": {
     "id": "149ab6de-a765-4fa7-9805-288b29459a92",
@@ -6783,7 +6853,8 @@
     "designator": "OSC",
     "dateReported": "2021-05-18",
     "payGrade": "E-7",
-    "rank": "OSC"
+    "rank": "OSC",
+    "rating": "OS"
   },
   "2856f819-d855-4e5a-9236-7df6c2966655": {
     "id": "2856f819-d855-4e5a-9236-7df6c2966655",
@@ -6801,7 +6872,8 @@
     "designator": "ETC",
     "dateReported": "2021-05-18",
     "payGrade": "E-7",
-    "rank": "ETC"
+    "rank": "ETC",
+    "rating": "ET"
   },
   "3c7fb45f-2ad2-4e23-9dbb-669fc3a1e6d9": {
     "id": "3c7fb45f-2ad2-4e23-9dbb-669fc3a1e6d9",
@@ -6819,7 +6891,8 @@
     "designator": "MAC",
     "dateReported": "2021-05-09",
     "payGrade": "E-7",
-    "rank": "MAC"
+    "rank": "MAC",
+    "rating": "MA"
   },
   "ed0cef2a-05fc-47ac-8455-378b95b555c2": {
     "id": "ed0cef2a-05fc-47ac-8455-378b95b555c2",
@@ -6837,7 +6910,8 @@
     "designator": "OSC",
     "dateReported": "2022-08-08",
     "payGrade": "E-7",
-    "rank": "OSC"
+    "rank": "OSC",
+    "rating": "OS"
   },
   "f694c9f1-8597-40aa-9470-35eac0aafb61": {
     "id": "f694c9f1-8597-40aa-9470-35eac0aafb61",
@@ -6855,7 +6929,8 @@
     "designator": "QMC",
     "dateReported": "2021-04-21",
     "payGrade": "E-7",
-    "rank": "QMC"
+    "rank": "QMC",
+    "rating": "QM"
   },
   "cb42040d-9be7-4bf3-857b-f4a3dfb49e75": {
     "id": "cb42040d-9be7-4bf3-857b-f4a3dfb49e75",
@@ -6873,7 +6948,8 @@
     "designator": "ETC",
     "dateReported": "2021-08-14",
     "payGrade": "E-7",
-    "rank": "ETC"
+    "rank": "ETC",
+    "rating": "ET"
   },
   "8bb57375-9409-4ca5-bd75-0ed9b65577a3": {
     "id": "8bb57375-9409-4ca5-bd75-0ed9b65577a3",
@@ -6891,7 +6967,8 @@
     "designator": "QMC",
     "dateReported": "2021-03-05",
     "payGrade": "E-7",
-    "rank": "QMC"
+    "rank": "QMC",
+    "rating": "QM"
   },
   "8727d66d-57bc-439b-81a0-37b355772cd9": {
     "id": "8727d66d-57bc-439b-81a0-37b355772cd9",
@@ -6909,7 +6986,8 @@
     "designator": "QMC",
     "dateReported": "2021-03-10",
     "payGrade": "E-7",
-    "rank": "QMC"
+    "rank": "QMC",
+    "rating": "QM"
   },
   "bc52af89-8b52-4e51-a04a-79a2a6630cc0": {
     "id": "bc52af89-8b52-4e51-a04a-79a2a6630cc0",
@@ -6927,7 +7005,8 @@
     "designator": "BMC",
     "dateReported": "2022-01-29",
     "payGrade": "E-7",
-    "rank": "BMC"
+    "rank": "BMC",
+    "rating": "BM"
   },
   "015787ee-233e-418d-a5f8-8e12bedeb621": {
     "id": "015787ee-233e-418d-a5f8-8e12bedeb621",
@@ -6945,7 +7024,8 @@
     "designator": "MACS",
     "dateReported": "2021-09-22",
     "payGrade": "E-8",
-    "rank": "MACS"
+    "rank": "MACS",
+    "rating": "MA"
   },
   "99530756-ffa0-4194-8df5-1251c347c8cb": {
     "id": "99530756-ffa0-4194-8df5-1251c347c8cb",
@@ -6963,7 +7043,8 @@
     "designator": "OSCS",
     "dateReported": "2021-01-27",
     "payGrade": "E-8",
-    "rank": "OSCS"
+    "rank": "OSCS",
+    "rating": "OS"
   },
   "039b8ea2-8a89-454c-8a0d-7b2b831431ff": {
     "id": "039b8ea2-8a89-454c-8a0d-7b2b831431ff",
@@ -6981,7 +7062,8 @@
     "designator": "QMCS",
     "dateReported": "2021-08-09",
     "payGrade": "E-8",
-    "rank": "QMCS"
+    "rank": "QMCS",
+    "rating": "QM"
   },
   "fbbb00b9-d4e4-4876-91ba-1c53acdb8306": {
     "id": "fbbb00b9-d4e4-4876-91ba-1c53acdb8306",
@@ -6999,7 +7081,8 @@
     "designator": "ETCS",
     "dateReported": "2021-07-12",
     "payGrade": "E-8",
-    "rank": "ETCS"
+    "rank": "ETCS",
+    "rating": "ET"
   },
   "e68e85f1-504f-409d-8d92-b16a6391ddb4": {
     "id": "e68e85f1-504f-409d-8d92-b16a6391ddb4",
@@ -7017,7 +7100,8 @@
     "designator": "ETCS",
     "dateReported": "2022-12-16",
     "payGrade": "E-8",
-    "rank": "ETCS"
+    "rank": "ETCS",
+    "rating": "ET"
   },
   "8ed123fd-d672-45be-9628-7016cf8d184b": {
     "id": "8ed123fd-d672-45be-9628-7016cf8d184b",
@@ -7035,7 +7119,8 @@
     "designator": "ETCS",
     "dateReported": "2021-08-22",
     "payGrade": "E-8",
-    "rank": "ETCS"
+    "rank": "ETCS",
+    "rating": "ET"
   },
   "9cd1a841-c544-45ad-ab5d-5d69b235aa30": {
     "id": "9cd1a841-c544-45ad-ab5d-5d69b235aa30",
@@ -7053,7 +7138,8 @@
     "designator": "QMCS",
     "dateReported": "2021-04-24",
     "payGrade": "E-8",
-    "rank": "QMCS"
+    "rank": "QMCS",
+    "rating": "QM"
   },
   "5fc57dbd-bc98-4ac6-88d7-478aee8313dc": {
     "id": "5fc57dbd-bc98-4ac6-88d7-478aee8313dc",
@@ -7071,7 +7157,8 @@
     "designator": "ETCS",
     "dateReported": "2022-11-25",
     "payGrade": "E-8",
-    "rank": "ETCS"
+    "rank": "ETCS",
+    "rating": "ET"
   },
   "54d900a6-0133-40fb-b0fb-afcb3f736399": {
     "id": "54d900a6-0133-40fb-b0fb-afcb3f736399",
@@ -7089,7 +7176,8 @@
     "designator": "BMCS",
     "dateReported": "2021-08-12",
     "payGrade": "E-8",
-    "rank": "BMCS"
+    "rank": "BMCS",
+    "rating": "BM"
   },
   "52010cd0-4506-4257-93e4-56878ea3c2bd": {
     "id": "52010cd0-4506-4257-93e4-56878ea3c2bd",
@@ -7107,7 +7195,8 @@
     "designator": "ETCS",
     "dateReported": "2022-09-22",
     "payGrade": "E-8",
-    "rank": "ETCS"
+    "rank": "ETCS",
+    "rating": "ET"
   },
   "f4158df4-ab82-4ee0-91bd-18ea08674bdb": {
     "id": "f4158df4-ab82-4ee0-91bd-18ea08674bdb",
@@ -7125,7 +7214,8 @@
     "designator": "BMCS",
     "dateReported": "2021-01-03",
     "payGrade": "E-8",
-    "rank": "BMCS"
+    "rank": "BMCS",
+    "rating": "BM"
   },
   "ab56dba0-23b4-498b-9f43-85fd78aa7e63": {
     "id": "ab56dba0-23b4-498b-9f43-85fd78aa7e63",
@@ -7143,7 +7233,8 @@
     "designator": "QMCS",
     "dateReported": "2021-08-27",
     "payGrade": "E-8",
-    "rank": "QMCS"
+    "rank": "QMCS",
+    "rating": "QM"
   },
   "f5daf439-250d-4b23-9f24-a7be86cb6d57": {
     "id": "f5daf439-250d-4b23-9f24-a7be86cb6d57",
@@ -7161,7 +7252,8 @@
     "designator": "QMCM",
     "dateReported": "2021-07-05",
     "payGrade": "E-9",
-    "rank": "QMCM"
+    "rank": "QMCM",
+    "rating": "QM"
   },
   "3bd3c713-d6b9-42a9-ab77-1483bf0ea47f": {
     "id": "3bd3c713-d6b9-42a9-ab77-1483bf0ea47f",
@@ -7179,7 +7271,8 @@
     "designator": "OSCM",
     "dateReported": "2021-10-25",
     "payGrade": "E-9",
-    "rank": "OSCM"
+    "rank": "OSCM",
+    "rating": "OS"
   },
   "7011a48c-1ef7-4fd9-b6d1-a1e550113697": {
     "id": "7011a48c-1ef7-4fd9-b6d1-a1e550113697",
@@ -7197,7 +7290,8 @@
     "designator": "OSCM",
     "dateReported": "2021-11-09",
     "payGrade": "E-9",
-    "rank": "OSCM"
+    "rank": "OSCM",
+    "rating": "OS"
   },
   "ed0f8755-75e0-4471-ba47-a9ca42dcb205": {
     "id": "ed0f8755-75e0-4471-ba47-a9ca42dcb205",
@@ -7215,7 +7309,8 @@
     "designator": "BMCM",
     "dateReported": "2022-04-02",
     "payGrade": "E-9",
-    "rank": "BMCM"
+    "rank": "BMCM",
+    "rating": "BM"
   },
   "ae882a68-244e-4450-bb1a-93ea540f388b": {
     "id": "ae882a68-244e-4450-bb1a-93ea540f388b",
@@ -7233,7 +7328,8 @@
     "designator": "ETCM",
     "dateReported": "2022-03-10",
     "payGrade": "E-9",
-    "rank": "ETCM"
+    "rank": "ETCM",
+    "rating": "ET"
   },
   "5e4b7dd1-761b-469f-8cc9-ca0ddad84649": {
     "id": "5e4b7dd1-761b-469f-8cc9-ca0ddad84649",
@@ -7251,7 +7347,8 @@
     "designator": "QMCM",
     "dateReported": "2021-03-06",
     "payGrade": "E-9",
-    "rank": "QMCM"
+    "rank": "QMCM",
+    "rating": "QM"
   },
   "b42dc764-275b-4598-b6a0-50f2716f2621": {
     "id": "b42dc764-275b-4598-b6a0-50f2716f2621",
@@ -7269,7 +7366,8 @@
     "designator": "QMCM",
     "dateReported": "2022-08-22",
     "payGrade": "E-9",
-    "rank": "QMCM"
+    "rank": "QMCM",
+    "rating": "QM"
   },
   "611ec9d7-ed44-4e3e-a3d5-0e6aa617f7c2": {
     "id": "611ec9d7-ed44-4e3e-a3d5-0e6aa617f7c2",
@@ -7287,7 +7385,8 @@
     "designator": "BMCM",
     "dateReported": "2022-12-30",
     "payGrade": "E-9",
-    "rank": "BMCM"
+    "rank": "BMCM",
+    "rating": "BM"
   },
   "b4579899-db0f-425f-a8c7-875252468e2c": {
     "id": "b4579899-db0f-425f-a8c7-875252468e2c",
@@ -7305,7 +7404,8 @@
     "designator": "ETCM",
     "dateReported": "2022-10-10",
     "payGrade": "E-9",
-    "rank": "ETCM"
+    "rank": "ETCM",
+    "rating": "ET"
   },
   "9d062d6a-2b8b-499d-b8e6-a13dfc9b3cd8": {
     "id": "9d062d6a-2b8b-499d-b8e6-a13dfc9b3cd8",
@@ -7323,7 +7423,8 @@
     "designator": "ETCM",
     "dateReported": "2021-07-20",
     "payGrade": "E-9",
-    "rank": "ETCM"
+    "rank": "ETCM",
+    "rating": "ET"
   },
   "65454d6e-bdcc-44e3-acd2-1665db111a4e": {
     "id": "65454d6e-bdcc-44e3-acd2-1665db111a4e",
@@ -7341,7 +7442,8 @@
     "designator": "OSCM",
     "dateReported": "2022-10-27",
     "payGrade": "E-9",
-    "rank": "OSCM"
+    "rank": "OSCM",
+    "rating": "OS"
   },
   "f5148e92-c648-47d5-b521-6dc50e1ae2b1": {
     "id": "f5148e92-c648-47d5-b521-6dc50e1ae2b1",
@@ -7359,7 +7461,8 @@
     "designator": "BMCM",
     "dateReported": "2021-02-02",
     "payGrade": "E-9",
-    "rank": "BMCM"
+    "rank": "BMCM",
+    "rating": "BM"
   },
   "c1e786c8-a18c-4d2f-b78c-015508d4565d": {
     "id": "c1e786c8-a18c-4d2f-b78c-015508d4565d",
@@ -7377,7 +7480,8 @@
     "designator": "OSCM",
     "dateReported": "2021-10-15",
     "payGrade": "E-9",
-    "rank": "OSCM"
+    "rank": "OSCM",
+    "rating": "OS"
   },
   "56e55308-00d0-43bd-8032-0109918989eb": {
     "id": "56e55308-00d0-43bd-8032-0109918989eb",
@@ -7395,7 +7499,8 @@
     "designator": "BMCM",
     "dateReported": "2022-02-10",
     "payGrade": "E-9",
-    "rank": "BMCM"
+    "rank": "BMCM",
+    "rating": "BM"
   },
   "4b12dc09-8604-49b9-9884-0c58b303d812": {
     "id": "4b12dc09-8604-49b9-9884-0c58b303d812",
@@ -7413,7 +7518,8 @@
     "designator": "ETCM",
     "dateReported": "2021-09-13",
     "payGrade": "E-9",
-    "rank": "ETCM"
+    "rank": "ETCM",
+    "rating": "ET"
   },
   "4d64571a-484c-4a5f-a154-0d84e3e808b5": {
     "id": "4d64571a-484c-4a5f-a154-0d84e3e808b5",
@@ -7431,7 +7537,8 @@
     "designator": "MACM",
     "dateReported": "2022-08-25",
     "payGrade": "E-9",
-    "rank": "MACM"
+    "rank": "MACM",
+    "rating": "MA"
   },
   "7c543b68-a575-446f-a958-fa0fec4811e9": {
     "id": "7c543b68-a575-446f-a958-fa0fec4811e9",
@@ -7449,7 +7556,8 @@
     "designator": "BMCM",
     "dateReported": "2022-05-10",
     "payGrade": "E-9",
-    "rank": "BMCM"
+    "rank": "BMCM",
+    "rating": "BM"
   },
   "91eae79b-ca68-48a0-9279-8f6032683e35": {
     "id": "91eae79b-ca68-48a0-9279-8f6032683e35",
@@ -7467,7 +7575,8 @@
     "designator": "BMCM",
     "dateReported": "2021-03-03",
     "payGrade": "E-9",
-    "rank": "BMCM"
+    "rank": "BMCM",
+    "rating": "BM"
   },
   "a9147eb1-095a-48c5-8382-571d5af89158": {
     "id": "a9147eb1-095a-48c5-8382-571d5af89158",
@@ -7485,7 +7594,8 @@
     "designator": "QMCM",
     "dateReported": "2021-06-28",
     "payGrade": "E-9",
-    "rank": "QMCM"
+    "rank": "QMCM",
+    "rating": "QM"
   },
   "2a4e448b-882a-4071-9e28-39a96bead2b7": {
     "id": "2a4e448b-882a-4071-9e28-39a96bead2b7",
@@ -7503,7 +7613,8 @@
     "designator": "QMCM",
     "dateReported": "2022-10-13",
     "payGrade": "E-9",
-    "rank": "QMCM"
+    "rank": "QMCM",
+    "rating": "QM"
   },
   "298b067a-a62c-4ec4-ac85-cace38ccb4ba": {
     "id": "298b067a-a62c-4ec4-ac85-cace38ccb4ba",
@@ -7521,7 +7632,8 @@
     "designator": "OSCM",
     "dateReported": "2021-11-18",
     "payGrade": "E-9",
-    "rank": "OSCM"
+    "rank": "OSCM",
+    "rating": "OS"
   },
   "0c75ec8d-0e69-4556-80bd-c300046e7ee7": {
     "id": "0c75ec8d-0e69-4556-80bd-c300046e7ee7",
