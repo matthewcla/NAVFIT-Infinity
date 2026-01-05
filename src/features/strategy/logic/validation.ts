@@ -7,6 +7,8 @@ import {
     validateNOBJustification,
     validateSignificantProblemsWithdrawal,
 } from '@/domain/policy/validation';
+import { getCompetitiveCategory } from './competitiveGroupUtils';
+import { computeEpMax, computeEpMpCombinedMax } from '@/domain/policy/quotas';
 
 const ONE_DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -41,16 +43,17 @@ export const checkZeroGap = (prevEndDateStr: string, newStartDateStr: string): {
 
 /**
  * Forced Distribution (Quota) Check
- * Max EP = 20% (Rounded)
- * Max EP+MP = 60% (Rounded)
+ * Delegates to domain policy logic.
  */
 export const checkQuota = (
-    groupSize: number,
+    context: SummaryGroupContext,
     epCount: number,
     mpCount: number
 ): { isValid: boolean; epLimit: number; combinedLimit: number; message?: string } => {
-    const epLimit = Math.round(groupSize * 0.20);
-    const combinedLimit = Math.round(groupSize * 0.60);
+    const groupSize = context.size;
+
+    const epLimit = computeEpMax(groupSize, context);
+    const combinedLimit = computeEpMpCombinedMax(groupSize, context);
 
     if (epCount > epLimit) {
         return {
@@ -105,17 +108,23 @@ function getRankCategory(paygrade: Paygrade): RankCategory {
     return RankCategory.ENLISTED;
 }
 
-function createSummaryGroupContext(group: SummaryGroup, report: Report): SummaryGroupContext {
-    const paygrade = mapPaygrade(report.grade || group.paygrade);
+export function createSummaryGroupContext(group: SummaryGroup, report: Report | null = null): SummaryGroupContext {
+    const paygrade = mapPaygrade(report?.grade || group.paygrade);
     const rankCategory = getRankCategory(paygrade);
 
     // Check if LDO/CWO
-    // LDO designators: 61xx, 62xx, 63xx, 64xx... usually 6xxx.
-    // CWO designators: 7xxx, 8xxx.
-    // Assuming designator string
-    const desig = report.designator || group.designator || '';
-    const isLDO = desig.startsWith('6');
-    const isCWO = desig.startsWith('7') || desig.startsWith('8');
+    // We use the same robust logic as group generation to identify LDO/CWO
+    const desig = report?.designator || group.designator || '';
+
+    // Check using our new utility or maintain simple check?
+    // The utility is safer.
+    const cat = getCompetitiveCategory(desig);
+
+    // isLDO includes both Active and Reserve LDOs
+    const isLDO = cat.code === 'LDO_ACTIVE' || cat.code === 'LDO_CWO_RESERVE';
+
+    // isCWO includes Active CWOs and Reserve CWOs (which are in LDO_CWO_RESERVE bucket or CWO_ACTIVE)
+    const isCWO = cat.code === 'CWO_ACTIVE' || (cat.code === 'LDO_CWO_RESERVE' && desig.startsWith('7'));
 
     return {
         size: group.reports.length,

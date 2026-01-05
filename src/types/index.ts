@@ -33,6 +33,7 @@ export interface Member {
     id: string;
     name: string; // Combined for display
     rank: string;
+    payGrade?: string;
     designator?: string; // Officer
     rating?: string; // Enlisted
     milestone?: string; // DIVO, DH, LPO, etc.

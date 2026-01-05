@@ -1,14 +1,15 @@
 import { create } from 'zustand';
 import type { Tab } from '../components/layout/Sidebar';
-import type { RosterMember, ReportingSeniorConfig } from '@/types/roster';
-import { INITIAL_ROSTER, INITIAL_RS_CONFIG } from '../data/initialRoster';
+import type { RosterMember, ReportingSeniorConfig, PayGrade } from '@/types/roster';
+import { INITIAL_RS_CONFIG } from '../domain/rsca/constants';
 
 // import { type Member } from '@/features/strategy/logic/autoPlan';
 import { useRedistributionStore } from './useRedistributionStore';
 import { useAuditStore } from './useAuditStore';
 import { DEFAULT_CONSTRAINTS } from '@/domain/rsca/constants';
+import { defaultAnchorIndices } from '@/domain/rsca/redistribution';
 import type { Member as DomainMember } from '@/domain/rsca/types';
-import { validateReportState, checkQuota } from '@/features/strategy/logic/validation';
+import { validateReportState, checkQuota, createSummaryGroupContext } from '@/features/strategy/logic/validation';
 
 import type { SummaryGroup, Report } from '@/types';
 import { assignRecommendationsByRank } from '@/features/strategy/logic/recommendation';
@@ -32,10 +33,12 @@ interface NavfitStore {
     // Data State
     roster: RosterMember[];
     setRoster: (roster: RosterMember[]) => void;
+    initializeRoster: () => Promise<void>;
     reorderMember: (memberId: string, newIndex: number) => void; // Legacy roster reorder? Or keep for completeness
 
     // Summary Group / Ranking Mode Actions
     reorderMembers: (groupId: string, draggedId: string, targetIdOrOrder: string | string[]) => void;
+    applyDefaultAnchors: (groupId: string) => void;
 
     summaryGroups: SummaryGroup[];
     setSummaryGroups: (groups: SummaryGroup[]) => void;
@@ -89,12 +92,12 @@ interface NavfitStore {
     activeCompetitiveGroup: string | null; // e.g., "O-3 1110"
     isContextPanelOpen: boolean;
     cycleFilter: 'All' | 'Officer' | 'Enlisted';
-    cycleSort: 'DueDate' | 'Status';
+    cycleSort: 'DueDate' | 'Status' | 'CompGroup';
 
     selectCycle: (cycleId: string, competitiveGroupKey: string) => void;
     clearSelection: () => void;
     setCycleFilter: (filter: 'All' | 'Officer' | 'Enlisted') => void;
-    setCycleSort: (sort: 'DueDate' | 'Status') => void;
+    setCycleSort: (sort: 'DueDate' | 'Status' | 'CompGroup') => void;
 
     // Drill-Down Navigation State
     strategyViewMode: 'landing' | 'workspace';
@@ -110,6 +113,9 @@ interface NavfitStore {
     // UI Mode State
     isRankMode: boolean;
     setRankMode: (isRankMode: boolean) => void;
+
+    // Data Management
+    loadState: (state: { roster: RosterMember[]; summaryGroups: SummaryGroup[]; rsConfig: ReportingSeniorConfig }) => void;
 }
 
 export const useNavfitStore = create<NavfitStore>((set) => ({
@@ -128,18 +134,86 @@ export const useNavfitStore = create<NavfitStore>((set) => ({
 
     // History View State
     cycleListPhase: 'Active',
-    setCycleListPhase: (phase) => set({ cycleListPhase: phase }),
 
 
     // Data
-    roster: INITIAL_ROSTER,
+    roster: [], // Initialized empty
     setRoster: (roster) => set({ roster }),
+    initializeRoster: async () => {
+        try {
+            const [rosterRes, summaryRes] = await Promise.all([
+                fetch('/member_details.json'),
+                fetch('/summary_groups_test_data.json')
+            ]);
+
+            const rosterData = await rosterRes.json();
+            const summaryData = await summaryRes.json();
+
+            const ratings = ["ET", "BM", "OS", "YN", "PS", "CS", "MA", "IT"];
+
+            const roster: RosterMember[] = Object.values(rosterData).map((m: any) => {
+                let designator = m.designator;
+
+                if (m.payGrade && m.payGrade.startsWith('E')) {
+                    const rating = ratings[Math.floor(Math.random() * ratings.length)];
+                    const grade = m.payGrade; // e.g. E-6
+                    let rateRank = "";
+
+                    if (grade === 'E-9') rateRank = `${rating}CM`; // ETCM
+                    else if (grade === 'E-8') rateRank = `${rating}CS`; // ETCS
+                    else if (grade === 'E-7') rateRank = `${rating}C`;  // ETC
+                    else if (grade === 'E-6') rateRank = `${rating}1`;  // ET1
+                    else if (grade === 'E-5') rateRank = `${rating}2`;  // ET2
+                    else if (grade === 'E-4') rateRank = `${rating}3`;  // ET3
+                    else if (grade === 'E-3') rateRank = `${rating}SN`; // ETSN (Simplified)
+                    else if (grade === 'E-2') rateRank = `${rating}SA`; // ETSA
+                    else if (grade === 'E-1') rateRank = `${rating}SR`; // ETSR
+                    else rateRank = `${rating}${grade.split('-')[1] || ''}`; // Fallback
+
+                    designator = rateRank;
+                }
+
+                // Random last trait between 3.50 and 4.80
+                const lastTrait = parseFloat((Math.random() * (4.80 - 3.50) + 3.50).toFixed(2));
+
+                return {
+                    id: m.id,
+                    firstName: m.firstName,
+                    lastName: m.lastName,
+                    rank: m.rank,
+                    payGrade: m.payGrade as PayGrade,
+                    designator: designator, // Contains Rate for Enlisted
+                    dateReported: m.dateReported || new Date().toISOString().split('T')[0],
+                    prd: m.prd || new Date(new Date().setFullYear(new Date().getFullYear() + 2)).toISOString().split('T')[0],
+                    lastTrait, // Added for UI completeness
+                    status: 'Onboard'
+                };
+            });
+
+            // Parse Summary Groups
+            // The JSON structure is { roster: [], summaryGroups: [] }
+            // We are using the roster from member_details.json (as per plan/existing logic)
+            // But we use summaryGroups from the new file.
+            const data = summaryData as { summaryGroups: SummaryGroup[] };
+
+            set({
+                roster,
+                summaryGroups: data.summaryGroups || []
+            });
+        } catch (error) {
+            console.error("Failed to load data:", error);
+        }
+    },
 
     summaryGroups: [],
     setSummaryGroups: (groups) => set({ summaryGroups: groups }),
-    addSummaryGroup: (group) => set((state) => ({
-        summaryGroups: [...state.summaryGroups, group]
-    })),
+    addSummaryGroup: (group) => {
+        set((state) => ({
+            summaryGroups: [...state.summaryGroups, group]
+        }));
+        // Apply default anchors immediately for new group
+        useNavfitStore.getState().applyDefaultAnchors(group.id);
+    },
     updateGroupStatus: (groupId, status) => set((state) => ({
         summaryGroups: state.summaryGroups.map((group) => {
             if (group.id !== groupId) return group;
@@ -221,6 +295,64 @@ export const useNavfitStore = create<NavfitStore>((set) => ({
         return { roster: currentRoster };
     }),
 
+    applyDefaultAnchors: (groupId) => {
+        set((state) => {
+            const groupIndex = state.summaryGroups.findIndex(g => g.id === groupId);
+            if (groupIndex === -1) return {};
+
+            const group = state.summaryGroups[groupIndex];
+            const N = group.reports.length;
+            if (N === 0) return {};
+
+            const { top, bottom } = defaultAnchorIndices(N);
+            const anchorIndices = new Set([...top, ...bottom]);
+
+            // Requirement says "provide default anchor selection".
+            // We strictly set the calculated indices as anchors and unlock others to ensure a clean default state.
+
+            const updatedReports = group.reports.map((r, i) => ({
+                ...r,
+                isLocked: anchorIndices.has(i)
+            }));
+
+            const newSummaryGroups = [...state.summaryGroups];
+            newSummaryGroups[groupIndex] = { ...group, reports: updatedReports };
+
+            // Trigger Engine
+            // We need to convert to domain members and call requestRedistribution
+            // We can do this outside the set in a useEffect, but here we can just do it after state update or immediately.
+            // But `set` callback returns partial state. We need to trigger side effect.
+            // Side effect:
+            setTimeout(() => {
+                const updatedGroup = useNavfitStore.getState().summaryGroups[groupIndex];
+                if (!updatedGroup) return;
+
+                const domainMembers: DomainMember[] = updatedGroup.reports.map((r, i) => ({
+                    id: r.id,
+                    rank: i + 1,
+                    mta: r.traitAverage,
+                    isAnchor: !!r.isLocked,
+                    anchorValue: r.traitAverage,
+                    name: `${r.firstName} ${r.lastName}`
+                }));
+
+                useAuditStore.getState().addLog('ANCHOR_SELECTION_CHANGE', {
+                    groupId,
+                    message: "Applied Default Anchors (Top/Bottom 10%)"
+                });
+
+                useRedistributionStore.getState().requestRedistribution(
+                    groupId,
+                    domainMembers,
+                    DEFAULT_CONSTRAINTS,
+                    state.rsConfig.targetRsca
+                );
+            }, 0);
+
+            return { summaryGroups: newSummaryGroups };
+        });
+    },
+
     reorderMembers: (groupId, draggedId, targetIdOrOrder) => set((state) => {
         const groupIndex = state.summaryGroups.findIndex(g => g.id === groupId);
         if (groupIndex === -1) return {};
@@ -258,6 +390,36 @@ export const useNavfitStore = create<NavfitStore>((set) => ({
             const [draggedItem] = currentReports.splice(draggedIndex, 1);
             currentReports.splice(targetIndex, 0, draggedItem);
             updatedReportList = currentReports;
+
+            // 2b. Auto-Calculate MTA for the moved item (Interpolation)
+            // Note: We use targetIndex because draggedItem is now at targetIndex
+            const prevReport = updatedReportList[targetIndex - 1];
+            const nextReport = updatedReportList[targetIndex + 1];
+
+            let newMta = draggedItem.traitAverage;
+
+            if (prevReport && nextReport) {
+                newMta = (prevReport.traitAverage + nextReport.traitAverage) / 2;
+            } else if (prevReport) {
+                // Moved to bottom (or end)
+                newMta = Math.max(2.0, prevReport.traitAverage - 0.1);
+            } else if (nextReport) {
+                // Moved to top
+                newMta = Math.min(5.0, nextReport.traitAverage + 0.1);
+            }
+
+            // Simple Collision Avoidance (Nudge if identical)
+            if (prevReport && newMta >= prevReport.traitAverage) {
+                newMta = prevReport.traitAverage - 0.01;
+            }
+            if (nextReport && newMta <= nextReport.traitAverage) {
+                newMta = nextReport.traitAverage + 0.01;
+            }
+
+            updatedReportList[targetIndex] = {
+                ...draggedItem,
+                traitAverage: parseFloat(newMta.toFixed(2))
+            };
         }
 
         // 3. Auto-Assign Recommendations based on Rank and Policy
@@ -303,20 +465,35 @@ export const useNavfitStore = create<NavfitStore>((set) => ({
     // Feature
     projections: {},
     updateProjection: (groupId, reportId, value) => {
-        // Optimistic Update with Locking
-        set((state) => ({
-            projections: {
-                ...state.projections,
-                [reportId]: value
-            },
-            summaryGroups: state.summaryGroups.map(g => {
-                if (g.id !== groupId) return g;
-                return {
-                    ...g,
-                    reports: g.reports.map(r => r.id === reportId ? { ...r, traitAverage: value, isLocked: true } : r)
-                };
-            })
-        }));
+        // Optimistic Update with Locking and Strict Sorting
+        set((state) => {
+            const groupIndex = state.summaryGroups.findIndex(g => g.id === groupId);
+            if (groupIndex === -1) return {};
+
+            const group = state.summaryGroups[groupIndex];
+
+            // 1. Update the value
+            // We also update IsLocked to true because a manual MTA change implies an override/projection
+            const updatedReports = group.reports.map(r => r.id === reportId ? { ...r, traitAverage: value, isLocked: true } : r);
+
+            // 2. Strict Sort by MTA (Descending)
+            updatedReports.sort((a, b) => b.traitAverage - a.traitAverage);
+
+            // 3. Auto-Assign Recommendations based on Rank
+            // This ensures that if the rank order changes due to MTA change, the recommendations update (Automatic Method)
+            const finalReports = assignRecommendationsByRank(updatedReports, group);
+
+            const newSummaryGroups = [...state.summaryGroups];
+            newSummaryGroups[groupIndex] = { ...group, reports: finalReports };
+
+            return {
+                projections: {
+                    ...state.projections,
+                    [reportId]: value
+                },
+                summaryGroups: newSummaryGroups
+            };
+        });
 
         // Trigger Engine
         const state = useNavfitStore.getState();
@@ -383,9 +560,15 @@ export const useNavfitStore = create<NavfitStore>((set) => ({
 
             const epCount = tempReports.filter(r => r.promotionRecommendation === 'EP').length;
             const mpCount = tempReports.filter(r => r.promotionRecommendation === 'MP').length;
-            const groupSize = group.reports.length;
 
-            const quotaResult = checkQuota(groupSize, epCount, mpCount);
+            // Generate Context for Validation
+            const context = createSummaryGroupContext(group, updatedReport);
+
+            // Ensure size matches report array
+            // Note: If we just added a report, group.reports might be outdated if we don't use tempReports,
+            // but updateReport assumes report exists.
+            const quotaResult = checkQuota(context, epCount, mpCount);
+
             if (!quotaResult.isValid && quotaResult.message) {
                 violations.push({
                     code: 'QUOTA_EXCEEDED',
@@ -470,6 +653,7 @@ export const useNavfitStore = create<NavfitStore>((set) => ({
     setCycleFilter: (filter) => set({ cycleFilter: filter }),
     setCycleSort: (sort) => set({ cycleSort: sort }),
     setStrategyViewMode: (mode) => set({ strategyViewMode: mode }),
+    setCycleListPhase: (phase) => set({ cycleListPhase: phase }),
 
     // Drag State
     draggingItemType: null,
@@ -478,6 +662,20 @@ export const useNavfitStore = create<NavfitStore>((set) => ({
     // UI Mode State
     isRankMode: false,
     setRankMode: (isRankMode) => set({ isRankMode }),
+
+    // Data Management
+    loadState: (loadedState) => set({
+        roster: loadedState.roster,
+        summaryGroups: loadedState.summaryGroups,
+        rsConfig: loadedState.rsConfig,
+        // Reset selections and temporary state
+        selectedCycleId: null,
+        activeCompetitiveGroup: null,
+        selectedReportId: null,
+        selectedMemberId: null,
+        isContextPanelOpen: false,
+        projections: {},
+    }),
 }));
 
 export const selectActiveCycle = (state: NavfitStore): SummaryGroup | null => {

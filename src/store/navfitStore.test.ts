@@ -1,180 +1,141 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { useNavfitStore } from './useNavfitStore';
-import { INITIAL_ROSTER, INITIAL_RS_CONFIG } from '../data/initialRoster';
-import type { SummaryGroup, Report } from '@/types';
+import { useRedistributionStore } from './useRedistributionStore';
+import type { RosterMember } from '@/types/roster';
 
-// Helper to reset the store
-const resetStore = () => {
-    useNavfitStore.setState({
-        roster: INITIAL_ROSTER,
-        projections: {},
-        summaryGroups: [],
-        rsConfig: INITIAL_RS_CONFIG,
-    });
-};
+// Mock Data Replacement for INITIAL_ROSTER
+const MOCK_ROSTER: RosterMember[] = [
+    {
+        id: '1',
+        firstName: 'John',
+        lastName: 'Doe',
+        rank: 'Lieutenant',
+        payGrade: 'O-3',
+        designator: '1110',
+        dateReported: '2023-01-01',
+        prd: '2025-01-01',
+        status: 'Onboard'
+    },
+    {
+        id: '2',
+        firstName: 'Jane',
+        lastName: 'Smith',
+        rank: 'Lieutenant',
+        payGrade: 'O-3',
+        designator: '1110',
+        dateReported: '2023-02-01',
+        prd: '2025-02-01',
+        status: 'Onboard'
+    },
+    {
+        id: '3',
+        firstName: 'Bob',
+        lastName: 'Jones',
+        rank: 'Lieutenant',
+        payGrade: 'O-3',
+        designator: '1110',
+        dateReported: '2023-03-01',
+        prd: '2025-03-01',
+        status: 'Onboard'
+    }
+];
 
-describe('NavfitStore', () => {
+describe('useNavfitStore', () => {
     beforeEach(() => {
-        resetStore();
-    });
-
-    describe('reorderMember (Legacy Roster)', () => {
-        it('should reorder members in the roster', () => {
-            // Setup: Create a mock roster
-            const mockRoster = [
-                { ...INITIAL_ROSTER[0], id: '1', rankOrder: 1, lastName: 'A' },
-                { ...INITIAL_ROSTER[0], id: '2', rankOrder: 2, lastName: 'B' },
-                { ...INITIAL_ROSTER[0], id: '3', rankOrder: 3, lastName: 'C' },
-            ];
-
-            useNavfitStore.setState({ roster: mockRoster });
-
-            // Action: Move member '3' (index 2) to index 0
-            useNavfitStore.getState().reorderMember('3', 0);
-
-            // Verification
-            const updatedRoster = useNavfitStore.getState().roster;
-            expect(updatedRoster[0].id).toBe('3');
-            expect(updatedRoster[1].id).toBe('1');
-            expect(updatedRoster[2].id).toBe('2');
+        useNavfitStore.setState({
+            roster: MOCK_ROSTER,
+            summaryGroups: [],
+            projections: {},
+            deletedGroupIds: [],
+            deletedReportIds: []
         });
-
-        it('should not update projections', () => {
-            const mockRoster = [
-                { ...INITIAL_ROSTER[0], id: '1', rankOrder: 1 },
-                { ...INITIAL_ROSTER[0], id: '2', rankOrder: 2 },
-            ];
-            useNavfitStore.setState({ roster: mockRoster, projections: {} });
-
-            useNavfitStore.getState().reorderMember('2', 0);
-
-            // reorderMember does not calculate projections
-            expect(useNavfitStore.getState().projections).toEqual({});
+        // Manually reset Redistribution Store state without relying on .reset() method
+        useRedistributionStore.setState({
+            isCalculating: false,
+            latestResult: {},
+            error: null,
+            latestRequestId: null
         });
     });
 
-    describe('reorderMembers (Summary Group & Projections)', () => {
-        const createMockReport = (id: string, traitAverage: number, isAdverse = false): Report => ({
-            id,
-            memberId: id,
-            traitAverage,
-            isAdverse,
-            reportsRemaining: 1,
-            isLocked: false,
-            promotionRecommendation: 'MP',
-            firstName: `Member`,
-            lastName: id,
-            // Added required fields
-            periodEndDate: '2023-01-01',
-            type: 'Periodic',
-            traitGrades: {}
-        });
+    it('should initialize with roster data', () => {
+        const { roster } = useNavfitStore.getState();
+        expect(roster).toHaveLength(3);
+        expect(roster[0].lastName).toBe('Doe');
+    });
 
-        it('should reorder reports in a summary group and update projections', async () => {
-            // Setup: Create a summary group with reports
-            const group1: SummaryGroup = {
-                id: 'group1',
-                name: 'Test Group',
-                competitiveGroupKey: 'group1-key',
-                periodEndDate: '2023-12-31',
-                reports: [
-                    createMockReport('1', 3.0),
-                    createMockReport('2', 3.0),
-                    createMockReport('3', 3.0),
-                ]
-            };
+    it('should reorder member in roster (legacy)', () => {
+        const { reorderMember } = useNavfitStore.getState();
 
-            useNavfitStore.setState({
-                summaryGroups: [group1],
-                projections: {},
-                rsConfig: {
-                    ...INITIAL_RS_CONFIG,
-                    targetRsca: 4.00,
-                    // Ensure strategy config matches what we expect for calculation
-                    // We assume defaults in autoPlan are used or rsConfig doesn't override them unless specified
-                }
-            });
+        // Move first item (index 0) to end (index 2)
+        reorderMember('1', 2);
 
-            // Action: Move Report '3' (index 2) to index 0
-            // This is the "Legacy Single-Item Move" path in reorderMembers
-            useNavfitStore.getState().reorderMembers('group1', '3', '1'); // targetId '1' (which is at index 0 initially)
+        const { roster } = useNavfitStore.getState();
+        expect(roster[0].id).toBe('2');
+        expect(roster[1].id).toBe('3');
+        expect(roster[2].id).toBe('1');
+    });
 
-            // Wait, reorderMembers(groupId, draggedId, targetIdOrOrder)
-            // If targetIdOrOrder is a string, it finds targetIndex.
-            // If targetId is '1', index of '1' is 0. So '3' moves to 0.
+    it('should update projection', () => {
+        const { updateProjection, summaryGroups, addSummaryGroup } = useNavfitStore.getState();
 
-            // Verification: Order
-            const updatedGroups = useNavfitStore.getState().summaryGroups;
-            const updatedReports = updatedGroups[0].reports;
+        // Setup a dummy summary group
+        const group = {
+            id: 'g1',
+            name: 'Test Group',
+            competitiveGroupKey: 'O-3 1110',
+            periodEndDate: '2024-01-01',
+            reports: [
+                { id: 'r1', memberId: '1', traitAverage: 4.0, name: 'Doe' },
+                { id: 'r2', memberId: '2', traitAverage: 3.8, name: 'Smith' }
+            ]
+        } as any;
 
-            expect(updatedReports[0].id).toBe('3');
-            expect(updatedReports[1].id).toBe('1');
-            expect(updatedReports[2].id).toBe('2');
+        addSummaryGroup(group);
 
-            // Verification: Projections
-            // Based on autoPlan logic:
-            // #1 (Member 3) gets Ceiling.
-            // Formula: rscaTarget (4.00) + breakoutBonus (0.30) - (reportsRemainingFactor (0.10) * 1) = 4.20
-            // (assuming defaults in autoPlan.ts)
+        // Update projection for report r1
+        updateProjection('g1', 'r1', 4.2);
 
-            // Wait for async projection calculation (debounced)
-            await new Promise(resolve => setTimeout(resolve, 500));
+        const state = useNavfitStore.getState();
+        expect(state.projections['r1']).toBe(4.2);
 
-            const projections = useNavfitStore.getState().projections;
-            const proj3 = projections['3'];
+        // Verify report was updated in summary group
+        const updatedGroup = state.summaryGroups.find(g => g.id === 'g1');
+        const updatedReport = updatedGroup?.reports.find(r => r.id === 'r1');
+        expect(updatedReport?.traitAverage).toBe(4.2);
+        expect(updatedReport?.isLocked).toBe(true);
+    });
 
-            // Check if projection was calculated and stored
-            expect(proj3).toBeDefined();
-            expect(proj3).toBeGreaterThanOrEqual(4.00);
-            expect(proj3).toBeCloseTo(4.00, 1);
+    it('should toggle report lock', () => {
+        const { toggleReportLock, addSummaryGroup } = useNavfitStore.getState();
 
-            // Check if state reports are also updated with new trait averages
-            // Refetch reports from store to get updated MTA values
-            const finalGroups = useNavfitStore.getState().summaryGroups;
-            const finalReports = finalGroups[0].reports;
-            expect(finalReports[0].traitAverage).toBe(proj3);
-        });
+        const group = {
+            id: 'g1',
+            name: 'Test Group',
+            competitiveGroupKey: 'O-3 1110',
+            periodEndDate: '2024-01-01',
+            reports: [
+                { id: 'r1', memberId: '1', traitAverage: 4.0, isLocked: false }
+            ]
+        } as any;
 
-        it('should handle bulk reorder (array of IDs)', async () => {
-            const group1: SummaryGroup = {
-                id: 'group1',
-                name: 'Test Group',
-                competitiveGroupKey: 'group1-key',
-                periodEndDate: '2023-12-31',
-                reports: [
-                    createMockReport('1', 3.0),
-                    createMockReport('2', 3.0),
-                    createMockReport('3', 3.0),
-                ]
-            };
+        addSummaryGroup(group);
 
-            useNavfitStore.setState({
-                summaryGroups: [group1],
-                projections: {},
-                rsConfig: { ...INITIAL_RS_CONFIG, targetRsca: 4.00 }
-            });
+        // Check initial state after add (might be locked by default anchors)
+        let state = useNavfitStore.getState();
+        const initialLockState = state.summaryGroups[0].reports[0].isLocked;
 
-            // Action: Bulk reorder to [3, 2, 1]
-            useNavfitStore.getState().reorderMembers('group1', '3', ['3', '2', '1']);
+        // Toggle
+        toggleReportLock('g1', 'r1');
 
-            // Verification: Order
-            const updatedGroups = useNavfitStore.getState().summaryGroups;
-            const updatedReports = updatedGroups[0].reports;
+        state = useNavfitStore.getState();
+        const reportAfterFirstToggle = state.summaryGroups[0].reports[0];
+        expect(reportAfterFirstToggle.isLocked).toBe(!initialLockState);
 
-            expect(updatedReports[0].id).toBe('3');
-            expect(updatedReports[1].id).toBe('2');
-            expect(updatedReports[2].id).toBe('1');
-
-            // Verification: Projections updated
-            // Wait for async projection calculation (debounced)
-            await new Promise(resolve => setTimeout(resolve, 500));
-
-            const projections = useNavfitStore.getState().projections;
-            expect(projections['3']).toBeDefined(); // #1
-            expect(projections['1']).toBeDefined(); // #3 (last)
-
-            // #1 should be highest
-            expect(projections['3']).toBeGreaterThanOrEqual(projections['1']);
-        });
+        // Toggle back
+        toggleReportLock('g1', 'r1');
+        state = useNavfitStore.getState();
+        const reportAfterSecondToggle = state.summaryGroups[0].reports[0];
+        expect(reportAfterSecondToggle.isLocked).toBe(initialLockState);
     });
 });

@@ -14,14 +14,18 @@ import {
     Calendar,
     Check,
     X,
-    Send
+    Send,
+    Sparkles
 } from 'lucide-react';
 
 import { MemberDetailSidebar } from '@/features/dashboard/components/MemberDetailSidebar';
 import { StatusBadge } from './StatusBadge';
-import { PromotionBadge } from './PromotionBadge';
+
+import { QuotaHeadsUpDisplay } from './QuotaHeadsUpDisplay';
 import { CycleMemberList, type RankedMember } from './CycleMemberList';
 import { SubmissionConfirmationModal } from './SubmissionConfirmationModal';
+import { createSummaryGroupContext } from '@/features/strategy/logic/validation';
+import { DEFAULT_CONSTRAINTS } from '@/domain/rsca/constants';
 
 
 interface CycleContextPanelProps {
@@ -44,15 +48,41 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
         selectMember,
         setDraggingItemType,
         updateProjection,
-        updateGroupStatus
+        updateGroupStatus,
+        updateReport
     } = useNavfitStore();
 
-    const { latestResult } = useRedistributionStore();
+    const { latestResult, requestRedistribution } = useRedistributionStore();
 
     // Reactivity Fix: Ensure we use the latest group state from store, even if parent prop is stale
     const latestGroup = useNavfitStore(state =>
         group ? state.summaryGroups.find(g => g.id === group.id) || group : null
     );
+
+    const activeGroup = latestGroup || group;
+
+    const handleOptimize = () => {
+        if (!activeGroup || !rsConfig) return;
+
+        // Ensure strict sorting based on current state before optimizing
+        const sortedReports = [...activeGroup.reports].sort((a, b) => b.traitAverage - a.traitAverage);
+
+        const domainMembers = sortedReports.map((r, i) => ({
+            id: r.id,
+            rank: i + 1,
+            mta: r.traitAverage,
+            isAnchor: !!r.isLocked,
+            anchorValue: r.traitAverage,
+            name: `${r.firstName} ${r.lastName}`
+        }));
+
+        requestRedistribution(
+            activeGroup.id,
+            domainMembers,
+            DEFAULT_CONSTRAINTS,
+            rsConfig.targetRsca
+        );
+    };
 
     const handleReorderMembers = (groupId: string, droppedId: string, newOrderIds: string[]) => {
         // Fix: If this is an auto-generated group (not in store), we must persist it first.
@@ -70,7 +100,7 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
     };
 
     // Use latestGroup for all derived logic
-    const activeGroup = latestGroup || group;
+    // const activeGroup = latestGroup || group; // Moved up for usage in handleOptimize
 
     // Derived Stats using the "Dashboard" logic for advanced metrics
     const contextData = useMemo(() => {
@@ -122,10 +152,12 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
                     reportsRemaining: report.reportsRemaining,
                     report
                 };
-            });
+            })
+            // Ensure Strict Sorting for Display
+            .sort((a, b) => b.mta - a.mta);
 
         // Calculate Distribution
-        const distribution: Record<string, number> = { SP: 0, PR: 0, P: 0, MP: 0, EP: 0 };
+        const distribution: { [key: string]: number; SP: number; PR: number; P: number; MP: number; EP: number; } = { SP: 0, PR: 0, P: 0, MP: 0, EP: 0 };
         activeGroup.reports.forEach(r => {
             const rec = r.promotionRecommendation;
             if (rec === 'SP') distribution.SP++;
@@ -135,6 +167,9 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
             else if (rec === 'EP') distribution.EP++;
         });
 
+        // Create Domain Context
+        const domainContext = createSummaryGroupContext(activeGroup);
+
         return {
             cumulativeRsca,
             rank,
@@ -143,6 +178,7 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
             mainDraftStatus,
             rankedMembers,
             distribution,
+            domainContext,
             eotRsca: calculateEotRsca(
                 roster,
                 cumulativeRsca,
@@ -170,7 +206,7 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
         );
     }
 
-    const { cumulativeRsca, gap, mainDraftStatus, rankedMembers, distribution, eotRsca } = contextData;
+    const { cumulativeRsca, gap, mainDraftStatus, rankedMembers, distribution, eotRsca, totalReports, domainContext } = contextData;
 
     // Helper for Badge
     const getPromotionStatusBadge = (s?: string) => {
@@ -258,21 +294,10 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
                                 />
                             </div>
 
-                            {/* 2B. Promotion Recommendation Scoreboard (Right) - Framed & Flexible */}
+                            {/* 2B. Promotion Recommendation Quota HUD (Right) - Framed & Flexible */}
                             <div className="flex-1 rounded-xl border border-slate-200 shadow-sm overflow-hidden bg-white/50">
-                                <div className="flex items-center justify-around h-full px-4 bg-white/95 backdrop-blur-sm transition-all duration-300">
-                                    {['SP', 'PR', 'P', 'MP', 'EP'].map((key) => (
-                                        <div key={key} className="flex flex-col items-center gap-1 min-w-[32px]">
-                                            <span className="text-xl font-bold text-slate-700 leading-none">
-                                                {distribution[key] || 0}
-                                            </span>
-                                            <PromotionBadge
-                                                recommendation={key}
-                                                size="sm"
-                                                className="rounded-[3px] !text-[10px] !py-0.5 !px-2 h-auto min-h-0 uppercase tracking-wider"
-                                            />
-                                        </div>
-                                    ))}
+                                <div className="h-full bg-white/95 backdrop-blur-sm transition-all duration-300">
+                                    <QuotaHeadsUpDisplay distribution={distribution} totalReports={totalReports} context={domainContext} />
                                 </div>
                             </div>
                         </div>
@@ -330,6 +355,16 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
                                             >
                                                 <BarChart className="w-3.5 h-3.5 text-slate-500" />
                                                 <span>Waterfall</span>
+                                            </button>
+
+                                            {/* Optimize Button */}
+                                            <button
+                                                onClick={handleOptimize}
+                                                className="flex items-center justify-center gap-2 px-3 py-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 rounded-lg transition-colors text-xs font-medium"
+                                                title="Optimize MTA Distribution"
+                                            >
+                                                <Sparkles className="w-3.5 h-3.5 text-indigo-500" />
+                                                <span>Optimize</span>
                                             </button>
 
                                         </>
@@ -403,6 +438,13 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
                         })()}
                         currentReport={activeGroup.reports.find(r => r.memberId === selectedMemberId)}
 
+                        quotaContext={{
+                            distribution,
+                            totalReports
+                        }}
+                        groupContext={domainContext}
+                        groupId={activeGroup.id}
+                        isRankingMode={isRankingMode}
 
                         // Pass Rank Context
                         rankContext={(() => {
@@ -440,8 +482,13 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
                             }
                         }}
                         onUpdatePromRec={(id, rec) => {
-                            // TODO: Integrate with store action
-                            console.log('Update PromRec:', id, rec);
+                            const report = activeGroup.reports.find(r => r.memberId === id);
+                            if (report) {
+                                // Manual Update: Call updateReport (Method 2)
+                                // This action includes quota validation but does not FORCE auto-assignment of others
+                                // preserving the "Manual" nature of this specific interaction.
+                                updateReport(activeGroup.id, report.id, { promotionRecommendation: rec });
+                            }
                         }}
                         onNavigatePrev={() => {
                             const idx = rankedMembers.findIndex(m => m.id === selectedMemberId);
