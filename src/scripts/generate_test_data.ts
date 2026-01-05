@@ -76,6 +76,8 @@ interface Report {
     // ... Minimal fields for logic
     firstName?: string;
     lastName?: string;
+    memberName?: string; // Align with core type
+    memberRank?: string; // Align with core type
     rank?: string;
     designator?: string;
     draftStatus?: string;
@@ -124,6 +126,8 @@ const generateReport = (member: RosterMember, date: string, type: 'Historic' | '
         periodEndDate: date,
         traitAverage: traitAvg,
         promotionRecommendation: rec,
+        memberName: `${member.lastName}, ${member.firstName}`,
+        memberRank: member.rank,
         firstName: member.firstName,
         lastName: member.lastName,
         rank: member.rank,
@@ -170,7 +174,7 @@ const main = async () => {
             const activeGroupId = crypto.randomUUID();
             const activeGroup: SummaryGroup = {
                 id: activeGroupId,
-                name: `${pg} ${cat.name} Active`,
+                name: `${pg} ${cat.name === 'CWO' ? '' : cat.name + ' '}Active`.replace(/\s+/g, ' ').trim(),
                 paygrade: pg,
                 competitiveGroupKey: `${pg} ${cat.name}`, // Simplified Key
                 periodEndDate: CURRENT_CYCLE_DATE,
@@ -182,7 +186,7 @@ const main = async () => {
             const archiveGroupId = crypto.randomUUID();
             const archiveGroup: SummaryGroup = {
                 id: archiveGroupId,
-                name: `${pg} ${cat.name} Archive 2024`,
+                name: `${pg} ${cat.name === 'CWO' ? '' : cat.name + ' '}Archive 2024`.replace(/\s+/g, ' ').trim(),
                 paygrade: pg,
                 competitiveGroupKey: `${pg} ${cat.name}`,
                 periodEndDate: LAST_CYCLE_DATE,
@@ -221,45 +225,45 @@ const main = async () => {
     // 2. Generate Enlisted Groups
     // E-1 to E-9, '0000' designator equivalent
     for (const pg of PAYGRADES_ENLISTED) {
-         const activeGroupId = crypto.randomUUID();
-         const activeGroup: SummaryGroup = {
-             id: activeGroupId,
-             name: `${pg} Enlisted Active`,
-             paygrade: pg,
-             competitiveGroupKey: `${pg} ENLISTED`,
-             periodEndDate: CURRENT_CYCLE_DATE,
-             status: 'Draft',
-             reports: []
-         };
+        const activeGroupId = crypto.randomUUID();
+        const activeGroup: SummaryGroup = {
+            id: activeGroupId,
+            name: `${pg} Active`,
+            paygrade: pg,
+            competitiveGroupKey: `${pg} ENLISTED`,
+            periodEndDate: CURRENT_CYCLE_DATE,
+            status: 'Draft',
+            reports: []
+        };
 
-         // Archive
-         const archiveGroupId = crypto.randomUUID();
-         const archiveGroup: SummaryGroup = {
-             id: archiveGroupId,
-             name: `${pg} Enlisted Archive 2024`,
-             paygrade: pg,
-             competitiveGroupKey: `${pg} ENLISTED`,
-             periodEndDate: LAST_CYCLE_DATE,
-             status: 'Final',
-             reports: []
-         };
+        // Archive
+        const archiveGroupId = crypto.randomUUID();
+        const archiveGroup: SummaryGroup = {
+            id: archiveGroupId,
+            name: `${pg} Archive 2024`,
+            paygrade: pg,
+            competitiveGroupKey: `${pg} ENLISTED`,
+            periodEndDate: LAST_CYCLE_DATE,
+            status: 'Final',
+            reports: []
+        };
 
-         const count = getRandomInt(10, 25); // More enlisted usually
-         for (let i = 0; i < count; i++) {
-             const member = generateMember(pg, '0000');
-             roster.push(member);
+        const count = getRandomInt(10, 25); // More enlisted usually
+        for (let i = 0; i < count; i++) {
+            const member = generateMember(pg, '0000');
+            roster.push(member);
 
-             const activeRep = generateReport(member, CURRENT_CYCLE_DATE, 'Active');
-             activeGroup.reports.push(activeRep);
+            const activeRep = generateReport(member, CURRENT_CYCLE_DATE, 'Active');
+            activeGroup.reports.push(activeRep);
 
-             const archiveRep = generateReport(member, LAST_CYCLE_DATE, 'Historic');
-             archiveGroup.reports.push(archiveRep);
+            const archiveRep = generateReport(member, LAST_CYCLE_DATE, 'Historic');
+            archiveGroup.reports.push(archiveRep);
 
-             member.history.push(archiveRep);
-         }
+            member.history.push(archiveRep);
+        }
 
-         if (activeGroup.reports.length > 0) summaryGroups.push(activeGroup);
-         if (archiveGroup.reports.length > 0) summaryGroups.push(archiveGroup);
+        if (activeGroup.reports.length > 0) summaryGroups.push(activeGroup);
+        if (archiveGroup.reports.length > 0) summaryGroups.push(archiveGroup);
     }
 
     // Output Data

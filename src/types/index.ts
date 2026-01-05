@@ -18,6 +18,8 @@ export interface Member {
     lastTrait?: number;
     target?: number;
     lastExam?: number;
+    history?: Report[];
+    promotionStatus?: 'REGULAR' | 'FROCKED' | 'SELECTED' | 'SPOT';
 }
 
 export interface Report {
@@ -41,9 +43,16 @@ export interface Report {
 
     // Validation
     traitGrades?: {
-       [key: string]: number // 'Professional Expertise': 4.0
+        [key: string]: number // 'Professional Expertise': 4.0
     };
     violations?: PolicyViolation[];
+
+    // Detailed Report Flags
+    isAdverse?: boolean;
+    notObservedReport?: boolean;
+    detachmentOfIndividual?: boolean;
+    reportingSeniorName?: string;
+    reportsRemaining?: number;
 
     // Administrative Data
     grade?: string; // Block 2

@@ -31,6 +31,8 @@ export interface RawReport {
     promotionRecommendation: 'EP' | 'MP' | 'P' | 'Prog' | 'SP' | 'NOB';
     firstName?: string;
     lastName?: string;
+    memberName?: string;
+    memberRank?: string;
     rank?: string;
     designator?: string;
     draftStatus?: string;
@@ -130,8 +132,8 @@ export async function fetchInitialData(): Promise<{ members: Member[]; summaryGr
                 type: (rawReport.type as any) || 'Periodic',
                 traitGrades: rawReport.traitGrades || {},
                 draftStatus: (rawReport.draftStatus as any) || 'Draft',
-                memberRank: member?.rank || '',
-                memberName: member?.name || ''
+                memberRank: member?.rank || rawReport.memberRank || rawReport.rank || '',
+                memberName: member?.name || rawReport.memberName || (rawReport.firstName && rawReport.lastName ? `${rawReport.lastName}, ${rawReport.firstName}` : '') || ''
             };
         });
 

@@ -20,6 +20,7 @@ export interface RankedMember {
 
 interface CycleMemberListProps {
     isRankingMode: boolean;
+    isEnlisted: boolean; // Explicit control from parent
     rankedMembers: RankedMember[];
     localOrderedMembers: RankedMember[] | null;
     setLocalOrderedMembers: (members: RankedMember[] | null) => void;
@@ -34,6 +35,7 @@ interface CycleMemberListProps {
 
 export function CycleMemberList({
     isRankingMode,
+    isEnlisted,
     rankedMembers,
     localOrderedMembers,
     setLocalOrderedMembers,
@@ -70,17 +72,15 @@ export function CycleMemberList({
                         <tr>
                             <th className="px-4 py-3 border-b border-slate-200 w-12 text-center">#</th>
                             <th className="w-8 px-0 py-3 border-b border-slate-200"></th> {/* Spacer for Handle */}
-                            <th className="px-4 py-3 border-b border-slate-200 text-left">Name</th>
-                            <th className="px-4 py-3 border-b border-slate-200 text-center">
-                                {membersToRender.length > 0 && membersToRender[0].report?.grade?.startsWith('E')
-                                    ? 'Rate/Rank'
-                                    : 'Desig'}
+                            <th className="px-4 py-3 border-b border-slate-200 text-left w-[30%]">Name</th>
+                            <th className="px-4 py-3 border-b border-slate-200 text-center w-24">
+                                {isEnlisted ? 'Rate/Rank' : 'Desig'}
                             </th>
-                            <th className="px-4 py-3 border-b border-slate-200 text-center" title="Projected reports remaining until PRD"># Rpts</th>
-                            <th className="px-4 py-3 border-b border-slate-200 text-center">Rec</th>
-                            <th className="px-4 py-3 border-b border-slate-200 text-center">MTA</th>
-                            <th className="px-4 py-3 border-b border-slate-200 text-center">Delta</th>
-                            <th className="px-4 py-3 border-b border-slate-200 text-center">Margin</th>
+                            <th className="px-4 py-3 border-b border-slate-200 text-center w-16" title="Projected reports remaining until PRD"># Rpts</th>
+                            <th className="px-4 py-3 border-b border-slate-200 text-center w-16">Rec</th>
+                            <th className="px-4 py-3 border-b border-slate-200 text-center w-20">MTA</th>
+                            <th className="px-4 py-3 border-b border-slate-200 text-center w-20">Delta</th>
+                            <th className="px-4 py-3 border-b border-slate-200 text-center w-20">Margin</th>
                         </tr>
                     )}
                 </thead>
@@ -180,7 +180,7 @@ export function CycleMemberList({
                                 groupId={activeGroupId}
                                 index={idx}
                                 name={member.name}
-                                designator={member.designator}
+                                designator={isEnlisted ? member.rank : member.designator}
                                 reportsRemaining={member.reportsRemaining}
                                 promRec={member.promRec}
                                 mta={member.mta}

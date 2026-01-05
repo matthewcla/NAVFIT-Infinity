@@ -41,7 +41,9 @@ const getCompetitiveGroup = (member: RosterMember): CompGroupKey => {
     // Label Construction
     // Officers: "URL O-3" or "STAFF O-3"
     // Enlisted: "E-6" (No designator)
-    const labelBase = isOfficer && categoryLabel ? `${categoryLabel} ${displayRank}` : displayRank;
+    // CWO: "W-2" (Avoid "CWO W-2")
+    const finalCategoryLabel = categoryLabel === 'CWO' ? '' : categoryLabel;
+    const labelBase = isOfficer && finalCategoryLabel ? `${finalCategoryLabel} ${displayRank}` : displayRank;
     const label = `${labelBase} ${promotionStatus !== 'REGULAR' ? promotionStatus : ''}`.trim();
 
     return {
@@ -202,6 +204,8 @@ export const generateSummaryGroups = (
                         const report: Report = {
                             id: reportId,
                             memberId: member.id,
+                            memberRank: member.rank,
+                            memberName: `${member.lastName}, ${member.firstName} ${member.middleInitial || ''}`.trim(),
                             periodEndDate: pDateStr,
                             type: 'Periodic',
                             traitAverage: calculatedAvg,
@@ -237,6 +241,8 @@ export const generateSummaryGroups = (
             const report: Report = {
                 id: reportId,
                 memberId: member.id,
+                memberRank: member.rank,
+                memberName: `${member.lastName}, ${member.firstName} ${member.middleInitial || ''}`.trim(),
                 periodEndDate: prdStr,
                 type: 'Detachment', // Transfer is a Detachment of Individual
                 detachmentOfIndividual: true,
@@ -269,6 +275,8 @@ export const generateSummaryGroups = (
                 const report: Report = {
                     id: reportId,
                     memberId: member.id,
+                    memberRank: member.rank,
+                    memberName: `${member.lastName}, ${member.firstName} ${member.middleInitial || ''}`.trim(),
                     periodEndDate: rsDateStr,
                     type: 'Detachment',
                     traitAverage: calculatedAvg,

@@ -59,8 +59,8 @@ export function MemberReportRow({
 
     const handleDragStart = (e: React.DragEvent<HTMLTableRowElement>) => {
         if (isLocked) {
-             e.preventDefault();
-             return;
+            e.preventDefault();
+            return;
         }
         setIsDragging(true);
 
@@ -126,20 +126,20 @@ export function MemberReportRow({
                 <td className="w-8 px-0 py-3 text-center align-middle touch-none relative">
                     {/* In Rank Mode: Show Grip (unless locked). In List Mode: Show Lock Toggle */}
                     {isRankMode ? (
-                         isLocked ? (
-                             // Rank Mode + Locked = Show Lock Icon (Cannot Drag)
-                             <div className="flex items-center justify-center p-1 text-red-400">
-                                 <Lock className="w-3.5 h-3.5" />
-                             </div>
-                         ) : (
-                             // Rank Mode + Unlocked = Grip
+                        isLocked ? (
+                            // Rank Mode + Locked = Show Lock Icon (Cannot Drag)
+                            <div className="flex items-center justify-center p-1 text-red-400">
+                                <Lock className="w-3.5 h-3.5" />
+                            </div>
+                        ) : (
+                            // Rank Mode + Unlocked = Grip
                             <div className="flex items-center justify-center p-1 rounded transition-colors cursor-grab hover:bg-slate-200/50 text-slate-400 group-hover:text-slate-600">
                                 <GripVertical className="w-4 h-4" />
                             </div>
-                         )
+                        )
                     ) : (
                         // List Mode: Always show Lock Toggle
-                         <button
+                        <button
                             onClick={(e) => {
                                 e.stopPropagation();
                                 toggleReportLock(groupId, reportId);
@@ -157,19 +157,19 @@ export function MemberReportRow({
                     )}
                 </td>
 
-                <td className="px-4 py-3 text-sm font-semibold text-slate-700 text-left">{name}</td>
-                <td className="px-4 py-3 text-sm text-slate-500 text-center">{designator}</td>
-                <td className="px-4 py-3 text-sm text-slate-700 font-mono text-center">
+                <td className="px-4 py-3 text-sm font-semibold text-slate-700 text-left w-[30%]">{name}</td>
+                <td className="px-4 py-3 text-sm text-slate-500 text-center w-24">{designator}</td>
+                <td className="px-4 py-3 text-sm text-slate-700 font-mono text-center w-16">
                     {reportsRemaining !== undefined ? reportsRemaining : '-'}
                 </td>
-                <td className="px-4 py-3 text-sm text-center">
+                <td className="px-4 py-3 text-sm text-center w-16">
                     <PromotionBadge recommendation={promRec} size="xs" className="rounded-sm px-1.5" />
                 </td>
-                <td className="px-4 py-3 text-sm font-mono text-slate-700 text-center">{mta.toFixed(2)}</td>
-                <td className="px-4 py-3 text-sm font-mono text-slate-400 text-center">
+                <td className="px-4 py-3 text-sm font-mono text-slate-700 text-center w-20">{mta.toFixed(2)}</td>
+                <td className="px-4 py-3 text-sm font-mono text-slate-400 text-center w-20">
                     {delta === 0 ? '-' : (delta > 0 ? `+${delta.toFixed(2)}` : delta.toFixed(2))}
                 </td>
-                <td className={`px-4 py-3 text-sm font-mono text-center font-medium ${rscaMargin >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>
+                <td className={`px-4 py-3 text-sm font-mono text-center font-medium w-20 ${rscaMargin >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>
                     {rscaMargin > 0 ? '+' : ''}{rscaMargin.toFixed(2)}
                 </td>
             </tr>
