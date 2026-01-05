@@ -162,4 +162,71 @@ describe('NavfitStore', () => {
             expect(projections['3']).toBeGreaterThan(projections['1']);
         });
     });
+
+    describe('updateReport', () => {
+        const createMockReport = (id: string, traitAverage: number): Report => ({
+            id,
+            memberId: id,
+            traitAverage,
+            promotionRecommendation: 'MP',
+            reportsRemaining: 1,
+            summaryGroupId: 'group1',
+            isLocked: false,
+        } as Report);
+
+        it('should update a report in a summary group', () => {
+            const group1: SummaryGroup = {
+                id: 'group1',
+                name: 'Test Group',
+                competitiveGroupKey: 'key1',
+                reports: [createMockReport('1', 3.0)],
+                periodEndDate: '2023-01-01'
+            };
+
+            useNavfitStore.setState({
+                summaryGroups: [group1],
+                projections: {}
+            });
+
+            // Update MTA
+            useNavfitStore.getState().updateReport('1', { traitAverage: 4.0 });
+
+            const updatedGroups = useNavfitStore.getState().summaryGroups;
+            const updatedReport = updatedGroups[0].reports[0];
+
+            expect(updatedReport.traitAverage).toBe(4.0);
+
+            // Should also sync projections
+            const projections = useNavfitStore.getState().projections;
+            expect(projections['1']).toBe(4.0);
+        });
+
+        it('should update promotion recommendation without changing projections', () => {
+             const group1: SummaryGroup = {
+                id: 'group1',
+                name: 'Test Group',
+                competitiveGroupKey: 'key1',
+                reports: [createMockReport('1', 3.0)],
+                periodEndDate: '2023-01-01'
+            };
+
+            useNavfitStore.setState({
+                summaryGroups: [group1],
+                projections: { '1': 3.0 }
+            });
+
+            // Update Prom Rec
+            useNavfitStore.getState().updateReport('1', { promotionRecommendation: 'EP' });
+
+            const updatedGroups = useNavfitStore.getState().summaryGroups;
+            const updatedReport = updatedGroups[0].reports[0];
+
+            expect(updatedReport.promotionRecommendation).toBe('EP');
+            expect(updatedReport.traitAverage).toBe(3.0); // Unchanged
+
+            // Projections should remain as is
+            const projections = useNavfitStore.getState().projections;
+            expect(projections['1']).toBe(3.0);
+        });
+    });
 });

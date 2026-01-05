@@ -5,7 +5,7 @@ import { INITIAL_ROSTER, INITIAL_RS_CONFIG } from '../data/initialRoster';
 
 import { calculateOutcomeBasedGrades, type Member } from '@/features/strategy/logic/autoPlan';
 
-import type { SummaryGroup } from '@/types';
+import type { SummaryGroup, Report } from '@/types';
 
 interface NavfitStore {
     // Navigation State
@@ -34,6 +34,10 @@ interface NavfitStore {
     summaryGroups: SummaryGroup[];
     setSummaryGroups: (groups: SummaryGroup[]) => void;
     addSummaryGroup: (group: SummaryGroup) => void;
+
+    // Report Updates
+    updateReport: (reportId: string, updates: Partial<Report>) => void;
+
     // State for persistence (Deletions)
     deletedGroupIds: string[];
     deletedReportIds: string[];
@@ -164,6 +168,44 @@ export const useNavfitStore = create<NavfitStore>((set) => ({
             };
         })
     })),
+
+    updateReport: (reportId, updates) => set((state) => {
+        // Find the group containing the report
+        const groupIndex = state.summaryGroups.findIndex(g => g.reports.some(r => r.id === reportId));
+
+        if (groupIndex === -1) {
+            return {};
+        }
+
+        const group = state.summaryGroups[groupIndex];
+        const newReports = group.reports.map(report => {
+            if (report.id === reportId) {
+                return { ...report, ...updates };
+            }
+            return report;
+        });
+
+        const newSummaryGroups = [...state.summaryGroups];
+        newSummaryGroups[groupIndex] = {
+            ...group,
+            reports: newReports
+        };
+
+        // If traitAverage is updated, also sync projections
+        let newProjections = state.projections;
+        if (updates.traitAverage !== undefined) {
+             newProjections = {
+                ...state.projections,
+                [reportId]: updates.traitAverage
+            };
+        }
+
+        return {
+            summaryGroups: newSummaryGroups,
+            projections: newProjections
+        };
+    }),
+
     reorderMember: (memberId, newIndex) => set((state) => {
         // Legacy Roster Reorder (Keep for Member Detail View if needed, but primary is now Group-based)
         const currentRoster = [...state.roster];

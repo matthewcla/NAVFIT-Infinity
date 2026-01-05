@@ -37,7 +37,8 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
         selectedMemberId,
         selectMember,
         setDraggingItemType,
-        updateProjection
+        updateProjection,
+        updateReport
     } = useNavfitStore();
     // Reactivity Fix: Ensure we use the latest group state from store, even if parent prop is stale
     const latestGroup = useNavfitStore(state =>
@@ -361,12 +362,15 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
                         onUpdateMTA={(id, val) => {
                             const report = activeGroup.reports.find(r => r.memberId === id);
                             if (report) {
-                                updateProjection(report.id, val);
+                                // Update permanent state (also syncs projections)
+                                updateReport(report.id, { traitAverage: val });
                             }
                         }}
                         onUpdatePromRec={(id, rec) => {
-                            // TODO: Integrate with store action
-                            console.log('Update PromRec:', id, rec);
+                            const report = activeGroup.reports.find(r => r.memberId === id);
+                            if (report) {
+                                updateReport(report.id, { promotionRecommendation: rec });
+                            }
                         }}
                         onNavigatePrev={() => {
                             const idx = rankedMembers.findIndex(m => m.id === selectedMemberId);
