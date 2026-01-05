@@ -48,7 +48,8 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
         selectMember,
         setDraggingItemType,
         updateProjection,
-        updateGroupStatus
+        updateGroupStatus,
+        updateReport
     } = useNavfitStore();
 
     const { latestResult, requestRedistribution } = useRedistributionStore();
@@ -486,7 +487,7 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
                                 // Manual Update: Call updateReport (Method 2)
                                 // This action includes quota validation but does not FORCE auto-assignment of others
                                 // preserving the "Manual" nature of this specific interaction.
-                                useNavfitStore.getState().updateReport(activeGroup.id, report.id, { promotionRecommendation: rec });
+                                updateReport(activeGroup.id, report.id, { promotionRecommendation: rec });
                             }
                         }}
                         onNavigatePrev={() => {
