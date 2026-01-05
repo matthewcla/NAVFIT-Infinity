@@ -36,9 +36,10 @@ interface ManningWaterfallProps {
 
     onReportUpdate?: (reportId: string, newAverage: number) => void;
     projections?: Record<string, number>;
+    changeOfCommandDate?: string;
 }
 
-export function ManningWaterfall({ summaryGroups = [], roster = [], onOpenReport, onReportUpdate, projections }: ManningWaterfallProps) {
+export function ManningWaterfall({ summaryGroups = [], roster = [], onOpenReport, onReportUpdate, projections, changeOfCommandDate }: ManningWaterfallProps) {
     // Derived State: Convert Roster + Reports -> Member[] for Waterfall
     const members = useMemo<WaterfallMember[]>(() => {
         let effectiveRoster: Member[] = [];
@@ -186,6 +187,7 @@ export function ManningWaterfall({ summaryGroups = [], roster = [], onOpenReport
                                         onDragOver: handleDragOver,
                                         onDrop: handleDrop
                                     }}
+                                    coDetachDate={changeOfCommandDate || ''}
                                 />
                             );
                         })}

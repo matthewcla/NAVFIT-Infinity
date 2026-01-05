@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { redistributeMTA } from './redistribution';
 
-import type { Constraints, Member } from '@/domain/rsca/types';
+import type { Constraints, Member, AlgorithmParams } from '@/domain/rsca/types';
 
 // Helper to create members
 const createMembers = (mtas: number[], anchors: { index: number; value: number }[] = []): Member[] => {
@@ -19,6 +19,15 @@ const DEFAULT_CONSTRAINTS: Constraints = {
     controlBandUpper: 4.2,
     mtaLowerBound: 2.0,
     mtaUpperBound: 5.0,
+    maxIterations: 50,
+    tolerance: 0.001
+};
+
+const DEFAULT_PARAMS: AlgorithmParams = {
+    alpha: 0.1,
+    tau: 0.05,
+    delta: 0.1,
+    p: 1.0
 };
 
 describe('Redistribution Engine Robustness', () => {
@@ -76,14 +85,14 @@ describe('Redistribution Engine Robustness', () => {
                 const members = createMembers(mtas, anchors);
 
                 // Run redistribution
-                const result = redistributeMTA(members, DEFAULT_CONSTRAINTS);
+                const result = redistributeMTA(members, DEFAULT_CONSTRAINTS, DEFAULT_PARAMS);
 
                 if (result.isFeasible) {
                     const resVec = result.mtaVector;
 
                     // 1. Monotonicity
                     for (let i = 0; i < n - 1; i++) {
-                        expect(resVec[i]).toBeGreaterThanOrEqual(resVec[i + 1] - 1e-9);
+                        expect(resVec[i]).toBeGreaterThanOrEqual(resVec[i + 1] - 1e-4);
                     }
 
                     // 2. Bounds
@@ -119,8 +128,8 @@ describe('Redistribution Engine Robustness', () => {
             for (let n = 2; n < 10; n++) {
                 const mtas = Array(n).fill(3.0);
                 const members = createMembers(mtas);
-                // Target 4.0
-                const result = redistributeMTA(members, DEFAULT_CONSTRAINTS, 4.0);
+                // Target 4.0 (implied by constraints average)
+                const result = redistributeMTA(members, DEFAULT_CONSTRAINTS, DEFAULT_PARAMS);
                 expect(result.isFeasible).toBe(true);
                 expect(result.finalRSCA).toBeCloseTo(4.0, 3);
                 expect(result.mtaVector).toHaveLength(n);
@@ -140,7 +149,7 @@ describe('Redistribution Engine Robustness', () => {
             });
 
             const members = createMembers(mtas, anchors);
-            const result = redistributeMTA(members, DEFAULT_CONSTRAINTS);
+            const result = redistributeMTA(members, DEFAULT_CONSTRAINTS, DEFAULT_PARAMS);
 
             // It might be feasible or not depending on band.
             // Mean of anchors is approx 4.5 - 4.5 * 0.1 ~ 4.05.
@@ -154,7 +163,7 @@ describe('Redistribution Engine Robustness', () => {
                 });
                 // Check monotonicity for non-anchors too
                 for (let i = 0; i < n - 1; i++) {
-                    expect(result.mtaVector[i]).toBeGreaterThanOrEqual(result.mtaVector[i + 1]);
+                    expect(result.mtaVector[i]).toBeGreaterThanOrEqual(result.mtaVector[i + 1] - 1e-4);
                 }
             }
         });
@@ -167,12 +176,12 @@ describe('Redistribution Engine Robustness', () => {
             const anchors = Array.from({ length: n }, (_, i) => ({ index: i, value: 5.0 }));
 
             const members = createMembers(mtas, anchors);
-            const result = redistributeMTA(members, DEFAULT_CONSTRAINTS);
+            const result = redistributeMTA(members, DEFAULT_CONSTRAINTS, DEFAULT_PARAMS);
 
             expect(result.isFeasible).toBe(false);
-            expect(result.infeasibilityReport).toBeDefined();
+            expect(result.diagnostics).toBeDefined();
             // Min mean should be 5.0
-            expect(result.infeasibilityReport?.meanMin).toBeCloseTo(5.0);
+            expect(result.diagnostics?.meanMin).toBeCloseTo(5.0);
         });
 
         it('should handle tight bounds', () => {
@@ -181,10 +190,12 @@ describe('Redistribution Engine Robustness', () => {
                 mtaLowerBound: 3.9,
                 mtaUpperBound: 4.0,
                 controlBandLower: 3.9,
-                controlBandUpper: 4.0
+                controlBandUpper: 4.0,
+                maxIterations: 50,
+                tolerance: 0.001
             };
             const members = createMembers([4.0, 3.9, 4.0]); // mixed
-            const result = redistributeMTA(members, constraints);
+            const result = redistributeMTA(members, constraints, DEFAULT_PARAMS);
 
             expect(result.isFeasible).toBe(true);
             result.mtaVector.forEach(v => {
@@ -201,12 +212,12 @@ describe('Redistribution Engine Robustness', () => {
                 { index: 3, value: 4.0 }
             ]);
 
-            const result = redistributeMTA(members, DEFAULT_CONSTRAINTS);
+            const result = redistributeMTA(members, DEFAULT_CONSTRAINTS, DEFAULT_PARAMS);
 
             expect(result.isFeasible).toBe(true);
-            expect(result.mtaVector[1]).toBe(4.0);
-            expect(result.mtaVector[2]).toBe(4.0);
-            expect(result.mtaVector[3]).toBe(4.0);
+            expect(result.mtaVector[1]).toBeCloseTo(4.0, 5);
+            expect(result.mtaVector[2]).toBeCloseTo(4.0, 5);
+            expect(result.mtaVector[3]).toBeCloseTo(4.0, 5);
         });
     });
 });

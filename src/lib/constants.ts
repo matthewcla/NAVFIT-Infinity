@@ -1,6 +1,4 @@
 export const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-export const CURRENT_YEAR = 2025;
-export const CO_DETACH_DATE = '2025-09-15'; // Change of Reporting Senior Date
 
 export const PERIODIC_SCHEDULE: Record<string, number> = {
     'O-6': 7, // July
