@@ -3,7 +3,6 @@ import { GroupHeader } from './GroupHeader';
 import { TimelineRow } from './TimelineRow';
 import { useGroupMetrics } from '../hooks/useGroupMetrics';
 import type { WaterfallMember, TimelineMonth } from '../../../types';
-import { CO_DETACH_DATE } from '@/lib/constants';
 
 interface WaterfallGroupProps {
     groupTitle: string;
@@ -20,6 +19,7 @@ interface WaterfallGroupProps {
         onDragOver: (e: React.DragEvent) => void;
         onDrop: (e: React.DragEvent, targetMemberId: string, targetGroupKey: string) => void;
     };
+    coDetachDate: string;
 }
 
 export const WaterfallGroup = memo(function WaterfallGroup({
@@ -32,7 +32,8 @@ export const WaterfallGroup = memo(function WaterfallGroup({
     projections,
     onOpenReport,
     onReportUpdate,
-    dragHandlers
+    dragHandlers,
+    coDetachDate
 }: WaterfallGroupProps) {
 
     // Use the extracted hook for expensive calculations
@@ -64,7 +65,7 @@ export const WaterfallGroup = memo(function WaterfallGroup({
                     <TimelineRow
                         key={member.id}
                         member={member}
-                        coDetachDate={CO_DETACH_DATE}
+                        coDetachDate={coDetachDate}
                         avgRSCA={currentRSCA}
                         timelineMonths={timelineMonths}
                         onOpenReport={(reportId) => {
