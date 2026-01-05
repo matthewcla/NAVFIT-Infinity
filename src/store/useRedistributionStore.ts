@@ -235,7 +235,7 @@ export const useRedistributionStore = create<RedistributionStoreState>((set, get
                 mta: r.traitAverage,
                 isAnchor: !!r.isLocked,
                 anchorValue: r.traitAverage,
-                name: `${r.firstName} ${r.lastName}`
+                name: r.memberName
             }));
 
             get().requestRedistribution(groupId, payloadMembers, constraints, navfitStore.rsConfig.targetRsca);
@@ -264,7 +264,7 @@ export const useRedistributionStore = create<RedistributionStoreState>((set, get
                 mta: r.traitAverage,
                 isAnchor: !!r.isLocked,
                 anchorValue: r.traitAverage,
-                name: `${r.firstName} ${r.lastName}`
+                name: r.memberName
             }));
             get().requestRedistribution(groupId, payloadMembers, DEFAULT_CONSTRAINTS, navfitStore.rsConfig.targetRsca);
         },
@@ -292,7 +292,7 @@ export const useRedistributionStore = create<RedistributionStoreState>((set, get
                 mta: r.traitAverage,
                 isAnchor: !!r.isLocked,
                 anchorValue: r.traitAverage,
-                name: `${r.firstName} ${r.lastName}`
+                name: r.memberName
             }));
             get().requestRedistribution(groupId, payloadMembers, DEFAULT_CONSTRAINTS, navfitStore.rsConfig.targetRsca);
         },
@@ -308,7 +308,7 @@ export const useRedistributionStore = create<RedistributionStoreState>((set, get
                 mta: r.traitAverage,
                 isAnchor: !!r.isLocked,
                 anchorValue: r.traitAverage,
-                name: `${r.firstName} ${r.lastName}`
+                name: r.memberName
             }));
             get().requestRedistribution(groupId, payloadMembers, constraints, navfitStore.rsConfig.targetRsca);
         }

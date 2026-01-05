@@ -56,20 +56,33 @@ export function MemberDetailSidebar({
     onUpdatePromRec,
     onNavigateNext,
     onNavigatePrev,
-    rosterMember,
-    currentReport,
+    rosterMember: _passedRosterMember,
+    currentReport: _passedCurrentReport,
     rankContext,
     quotaContext,
     groupContext,
     groupId,
     isRankingMode = false
 }: MemberDetailSidebarProps) {
+    const { roster, toggleReportLock, summaryGroups } = useNavfitStore();
+
+    // Source of Truth: Fetch directly from store if possible
+    const rosterMember = roster.find(m => m.id === memberId) || _passedRosterMember;
+
+    // Find latest report if we have a groupId, or fallback to passed report
+    let currentReport = _passedCurrentReport;
+    if (groupId) {
+        const group = summaryGroups.find(g => g.id === groupId);
+        const foundReport = group?.reports.find(r => r.memberId === memberId);
+        if (foundReport) {
+            currentReport = foundReport;
+        }
+    }
 
     // --- State Management ---
     const initialMta = currentReport?.traitAverage || 3.00;
     const initialRec = currentReport?.promotionRecommendation || 'P';
 
-    const { toggleReportLock } = useNavfitStore();
     const isLocked = currentReport?.isLocked || false;
 
     const [simulatedMta, setSimulatedMta] = useState<number>(initialMta);
@@ -429,7 +442,7 @@ export function MemberDetailSidebar({
                                         <span className="px-1.5 py-0.5 text-[10px] font-bold bg-red-100 text-red-800 rounded border border-red-200">ADVERSE</span>
                                     )}
                                     <h2 className="text-lg font-bold text-slate-900 leading-tight truncate">
-                                        {rosterMember.name}
+                                        {rosterMember.firstName} {rosterMember.lastName}
                                     </h2>
                                 </div>
                                 <div className="text-sm font-medium text-slate-500">
@@ -774,7 +787,7 @@ export function MemberDetailSidebar({
                 direction={warningDirection}
                 currentRank={rankContext?.currentRank || 0}
                 newRank={(rankContext?.currentRank || 0) + (warningDirection === 'up' ? -1 : 1)}
-                memberName={rosterMember.name}
+                memberName={`${rosterMember.firstName} ${rosterMember.lastName}`}
             />
 
             <ConfirmationModal
