@@ -1,4 +1,4 @@
-import { Member, SummaryGroup, Report, PayGrade, Designator } from '@/types/index';
+import type { Member, SummaryGroup, Report } from '@/types/index';
 
 // Interfaces matching public/member_details.json
 export interface RawMemberDetail {

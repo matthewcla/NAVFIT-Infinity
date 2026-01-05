@@ -11,13 +11,6 @@ import { useRedistributionStore } from '@/store/useRedistributionStore';
 import { DevTools } from '@/features/dev/DevTools';
 
 function App() {
-  // Initialize Data
-  useEffect(() => {
-    useRedistributionStore.getState().initWorker();
-    useNavfitStore.getState().initializeRoster();
-  }, []);
-
-  // const [isWorkspaceOpen, setIsWorkspaceOpen] = useState(false);  <-- Removed local state
   const {
     activeTab,
     setActiveTab,
@@ -25,8 +18,16 @@ function App() {
     toggleSidebar,
     selectedCycleId,
     strategyViewMode,
-    setStrategyViewMode
+    setStrategyViewMode,
+    loadData,
+    isLoading
   } = useNavfitStore();
+
+  // Initialize Data
+  useEffect(() => {
+    useRedistributionStore.getState().initWorker();
+    loadData();
+  }, [loadData]);
 
   // Reset workspace view if tab changes
   useEffect(() => {
@@ -55,6 +56,17 @@ function App() {
         return <CommandStrategyCenter />;
     }
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-screen w-full bg-slate-50 dark:bg-slate-900">
+        <div className="flex flex-col items-center space-y-4">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+          <div className="text-slate-600 dark:text-slate-400 font-medium">Loading Data...</div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <AppLayout

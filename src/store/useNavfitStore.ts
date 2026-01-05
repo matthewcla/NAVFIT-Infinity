@@ -725,4 +725,4 @@ export const selectActiveCycle = (state: NavfitStore): SummaryGroup | null => {
 };
 
 // Initialize
-useNavfitStore.getState().loadData();
+// useNavfitStore.getState().loadData();
