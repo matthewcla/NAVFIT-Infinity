@@ -180,6 +180,7 @@ export function CycleMemberList({
                                 groupId={activeGroupId}
                                 index={idx}
                                 name={member.name}
+                                // Ensure Rate/Rank (member.rank) is used for Enlisted, falling back to designator for Officers
                                 designator={isEnlisted ? member.rank : member.designator}
                                 reportsRemaining={member.reportsRemaining}
                                 promRec={member.promRec}
