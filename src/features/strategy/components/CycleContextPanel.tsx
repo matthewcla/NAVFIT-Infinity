@@ -111,7 +111,8 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
 
         // Derive Rank from competitiveGroupKey (e.g., "O-3 1110" -> "O-3") or use paygrade
         const rank = activeGroup.paygrade || (activeGroup.competitiveGroupKey ? activeGroup.competitiveGroupKey.split(' ')[0] : 'Unknown');
-        const isEnlisted = rank.startsWith('E');
+        // Robust Enlisted Check: Start with E or explicitly matched paygrades
+        const isEnlisted = rank.startsWith('E') || ['E-1', 'E-2', 'E-3', 'E-4', 'E-5', 'E-6', 'E-7', 'E-8', 'E-9'].includes(activeGroup.paygrade || '');
 
 
         // Calculate Rank-Wide Cumulative Average (Current State of all reports)
@@ -146,6 +147,8 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
                     ? `${member.lastName}, ${member.firstName}`
                     : (report.memberName || 'Unknown');
 
+                // For Enlisted: strictly use member.rank (e.g. "BM1") if available.
+                // Fallback to report.memberRank, then to paygrade "rank" variable.
                 const memberRank = member?.rank || report.memberRank || report.grade || rank;
                 const memberDesignator = member?.designator || report.designator || '';
 
