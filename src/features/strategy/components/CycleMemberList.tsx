@@ -61,7 +61,7 @@ export function CycleMemberList({
                     {isRankingMode ? (
                         <tr>
                             <th className="px-4 py-3 border-b border-slate-200 w-12 text-center">#</th>
-                            <th className="w-10 px-0 py-3 border-b border-slate-200 text-center"></th> {/* Handle */}
+                            <th className="w-10 px-0 py-3 border-b border-slate-200 text-center"></th>
                             <th className="px-4 py-3 border-b border-slate-200 text-left">Name</th>
                             <th className="px-4 py-3 border-b border-slate-200 text-center font-mono">Proj. MTA</th>
                             <th className="px-4 py-3 border-b border-slate-200 text-center">Rec</th>
@@ -69,7 +69,7 @@ export function CycleMemberList({
                     ) : (
                         <tr>
                             <th className="px-4 py-3 border-b border-slate-200 w-12 text-center">#</th>
-                            <th className="w-8 px-0 py-3 border-b border-slate-200"></th> {/* Spacer for Handle */}
+                            <th className="w-8 px-0 py-3 border-b border-slate-200"></th>
                             <th className="px-4 py-3 border-b border-slate-200 text-left">Name</th>
                             <th className="px-4 py-3 border-b border-slate-200 text-center">
                                 {membersToRender.length > 0 && membersToRender[0].report?.grade?.startsWith('E')
