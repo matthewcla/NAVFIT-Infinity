@@ -201,6 +201,9 @@ export const useNavfitStore = create<NavfitStore>((set) => ({
                     designator: m.designator || '', // Enlisted now have designator populated from my previous step
                     dateReported: (m as any).dateReported || new Date().toISOString().split('T')[0], // Cast as any if strictly typed Member doesn't have it (but I saw it in fetchInitialData source)
                     prd: m.prd || '',
+                    eda: (m as any).eda,
+                    edd: (m as any).edd,
+                    milestoneTour: (m as any).milestoneTour,
                     lastTrait: m.lastTrait || 0,
                     status: m.status as any
                 };
@@ -262,7 +265,7 @@ export const useNavfitStore = create<NavfitStore>((set) => ({
             // Also update status on all reports
             const updatedReports = group.reports.map(r => ({
                 ...r,
-                draftStatus: status
+                draftStatus: status as any
             }));
 
             return {
@@ -374,7 +377,7 @@ export const useNavfitStore = create<NavfitStore>((set) => ({
                     mta: r.traitAverage,
                     isAnchor: !!r.isLocked,
                     anchorValue: r.traitAverage,
-                    name: `${r.firstName} ${r.lastName}`
+                    name: r.memberName
                 }));
 
                 useAuditStore.getState().addLog('ANCHOR_SELECTION_CHANGE', {
@@ -481,7 +484,7 @@ export const useNavfitStore = create<NavfitStore>((set) => ({
             mta: r.traitAverage, // Send current MTA as baseline
             isAnchor: !!r.isLocked,
             anchorValue: r.traitAverage,
-            name: `${r.firstName} ${r.lastName}`
+            name: r.memberName
         }));
 
         useAuditStore.getState().addLog('RANK_ORDER_CHANGE', {
@@ -552,7 +555,7 @@ export const useNavfitStore = create<NavfitStore>((set) => ({
                 mta: r.traitAverage,
                 isAnchor: !!r.isLocked,
                 anchorValue: r.traitAverage,
-                name: `${r.firstName} ${r.lastName}`
+                name: r.memberName
             }));
             useRedistributionStore.getState().requestRedistribution(groupId, domainMembers, DEFAULT_CONSTRAINTS, state.rsConfig.targetRsca);
         }
