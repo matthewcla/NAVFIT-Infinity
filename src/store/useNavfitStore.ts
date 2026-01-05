@@ -473,13 +473,18 @@ export const useNavfitStore = create<NavfitStore>((set) => ({
             const group = state.summaryGroups[groupIndex];
 
             // 1. Update the value
+            // We also update IsLocked to true because a manual MTA change implies an override/projection
             const updatedReports = group.reports.map(r => r.id === reportId ? { ...r, traitAverage: value, isLocked: true } : r);
 
             // 2. Strict Sort by MTA (Descending)
             updatedReports.sort((a, b) => b.traitAverage - a.traitAverage);
 
+            // 3. Auto-Assign Recommendations based on Rank
+            // This ensures that if the rank order changes due to MTA change, the recommendations update (Automatic Method)
+            const finalReports = assignRecommendationsByRank(updatedReports, group);
+
             const newSummaryGroups = [...state.summaryGroups];
-            newSummaryGroups[groupIndex] = { ...group, reports: updatedReports };
+            newSummaryGroups[groupIndex] = { ...group, reports: finalReports };
 
             return {
                 projections: {

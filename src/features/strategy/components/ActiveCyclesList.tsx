@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useNavfitStore } from '@/store/useNavfitStore';
+import { getCompetitiveGroupStats } from '@/features/strategy/logic/rsca';
 import type { SummaryGroup } from '@/types';
 import { StrategyGroupCard } from './StrategyGroupCard';
 import { ChevronRight, Filter, Plus } from 'lucide-react';
@@ -14,8 +15,43 @@ interface ActiveCyclesListProps {
 }
 
 export function ActiveCyclesList({ groups, onSelect, selectedGroupId, onAddClick }: ActiveCyclesListProps) {
-    const { setDraggingItemType, deleteSummaryGroup, deleteReport, draggingItemType, cycleSort } = useNavfitStore();
+    const { setDraggingItemType, deleteSummaryGroup, deleteReport, draggingItemType, cycleSort, summaryGroups } = useNavfitStore();
     const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({});
+
+    // Helper: RSCA Impact Calculation
+    const calculateImpact = (group: SummaryGroup) => {
+        const rank = group.paygrade || (group.competitiveGroupKey ? group.competitiveGroupKey.split(' ')[0] : null);
+        if (!rank) return 0.00;
+
+        // Baseline: All *other* groups for this rank
+        const stats = getCompetitiveGroupStats(summaryGroups, rank, group.id);
+        const baselineAvg = stats.average;
+
+        // This Group Stats
+        let groupTotal = 0;
+        let groupCount = 0;
+        group.reports.forEach(r => {
+            const mta = r.traitAverage || 0;
+            if (mta > 0) {
+                groupTotal += mta;
+                groupCount++;
+            }
+        });
+
+        if (groupCount === 0) return 0.00;
+
+        // Projected Cumulative if this group is added
+        const newTotal = stats.totalScore + groupTotal;
+        const newCount = stats.count + groupCount;
+
+        // If baseline is 0 (first group), the impact is effectively the distance from "neutral" or 0,
+        // but typically we show 0 impact if it defines the average or just show deviation from 3.0?
+        // Let's stick to 0.00 if it's the only group.
+        if (stats.count === 0) return 0.00;
+
+        const newAvg = newTotal / newCount;
+        return newAvg - baselineAvg;
+    };
 
     // Grouping Logic Dynamic
     const groupedMap = useMemo(() => {
@@ -136,7 +172,7 @@ export function ActiveCyclesList({ groups, onSelect, selectedGroupId, onAddClick
                                         !isCollapsed && (
                                             <div className="grid gap-2.5">
                                                 {subGroups.map(group => {
-                                                    const rscaImpact = 0.00;
+                                                    const rscaImpact = calculateImpact(group);
                                                     const memberCount = group.reports.length;
                                                     const now = new Date();
                                                     const endDate = new Date(group.periodEndDate);

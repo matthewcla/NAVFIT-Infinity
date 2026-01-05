@@ -67,12 +67,12 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
         const sortedReports = [...activeGroup.reports].sort((a, b) => b.traitAverage - a.traitAverage);
 
         const domainMembers = sortedReports.map((r, i) => ({
-             id: r.id,
-             rank: i + 1,
-             mta: r.traitAverage,
-             isAnchor: !!r.isLocked,
-             anchorValue: r.traitAverage,
-             name: `${r.firstName} ${r.lastName}`
+            id: r.id,
+            rank: i + 1,
+            mta: r.traitAverage,
+            isAnchor: !!r.isLocked,
+            anchorValue: r.traitAverage,
+            name: `${r.firstName} ${r.lastName}`
         }));
 
         requestRedistribution(
@@ -437,12 +437,12 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
                         })()}
                         currentReport={activeGroup.reports.find(r => r.memberId === selectedMemberId)}
 
-                        // Pass Quota Context
                         quotaContext={{
                             distribution,
                             totalReports
                         }}
                         groupContext={domainContext}
+                        groupId={activeGroup.id}
                         isRankingMode={isRankingMode}
 
                         // Pass Rank Context
@@ -481,8 +481,13 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
                             }
                         }}
                         onUpdatePromRec={(id, rec) => {
-                            // TODO: Integrate with store action
-                            console.log('Update PromRec:', id, rec);
+                            const report = activeGroup.reports.find(r => r.memberId === id);
+                            if (report) {
+                                // Manual Update: Call updateReport (Method 2)
+                                // This action includes quota validation but does not FORCE auto-assignment of others
+                                // preserving the "Manual" nature of this specific interaction.
+                                useNavfitStore.getState().updateReport(activeGroup.id, report.id, { promotionRecommendation: rec });
+                            }
                         }}
                         onNavigatePrev={() => {
                             const idx = rankedMembers.findIndex(m => m.id === selectedMemberId);

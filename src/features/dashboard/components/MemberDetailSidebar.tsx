@@ -40,10 +40,11 @@ interface MemberDetailSidebarProps {
 
     // New Props for Quota & Validation
     quotaContext?: {
-        distribution: { EP: number; MP: number; [key: string]: number };
+        distribution: { EP: number; MP: number;[key: string]: number };
         totalReports: number;
     };
     groupContext?: SummaryGroupContext;
+    groupId?: string; // Added for store actions
     isRankingMode?: boolean;
 }
 
@@ -59,6 +60,7 @@ export function MemberDetailSidebar({
     rankContext,
     quotaContext,
     groupContext,
+    groupId,
     isRankingMode = false
 }: MemberDetailSidebarProps) {
 
@@ -236,28 +238,28 @@ export function MemberDetailSidebar({
     const getBlockingStatus = (rec: string): { blocked: boolean; reason?: string } => {
         // 1. Trait Validation (Always Active)
         if (currentReport?.traitGrades) {
-             // Map string rec to Enum
-             let enumRec: PromotionRecommendation | null = null;
-             switch (rec) {
-                 case 'EP': enumRec = PromotionRecommendation.EARLY_PROMOTE; break;
-                 case 'MP': enumRec = PromotionRecommendation.MUST_PROMOTE; break;
-                 case 'P': enumRec = PromotionRecommendation.PROMOTABLE; break;
-                 case 'Prog': enumRec = PromotionRecommendation.SIGNIFICANT_PROBLEMS; break; // Assuming Prog -> SP or similar?
-                 case 'SP': enumRec = PromotionRecommendation.SIGNIFICANT_PROBLEMS; break;
-                 case 'NOB': enumRec = PromotionRecommendation.NOB; break;
-             }
+            // Map string rec to Enum
+            let enumRec: PromotionRecommendation | null = null;
+            switch (rec) {
+                case 'EP': enumRec = PromotionRecommendation.EARLY_PROMOTE; break;
+                case 'MP': enumRec = PromotionRecommendation.MUST_PROMOTE; break;
+                case 'P': enumRec = PromotionRecommendation.PROMOTABLE; break;
+                case 'Prog': enumRec = PromotionRecommendation.SIGNIFICANT_PROBLEMS; break; // Assuming Prog -> SP or similar?
+                case 'SP': enumRec = PromotionRecommendation.SIGNIFICANT_PROBLEMS; break;
+                case 'NOB': enumRec = PromotionRecommendation.NOB; break;
+            }
 
-             if (enumRec) {
-                 // We pass empty context because trait validation doesn't use it in current implementation
-                 const violations = validateRecommendationAgainstTraits(
-                     currentReport.traitGrades as TraitGradeSet,
-                     enumRec,
-                     {} as any
-                 );
-                 if (violations.length > 0) {
-                     return { blocked: true, reason: violations[0].message };
-                 }
-             }
+            if (enumRec) {
+                // We pass empty context because trait validation doesn't use it in current implementation
+                const violations = validateRecommendationAgainstTraits(
+                    currentReport.traitGrades as TraitGradeSet,
+                    enumRec,
+                    {} as any
+                );
+                if (violations.length > 0) {
+                    return { blocked: true, reason: violations[0].message };
+                }
+            }
         }
 
         // 2. Quota Validation (Only in Rank Order Mode as per requirements)
@@ -359,8 +361,8 @@ export function MemberDetailSidebar({
                 <div className="flex items-center gap-4">
                     <button
                         onClick={() => {
-                            if (currentReport && groupContext?.groupId) {
-                                toggleReportLock(groupContext.groupId, currentReport.id);
+                            if (currentReport && groupId) {
+                                toggleReportLock(groupId, currentReport.id);
                             }
                         }}
                         className={cn(
