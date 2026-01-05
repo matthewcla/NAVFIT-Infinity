@@ -1,4 +1,5 @@
 // import { Calendar, Plus } from 'lucide-react'; 
+// import { CURRENT_YEAR } from '@/lib/constants';
 import { useState } from 'react';
 import { GanttChart, List, ChevronLeft } from 'lucide-react';
 import { ManningWaterfall } from './ManningWaterfall';
@@ -22,7 +23,6 @@ export function StrategyWorkspace() {
     const {
         roster,
         projections,
-        rsConfig,
         updateProjection,
         selectReport,
 
@@ -165,7 +165,6 @@ export function StrategyWorkspace() {
                                     if (group) updateProjection(group.id, reportId, value);
                                 }}
                                 projections={projections}
-                                changeOfCommandDate={rsConfig.changeOfCommandDate}
                             />
                         )}
                     </div>

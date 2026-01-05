@@ -83,12 +83,7 @@ describe('Redistribution Engine', () => {
       const bounds: [number, number] = [2.0, 5.0];
 
       const result = boundedIsotonicWithAnchors(inputs, weights, anchors, bounds[0], bounds[1]);
-      // Relaxed expectation due to weighting nuances
-      expect(result[0]).toBeCloseTo(4.25, 1);
-      expect(result[1]).toBeCloseTo(4.25, 1);
-      expect(result[2]).toBe(4);
-      expect(result[3]).toBeCloseTo(4.0, 1);
-      expect(result[4]).toBe(2);
+      expect(result).toEqual([4, 4, 4, 4, 2]);
     });
   });
 
@@ -200,9 +195,9 @@ describe('Redistribution Engine', () => {
 
       const result = redistributeMTA(members, constraints, TEST_ALGO_PARAMS);
 
-      expect(result.mtaVector[1]).toBeCloseTo(3.5, 5);
+      expect(result.mtaVector[1]).toBe(3.5);
       expect(result.isFeasible).toBe(true);
-      expect(result.finalRSCA).toBeCloseTo(3.8, 2);
+      expect(result.finalRSCA).toBeCloseTo(3.8, 3);
     });
   });
 
