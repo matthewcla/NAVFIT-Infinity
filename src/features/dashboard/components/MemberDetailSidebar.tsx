@@ -71,7 +71,7 @@ export function MemberDetailSidebar({
     groupId,
     isRankingMode = false
 }: MemberDetailSidebarProps) {
-    const { roster, toggleReportLock, summaryGroups } = useNavfitStore();
+    const { roster, toggleReportLock, summaryGroups, setEditingReport, selectReport } = useNavfitStore();
 
     // Source of Truth: Fetch directly from store if possible
     const rosterMember = roster.find(m => m.id === memberId) || _passedRosterMember;
@@ -628,7 +628,7 @@ export function MemberDetailSidebar({
             <div className="flex-1 overflow-y-auto">
 
                 {/* --- Section 1: Promotion Recommendation --- */}
-                <div className="p-5 border-b border-slate-100 bg-white">
+                <div className="p-5 pt-10 border-b border-slate-100 bg-white">
                     <label className="text-xs font-bold text-slate-700 uppercase tracking-wide block mb-3">Recommendation</label>
                     <div className="flex gap-1 p-0.5 rounded-lg">
                         {(['NOB', 'SP', 'Prog', 'P', 'MP', 'EP'] as const).map((rec) => {
@@ -667,7 +667,7 @@ export function MemberDetailSidebar({
                 </div>
 
                 {/* --- Section 2: Member Trajectory --- */}
-                <div className="p-5 border-b border-slate-100 bg-slate-50/50">
+                <div className="p-5 pt-10 border-b border-slate-100 bg-slate-50/50">
                     <div className="flex items-center justify-between mb-3">
                         <div className="flex items-center gap-2 text-xs font-bold uppercase text-slate-500 tracking-wider">
                             <TrendingUp className="w-3.5 h-3.5" />
@@ -944,7 +944,7 @@ export function MemberDetailSidebar({
                 </div>
 
                 {/* --- Section 3: Trait Average Tuner --- */}
-                <div className="p-5 space-y-4">
+                <div className="p-5 pt-10 space-y-4">
                     <div className="flex items-end justify-between">
                         <div className="flex flex-col gap-2">
                             <label className="text-xs font-bold text-slate-700 uppercase tracking-wide">
@@ -1115,13 +1115,15 @@ export function MemberDetailSidebar({
                 </div>
 
                 {/* --- Section 4: Edit Full Report Control --- */}
-                <div className="px-5 pb-5 mt-4 flex justify-center">
+                <div className="px-5 pb-5 mt-10 flex justify-center">
                     <button
                         className="text-sm font-semibold text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 px-4 py-2 rounded-lg transition-colors border border-transparent hover:border-indigo-100"
                         title="Edit Full Report"
                         onClick={() => {
-                            // Placeholder action - user asked to "Add Control"
-                            console.log('Edit Full Report Clicked');
+                            if (currentReport?.id) {
+                                selectReport(currentReport.id);
+                                setEditingReport(true);
+                            }
                         }}
                     >
                         Edit Full Report
