@@ -62,6 +62,27 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
 
     const activeGroup = latestGroup || group;
 
+    // Real-time preview projections for MTA slider (merged with store projections in useMemo)
+    const [previewProjections, setPreviewProjections] = useState<Record<string, number>>({});
+
+    // Handler for real-time MTA preview during slider drag
+    const handlePreviewMTA = (memberId: string, newMta: number) => {
+        if (!activeGroup) return;
+        const report = activeGroup.reports.find(r => r.memberId === memberId);
+        if (report) {
+            setPreviewProjections(prev => ({
+                ...prev,
+                [report.id]: newMta
+            }));
+        }
+    };
+
+    // Clear preview when member selection changes
+    const handleMemberSelect = (id: string | null) => {
+        setPreviewProjections({});
+        selectMember(id);
+    };
+
     const handleOptimize = () => {
         if (!activeGroup || !rsConfig) return;
 
@@ -121,12 +142,13 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
         // Calculate Projected RSCA (Includes Final + [Submitted, Review, Draft])
         // We include "Submitted", "Review", "Draft" to see the "Projected" impact.
         // We do NOT include "Rejected".
-        // Pass projections so live MTA slider changes are reflected immediately
+        // Merge store projections with real-time preview for live slider updates
+        const effectiveProjections = { ...projections, ...previewProjections };
         const projectedRsca = calculateCumulativeRSCA(
             allGroups,
             rank,
             ['Final', 'Submitted', 'Review', 'Draft'],
-            projections
+            effectiveProjections
         );
 
         // Calculate Baseline (Current RSCA - Only Final Reports)
@@ -264,7 +286,7 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
             eotRsca: globalEotRsca,
             isEnlisted
         };
-    }, [activeGroup, roster, rsConfig, projections, summaryGroups]); // Depend on summaryGroups for RSCA reactivity
+    }, [activeGroup, roster, rsConfig, projections, previewProjections, summaryGroups]); // Depend on previewProjections for real-time slider reactivity
 
     // Local Rank Mode State
     const [isRankingMode, setIsRankingMode] = useState(false);
@@ -522,6 +544,7 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
                         groupContext={domainContext}
                         groupId={activeGroup.id}
                         isRankingMode={isRankingMode}
+                        onPreviewMTA={handlePreviewMTA}
 
                         // Pass Rank Context
                         rankContext={(() => {
@@ -551,7 +574,7 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
                             };
                         })()}
 
-                        onClose={() => selectMember(null)}
+                        onClose={() => handleMemberSelect(null)}
                         onUpdateMTA={(id, val) => {
                             const report = activeGroup.reports.find(r => r.memberId === id);
                             if (report) {
@@ -567,6 +590,7 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
                                 updateReport(activeGroup.id, report.id, { promotionRecommendation: rec });
                             }
                         }}
+                        currentRsca={activeGroup.rsca}
                         onNavigatePrev={() => {
                             const idx = rankedMembers.findIndex(m => m.id === selectedMemberId);
                             if (idx > 0) selectMember(rankedMembers[idx - 1].id);

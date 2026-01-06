@@ -31,11 +31,13 @@ interface MemberDetailSidebarProps {
     memberId: string;
     onClose: () => void;
     onUpdateMTA: (memberId: string, newMta: number) => void;
+    onPreviewMTA?: (memberId: string, newMta: number) => void; // Real-time preview callback
     onUpdatePromRec: (memberId: string, rec: 'EP' | 'MP' | 'P' | 'Prog' | 'SP' | 'NOB') => void;
     onNavigateNext: () => void;
     onNavigatePrev: () => void;
     rosterMember: RosterMember;
     currentReport?: Report;
+    currentRsca?: number;
 
     rankContext?: {
         currentRank: number;
@@ -57,11 +59,13 @@ export function MemberDetailSidebar({
     memberId,
     onClose,
     onUpdateMTA,
+    onPreviewMTA,
     onUpdatePromRec,
     onNavigateNext,
     onNavigatePrev,
     rosterMember: _passedRosterMember,
     currentReport: _passedCurrentReport,
+    currentRsca,
     rankContext,
     quotaContext,
     groupContext,
@@ -269,6 +273,12 @@ export function MemberDetailSidebar({
     const handleMtaChange = (newValue: number, isIntermediate = false) => {
         if (isLocked || simulatedRec === 'NOB') return;
 
+        // Real-time preview: ALWAYS propagate to parent for RSCA HUD update during drag
+        // This must happen before any early returns to ensure HUD stays synchronized
+        if (isIntermediate && onPreviewMTA) {
+            onPreviewMTA(memberId, newValue);
+        }
+
         if (!isIntermediate) {
             commitToHistory();
         }
@@ -334,7 +344,7 @@ export function MemberDetailSidebar({
 
 
     // --- Derived Metrics ---
-    const historyData = (rosterMember.history || []).slice(-3); // Last 3 reports
+
 
     // --- Validation Logic (Blocking) ---
     const handleRecChange = (newRec: 'EP' | 'MP' | 'P' | 'Prog' | 'SP' | 'NOB') => {
@@ -444,6 +454,9 @@ export function MemberDetailSidebar({
         // Clear history after apply
         setHistory([]);
         setFuture([]);
+
+        // Close the sidebar after successful apply
+        onClose();
     };
 
     // Navigation Interception
@@ -648,34 +661,277 @@ export function MemberDetailSidebar({
                         </div>
                     </div>
 
-                    <div className="flex gap-4 h-28">
-                        <div className="flex-1 bg-white rounded-lg border border-slate-200 p-2 relative">
-                            <svg className="w-full h-full overflow-visible" viewBox="0 0 100 100" preserveAspectRatio="none">
-                                <line x1="0" y1="50" x2="100" y2="50" stroke="#cbd5e1" strokeWidth="2" strokeDasharray="4 2" />
-                                {historyData.length > 0 && (
-                                    <polyline
-                                        points={historyData.map((h, i) => {
-                                            const x = (i / (Math.max(1, historyData.length - 1))) * 100;
-                                            const y = 100 - ((h.traitAverage - 2.0) / 3.0 * 100);
-                                            return `${x},${y}`;
-                                        }).join(' ')}
-                                        fill="none"
-                                        stroke="#6366f1"
-                                        strokeWidth="2.5"
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                    />
-                                )}
-                                {historyData.length > 0 && (
-                                    <circle
-                                        cx="100"
-                                        cy={100 - ((simulatedMta - 2.0) / 3.0 * 100)}
-                                        r="3"
-                                        fill="#6366f1"
-                                        className="animate-pulse"
-                                    />
-                                )}
-                            </svg>
+                    <div className="flex flex-col gap-4">
+                        <div className="flex gap-4 h-[166px]">
+                            <div className="flex-1 bg-white rounded-lg border border-slate-200 p-2 relative">
+                                <svg className="w-full h-full overflow-visible" viewBox="0 0 100 100" preserveAspectRatio="none">
+                                    {(() => {
+                                        // 1. Prepare Data Points with RSCA
+                                        const pastPoints = (rosterMember.history || []).map(h => ({
+                                            type: 'Past' as const,
+                                            val: h.traitAverage,
+                                            rsca: h.rscaAtTime,
+                                            label: h.promotionRecommendation
+                                        }));
+                                        const currentPoint = {
+                                            type: 'Current' as const,
+                                            val: simulatedMta,
+                                            rsca: currentRsca,
+                                            label: simulatedRec
+                                        };
+
+                                        // Planned Logic
+                                        let plannedCount = currentReport?.reportsRemaining;
+                                        if (plannedCount === undefined && rosterMember.prd && currentReport?.periodEndDate) {
+                                            const prdYear = new Date(rosterMember.prd).getFullYear();
+                                            const reportYear = new Date(currentReport.periodEndDate).getFullYear();
+                                            if (!isNaN(prdYear) && !isNaN(reportYear)) {
+                                                plannedCount = Math.max(0, prdYear - reportYear);
+                                            }
+                                        }
+                                        plannedCount = plannedCount || 0;
+
+                                        const plannedPoints = Array.from({ length: plannedCount }).map((_, i) => ({
+                                            type: (i === plannedCount! - 1) ? 'Transfer' as const : 'Planned' as const,
+                                            val: simulatedMta, // Flat projection
+                                            rsca: currentRsca, // Flat RSCA projection for trendline context
+                                            label: (i === plannedCount! - 1) ? 'PRD' : 'Plan'
+                                        }));
+
+                                        // Combine
+                                        // Limit history to last 3 to keep chart focused, but ensure we have context
+                                        const visibleHistory = pastPoints.slice(-3);
+                                        const allPoints = [...visibleHistory, currentPoint, ...plannedPoints];
+
+                                        if (allPoints.length === 0) return null;
+
+                                        // 2. Dynamic Scale Calculation
+                                        // 10% above Max MTA, 10% below Min RSCA
+                                        // Gather relevant values for domain calculation
+                                        const allMtas = allPoints.map(p => p.val);
+                                        const allRscas = allPoints.map(p => p.rsca).filter((r): r is number => r !== undefined);
+                                        const allValues = [...allMtas, ...allRscas];
+
+                                        const minVal = Math.min(...allValues);
+                                        const maxVal = Math.max(...allValues);
+
+                                        // Robust range calculation
+                                        let range = maxVal - minVal;
+                                        if (range < 0.2) range = 0.2; // Min range
+
+                                        // User logic: 10% above MAX MTA, 10% below MIN RSCA.
+                                        // But visually we need a single coord system.
+                                        // So Domain Top = MaxVal + Margin. Domain Bot = MinVal - Margin.
+                                        // Margin = range * 0.10.
+
+                                        const margin = range * 0.10;
+                                        const domainMin = Math.max(0, minVal - margin);
+                                        const domainMax = Math.min(5.0, maxVal + margin);
+                                        const domainRange = domainMax - domainMin || 1; // avoid /0
+
+                                        // Helper: Map Value to Y (0-100)
+                                        // Y=0 is bottom (svg 100), Y=100 is top (svg 0)
+                                        // svgY = 100 - ((val - min) / range * 100)
+                                        const getY = (val: number) => 100 - ((val - domainMin) / domainRange * 100);
+
+                                        // Helper: Map Index to X (10% - 90%)
+                                        const maxIdx = Math.max(1, allPoints.length - 1);
+                                        const getX = (i: number) => 10 + (i / maxIdx) * 80;
+
+                                        return (
+                                            <>
+                                                {/* RSCA Trendline (Dashed, Grey) */}
+                                                <polyline
+                                                    points={allPoints.map((p, i) => {
+                                                        if (p.rsca === undefined) return null;
+                                                        const x = getX(i);
+                                                        const y = getY(p.rsca);
+                                                        return `${x},${y}`;
+                                                    }).filter(Boolean).join(' ')}
+                                                    fill="none"
+                                                    stroke="#94a3b8" // slate-400
+                                                    strokeWidth="2"
+                                                    strokeDasharray="4 4"
+                                                    strokeLinecap="round"
+                                                    strokeLinejoin="round"
+                                                    className="opacity-70"
+                                                />
+
+                                                {/* Start/End Dots for Trendline? Optional but helps anchor. 
+                                                    User just asked for trendline. Polyline covers it. 
+                                                */}
+
+                                                {/* MTA Polyline */}
+                                                <polyline
+                                                    points={allPoints.map((p, i) => {
+                                                        const x = getX(i);
+                                                        const y = getY(p.val);
+                                                        return `${x},${y}`;
+                                                    }).join(' ')}
+                                                    fill="none"
+                                                    stroke="#6366f1"
+                                                    strokeWidth="2.5"
+                                                    strokeLinecap="round"
+                                                    strokeLinejoin="round"
+                                                    className="opacity-50"
+                                                />
+                                            </>
+                                        );
+                                    })()}
+                                </svg>
+
+                                {/* HTML Overlay */}
+                                <div className="absolute inset-0 pointer-events-none">
+                                    {(() => {
+                                        // Re-recreate data points here (duplication is acceptable for render isolation or simple logic reuse)
+                                        // Actually better to define data outside SVG, but inline IIFE complicates sharing.
+                                        // I'll repeat logic for safety and speed.
+                                        const pastPoints = (rosterMember.history || []).map(h => ({
+                                            type: 'Past',
+                                            val: h.traitAverage,
+                                            rsca: h.rscaAtTime,
+                                            label: h.promotionRecommendation
+                                        }));
+                                        const currentPoint = {
+                                            type: 'Current',
+                                            val: simulatedMta,
+                                            rsca: currentRsca,
+                                            label: simulatedRec
+                                        };
+                                        let plannedCount = currentReport?.reportsRemaining;
+                                        if (plannedCount === undefined && rosterMember.prd && currentReport?.periodEndDate) {
+                                            const prdYear = new Date(rosterMember.prd).getFullYear();
+                                            const reportYear = new Date(currentReport.periodEndDate).getFullYear();
+                                            if (!isNaN(prdYear) && !isNaN(reportYear)) plannedCount = Math.max(0, prdYear - reportYear);
+                                        }
+                                        plannedCount = plannedCount || 0;
+                                        const plannedPoints = Array.from({ length: plannedCount }).map((_, i) => ({
+                                            type: (i === plannedCount! - 1) ? 'Transfer' : 'Planned',
+                                            val: simulatedMta,
+                                            rsca: currentRsca, // Reuse for scaling consistency
+                                            label: (i === plannedCount! - 1) ? 'PRD' : 'Plan'
+                                        }));
+
+                                        const allPoints = [...pastPoints.slice(-3), currentPoint, ...plannedPoints];
+
+                                        // Scaling Logic (Duplicated for consistency)
+                                        const allMtas = allPoints.map(p => p.val);
+                                        const allRscas = allPoints.map(p => p.rsca).filter((r): r is number => r !== undefined);
+                                        const allValues = [...allMtas, ...allRscas];
+                                        const minVal = Math.min(...allValues);
+                                        const maxVal = Math.max(...allValues);
+                                        let range = maxVal - minVal;
+                                        if (range < 0.2) range = 0.2;
+                                        const margin = range * 0.10;
+                                        const domainMin = Math.max(0, minVal - margin);
+                                        const domainMax = Math.min(5.0, maxVal + margin);
+                                        const domainRange = domainMax - domainMin || 1;
+                                        const getY = (val: number) => 100 - ((val - domainMin) / domainRange * 100);
+
+                                        const maxIdx = Math.max(1, allPoints.length - 1);
+                                        const getX = (i: number) => 10 + (i / maxIdx) * 80;
+
+                                        return allPoints.map((p, i) => {
+                                            const x = getX(i);
+                                            const y = getY(p.val);
+                                            const isTransfer = p.type === 'Transfer';
+                                            const isCurrent = p.type === 'Current';
+                                            const isAbove = i % 2 === 0;
+
+                                            // Delta Calculation
+                                            let deltaDisplay = null;
+                                            if (i > 0) {
+                                                const prev = allPoints[i - 1];
+                                                const delta = p.val - prev.val;
+                                                const prevX = getX(i - 1);
+                                                const prevY = getY(prev.val);
+
+                                                const midX = (prevX + x) / 2;
+                                                const midY = (prevY + y) / 2;
+
+                                                deltaDisplay = (
+                                                    <div
+                                                        className="absolute text-[9px] font-bold text-slate-400 bg-white/50 px-0.5 rounded backdrop-blur-[1px]"
+                                                        style={{ left: `${midX}%`, top: `${midY}%`, transform: 'translate(-50%, -50%)' }}
+                                                    >
+                                                        {delta > 0 ? '+' : ''}{delta.toFixed(2)}
+                                                    </div>
+                                                );
+                                            }
+
+                                            // RSCA Diff
+                                            let rscaDiffDisplay = null;
+                                            if (p.rsca !== undefined) {
+                                                const diff = p.val - p.rsca;
+                                                const diffColor = diff >= 0 ? 'text-green-600' : 'text-red-500';
+                                                rscaDiffDisplay = (
+                                                    <span className={cn("ml-1 text-[8px] font-bold", diffColor)}>
+                                                        ({diff >= 0 ? '+' : ''}{diff.toFixed(2)})
+                                                    </span>
+                                                );
+                                            }
+
+                                            return (
+                                                <div key={i}>
+                                                    {deltaDisplay}
+                                                    <div
+                                                        className="absolute flex items-center justify-center group/point"
+                                                        style={{
+                                                            left: `${x}%`,
+                                                            top: `${y}%`,
+                                                            transform: 'translate(-50%, -50%)'
+                                                        }}
+                                                    >
+                                                        {/* Icon - Clean, no performance rings */}
+                                                        <div className={cn(
+                                                            "w-4 h-4 rounded-full border-2 shadow-sm flex items-center justify-center transition-transform hover:scale-125 z-10 bg-white",
+                                                            isTransfer ? "border-red-500 bg-red-50" : "border-blue-500 bg-blue-50",
+                                                            isCurrent ? "ring-2 ring-blue-200/50 w-5 h-5 border-[3px]" : ""
+                                                        )}>
+                                                        </div>
+
+                                                        {/* Label */}
+                                                        <div className={cn(
+                                                            "absolute pointer-events-auto flex flex-col items-center whitespace-nowrap",
+                                                            isAbove ? "bottom-full mb-2" : "top-full mt-2"
+                                                        )}>
+                                                            <div className="flex items-center gap-0.5 bg-white/90 px-1 rounded shadow-sm border border-slate-100/50 backdrop-blur-sm">
+                                                                <span className="text-[10px] font-black text-slate-700 leading-tight">
+                                                                    {p.val.toFixed(2)}
+                                                                </span>
+                                                                {rscaDiffDisplay}
+                                                            </div>
+                                                            <span className="text-[9px] font-semibold text-slate-400 leading-tight">
+                                                                {p.type}
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            );
+                                        });
+                                    })()}
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Legend */}
+                        <div className="flex justify-center gap-6 mt-1 border-t border-slate-100 pt-2">
+                            <div className="flex items-center gap-1.5">
+                                <div className="w-3 h-3 rounded-full bg-blue-50 border-2 border-blue-500"></div>
+                                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">Periodic</span>
+                            </div>
+                            <div className="flex items-center gap-1.5">
+                                <div className="w-4 h-4 rounded-full bg-blue-50 border-2 border-blue-500 ring-1 ring-blue-200"></div>
+                                <span className="text-[10px] font-bold text-slate-900 uppercase tracking-wide">Current</span>
+                            </div>
+                            <div className="flex items-center gap-1.5">
+                                <div className="w-3 h-3 rounded-full bg-red-50 border-2 border-red-500"></div>
+                                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">Transfer</span>
+                            </div>
+                            <div className="flex items-center gap-1.5 border-l border-slate-200 pl-6 ml-0">
+                                <div className="w-4 h-0 border-t-2 border-dashed border-slate-400"></div>
+                                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">RSCA Trend</span>
+                            </div>
                         </div>
                     </div>
                 </div>
