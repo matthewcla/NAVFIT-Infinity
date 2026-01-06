@@ -167,12 +167,22 @@ export function MemberDetailSidebar({
         if (history.length === 0) return;
         const previousState = history[history.length - 1];
 
+        // Robust check for invalid state
+        if (!previousState || typeof previousState.mta !== 'number') {
+            console.error('Invalid history state encountered:', previousState);
+            // Recover by clearing history or ignoring
+            setHistory(prev => prev.slice(0, -1));
+            return;
+        }
+
         // Push current to future
         setFuture(prev => [{ mta: simulatedMta, rec: simulatedRec }, ...prev]);
 
         // Restore previous
         setSimulatedMta(previousState.mta);
-        setSimulatedRec(previousState.rec as any);
+        if (previousState.rec) {
+            setSimulatedRec(previousState.rec as 'EP' | 'MP' | 'P' | 'Prog' | 'SP' | 'NOB');
+        }
         setMtaInputValue(previousState.mta.toFixed(2)); // Sync input
 
         // Pop from history
@@ -183,6 +193,13 @@ export function MemberDetailSidebar({
         if (future.length === 0) return;
         const nextState = future[0];
 
+        // Robust check
+        if (!nextState || typeof nextState.mta !== 'number') {
+            console.error('Invalid future state encountered:', nextState);
+            setFuture(prev => prev.slice(1));
+            return;
+        }
+
         // Push current to history
         setHistory(prev => {
             const newHistory = [...prev, { mta: simulatedMta, rec: simulatedRec }];
@@ -192,7 +209,9 @@ export function MemberDetailSidebar({
 
         // Restore next
         setSimulatedMta(nextState.mta);
-        setSimulatedRec(nextState.rec as any);
+        if (nextState.rec) {
+            setSimulatedRec(nextState.rec as 'EP' | 'MP' | 'P' | 'Prog' | 'SP' | 'NOB');
+        }
         setMtaInputValue(nextState.mta.toFixed(2));
 
         // Pop from future
