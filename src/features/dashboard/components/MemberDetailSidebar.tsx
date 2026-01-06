@@ -614,9 +614,21 @@ export function MemberDetailSidebar({
                                 </button>
 
                                 <div className="text-xs font-semibold text-slate-400 bg-slate-50 px-2 py-1 rounded border border-slate-100 whitespace-nowrap">
-                                    {currentReport?.reportsRemaining !== undefined
-                                        ? `${currentReport.reportsRemaining} ${currentReport.reportsRemaining === 1 ? 'Report' : 'Reports'} Planned`
-                                        : 'PRD Unknown'}
+                                    {(() => {
+                                        let count = currentReport?.reportsRemaining;
+                                        // Fallback calculation if missing in report snapshot
+                                        if (count === undefined && rosterMember?.prd && currentReport?.periodEndDate) {
+                                            const prdYear = new Date(rosterMember.prd).getFullYear();
+                                            const reportYear = new Date(currentReport.periodEndDate).getFullYear();
+                                            if (!isNaN(prdYear) && !isNaN(reportYear)) {
+                                                count = Math.max(0, prdYear - reportYear);
+                                            }
+                                        }
+
+                                        return count !== undefined
+                                            ? `${count} ${count === 1 ? 'Report' : 'Reports'} Planned`
+                                            : 'PRD Unknown';
+                                    })()}
                                 </div>
                             </div>
                         </div>

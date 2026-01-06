@@ -205,7 +205,8 @@ export const useNavfitStore = create<NavfitStore>((set) => ({
                     edd: (m as any).edd,
                     milestoneTour: (m as any).milestoneTour,
                     lastTrait: m.lastTrait || 0,
-                    status: m.status as any
+                    status: m.status as any,
+                    history: m.history || []
                 };
             });
 
@@ -518,7 +519,7 @@ export const useNavfitStore = create<NavfitStore>((set) => ({
 
             // 1. Update the value
             // We also update IsLocked to true because a manual MTA change implies an override/projection
-            const updatedReports = group.reports.map(r => r.id === reportId ? { ...r, traitAverage: value, isLocked: true } : r);
+            const updatedReports = group.reports.map(r => r.id === reportId ? { ...r, traitAverage: value } : r);
 
             // 2. Strict Sort by MTA (Descending)
             updatedReports.sort((a, b) => b.traitAverage - a.traitAverage);

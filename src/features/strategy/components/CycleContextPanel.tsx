@@ -153,6 +153,28 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
                 const memberRank = member?.rank || report.memberRank || report.grade || rank;
                 const memberDesignator = member?.designator || report.designator || '';
 
+                let reportsRemaining = report.reportsRemaining;
+                if (reportsRemaining === undefined && member?.prd && report.periodEndDate) {
+                    const prdYear = new Date(member.prd).getFullYear();
+                    const reportYear = new Date(report.periodEndDate).getFullYear();
+                    if (!isNaN(prdYear) && !isNaN(reportYear)) {
+                        reportsRemaining = Math.max(0, prdYear - reportYear);
+                    }
+                }
+
+                // Calculate Delta vs Last Report
+                let delta = 0;
+                if (member?.history && member.history.length > 0) {
+                    const currentEndDate = new Date(report.periodEndDate);
+
+                    const previousReport = member.history
+                        .filter(h => new Date(h.periodEndDate) < currentEndDate)
+                        .sort((a, b) => new Date(b.periodEndDate).getTime() - new Date(a.periodEndDate).getTime())[0];
+
+                    if (previousReport) {
+                        delta = currentMta - previousReport.traitAverage;
+                    }
+                }
                 return {
                     id: report.memberId, // Use memberId for selection
                     reportId: report.id,
@@ -161,9 +183,9 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
                     designator: memberDesignator,
                     promRec: report.promotionRecommendation || 'NOB',
                     mta: currentMta,
-                    delta: 0, // Placeholder for delta logic if history exists
+                    delta,
                     rscaMargin,
-                    reportsRemaining: report.reportsRemaining,
+                    reportsRemaining,
                     report
                 };
             })
