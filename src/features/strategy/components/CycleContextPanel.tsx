@@ -4,8 +4,8 @@ import { useRedistributionStore } from '@/store/useRedistributionStore';
 import type { SummaryGroup } from '@/types';
 import type { RosterMember } from '@/types/roster';
 import { RscaHeadsUpDisplay } from './RscaHeadsUpDisplay';
-import { generateSummaryGroups } from '@/features/strategy/logic/reportGenerator';
-import { calculateCumulativeRSCA, calculateEotRsca } from '@/features/strategy/logic/rsca';
+// generateSummaryGroups import removed - now using stored summaryGroups directly
+import { calculateCumulativeRSCA, calculateEotRsca, getCompetitiveGroupStats } from '@/features/strategy/logic/rsca';
 
 import {
     ArrowRight,
@@ -107,23 +107,64 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
     const contextData = useMemo(() => {
         if (!activeGroup) return null;
 
-        // Re-generate all groups for cumulative RSCA context
-        const allGroups = generateSummaryGroups(roster, rsConfig, 2023, projections);
+        // Use stored summaryGroups instead of regenerating - regeneration creates new 
+        // report IDs that don't match the projections keys, breaking reactivity
+        const allGroups = summaryGroups;
 
+        // Rank Logic
         // Derive Rank from competitiveGroupKey (e.g., "O-3 1110" -> "O-3") or use paygrade
         const rank = activeGroup.paygrade || (activeGroup.competitiveGroupKey ? activeGroup.competitiveGroupKey.split(' ')[0] : 'Unknown');
         // Robust Enlisted Check: Start with E or explicitly matched paygrades
         const isEnlisted = rank.startsWith('E') || ['E-1', 'E-2', 'E-3', 'E-4', 'E-5', 'E-6', 'E-7', 'E-8', 'E-9'].includes(activeGroup.paygrade || '');
 
 
-        // Calculate Rank-Wide Cumulative Average (Current State of all reports)
-        const cumulativeRsca = calculateCumulativeRSCA(allGroups, rank);
+        // Calculate Projected RSCA (Includes Final + [Submitted, Review, Draft])
+        // We include "Submitted", "Review", "Draft" to see the "Projected" impact.
+        // We do NOT include "Rejected".
+        // Pass projections so live MTA slider changes are reflected immediately
+        const projectedRsca = calculateCumulativeRSCA(
+            allGroups,
+            rank,
+            ['Final', 'Submitted', 'Review', 'Draft'],
+            projections
+        );
 
-        // Stats
+        // Calculate Baseline (Current RSCA - Only Final Reports)
+        // Strictly "Current" means what is on the books.
+        // We exclude the current active group and any other drafts.
+        // Note: Logic in rsca.ts excludes activeGroup.id if passed to getCompetitiveGroupStats, 
+        // but here we primarily rely on Status Filter 'Final'.
+        // If the active group is somehow 'Final' (not possible here given context, but logic holds), it would be included if we didn't exclude.
+        // Safe bet: currentRsca is HISTORICAL FINAL.
+        const baselineStats = getCompetitiveGroupStats(
+            allGroups,
+            rank,
+            activeGroup.id,
+            ['Final']
+        );
+        const currentRsca = baselineStats.average;
+
+        // Stats (Moved up for use in EOT calc)
         const totalReports = activeGroup.reports.length;
         const assignedEPs = activeGroup.reports.filter(r => r.promotionRecommendation === 'EP').length;
         const maxEPs = Math.floor(totalReports * 0.2); // Simple Rule of thumb
         const gap = Math.max(0, maxEPs - assignedEPs);
+
+
+        // Calculate EOT Projection
+        const eotResult = calculateEotRsca(
+            roster,
+            projectedRsca, // Use Projected as baseline for future
+            (rsConfig.totalReports || 0) + totalReports,
+            rsConfig.changeOfCommandDate,
+            rank
+        );
+
+        // Handle Return: rsca.ts now returns object { eotRsca, memberProjections }
+        // Ensure we handle potential legacy return if hot-reload hasn't caught up (though we just edited it).
+        // TypeScript might complain if types aren't fully synced. Assuming updated signature:
+        const globalEotRsca = typeof eotResult === 'object' ? eotResult.eotRsca : eotResult;
+        const memberEotProjections = typeof eotResult === 'object' ? eotResult.memberProjections : {};
 
         const draftStats = activeGroup.reports.reduce((acc, r) => {
             const status = r.draftStatus || 'Projected';
@@ -141,7 +182,7 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
             .map(report => {
                 const member = roster.find(m => m.id === report.memberId);
                 const currentMta = projections[report.id] || report.traitAverage || 0;
-                const rscaMargin = currentMta - cumulativeRsca;
+                const rscaMargin = currentMta - projectedRsca; // Margin against Projected RSCA
 
                 // Robust Fallback: Use Report Snapshot if Roster Lookup Fails
                 const name = member
@@ -161,6 +202,9 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
                         reportsRemaining = Math.max(0, prdYear - reportYear);
                     }
                 }
+
+                // EOT Projection for this member
+                const eotMta = memberEotProjections[report.memberId] || 0;
 
                 // Calculate Delta vs Last Report
                 let delta = 0;
@@ -185,6 +229,7 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
                     mta: currentMta,
                     delta,
                     rscaMargin,
+                    eotMta, // New Prop
                     reportsRemaining,
                     report
                 };
@@ -207,7 +252,8 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
         const domainContext = createSummaryGroupContext(activeGroup);
 
         return {
-            cumulativeRsca,
+            currentRsca,
+            projectedRsca,
             rank,
             totalReports,
             gap,
@@ -215,15 +261,10 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
             rankedMembers,
             distribution,
             domainContext,
-            eotRsca: calculateEotRsca(
-                roster,
-                cumulativeRsca,
-                rsConfig.totalReports || 100, // Fallback if 0
-                rsConfig.changeOfCommandDate
-            ),
+            eotRsca: globalEotRsca,
             isEnlisted
         };
-    }, [activeGroup, roster, rsConfig, projections]); // Depend on activeGroup
+    }, [activeGroup, roster, rsConfig, projections, summaryGroups]); // Depend on summaryGroups for RSCA reactivity
 
     // Local Rank Mode State
     const [isRankingMode, setIsRankingMode] = useState(false);
@@ -243,7 +284,7 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
         );
     }
 
-    const { cumulativeRsca, gap, mainDraftStatus, rankedMembers, distribution, eotRsca, totalReports, domainContext, isEnlisted } = contextData;
+    const { currentRsca, projectedRsca, gap, mainDraftStatus, rankedMembers, distribution, eotRsca, totalReports, domainContext, isEnlisted } = contextData;
 
     // Helper for Badge
     const getPromotionStatusBadge = (s?: string) => {
@@ -323,8 +364,8 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
                             {/* 2A. RSCA Heads Up Display (Left) - Framed */}
                             <div className="rounded-xl border border-slate-200 shadow-sm overflow-hidden bg-white/50 shrink-0">
                                 <RscaHeadsUpDisplay
-                                    currentRsca={cumulativeRsca}
-                                    projectedRsca={cumulativeRsca}
+                                    currentRsca={currentRsca}
+                                    projectedRsca={projectedRsca}
                                     eotRsca={eotRsca}
                                     rankLabel="Curr. RSCA"
                                     showSuffix={false}

@@ -1,5 +1,4 @@
 
-
 /**
  * rounds a number to 2 decimal places
  */
@@ -68,7 +67,9 @@ import { PERIODIC_SCHEDULE } from '@/lib/constants';
 
 export const calculateCumulativeRSCA = (
     allGroups: SummaryGroup[],
-    targetPaygrade: string
+    targetPaygrade: string,
+    allowedStatuses: string[] = ['Final'], // Default to "Realized" history only
+    projections?: Record<string, number> // Optional live MTA overrides (keyed by report.id)
 ): number => {
     // 1. Normalize target Paygrade (take first part if "O-3 1110" passed by mistake, though caller should pass Rank)
     const rank = targetPaygrade.split(' ')[0];
@@ -77,7 +78,9 @@ export const calculateCumulativeRSCA = (
     // We check explicit 'paygrade' field OR derived from 'competitiveGroupKey'
     const matchingGroups = allGroups.filter(g => {
         const groupRank = g.paygrade || g.competitiveGroupKey.split(' ')[0];
-        return groupRank === rank;
+        // Rank Match AND Status Match
+        const status = g.status || 'Draft'; // Default to Draft if missing
+        return groupRank === rank && allowedStatuses.includes(status);
     });
 
     if (matchingGroups.length === 0) return 0;
@@ -88,8 +91,10 @@ export const calculateCumulativeRSCA = (
 
     matchingGroups.forEach(group => {
         group.reports.forEach(report => {
-            if (typeof report.traitAverage === 'number' && report.traitAverage > 0) {
-                totalScore += report.traitAverage;
+            // Use projection override if available, otherwise fall back to traitAverage
+            const mta = projections?.[report.id] ?? report.traitAverage;
+            if (typeof mta === 'number' && mta > 0) {
+                totalScore += mta;
                 totalReports++;
             }
         });
@@ -108,7 +113,8 @@ export const calculateCumulativeRSCA = (
 export const getCompetitiveGroupStats = (
     allGroups: SummaryGroup[],
     targetPaygrade: string,
-    excludeGroupId?: string
+    excludeGroupId?: string,
+    allowedStatuses: string[] = ['Final']
 ): { average: number; count: number; totalScore: number } => {
     // 1. Normalize Rank
     const rank = targetPaygrade.split(' ')[0];
@@ -117,7 +123,8 @@ export const getCompetitiveGroupStats = (
     const matchingGroups = allGroups.filter(g => {
         if (excludeGroupId && g.id === excludeGroupId) return false;
         const groupRank = g.paygrade || g.competitiveGroupKey.split(' ')[0];
-        return groupRank === rank;
+        const status = g.status || 'Draft';
+        return groupRank === rank && allowedStatuses.includes(status);
     });
 
     // 3. Aggregate
@@ -165,84 +172,145 @@ export const calculateEotRsca = (
     roster: ProjectableMember[],
     currentRsca: number,
     totalSignedReports: number,
-    rsDetachDate: string
-): number => {
-    let futureTotalScore = 0;
-    let futureTotalCount = 0;
+    rsDetachDate: string,
+    targetRank: string
+): { eotRsca: number, memberProjections: Record<string, number> } => {
+
+    // Default Return
+    const defaultResult = { eotRsca: currentRsca, memberProjections: {} };
+
+    // 1. Filter Roster by Rank
+    const relevantMembers = roster.filter(m => m.rank === targetRank);
+    if (relevantMembers.length === 0) return defaultResult;
 
     const rsDate = new Date(rsDetachDate);
     const today = new Date();
-    const currentYear = today.getFullYear();
-    const rsDetachYear = rsDate.getFullYear();
 
-    roster.forEach(member => {
-        // Validation
-        if (!member.prd) return;
+    // Initialize Simulation State
+    // We track each member's current projected MTA
+    let memberStates = relevantMembers.map(m => ({
+        ...m,
+        currentMta: m.lastTrait || (currentRsca > 0 ? currentRsca : 3.60),
+        prdDate: m.prd ? new Date(m.prd) : new Date('2099-12-31')
+    }));
 
-        const memberPRD = new Date(member.prd);
-        const rank = member.rank;
-
-        // Skip if member already left
-        if (memberPRD < today) return;
-
-        // Heuristic: Current Trait Average or Baseline
-        // If they have a lastTrait, use it. If not, maybe use current RSCA as neutral proxy.
-        // Cap growth at 5.0
-        let projectedMTA = member.lastTrait || (currentRsca > 0 ? currentRsca : 3.60);
-
-        // 1. Iterate Years for Periodic Cycles
-        for (let year = currentYear; year <= rsDetachYear; year++) {
-            const periodicMonth = PERIODIC_SCHEDULE[rank]; // 1-based (Jan=1)
-
-            if (periodicMonth) {
-                // Periodic Date: End of that month
-                const pDate = new Date(year, periodicMonth, 0); // Day 0 of next month = last day of this month
-
-                // Check constraints
-                // Must be in future relative to "simulation now" (approx today)
-                // Must be BEFORE RS leaves
-                // Must be BEFORE Member leaves
-                if (pDate > today && pDate <= rsDate && pDate <= memberPRD) {
-
-                    // Apply Improvement Heuristic
-                    // Assume +0.05 per cycle
-                    if (projectedMTA < 4.80) { // Soft cap for easy growth
-                        projectedMTA += 0.05;
-                    }
-                    projectedMTA = Math.min(5.00, round2(projectedMTA));
-
-                    futureTotalCount++;
-                    futureTotalScore += projectedMTA;
-                }
-            }
-        }
-
-        // 2. Transfer Report Check
-        // If Member PRD is BEFORE RS Detach, they get a Transfer Report
-        // which counts towards RSCA.
-        // We only count this if we haven't already counted it via Periodic (collision check simplisitic here)
-        // Usually Transfer overrides Periodic if close, but let's just check raw date.
-        if (memberPRD > today && memberPRD <= rsDate) {
-            // Is this distinct from the periodic we just counted?
-            // Simplest check: Did we count a periodic exactly on this month?
-            // For MVP: Just add it if it's the Transfer. Transfer is usually a separate event unless coinciding.
-            // Heuristic Update: Transfer usually "one up".
-
-            let transferMTA = projectedMTA + 0.10;
-            transferMTA = Math.min(5.00, round2(transferMTA));
-
-            // To avoid double counting for the exact same month/year collision, 
-            // we could be smarter, but usually PRD is specific day.
-            // Let's assume valid separate report for now.
-            futureTotalCount++;
-            futureTotalScore += transferMTA;
-        }
+    const memberProjections: Record<string, number> = {};
+    // Init map
+    memberStates.forEach(m => {
+        memberProjections[m.id] = m.currentMta;
     });
 
-    if (totalSignedReports + futureTotalCount === 0) return 0;
+    let futureTotalScore = 0;
+    let futureTotalCount = 0;
+
+    // We simulate in monthly steps from Now until RS Detach
+    // This allows us to handle "Rank Order" and "Detachment" dynamically
+
+    // Initialize to End of NEXT Month relative to today
+    // today.getMonth() is 0-indexed. +2 gives us "2 months ahead" in params, 
+    // but day 0 rolls back 1 day. So effectively "End of Next Month".
+    // e.g. Jan 15 -> Month 0. Next month is Feb. We want Feb 28.
+    // new Date(Y, 0+2, 0) -> new Date(Y, 2, 0) -> Mar 0 -> Feb 28. Correct.
+    let cursorDate = new Date(today.getFullYear(), today.getMonth() + 2, 0);
+
+    const periodicMonth = PERIODIC_SCHEDULE[targetRank] || 1; // Default to Jan if unknown
+
+    while (cursorDate <= rsDate) {
+        // 1. Identify Valid Members for this Month
+        // Must be Onboard at least part of this month (PRD >= 1st of this month)
+        const firstDayOfCursorMonth = new Date(cursorDate.getFullYear(), cursorDate.getMonth(), 1);
+        const activeMembers = memberStates.filter(m => m.prdDate >= firstDayOfCursorMonth);
+
+        if (activeMembers.length === 0) break;
+
+        // 2. Check for Events: Periodic or Transfer
+        const currentMonth = cursorDate.getMonth() + 1; // 1-12
+        const isPeriodic = currentMonth === periodicMonth;
+
+        // "Reports" this month
+        const reportsThisMonth: typeof memberStates = [];
+
+        activeMembers.forEach(member => {
+            let isReport = false;
+            // Periodic Check
+            if (isPeriodic) isReport = true;
+
+            // Transfer Check (PRD in this month?)
+            // If PRD is exactly this month (or we just passed it, but we filter >= cursorDate at start...
+            // Actually if PRD is this month, they are still here? Usually Transfer report aligns with Detach.
+            // Let's assume PRD month IS the report month.
+            const prdMonth = member.prdDate.getMonth() + 1;
+            const prdYear = member.prdDate.getFullYear();
+            if (prdMonth === currentMonth && prdYear === cursorDate.getFullYear()) {
+                isReport = true;
+            }
+
+            if (isReport) {
+                reportsThisMonth.push(member);
+            }
+        });
+
+        if (reportsThisMonth.length > 0) {
+            // 3. Promote/Adjust Rank Order
+            // Sort by current MTA descending - this implicitly handles "rank promotion" as
+            // members detach (lower-ranked members move up in competitive group order)
+            reportsThisMonth.sort((a, b) => b.currentMta - a.currentMta);
+
+            // 4. Identify detachments this month for rank-promotion bump
+            // Members whose PRD is this month are detaching after this report
+            const detachingMemberIds = new Set(
+                reportsThisMonth
+                    .filter(m => {
+                        const prdMonth = m.prdDate.getMonth() + 1;
+                        const prdYear = m.prdDate.getFullYear();
+                        return prdMonth === currentMonth && prdYear === cursorDate.getFullYear();
+                    })
+                    .map(m => m.id)
+            );
+
+            // Apply Improvements with variable growth and rank-promotion bump
+            reportsThisMonth.forEach((member, index) => {
+                // Variable Growth Factor: Random between 0.05 and 0.10 per requirement
+                const growth = 0.05 + Math.random() * 0.05;
+
+                // Rank-Promotion Bump: If the member immediately above us (index-1) is detaching,
+                // we get an additional bump for "moving up" in the competitive group
+                let rankPromotionBonus = 0;
+                if (index > 0) {
+                    const memberAbove = reportsThisMonth[index - 1];
+                    if (detachingMemberIds.has(memberAbove.id)) {
+                        rankPromotionBonus = 0.02; // Bonus for competitive group compression
+                    }
+                }
+
+                if (member.currentMta < 5.0) {
+                    member.currentMta += growth + rankPromotionBonus;
+                    // Cap at 5.0
+                    if (member.currentMta > 5.0) member.currentMta = 5.0;
+                }
+
+                // Update Projections
+                memberProjections[member.id] = round2(member.currentMta);
+
+                // Accumulate to Global
+                futureTotalScore += member.currentMta;
+                futureTotalCount++;
+            });
+        }
+
+        // Advance Month
+        // Go 2 months ahead in params, day 0 => End of Next Month from current cursor
+        // e.g. Feb 28 (Month 1). +2 => Month 3 (April), Day 0 => Mar 31. Correct.
+        cursorDate = new Date(cursorDate.getFullYear(), cursorDate.getMonth() + 2, 0);
+    }
+
+    if (totalSignedReports + futureTotalCount === 0) return defaultResult;
 
     const numerator = (currentRsca * totalSignedReports) + futureTotalScore;
     const denominator = totalSignedReports + futureTotalCount;
 
-    return round2(numerator / denominator);
+    return {
+        eotRsca: round2(numerator / denominator),
+        memberProjections
+    };
 };

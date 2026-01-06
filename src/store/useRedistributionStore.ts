@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { debounce } from 'lodash';
-import type { Member, Constraints, RedistributionResult } from '@/domain/rsca/types';
+import type { Member, Constraints, RedistributionResult, AlgorithmParams } from '@/domain/rsca/types';
 import { DEFAULT_CONSTRAINTS } from '@/domain/rsca/constants';
 import { useNavfitStore } from './useNavfitStore';
 import { useAuditStore } from './useAuditStore';
@@ -69,18 +69,20 @@ export const useRedistributionStore = create<RedistributionStoreState>((set, get
         }));
 
         // Update NavfitStore - Projections Only
-        // We do NOT update summaryGroups (Source of Truth) automatically.
-        // The engine provides a "Projection" (preview) which is stored in `projections`.
-        // The user must explicitly "Apply" or "Accept" changes to commit them to summaryGroups.
-        // This prevents the "Accept" action (single member edit) from accidentally overwriting
-        // the entire group with potentially unstable engine results.
+        // IMPORTANT: Only update projections for NON-anchor members.
+        // Anchor members (user-edited via slider) should preserve their values.
+        // This prevents the redistribution engine from overwriting manual slider edits.
 
         const navfitStore = useNavfitStore.getState();
         const updatedMembers = result.updatedMembers;
 
         const newProjections = { ...navfitStore.projections };
         updatedMembers.forEach(m => {
-            newProjections[m.id] = m.mta;
+            // Only update if not an anchor (user hasn't manually set this value)
+            // If user has manually edited, keep their value
+            if (!m.isAnchor) {
+                newProjections[m.id] = m.mta;
+            }
         });
 
         useNavfitStore.setState({
@@ -105,9 +107,18 @@ export const useRedistributionStore = create<RedistributionStoreState>((set, get
             }
         });
 
+        // Extract algorithm params from constraints (DEFAULT_CONSTRAINTS includes these)
+        const algorithmParams: AlgorithmParams = {
+            delta: (constraints as unknown as { delta?: number }).delta ?? 0.1,
+            p: (constraints as unknown as { p?: number }).p ?? 1.0,
+            alpha: (constraints as unknown as { alpha?: number }).alpha ?? 0.1,
+            tau: (constraints as unknown as { tau?: number }).tau ?? 0.05
+        };
+
         const params: StrategyParams = {
             ...constraints,
-            targetRSCA
+            targetRSCA,
+            algorithmParams
         };
 
         if (worker) {
@@ -125,7 +136,7 @@ export const useRedistributionStore = create<RedistributionStoreState>((set, get
                     return m;
                 });
 
-                const engineResult = redistributeMTA(effectiveMembers, constraints, targetRSCA);
+                const engineResult = redistributeMTA(effectiveMembers, constraints, algorithmParams);
 
                 const updatedMembers = effectiveMembers.map((m, i) => ({
                     ...m,

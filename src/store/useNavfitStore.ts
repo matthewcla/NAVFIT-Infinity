@@ -517,9 +517,9 @@ export const useNavfitStore = create<NavfitStore>((set) => ({
 
             const group = state.summaryGroups[groupIndex];
 
-            // 1. Update the value
-            // We also update IsLocked to true because a manual MTA change implies an override/projection
-            const updatedReports = group.reports.map(r => r.id === reportId ? { ...r, traitAverage: value } : r);
+            // 1. Update the value AND mark as locked (anchor)
+            // Manual MTA change implies an override - mark as locked so redistribution preserves it
+            const updatedReports = group.reports.map(r => r.id === reportId ? { ...r, traitAverage: value, isLocked: true } : r);
 
             // 2. Strict Sort by MTA (Descending)
             updatedReports.sort((a, b) => b.traitAverage - a.traitAverage);
