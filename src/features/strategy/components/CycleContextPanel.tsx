@@ -4,6 +4,7 @@ import { useRedistributionStore } from '@/store/useRedistributionStore';
 import type { SummaryGroup } from '@/types';
 import type { RosterMember } from '@/types/roster';
 import { RscaHeadsUpDisplay } from './RscaHeadsUpDisplay';
+import { RscaScattergram } from './RscaScattergram';
 // generateSummaryGroups import removed - now using stored summaryGroups directly
 import { calculateCumulativeRSCA, calculateEotRsca, getCompetitiveGroupStats } from '@/features/strategy/logic/rsca';
 
@@ -383,8 +384,8 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
 
                         {/* Row 2: RSCA Scoreboard Container */}
                         <div className="flex items-stretch gap-2">
-                            {/* 2A. RSCA Heads Up Display (Left) - Framed */}
-                            <div className="rounded-xl border border-slate-200 shadow-sm overflow-hidden bg-white/50 shrink-0">
+                            {/* 2A. RSCA Heads Up Display (Left) - Equal Width */}
+                            <div className="flex-1 min-w-0 rounded-xl border border-slate-200 shadow-sm overflow-hidden bg-white/50">
                                 <RscaHeadsUpDisplay
                                     currentRsca={currentRsca}
                                     projectedRsca={projectedRsca}
@@ -394,8 +395,16 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
                                 />
                             </div>
 
-                            {/* 2B. Promotion Recommendation Quota HUD (Right) - Framed & Flexible */}
-                            <div className="flex-1 rounded-xl border border-slate-200 shadow-sm overflow-hidden bg-white/50">
+                            {/* 2B. Scattergram (Middle) - Equal Width */}
+                            <div className="flex-1 min-w-0 rounded-xl border border-slate-200 shadow-sm overflow-hidden bg-white/50">
+                                <RscaScattergram
+                                    members={rankedMembers}
+                                    rsca={projectedRsca}
+                                />
+                            </div>
+
+                            {/* 2C. Promotion Recommendation Scoreboard (Right) - Equal Width */}
+                            <div className="flex-1 min-w-0 rounded-xl border border-slate-200 shadow-sm overflow-hidden bg-white/50">
                                 <div className="h-full bg-white/95 backdrop-blur-sm transition-all duration-300">
                                     <QuotaHeadsUpDisplay distribution={distribution} totalReports={totalReports} context={domainContext} />
                                 </div>

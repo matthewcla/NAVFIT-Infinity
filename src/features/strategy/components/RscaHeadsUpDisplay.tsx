@@ -1,4 +1,4 @@
-import { Activity } from 'lucide-react';
+import { Activity, ArrowRight } from 'lucide-react';
 
 interface RscaHeadsUpDisplayProps {
     currentRsca: number;
@@ -67,8 +67,8 @@ export function RscaHeadsUpDisplay({
                     <Activity className={`w-5 h-5 ${zoneCurrent}`} />
                 </div>
 
-                {/* Stats Grid - Even Distribution */}
-                <div className="grid grid-cols-3 gap-4 flex-1 items-center text-center">
+                {/* Stats Grid - Flex Distribution */}
+                <div className="flex flex-1 items-center justify-between px-2">
 
                     {/* 1. Left Stat: Current */}
                     <div className="flex flex-col items-center">
@@ -80,12 +80,10 @@ export function RscaHeadsUpDisplay({
                         </div>
                     </div>
 
-                    {/* Arrow Divider (Visual only, maybe minimal or removed to save space/cleanliness) 
-                        User asked to "evenly distribute". Arrows might clutter if space is tight.
-                        Let's put small arrows between cols? 
-                         actually grid gap handles spacing. 
-                         Let's try just the stats per user request "evenly distribute ... values". 
-                    */}
+                    {/* Arrow 1 */}
+                    <div className="flex items-center justify-center text-slate-300">
+                        <ArrowRight className="w-4 h-4" />
+                    </div>
 
                     {/* 2. Middle Stat: Projected */}
                     <div className="flex flex-col items-center relative">
@@ -101,6 +99,11 @@ export function RscaHeadsUpDisplay({
                                 </sub>
                             )}
                         </div>
+                    </div>
+
+                    {/* Arrow 2 */}
+                    <div className="flex items-center justify-center text-slate-300">
+                        <ArrowRight className="w-4 h-4" />
                     </div>
 
                     {/* 3. Right Stat: EOT */}

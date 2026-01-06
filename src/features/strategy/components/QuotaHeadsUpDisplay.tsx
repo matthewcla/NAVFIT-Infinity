@@ -27,57 +27,58 @@ export function QuotaHeadsUpDisplay({ distribution, totalReports, context }: Quo
 
     // EP Status
     const epOver = epUsed > epLimit;
-    const epFull = epUsed === epLimit;
 
     // Combined Status
     const combinedOver = combinedUsed > combinedLimit;
-    const combinedFull = combinedUsed === combinedLimit;
 
     // MP Status (Indirectly controlled by Combined, but visualized for completeness)
     // There isn't a strict "MP Limit" alone, but MP contributes to Combined.
     // We display MP usage, but validation is mostly on Combined.
 
+    // Dynamic Limits
+    const dynamicMpLimit = Math.max(0, combinedLimit - epUsed);
+
+    // Scoreboard Data
+    const scoreboard = [
+        { label: 'SP', count: `${distribution.SP || 0}`, color: 'bg-red-100 text-red-800 border-red-200' },
+        { label: 'PR', count: `${distribution.PR || 0}`, color: 'bg-orange-100 text-orange-800 border-orange-200' },
+        { label: 'P', count: `${distribution.P || 0}`, color: 'bg-slate-100 text-slate-700 border-slate-200' },
+        {
+            label: 'MP',
+            count: `${distribution.MP || 0}/${dynamicMpLimit}`,
+            // MP Color Logic: Warning if combined over, else Amber style
+            color: 'bg-amber-100 text-amber-800 border-amber-200'
+        },
+        {
+            label: 'EP',
+            count: `${distribution.EP || 0}/${epLimit}`,
+            // EP Color Logic: Red if over, Green if full, else Standard Emerald
+            color: 'bg-emerald-100 text-emerald-800 border-emerald-200'
+        },
+    ];
+
     return (
-        <div className="flex items-center gap-2 h-full px-2">
+        <div className="flex items-center justify-center gap-4 h-full px-6 relative">
 
-            {/* EP Quota */}
-            <div className="group relative flex flex-col items-center justify-center px-3 py-1.5 rounded-lg border min-w-[80px] transition-colors hover:bg-white hover:shadow-md cursor-help"
-                title={`Early Promote: ${epUsed} assigned of ${epLimit} allowed`}
-            >
-                <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">EP Limit</div>
-                <div className={clsx(
-                    "text-lg font-black leading-none font-mono",
-                    epOver ? "text-red-600" : (epFull ? "text-emerald-600" : "text-slate-700")
-                )}>
-                    {epUsed}<span className="text-slate-300 text-sm font-normal mx-0.5">/</span>{epLimit}
-                </div>
-                {epOver && <div className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-red-500 rounded-full animate-pulse" />}
+            {/* Scoreboard */}
+            <div className="flex items-center gap-4">
+                {scoreboard.map((item) => (
+                    <div key={item.label} className="flex flex-col items-center gap-1">
+                        <span className={clsx("text-xl font-bold leading-none",
+                            // Optional: Text color overrides for errors
+                            (item.label === 'EP' && epOver) || (item.label === 'MP' && combinedOver) ? "text-red-700" : "text-slate-700"
+                        )}>
+                            {item.count}
+                        </span>
+                        <div className={`px-2.5 py-0.5 rounded text-xs font-bold border ${item.color} shadow-sm min-w-[36px] text-center`}>
+                            {item.label}
+                        </div>
+                    </div>
+                ))}
             </div>
 
-            {/* MP Usage (Visual only, part of combined) */}
-            <div className="group relative flex flex-col items-center justify-center px-3 py-1.5 rounded-lg border border-slate-100 bg-slate-50/50 min-w-[70px]">
-                <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">MP Used</div>
-                <div className="text-lg font-bold leading-none text-slate-600 font-mono">
-                    {mpUsed}
-                </div>
-            </div>
-
-            {/* Combined Quota */}
-            <div className="group relative flex flex-col items-center justify-center px-3 py-1.5 rounded-lg border min-w-[90px] transition-colors hover:bg-white hover:shadow-md cursor-help"
-                title={`Combined (EP + MP): ${combinedUsed} assigned of ${combinedLimit} allowed`}
-            >
-                <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Combined</div>
-                <div className={clsx(
-                    "text-lg font-black leading-none font-mono",
-                    combinedOver ? "text-red-600" : (combinedFull ? "text-indigo-600" : "text-slate-700")
-                )}>
-                    {combinedUsed}<span className="text-slate-300 text-sm font-normal mx-0.5">/</span>{combinedLimit}
-                </div>
-                {combinedOver && <div className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-red-500 rounded-full animate-pulse" />}
-            </div>
-
-            {/* Rule Info Icon (Hover Trigger) */}
-            <div className="ml-1 text-slate-300 hover:text-indigo-500 transition-colors cursor-help" title="Quotas are calculated based on group size and paygrade policy.">
+            {/* Rule Info Icon (Absolute Right or inline if preferred, keeping simple layout) */}
+            <div className="absolute right-4 text-slate-300 hover:text-indigo-500 transition-colors cursor-help" title="Quotas are calculated based on group size and paygrade policy.">
                 <Info className="w-4 h-4" />
             </div>
 
