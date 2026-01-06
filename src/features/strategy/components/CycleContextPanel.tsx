@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { useNavfitStore } from '@/store/useNavfitStore';
 import { useRedistributionStore } from '@/store/useRedistributionStore';
-import type { SummaryGroup, Member } from '@/types';
+import type { SummaryGroup } from '@/types';
 import type { RosterMember } from '@/types/roster';
 import { RscaHeadsUpDisplay } from './RscaHeadsUpDisplay';
 import { generateSummaryGroups } from '@/features/strategy/logic/reportGenerator';

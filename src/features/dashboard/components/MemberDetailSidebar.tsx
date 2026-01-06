@@ -75,7 +75,7 @@ export function MemberDetailSidebar({
 
     // Determine "Rank" label logic similar to CycleMemberList
     const isEnlisted = rosterMember.rank?.startsWith('E') ||
-                       ['E-1', 'E-2', 'E-3', 'E-4', 'E-5', 'E-6', 'E-7', 'E-8', 'E-9'].includes(rosterMember.payGrade || '');
+        ['E-1', 'E-2', 'E-3', 'E-4', 'E-5', 'E-6', 'E-7', 'E-8', 'E-9'].includes(rosterMember.payGrade || '');
 
     // Fallback if needed
     const displayRank = isEnlisted ? rosterMember.rank : rosterMember.rank; // Title for Officer, Rating/Rank for Enlisted?
@@ -220,22 +220,49 @@ export function MemberDetailSidebar({
 
     // --- Slider & Input Interaction Refs ---
     const dragStartMtaRef = useRef<number | null>(null);
+    const mtaFocusRef = useRef<number | null>(null);
+    const [isDraggingSlider, setIsDraggingSlider] = useState(false);
+
+    // Track latest mta for the effect closure
+    const latestMtaRef = useRef(simulatedMta);
+    useEffect(() => {
+        latestMtaRef.current = simulatedMta;
+    }, [simulatedMta]);
 
     const handleSliderMouseDown = () => {
         dragStartMtaRef.current = simulatedMta;
+        setIsDraggingSlider(true);
     };
 
-    const handleSliderMouseUp = () => {
-        if (dragStartMtaRef.current !== null && Math.abs(dragStartMtaRef.current - simulatedMta) > 0.001) {
-            setHistory(prev => {
-                 const newHistory = [...prev, { mta: dragStartMtaRef.current!, rec: simulatedRec }];
-                 if (newHistory.length > 5) newHistory.shift();
-                 return newHistory;
-            });
-            setFuture([]);
-        }
-        dragStartMtaRef.current = null;
-    };
+    // Global listener for robust drag end detection
+    useEffect(() => {
+        if (!isDraggingSlider) return;
+
+        const handleGlobalDragEnd = () => {
+            const startVal = dragStartMtaRef.current;
+            const currentVal = latestMtaRef.current;
+
+            if (startVal !== null && Math.abs(startVal - currentVal) > 0.001) {
+                setHistory(prev => {
+                    const newHistory = [...prev, { mta: startVal, rec: simulatedRec }];
+                    if (newHistory.length > 5) newHistory.shift();
+                    return newHistory;
+                });
+                setFuture([]);
+            }
+
+            dragStartMtaRef.current = null;
+            setIsDraggingSlider(false);
+        };
+
+        window.addEventListener('mouseup', handleGlobalDragEnd);
+        window.addEventListener('touchend', handleGlobalDragEnd);
+
+        return () => {
+            window.removeEventListener('mouseup', handleGlobalDragEnd);
+            window.removeEventListener('touchend', handleGlobalDragEnd);
+        };
+    }, [isDraggingSlider, simulatedRec]);
 
 
     // --- Rank Change Logic ---
@@ -243,7 +270,7 @@ export function MemberDetailSidebar({
         if (isLocked || simulatedRec === 'NOB') return;
 
         if (!isIntermediate) {
-             commitToHistory();
+            commitToHistory();
         }
 
         // 1. Check for MTA Collision (Strict Uniqueness)
@@ -458,12 +485,37 @@ export function MemberDetailSidebar({
 
         const formatted = val.toFixed(2);
 
+        // Check against focus ref for history
+        if (mtaFocusRef.current !== null && Math.abs(mtaFocusRef.current - val) > 0.001) {
+            setHistory(prev => {
+                const newHistory = [...prev, { mta: mtaFocusRef.current!, rec: simulatedRec }];
+                if (newHistory.length > 5) newHistory.shift();
+                return newHistory;
+            });
+            setFuture([]);
+        }
+
+        mtaFocusRef.current = null; // Reset
+
+        // We already have the current value, so just sync input
         if (Math.abs(val - simulatedMta) > 0.001) {
-             commitToHistory();
-             setMtaInputValue(formatted);
-             handleMtaChange(parseFloat(formatted));
+            setMtaInputValue(formatted);
+            handleMtaChange(parseFloat(formatted), false); // Commit not needed here as we did manual history above, but keep false for consistency? logic check
+            // Actually, handleMtaChange(..., false) calls commitToHistory(), which uses current state.
+            // But we just manually pushed the OLD state. calling handleMtaChange(..., false) would push the NEW state as "old"?
+            // No, commitToHistory pushes CURRENT state (simulatedMta).
+            // But wait, simulatedMta has been updating LIVE via handleMtaLocalChange (isIntermediate=true).
+            // So simulatedMta is ALREADY `val`.
+            // So commitToHistory() would push `val`.
+            // We want to push `mtaFocusRef.current`.
+            // So we should NOT call handleMtaChange(..., false). We should call it with TRUE to avoid double commit, verify collision?
+            // Actually, we just need to ensuer final value is set. handleMtaChange logic:
+            // if (!isIntermediate) commitToHistory().
+
+            // WE handled history manually. So pass true.
+            handleMtaChange(parseFloat(formatted), true);
         } else {
-             setMtaInputValue(formatted);
+            setMtaInputValue(formatted);
         }
     };
 
@@ -672,7 +724,10 @@ export function MemberDetailSidebar({
                                     type="text"
                                     value={mtaInputValue}
                                     onChange={(e) => handleMtaLocalChange(e.target.value)}
-                                    onFocus={() => setIsEditingMta(true)}
+                                    onFocus={() => {
+                                        setIsEditingMta(true);
+                                        mtaFocusRef.current = simulatedMta; // Capture start value
+                                    }}
                                     onBlur={handleMtaBlur}
                                     onKeyDown={handleMtaKeyDown}
                                     disabled={isLocked || simulatedRec === 'NOB'}
@@ -799,9 +854,7 @@ export function MemberDetailSidebar({
                                     step="0.01"
                                     value={simulatedMta}
                                     onMouseDown={handleSliderMouseDown}
-                                    onMouseUp={handleSliderMouseUp}
                                     onTouchStart={handleSliderMouseDown}
-                                    onTouchEnd={handleSliderMouseUp}
                                     onChange={(e) => handleMtaChange(parseFloat(e.target.value), true)}
                                     disabled={isLocked || simulatedRec === 'NOB'}
                                     className="absolute inset-0 w-full h-full opacity-0 cursor-grab active:cursor-grabbing z-20 disabled:cursor-not-allowed"
