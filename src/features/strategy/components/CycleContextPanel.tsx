@@ -1,7 +1,8 @@
 import { useMemo, useState } from 'react';
 import { useNavfitStore } from '@/store/useNavfitStore';
 import { useRedistributionStore } from '@/store/useRedistributionStore';
-import type { SummaryGroup, Member } from '@/types';
+import type { SummaryGroup } from '@/types';
+import type { RosterMember } from '@/types/roster';
 import { RscaHeadsUpDisplay } from './RscaHeadsUpDisplay';
 import { generateSummaryGroups } from '@/features/strategy/logic/reportGenerator';
 import { calculateCumulativeRSCA, calculateEotRsca } from '@/features/strategy/logic/rsca';
@@ -434,22 +435,20 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
                         memberId={selectedMemberId}
                         rosterMember={(() => {
                             const m = roster.find(memb => memb.id === selectedMemberId);
-                            if (!m) {
-                                return {
-                                    id: selectedMemberId,
-                                    name: 'Unknown Member',
-                                    rank: 'UNK',
-                                    designator: '0000',
-                                    status: 'Onboard',
-                                    history: []
-                                } as Member;
-                            }
+                            if (m) return m;
+
                             return {
-                                ...m,
-                                name: `${m.lastName}, ${m.firstName}`,
-                                history: m.history || [],
-                                status: (m.status as Member['status']) || 'Onboard' // Ensure status matches expected union
-                            } as unknown as Member;
+                                id: selectedMemberId,
+                                firstName: 'Unknown',
+                                lastName: 'Member',
+                                rank: 'UNK',
+                                payGrade: 'O-1',
+                                designator: '0000',
+                                dateReported: new Date().toISOString().split('T')[0],
+                                prd: new Date().toISOString().split('T')[0],
+                                history: [],
+                                status: 'Onboard'
+                            } as RosterMember;
                         })()}
                         currentReport={activeGroup.reports.find(r => r.memberId === selectedMemberId)}
 
