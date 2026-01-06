@@ -45,13 +45,13 @@ export function QuotaHeadsUpDisplay({ distribution, totalReports, context }: Quo
         { label: 'P', count: `${distribution.P || 0}`, color: 'bg-slate-100 text-slate-700 border-slate-200' },
         {
             label: 'MP',
-            count: `${distribution.MP || 0}/${dynamicMpLimit}`,
+            count: `${distribution.MP || 0} / ${dynamicMpLimit}`,
             // MP Color Logic: Warning if combined over, else Amber style
             color: 'bg-amber-100 text-amber-800 border-amber-200'
         },
         {
             label: 'EP',
-            count: `${distribution.EP || 0}/${epLimit}`,
+            count: `${distribution.EP || 0} / ${epLimit}`,
             // EP Color Logic: Red if over, Green if full, else Standard Emerald
             color: 'bg-emerald-100 text-emerald-800 border-emerald-200'
         },
@@ -60,10 +60,15 @@ export function QuotaHeadsUpDisplay({ distribution, totalReports, context }: Quo
     return (
         <div className="flex items-center justify-center gap-4 h-full px-6 relative">
 
+            {/* Label */}
+            <div className="absolute top-1 left-0 right-0 text-center text-[10px] uppercase font-bold text-slate-400 tracking-wider">
+                Scoreboard
+            </div>
+
             {/* Scoreboard */}
-            <div className="flex items-center gap-4">
+            <div className="flex items-center justify-between w-full gap-2 pt-4">
                 {scoreboard.map((item) => (
-                    <div key={item.label} className="flex flex-col items-center gap-1">
+                    <div key={item.label} className="flex flex-col items-center gap-2">
                         <span className={clsx("text-xl font-bold leading-none",
                             // Optional: Text color overrides for errors
                             (item.label === 'EP' && epOver) || (item.label === 'MP' && combinedOver) ? "text-red-700" : "text-slate-700"
@@ -78,7 +83,7 @@ export function QuotaHeadsUpDisplay({ distribution, totalReports, context }: Quo
             </div>
 
             {/* Rule Info Icon (Absolute Right or inline if preferred, keeping simple layout) */}
-            <div className="absolute right-4 text-slate-300 hover:text-indigo-500 transition-colors cursor-help" title="Quotas are calculated based on group size and paygrade policy.">
+            <div className="absolute top-2 right-2 text-slate-300 hover:text-indigo-500 transition-colors cursor-help" title="Quotas are calculated based on group size and paygrade policy.">
                 <Info className="w-4 h-4" />
             </div>
 

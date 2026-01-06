@@ -9,9 +9,7 @@ import { RscaScattergram } from './RscaScattergram';
 import { calculateCumulativeRSCA, calculateEotRsca, getCompetitiveGroupStats } from '@/features/strategy/logic/rsca';
 
 import {
-    ArrowRight,
     Layout,
-    BarChart,
     ListOrdered,
     Calendar,
     Check,
@@ -396,7 +394,7 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
                             </div>
 
                             {/* 2B. Scattergram (Middle) - Equal Width */}
-                            <div className="flex-1 min-w-0 rounded-xl border border-slate-200 shadow-sm overflow-hidden bg-white/50">
+                            <div className="flex-1 min-w-0 rounded-xl border border-slate-200 shadow-sm overflow-hidden bg-white">
                                 <RscaScattergram
                                     members={rankedMembers}
                                     rsca={projectedRsca}
@@ -415,91 +413,65 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
                     {/* 2. Sticky Toolbar (Below Header) */}
                     <div className="sticky top-0 z-20 bg-white/95 backdrop-blur border-b border-slate-200 p-4 pt-2">
                         <div className="flex items-center justify-between">
-                            {/* Left: Action Buttons */}
+                            {/* Left: Rank / Edit Controls */}
                             <div className="flex items-center gap-2">
-
-                                <div className="flex items-center gap-2">
-
-                                    {isRankingMode ? (
-                                        <>
-                                            <button
-                                                onClick={() => {
-                                                    setIsRankingMode(false);
-                                                    setLocalOrderedMembers(null);
-                                                }}
-                                                className="flex items-center justify-center gap-2 px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white border border-transparent rounded-lg transition-colors text-xs font-medium shadow-sm"
-                                                title="Save Order"
-                                            >
-                                                <Check className="w-3.5 h-3.5" />
-                                                <span>Done</span>
-                                            </button>
-                                            <button
-                                                onClick={() => {
-                                                    setIsRankingMode(false);
-                                                    setLocalOrderedMembers(null);
-                                                }}
-                                                className="flex items-center justify-center gap-2 px-3 py-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 rounded-lg transition-colors text-xs font-medium"
-                                                title="Cancel Reordering"
-                                            >
-                                                <X className="w-3.5 h-3.5 text-slate-500" />
-                                                <span>Cancel</span>
-                                            </button>
-                                        </>
-                                    ) : (
-                                        <>
-                                            {/* Rank Button */}
-                                            <button
-                                                onClick={() => setIsRankingMode(true)}
-                                                className="flex items-center justify-center gap-2 px-3 py-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 rounded-lg transition-colors text-xs font-medium"
-                                                title="Rank Members"
-                                            >
-                                                <ListOrdered className="w-3.5 h-3.5 text-slate-500" />
-                                                <span>Rank</span>
-                                            </button>
-
-                                            {/* Waterfall Button */}
-                                            <button
-                                                className="flex items-center justify-center gap-2 px-3 py-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 rounded-lg transition-colors text-xs font-medium"
-                                                title="Waterfall View"
-                                            >
-                                                <BarChart className="w-3.5 h-3.5 text-slate-500" />
-                                                <span>Waterfall</span>
-                                            </button>
-
-                                            {/* Optimize Button */}
-                                            <button
-                                                onClick={handleOptimize}
-                                                className="flex items-center justify-center gap-2 px-3 py-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 rounded-lg transition-colors text-xs font-medium"
-                                                title="Optimize MTA Distribution"
-                                            >
-                                                <Sparkles className="w-3.5 h-3.5 text-indigo-500" />
-                                                <span>Optimize</span>
-                                            </button>
-
-                                        </>
-                                    )}
-                                </div>
-
-                                {/* Right: Workspace Control & Alerts */}
-                                <div className="flex items-center gap-3 text-[10px] px-2">
-
-                                    {!isRankingMode && (
+                                {isRankingMode ? (
+                                    <>
                                         <button
-                                            onClick={onOpenWorkspace}
-                                            className="flex items-center justify-center gap-2 px-3 py-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 rounded-lg transition-colors text-xs font-medium"
+                                            onClick={() => {
+                                                setIsRankingMode(false);
+                                                setLocalOrderedMembers(null);
+                                            }}
+                                            className="flex items-center justify-center gap-2 px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white border border-transparent rounded-lg transition-colors text-xs font-medium shadow-sm"
+                                            title="Save Order"
                                         >
-                                            <ArrowRight className="w-3.5 h-3.5 text-slate-500" />
-                                            <span>Workspace</span>
+                                            <Check className="w-3.5 h-3.5" />
+                                            <span>Done</span>
                                         </button>
-                                    )}
+                                        <button
+                                            onClick={() => {
+                                                setIsRankingMode(false);
+                                                setLocalOrderedMembers(null);
+                                            }}
+                                            className="flex items-center justify-center gap-2 px-3 py-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 rounded-lg transition-colors text-xs font-medium"
+                                            title="Cancel Reordering"
+                                        >
+                                            <X className="w-3.5 h-3.5 text-slate-500" />
+                                            <span>Cancel</span>
+                                        </button>
+                                    </>
+                                ) : (
+                                    <button
+                                        onClick={() => setIsRankingMode(true)}
+                                        className="flex items-center justify-center gap-2 px-3 py-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 rounded-lg transition-colors text-xs font-medium"
+                                        title="Rank Members"
+                                    >
+                                        <ListOrdered className="w-3.5 h-3.5 text-slate-500" />
+                                        <span>Rank</span>
+                                    </button>
+                                )}
+                            </div>
 
-                                    {/* Moved Alert Badge - Adjusted to be Right-Most Edge */}
-                                    {gap > 0 && (
-                                        <div className="flex items-center gap-1.5 px-2.5 py-1.5 bg-amber-50 rounded-md text-xs font-bold text-amber-700 border border-amber-200 shadow-sm animate-in fade-in slide-in-from-right-2">
-                                            <span>{gap} Attention Needed</span>
-                                        </div>
-                                    )}
-                                </div>
+                            {/* Right: Alerts & Optimize */}
+                            <div className="flex items-center gap-2 px-2">
+                                {/* Alert Badge */}
+                                {gap > 0 && (
+                                    <div className="flex items-center gap-1.5 px-2.5 py-1.5 bg-amber-50 rounded-md text-xs font-bold text-amber-700 border border-amber-200 shadow-sm animate-in fade-in slide-in-from-right-2">
+                                        <span>{gap} Attention Needed</span>
+                                    </div>
+                                )}
+
+                                {/* Optimize Button - Moved to Right */}
+                                {!isRankingMode && (
+                                    <button
+                                        onClick={handleOptimize}
+                                        className="flex items-center justify-center gap-2 px-3 py-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 rounded-lg transition-colors text-xs font-medium"
+                                        title="Optimize MTA Distribution"
+                                    >
+                                        <Sparkles className="w-3.5 h-3.5 text-indigo-500" />
+                                        <span>Optimize</span>
+                                    </button>
+                                )}
                             </div>
                         </div>
                     </div>

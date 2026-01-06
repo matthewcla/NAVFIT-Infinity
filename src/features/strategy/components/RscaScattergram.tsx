@@ -9,7 +9,7 @@ interface RscaScattergramProps {
 
 export function RscaScattergram({ members, rsca }: RscaScattergramProps) {
     // Canvas dimensions (internal SVG coordinates)
-    const padding = { top: 10, right: 10, bottom: 20, left: 30 };
+    const padding = { top: 25, right: 10, bottom: 20, left: 30 };
     const width = 300;
     const height = 100; // Aspect ratio controlled by parent, but viewBox is fixed
 
@@ -51,7 +51,7 @@ export function RscaScattergram({ members, rsca }: RscaScattergramProps) {
     }, [rsca]);
 
     return (
-        <div className="h-full w-full bg-slate-50 border border-slate-200 rounded-xl overflow-hidden relative">
+        <div className="h-full w-full bg-white border border-slate-200 rounded-xl overflow-hidden relative">
             <svg
                 viewBox={`0 0 ${width} ${height}`}
                 preserveAspectRatio="none"
@@ -102,7 +102,7 @@ export function RscaScattergram({ members, rsca }: RscaScattergramProps) {
             </svg>
 
             {/* Overlay Label */}
-            <div className="absolute top-1 left-2 text-[10px] uppercase font-bold text-slate-400 tracking-wider">
+            <div className="absolute top-1 left-0 right-0 text-center text-[10px] uppercase font-bold text-slate-400 tracking-wider">
                 MTA Distribution
             </div>
         </div>

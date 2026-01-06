@@ -16,7 +16,6 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { RankChangeModal } from './RankChangeModal';
-import { ConfirmationModal } from './ConfirmationModal';
 import { UnsavedChangesModal } from './UnsavedChangesModal';
 
 import type { Report } from '@/types';
@@ -112,10 +111,8 @@ export function MemberDetailSidebar({
 
     // Warning Modal State
     const [showWarning, setShowWarning] = useState(false);
-    const [showCollisionWarning, setShowCollisionWarning] = useState(false);
     const [pendingMta, setPendingMta] = useState<number | null>(null);
     const [warningDirection, setWarningDirection] = useState<'up' | 'down'>('up');
-    const [collisionNudge, setCollisionNudge] = useState<number | null>(null);
 
     // Unsaved Changes Modal State
     const [showUnsavedModal, setShowUnsavedModal] = useState(false);
@@ -131,8 +128,6 @@ export function MemberDetailSidebar({
             setPreviousMta(null);
             setShowWarning(false);
             setPendingMta(null);
-            setShowCollisionWarning(false);
-            setCollisionNudge(null);
 
             // Reset History
             setHistory([]);
@@ -282,19 +277,6 @@ export function MemberDetailSidebar({
             commitToHistory();
         }
 
-        // 1. Check for MTA Collision (Strict Uniqueness)
-        const hasCollision =
-            rankContext?.nextRanks.some(r => Math.abs(r.mta - newValue) < 0.001) ||
-            rankContext?.prevRanks.some(r => Math.abs(r.mta - newValue) < 0.001);
-
-        if (hasCollision) {
-            let nudged = newValue - 0.01;
-            setCollisionNudge(parseFloat(nudged.toFixed(2)));
-            setPendingMta(newValue);
-            setShowCollisionWarning(true);
-            return;
-        }
-
         // Check Upward Rank Change (Higher MTA > ANY Next Rank's MTA)
         const immediateNext = rankContext?.nextRanks?.[0];
         if (immediateNext && newValue > immediateNext.mta) {
@@ -328,18 +310,9 @@ export function MemberDetailSidebar({
     const cancelMtaChange = () => {
         setShowWarning(false);
         setPendingMta(null);
-        setShowCollisionWarning(false);
-        setCollisionNudge(null);
     };
 
-    const confirmCollision = () => {
-        if (collisionNudge !== null) {
-            setSimulatedMta(collisionNudge);
-            setShowCollisionWarning(false);
-            setCollisionNudge(null);
-            setPendingMta(null);
-        }
-    };
+
 
 
     // --- Derived Metrics ---
@@ -1192,17 +1165,6 @@ export function MemberDetailSidebar({
                 currentRank={rankContext?.currentRank || 0}
                 newRank={(rankContext?.currentRank || 0) + (warningDirection === 'up' ? -1 : 1)}
                 memberName={`${rosterMember.firstName} ${rosterMember.lastName}`}
-            />
-
-            <ConfirmationModal
-                isOpen={showCollisionWarning}
-                onClose={cancelMtaChange}
-                onConfirm={confirmCollision}
-                title="MTA Value Conflict"
-                description={`The value ${pendingMta?.toFixed(2)} is already assigned to another member. To maintain strict rank ordering, would you like to use ${collisionNudge?.toFixed(2)} instead?`}
-                confirmText={`Use ${collisionNudge?.toFixed(2)}`}
-                cancelText="Cancel"
-                variant="neutral"
             />
 
             <UnsavedChangesModal
