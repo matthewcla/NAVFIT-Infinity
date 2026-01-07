@@ -7,6 +7,8 @@ import { RscaHeadsUpDisplay } from './RscaHeadsUpDisplay';
 import { RscaScattergram } from './RscaScattergram';
 // generateSummaryGroups import removed - now using stored summaryGroups directly
 import { calculateCumulativeRSCA, calculateEotRsca, getCompetitiveGroupStats } from '@/features/strategy/logic/rsca';
+import { getCompetitiveCategory } from '@/features/strategy/logic/competitiveGroupUtils';
+import { mapUiPaygradeToDomain } from '@/features/strategy/logic/recommendation';
 
 import {
     Layout,
@@ -144,11 +146,42 @@ export function CycleContextPanel({ group }: CycleContextPanelProps) {
             sanitized.filter(r => r.promotionRecommendation === 'NOB').map(r => ({ id: r.id, mta: r.traitAverage }))
         );
 
-        // Step 6: Sort Phase 2 - Final Index Integrity
-        sanitized.sort((a, b) => b.traitAverage - a.traitAverage);
+        // Step 6: Sanitize Phase 3 - Enforce Enlisted/Officer Logic and Restrictions
+        // Specifically: ENS (O1) and LTJG (O2) are not allowed EP and MP unless they are LDO.
+        const enforced = sanitized.map(r => {
+            // Determine Paygrade from report or generic group context
+            const paygradeStr = r.grade || activeGroup.paygrade;
+            // Map to Domain Paygrade (e.g. "O1", "O2")
+            // Note: r.grade might be "O-1", mapUiPaygradeToDomain handles "O-1" -> "O1"
+            const paygrade = mapUiPaygradeToDomain(paygradeStr);
 
-        // Step 7: Commit
-        setProposedReports(sanitized);
+            // Determine Competitive Category (LDO check)
+            // Use report designator if available (preferred), else group default
+            const designator = r.designator || activeGroup.designator || '';
+            const category = getCompetitiveCategory(designator);
+            const isLDO = category.code === 'LDO_ACTIVE' || category.code === 'LDO_CWO_RESERVE';
+
+            // Check Condition: O1/O2 AND Not LDO
+            const isJuniorOfficer = paygrade === 'O1' || paygrade === 'O2';
+
+            if (isJuniorOfficer && !isLDO) {
+                // Check if they were assigned EP or MP
+                if (r.promotionRecommendation === 'EP' || r.promotionRecommendation === 'MP') {
+                    console.log(`[Optimize Pipeline] Enforcing O1/O2 Restriction for ${r.memberName} (${paygrade}/${designator}): Downgrading ${r.promotionRecommendation} -> P`);
+                    return {
+                        ...r,
+                        promotionRecommendation: 'P' as Report['promotionRecommendation']
+                    };
+                }
+            }
+            return r;
+        });
+
+        // Step 7: Sort Phase 2 - Final Index Integrity
+        enforced.sort((a, b) => b.traitAverage - a.traitAverage);
+
+        // Step 8: Commit
+        setProposedReports(enforced);
 
         // Defer isOptimizing=false to next animation frame
         requestAnimationFrame(() => {
@@ -161,14 +194,13 @@ export function CycleContextPanel({ group }: CycleContextPanelProps) {
         if (!activeGroup || !proposedReports) return;
 
         // Commit to Store
-        // We need to update the group with the new reports list.
-        // We can use updateReport iteratively or a bulk update if available.
-        // useNavfitStore doesn't have "updateGroupReports", but we have `setSummaryGroups`.
-        // We'll manually construct the update.
-        const newGroup = { ...activeGroup, reports: proposedReports };
+        // Use the dedicated commitOptimization action which handles updating reports AND clearing stale projections
+        useNavfitStore.getState().commitOptimization(activeGroup.id, proposedReports);
 
-        const allGroups = summaryGroups.map(g => g.id === activeGroup.id ? newGroup : g);
-        useNavfitStore.getState().setSummaryGroups(allGroups);
+        // State update handled by store, we just clear local
+        // const newGroup = { ...activeGroup, reports: proposedReports };
+        // const allGroups = summaryGroups.map(g => g.id === activeGroup.id ? newGroup : g);
+        // useNavfitStore.getState().setSummaryGroups(allGroups);
 
         setProposedReports(null);
         setPreviewProjections({});

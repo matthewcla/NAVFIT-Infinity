@@ -63,6 +63,7 @@ interface NavfitStore {
     projections: Record<string, number>;
     updateProjection: (groupId: string, reportId: string, value: number) => void;
     updateReport: (groupId: string, reportId: string, updates: Partial<Report>) => void;
+    commitOptimization: (groupId: string, reports: Report[]) => void;
 
 
     // Cross-Component Requests
@@ -634,6 +635,37 @@ export const useNavfitStore = create<NavfitStore>((set) => ({
         };
 
         return { summaryGroups: newSummaryGroups };
+    }),
+
+    commitOptimization: (groupId, reports) => set((state) => {
+        const groupIndex = state.summaryGroups.findIndex(g => g.id === groupId);
+        if (groupIndex === -1) return {};
+
+        const group = state.summaryGroups[groupIndex];
+
+        // 1. Update Group with new Reports (Optimized)
+        const newSummaryGroups = [...state.summaryGroups];
+        newSummaryGroups[groupIndex] = {
+            ...group,
+            reports
+        };
+
+        // 2. Clear Projections for these members
+        // We want to remove the projection key so the UI falls back to the report's traitAverage (which is now updated)
+        const newProjections = { ...state.projections };
+        reports.forEach(r => {
+            delete newProjections[r.id];
+        });
+
+        // 3. Clear any preview projections as well (though usually handled by component state)
+        // If we had store-based preview, we'd clear it here.
+
+        return {
+            summaryGroups: newSummaryGroups,
+            projections: newProjections,
+            // Also update loaded state references if needed? 
+            // In CycleContextPanel, we use latestGroup from summaryGroups, so this is sufficient.
+        };
     }),
 
     // Requests
