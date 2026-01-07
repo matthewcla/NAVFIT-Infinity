@@ -99,36 +99,20 @@ export function CycleContextPanel({ group }: CycleContextPanelProps) {
         const result = latestResult[activeGroup.id]!;
         const currentReports = [...activeGroup.reports];
 
-        // === PARANOID LOGGING START ===
-        console.warn('[ZOMBIE DEBUG] Step 0 - Raw Worker Result:',
-            result.updatedMembers.map(m => ({ id: m.id, mta: m.mta })));
-        console.warn('[ZOMBIE DEBUG] Step 0 - Current Reports NOBs:',
-            currentReports.filter(r => r.promotionRecommendation === 'NOB')
-                .map(r => ({ id: r.id, promRec: r.promotionRecommendation, mta: r.traitAverage })));
-
-        // Step 1: Map worker results to a lookup with STRICT number parsing
+        // Step 1: Hydrate from Worker Result
         const optimizedMtas: Record<string, number> = {};
         result.updatedMembers.forEach(m => {
-            // STRICT: Force number type, round to 2 decimals
             optimizedMtas[m.id] = parseFloat(Number(m.mta).toFixed(2));
         });
 
-        // Step 2: Apply worker MTA values, but STRICTLY force ALL NOBs to 0.00
-        let proposed = currentReports.map(r => {
+        // Step 2: Sanitize Phase 1 - Apply MTAs and Force NOB to 0.00
+        const hydrated = currentReports.map(r => {
             const isNob = r.promotionRecommendation === 'NOB';
-
-            // NOB always gets 0, regardless of locked status or worker result
-            if (isNob) {
-                console.warn(`[ZOMBIE DEBUG] Step 2 - Forcing NOB ${r.id} MTA: ${r.traitAverage} -> 0`);
-                return {
-                    ...r,
-                    traitAverage: 0 // Use integer zero for clarity
-                };
-            }
-
-            // For non-NOB reports, apply worker result or keep existing
+            // Use worker result if available, otherwise keep existing
             const newMta = optimizedMtas[r.id] !== undefined ? optimizedMtas[r.id] : r.traitAverage;
-            const finalMta = parseFloat(Number(newMta).toFixed(2));
+
+            // Force NOB to 0.00, otherwise ensure precision
+            const finalMta = isNob ? 0.00 : parseFloat(Number(newMta).toFixed(2));
 
             return {
                 ...r,
@@ -136,63 +120,37 @@ export function CycleContextPanel({ group }: CycleContextPanelProps) {
             };
         });
 
-        // === PARANOID LOG: Post-Step-2 NOB Values ===
-        console.warn('[ZOMBIE DEBUG] Step 2 Complete - NOBs after initial map:',
-            proposed.filter(r => r.promotionRecommendation === 'NOB')
-                .map(r => ({ id: r.id, mta: r.traitAverage })));
+        // Step 3: Sort Phase 1 - Descending MTA
+        hydrated.sort((a, b) => b.traitAverage - a.traitAverage);
 
-        // Step 3 & 4: Sort by MTA Descending, with NOBs absolutely at the bottom
-        proposed.sort((a, b) => {
-            const aIsNob = a.promotionRecommendation === 'NOB';
-            const bIsNob = b.promotionRecommendation === 'NOB';
+        // Tracer Log 1
+        console.log('[Optimize Pipeline] Post-Sort Phase 1 (NOBs should be at bottom):',
+            hydrated.filter(r => r.promotionRecommendation === 'NOB').map(r => ({ id: r.id, mta: r.traitAverage }))
+        );
 
-            // NOBs always go to bottom
-            if (aIsNob && !bIsNob) return 1;
-            if (!aIsNob && bIsNob) return -1;
+        // Step 4: Assign Recommendations based on Rank
+        const reallocated = assignRecommendationsByRank(hydrated, activeGroup);
 
-            // Both NOB or both non-NOB: sort by MTA descending
-            return b.traitAverage - a.traitAverage;
-        });
-
-        // Step 5: Assign Recommendations (EP/MP/P) based on new Rank Order
-        const reallocated = assignRecommendationsByRank(proposed, activeGroup);
-
-        // === PARANOID LOG: Post-assignRecommendationsByRank ===
-        console.warn('[ZOMBIE DEBUG] Step 5 Complete - NOBs after assignRecommendationsByRank:',
-            reallocated.filter(r => r.promotionRecommendation === 'NOB')
-                .map(r => ({ id: r.id, mta: r.traitAverage })));
-
-        // Step 6 (BRUTAL ENFORCEMENT): Force ALL NOBs to zero using epsilon comparison
+        // Step 5: Sanitize Phase 2 - Safety Net
         const sanitized = reallocated.map(r => {
             if (r.promotionRecommendation === 'NOB') {
-                // Use epsilon: any MTA above 0.001 is a zombie
-                const currentMta = parseFloat(Number(r.traitAverage).toFixed(2));
-                if (Math.abs(currentMta) > 0.001) {
-                    console.warn(`[ZOMBIE DEBUG] Step 6 - CAUGHT ZOMBIE! ${r.id} had MTA ${currentMta}, forcing to 0`);
-                }
-                return { ...r, traitAverage: 0 };
+                return { ...r, traitAverage: 0.00 };
             }
             return r;
         });
 
-        // === PARANOID LOG: Final State ===
-        console.warn('[ZOMBIE DEBUG] Step 6 Complete - Final NOBs:',
-            sanitized.filter(r => r.promotionRecommendation === 'NOB')
-                .map(r => ({ id: r.id, mta: r.traitAverage })));
+        // Tracer Log 2
+        console.log('[Optimize Pipeline] Post-Sanitize Phase 2 (NOBs confirmed 0.00):',
+            sanitized.filter(r => r.promotionRecommendation === 'NOB').map(r => ({ id: r.id, mta: r.traitAverage }))
+        );
 
-        // Final defensive sort to ensure NOBs remain at bottom
-        sanitized.sort((a, b) => {
-            const aIsNob = a.promotionRecommendation === 'NOB';
-            const bIsNob = b.promotionRecommendation === 'NOB';
-            if (aIsNob && !bIsNob) return 1;
-            if (!aIsNob && bIsNob) return -1;
-            return b.traitAverage - a.traitAverage;
-        });
+        // Step 6: Sort Phase 2 - Final Index Integrity
+        sanitized.sort((a, b) => b.traitAverage - a.traitAverage);
 
+        // Step 7: Commit
         setProposedReports(sanitized);
 
-        // BLOCKING FIX: Defer isOptimizing=false to next animation frame
-        // Ensures React commits proposedReports BEFORE UI re-renders with !isOptimizing
+        // Defer isOptimizing=false to next animation frame
         requestAnimationFrame(() => {
             setIsOptimizing(false);
         });
@@ -362,7 +320,8 @@ export function CycleContextPanel({ group }: CycleContextPanelProps) {
         const rankedMembers = effectiveReports
             .map(report => {
                 const member = roster.find(m => m.id === report.memberId);
-                const currentMta = projections[report.id] || report.traitAverage || 0;
+                // Use effectiveProjections (includes proposed values during optimization), not projections
+                const currentMta = effectiveProjections[report.id] ?? report.traitAverage ?? 0;
                 const rscaMargin = currentMta - projectedRsca; // Margin against Projected RSCA
 
                 // Robust Fallback: Use Report Snapshot if Roster Lookup Fails
