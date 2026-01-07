@@ -96,54 +96,74 @@ export function assignRecommendationsByRank(reports: Report[], group: SummaryGro
     });
 
     // Calculate Max Quotas
-    const totalReports = reports.length;
-    const epLimit = computeEpMax(totalReports, context);
+    // NOB reports are excluded from summary group size for quota purposes
+    const effectiveReports = reports.filter(r => r.promotionRecommendation !== PromotionRecommendation.NOB);
+    const effectiveSize = effectiveReports.length;
 
-    // console.log(`Assigning Recs. Group Size: ${totalReports}, Paygrade: ${context.paygrade}, EP Limit: ${epLimit}`);
+    // DEBUG: Log checks
+    // console.log(`Group Size: ${reports.length}, Effective Size (excl NOB): ${effectiveSize}`);
 
-    let epAssigned = 0;
-    let mpAssigned = 0;
+    const epLimit = computeEpMax(effectiveSize, context);
+
+    // Identify Locked Usage
+    const lockedEPs = reports.filter(r => r.isLocked && r.promotionRecommendation === PromotionRecommendation.EARLY_PROMOTE).length;
+    const lockedMPs = reports.filter(r => r.isLocked && r.promotionRecommendation === PromotionRecommendation.MUST_PROMOTE).length;
+
+    let availableEP = Math.max(0, epLimit - lockedEPs);
+    console.log('[EP DEBUG] Quota Limits:', { effectiveSize, epLimit, lockedEPs, availableEP });
+    // Note: MP limit depends on total EP assigned (locked + newly assigned), so we calculate it dynamically or conservatively.
+    // Actually, MP limit is typically a function of Group Size and EP count.
+    // Standard rule: (EP + MP) combined limit is often 50% or 60%.
+    // computeMpMax usually takes (total, context, assignedEP).
+    // so we'll calculate mpLimit AFTER assigning EPs.
 
     // We create a shallow copy of reports to modify
     const updatedReports = reports.map(r => ({ ...r }));
 
-    // First Pass: Assign EP
+    // First Pass: Assign EP to UNLOCKED records
     for (let i = 0; i < updatedReports.length; i++) {
         const report = updatedReports[i];
 
+        if (report.isLocked) continue; // Skip locked
         if (report.promotionRecommendation === PromotionRecommendation.NOB) continue;
 
         // Attempt EP
-        if (epAssigned < epLimit) {
+        if (availableEP > 0) {
             if (!isBlocked(report, PromotionRecommendation.EARLY_PROMOTE, context)) {
                 report.promotionRecommendation = PromotionRecommendation.EARLY_PROMOTE;
-                epAssigned++;
+                availableEP--;
                 continue;
             }
         }
     }
 
-    // Calculate MP Limit
-    const mpLimit = computeMpMax(totalReports, context, epAssigned);
-    // console.log(`MP Limit: ${mpLimit} (EP Used: ${epAssigned})`);
+    // Recalculate Total EP Assigned (Locked + New)
+    const totalEpAssigned = updatedReports.filter(r => r.promotionRecommendation === PromotionRecommendation.EARLY_PROMOTE).length;
 
-    // Second Pass: Assign MP (to those who didn't get EP)
+    // Calculate MP Limit based on ACTUAL EP usage
+    // Use effectiveSize here too
+    const mpLimit = computeMpMax(effectiveSize, context, totalEpAssigned);
+    let availableMP = Math.max(0, mpLimit - lockedMPs);
+    console.log('[EP DEBUG] MP Quota Limits:', { mpLimit, lockedMPs, availableMP, totalEpAssigned });
+
+    // Second Pass: Assign MP to UNLOCKED records (who didn't get EP)
     for (let i = 0; i < updatedReports.length; i++) {
         const report = updatedReports[i];
 
+        if (report.isLocked) continue; // Skip locked
         if (report.promotionRecommendation === PromotionRecommendation.NOB) continue;
-        if (report.promotionRecommendation === PromotionRecommendation.EARLY_PROMOTE) continue; // Already assigned
+        if (report.promotionRecommendation === PromotionRecommendation.EARLY_PROMOTE) continue; // Already assigned EP
 
         // Attempt MP
-        if (mpAssigned < mpLimit) {
+        if (availableMP > 0) {
             if (!isBlocked(report, PromotionRecommendation.MUST_PROMOTE, context)) {
                 report.promotionRecommendation = PromotionRecommendation.MUST_PROMOTE;
-                mpAssigned++;
+                availableMP--;
                 continue;
             }
         }
 
-        // Fallback: Promotable (or Prog/SP if blocked?)
+        // Fallback: Promotable (or SP if blocked for P)
         if (!isBlocked(report, PromotionRecommendation.PROMOTABLE, context)) {
             report.promotionRecommendation = PromotionRecommendation.PROMOTABLE;
         } else {

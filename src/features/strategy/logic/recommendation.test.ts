@@ -210,4 +210,98 @@ describe('assignRecommendationsByRank', () => {
         expect(result[1].traitAverage).toBe(4.0); // unchanged
         expect(result[2].traitAverage).toBe(3.8); // unchanged
     });
+    it('locks consume quota first, then assigns to highest rank unlocked', () => {
+        // Size 10: EP Limit = 2.
+        // Rank 10 (Last) is Locked as EP.
+        // Rank 1 (First) should get the OTHER EP.
+        // Rank 2 should get MP.
+
+        const group = createMockGroup(10, 'O-3');
+        const reports = group.reports;
+
+        // Lock Rank 10 to EP
+        reports[9].isLocked = true;
+        reports[9].promotionRecommendation = PromotionRecommendation.EARLY_PROMOTE;
+
+        const result = assignRecommendationsByRank(reports, group);
+
+        // Rank 10 keeps EP
+        expect(result[9].promotionRecommendation).toBe('EP');
+
+        // Rank 1 gets remaining EP
+        expect(result[0].promotionRecommendation).toBe('EP');
+
+        // Rank 2 gets MP (since EP is full 1+1=2)
+        expect(result[1].promotionRecommendation).toBe('MP');
+
+        // Rank 3 gets MP (MP Limit usually > 1 for size 10)
+        expect(result[2].promotionRecommendation).toBe('MP');
+    });
+    it('reproduces O-4 RL Active quota overassignment', () => {
+        // O-4 (High MP Group). Size 6.
+        // Table 1-2: EP=2. MP(High)=1.
+        // Total Promotable+ = 3.
+
+        // 1200 is General HR (RL).
+        const group = createMockGroup(6, 'O-4', '1200');
+        const result = assignRecommendationsByRank(group.reports, group);
+
+        const eps = result.filter(r => r.promotionRecommendation === 'EP').length;
+        const mps = result.filter(r => r.promotionRecommendation === 'MP').length;
+
+        // Diagnostic log
+        // console.log(`O-4 Size 6 Result: EP=${eps}, MP=${mps}`);
+
+        expect(eps).toBeLessThanOrEqual(2);
+        expect(mps).toBeLessThanOrEqual(1);
+    });
+
+    it('excludes NOB reports from summary group size for quota calculation', () => {
+        // O-4. Size 6.
+        // 2 reports are NOB.
+        // Effective Size = 4.
+        // Table 1-2 Size 4 (High): EP=1.
+        // Table 1-2 Size 6 (High): EP=2.
+
+        const group = createMockGroup(6, 'O-4');
+        const reports = group.reports;
+
+        // Mark 2 as NOB
+        reports[4].promotionRecommendation = PromotionRecommendation.NOB;
+        reports[5].promotionRecommendation = PromotionRecommendation.NOB;
+
+        const result = assignRecommendationsByRank(reports, group);
+
+        const eps = result.filter(r => r.promotionRecommendation === 'EP').length;
+
+        // Should be based on size 4, so EP=1.
+        // If bug exists, it will likely be 2.
+        expect(eps).toBe(1);
+    });
+
+    it('handles locked records with NOB correctly', () => {
+        // O-3 (Mid). Size 6: 2 NOB. Effective Size = 4.
+        // Table 1-2 Size 4 (Mid): EP=1, MP=2
+        // Lock one as EP. Available EP = 0.
+        // Expect: Locked EP stays, 2 MPs, rest P.
+
+        const group = createMockGroup(6, 'O-3');
+        const reports = group.reports;
+
+        // Mark 2 as NOB
+        reports[4].promotionRecommendation = PromotionRecommendation.NOB;
+        reports[5].promotionRecommendation = PromotionRecommendation.NOB;
+
+        // Lock rank 1 as EP
+        reports[0].isLocked = true;
+        reports[0].promotionRecommendation = PromotionRecommendation.EARLY_PROMOTE;
+
+        const result = assignRecommendationsByRank(reports, group);
+
+        const eps = result.filter(r => r.promotionRecommendation === 'EP').length;
+        const mps = result.filter(r => r.promotionRecommendation === 'MP').length;
+
+        expect(eps).toBe(1); // Only the locked one (epLimit=1 for size 4)
+        expect(mps).toBe(2); // Table says 2 for size 4
+    });
 });

@@ -18,15 +18,20 @@ export interface CompetitiveCategoryResult {
     subCategory?: string; // e.g. "Medical Corps" for Staff, or "Surface" for LDO
 }
 
-// Helper to check if a designator matches a pattern with 'x' wildcards
+// Helper to check if a designator matches a pattern with 'X' wildcards
+// X acts as a wildcard for any digit (semantically "XX" means any two digits)
 const matchesPattern = (designator: string, pattern: string): boolean => {
-    if (designator.length !== pattern.length) return false;
+    if (!designator || !pattern) return false;
+    // Normalize case for safety, though we standardize on Upper
     const d = designator.toUpperCase();
     const p = pattern.toUpperCase();
+
+    if (d.length !== p.length) return false;
+
     for (let i = 0; i < d.length; i++) {
-        if (p[i] !== 'X' && p[i] !== d[i]) {
-            return false;
-        }
+        // If pattern char is 'X' (wildcard), we skip check (implies matches any char, practically digit)
+        if (p[i] === 'X') continue;
+        if (p[i] !== d[i]) return false;
     }
     return true;
 };
@@ -36,59 +41,60 @@ const matchesAnyPattern = (designator: string, patterns: string[]): string | und
 };
 
 // --- Definitions ---
+// All patterns standardized to uppercase "XX" wildcards
 
-const PATTERNS_URL = ['11xx', '13xx', '19xx'];
+const PATTERNS_URL = ['11XX', '13XX', '19XX'];
 
 // RL has specific named subgroups
 
 const DEFINITIONS_RL = [
-    '12xx', // HR (Note: this overlaps 123x, 128x. Order matters if we want specific sub-labels, but for Grouping RL, it's fine)
+    '12XX', // HR (Note: this overlaps 123x, 128x. Order matters if we want specific sub-labels, but for Grouping RL, it's fine)
     '123X', // PMP
-    '128x', // Recruiter
-    '14xx', // ED
-    '150x', // AED
-    '151x', // AED (Eng)
-    '152x', // AED (Maint)
-    '154x', // Aviation Duty
-    '165x', // PAO
-    '166x', // Strat Sealift
-    '168x', // Recruiter
-    '17xx', // FAO
+    '128X', // Recruiter
+    '14XX', // ED
+    '150X', // AED
+    '151X', // AED (Eng)
+    '152X', // AED (Maint)
+    '154X', // Aviation Duty
+    '165X', // PAO
+    '166X', // Strat Sealift
+    '168X', // Recruiter
+    '17XX', // FAO
 ];
 
 const DEFINITIONS_IWL = [
-    '180x', '181x', '182x', '183x', '184x', '187x', '188x'
+    '180X', '181X', '182X', '183X', '184X', '187X', '188X'
 ];
 
 const DEFINITIONS_STAFF = [
-    '210x', '220x', '230x', '250x', '270x', '290x', '310x', '410x', '510x'
+    '210X', '220X', '230X', '250X', '270X', '290X', '310X', '410X', '510X'
 ];
 
 // LDO/CWO Lists
 const DEFINITIONS_RESERVE_LDO_CWO = [
-    '61xx', '62xx', '63xx', '64xx', // Line
-    '65xx', // Staff
-    '7xxx' // All CWO
+    '61XX', '62XX', '63XX', '64XX', // Line
+    '65XX', // Staff
+    '7XXX' // All CWO
 ];
 
 const DEFINITIONS_ACTIVE_LDO = [
-    '61xx', // Surface
-    '62xx', // Sub/Nuc
-    '63xx', // Aviation
-    '64xx', // Gen Line
+    '61XX', // Surface
+    '62XX', // Sub/Nuc
+    '63XX', // Aviation
+    '64XX', // Gen Line
     '653X', // CE
-    '651x', // Supply
-    '68xx'  // IW
+    '651X', // Supply
+    '68XX'  // IW
 ];
 
 const DEFINITIONS_ACTIVE_CWO = [
-    '71xx', // Surface
-    '72xx', // Sub/Nuc
+    '71XX', // Surface
+    '72XX', // Sub/Nuc
     '740X', // Sub/Nuc specific? Prompt: "72xx / 740X"
-    '73xx', // Aviation
-    '74xx', // Gen Line / Staff (Overlaps 740X? yes. 740x is more specific)
-    '75xx', // Staff?
-    '78xx'  // IW
+    '73XX', // Aviation
+    '74XX', // Gen Line / Staff (Overlaps 740X? yes. 740x is more specific)
+    '75XX', // Staff?
+    '78XX'  // IW
 ];
 
 const isReserveDesignator = (designator: string): boolean => {

@@ -317,8 +317,11 @@ export function CycleContextPanel({ group }: CycleContextPanelProps) {
 
         // Stats (Moved up for use in EOT calc)
         const totalReports = effectiveReports.length;
+        // Exclude NOB reports from effective size for quota calculations (matches assignment logic)
+        const nobCount = effectiveReports.filter(r => r.promotionRecommendation === 'NOB').length;
+        const effectiveSize = totalReports - nobCount;
         const assignedEPs = effectiveReports.filter(r => r.promotionRecommendation === 'EP').length;
-        const maxEPs = Math.floor(totalReports * 0.2); // Simple Rule of thumb
+        const maxEPs = Math.floor(effectiveSize * 0.2); // Use effectiveSize for quota calc
         const gap = Math.max(0, maxEPs - assignedEPs);
 
 
@@ -428,6 +431,7 @@ export function CycleContextPanel({ group }: CycleContextPanelProps) {
             projectedRsca,
             rank,
             totalReports,
+            effectiveSize, // NOB-excluded size for quota calculations
             gap,
             mainDraftStatus,
             rankedMembers,
@@ -453,7 +457,7 @@ export function CycleContextPanel({ group }: CycleContextPanelProps) {
         );
     }
 
-    const { currentRsca, projectedRsca, gap, mainDraftStatus, rankedMembers, distribution, eotRsca, totalReports, domainContext, isEnlisted } = contextData;
+    const { currentRsca, projectedRsca, gap, mainDraftStatus, rankedMembers, distribution, eotRsca, totalReports, effectiveSize, domainContext, isEnlisted } = contextData;
 
     // Helper for Badge
     const getPromotionStatusBadge = (s?: string) => {
@@ -552,7 +556,7 @@ export function CycleContextPanel({ group }: CycleContextPanelProps) {
                             {/* 2C. Promotion Recommendation Scoreboard (Right) - Equal Width */}
                             <div className="flex-1 min-w-0 rounded-xl border border-slate-200 shadow-sm overflow-hidden bg-white/50">
                                 <div className="h-full bg-white/95 backdrop-blur-sm transition-all duration-300">
-                                    <QuotaHeadsUpDisplay distribution={distribution} totalReports={totalReports} context={domainContext} />
+                                    <QuotaHeadsUpDisplay distribution={distribution} totalReports={effectiveSize} context={domainContext} />
                                 </div>
                             </div>
                         </div>
