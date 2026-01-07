@@ -23,7 +23,7 @@ export function processWorkerMessage(data: WorkerInput): WorkerOutput {
         const engineResult: RedistributionEngineResult = redistributeMTA(
             effectiveMembers,
             params,
-            params.targetRSCA
+            params.algorithmParams
         );
 
         const updatedMembers = effectiveMembers.map((m, i) => ({

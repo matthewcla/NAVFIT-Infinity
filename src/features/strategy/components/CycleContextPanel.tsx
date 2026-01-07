@@ -1,7 +1,7 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { useNavfitStore } from '@/store/useNavfitStore';
 import { useRedistributionStore } from '@/store/useRedistributionStore';
-import type { SummaryGroup } from '@/types';
+import type { SummaryGroup, Report } from '@/types';
 import type { RosterMember } from '@/types/roster';
 import { RscaHeadsUpDisplay } from './RscaHeadsUpDisplay';
 import { RscaScattergram } from './RscaScattergram';
@@ -26,6 +26,7 @@ import { CycleMemberList, type RankedMember } from './CycleMemberList';
 import { SubmissionConfirmationModal } from './SubmissionConfirmationModal';
 import { createSummaryGroupContext } from '@/features/strategy/logic/validation';
 import { DEFAULT_CONSTRAINTS } from '@/domain/rsca/constants';
+import { assignRecommendationsByRank } from '@/features/strategy/logic/recommendation';
 
 
 interface CycleContextPanelProps {
@@ -33,7 +34,7 @@ interface CycleContextPanelProps {
     onOpenWorkspace?: () => void;
 }
 
-export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelProps) {
+export function CycleContextPanel({ group }: CycleContextPanelProps) {
 
     const {
         roster,
@@ -82,8 +83,150 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
         selectMember(id);
     };
 
+    // Local Rank Mode State
+    const [isRankingMode, setIsRankingMode] = useState(false);
+    const [isSubmitModalOpen, setIsSubmitModalOpen] = useState(false);
+
+    // Optimization Review State
+    const [isOptimizing, setIsOptimizing] = useState(false);
+    const [proposedReports, setProposedReports] = useState<Report[] | null>(null);
+
+    // Watch for Optimization Result - PARANOID/HARDENED VERSION
+    useEffect(() => {
+        if (!isOptimizing || !activeGroup || !latestResult[activeGroup.id]) return;
+
+        // Process Result
+        const result = latestResult[activeGroup.id]!;
+        const currentReports = [...activeGroup.reports];
+
+        // === PARANOID LOGGING START ===
+        console.warn('[ZOMBIE DEBUG] Step 0 - Raw Worker Result:',
+            result.updatedMembers.map(m => ({ id: m.id, mta: m.mta })));
+        console.warn('[ZOMBIE DEBUG] Step 0 - Current Reports NOBs:',
+            currentReports.filter(r => r.promotionRecommendation === 'NOB')
+                .map(r => ({ id: r.id, promRec: r.promotionRecommendation, mta: r.traitAverage })));
+
+        // Step 1: Map worker results to a lookup with STRICT number parsing
+        const optimizedMtas: Record<string, number> = {};
+        result.updatedMembers.forEach(m => {
+            // STRICT: Force number type, round to 2 decimals
+            optimizedMtas[m.id] = parseFloat(Number(m.mta).toFixed(2));
+        });
+
+        // Step 2: Apply worker MTA values, but STRICTLY force ALL NOBs to 0.00
+        let proposed = currentReports.map(r => {
+            const isNob = r.promotionRecommendation === 'NOB';
+
+            // NOB always gets 0, regardless of locked status or worker result
+            if (isNob) {
+                console.warn(`[ZOMBIE DEBUG] Step 2 - Forcing NOB ${r.id} MTA: ${r.traitAverage} -> 0`);
+                return {
+                    ...r,
+                    traitAverage: 0 // Use integer zero for clarity
+                };
+            }
+
+            // For non-NOB reports, apply worker result or keep existing
+            const newMta = optimizedMtas[r.id] !== undefined ? optimizedMtas[r.id] : r.traitAverage;
+            const finalMta = parseFloat(Number(newMta).toFixed(2));
+
+            return {
+                ...r,
+                traitAverage: finalMta
+            };
+        });
+
+        // === PARANOID LOG: Post-Step-2 NOB Values ===
+        console.warn('[ZOMBIE DEBUG] Step 2 Complete - NOBs after initial map:',
+            proposed.filter(r => r.promotionRecommendation === 'NOB')
+                .map(r => ({ id: r.id, mta: r.traitAverage })));
+
+        // Step 3 & 4: Sort by MTA Descending, with NOBs absolutely at the bottom
+        proposed.sort((a, b) => {
+            const aIsNob = a.promotionRecommendation === 'NOB';
+            const bIsNob = b.promotionRecommendation === 'NOB';
+
+            // NOBs always go to bottom
+            if (aIsNob && !bIsNob) return 1;
+            if (!aIsNob && bIsNob) return -1;
+
+            // Both NOB or both non-NOB: sort by MTA descending
+            return b.traitAverage - a.traitAverage;
+        });
+
+        // Step 5: Assign Recommendations (EP/MP/P) based on new Rank Order
+        const reallocated = assignRecommendationsByRank(proposed, activeGroup);
+
+        // === PARANOID LOG: Post-assignRecommendationsByRank ===
+        console.warn('[ZOMBIE DEBUG] Step 5 Complete - NOBs after assignRecommendationsByRank:',
+            reallocated.filter(r => r.promotionRecommendation === 'NOB')
+                .map(r => ({ id: r.id, mta: r.traitAverage })));
+
+        // Step 6 (BRUTAL ENFORCEMENT): Force ALL NOBs to zero using epsilon comparison
+        const sanitized = reallocated.map(r => {
+            if (r.promotionRecommendation === 'NOB') {
+                // Use epsilon: any MTA above 0.001 is a zombie
+                const currentMta = parseFloat(Number(r.traitAverage).toFixed(2));
+                if (Math.abs(currentMta) > 0.001) {
+                    console.warn(`[ZOMBIE DEBUG] Step 6 - CAUGHT ZOMBIE! ${r.id} had MTA ${currentMta}, forcing to 0`);
+                }
+                return { ...r, traitAverage: 0 };
+            }
+            return r;
+        });
+
+        // === PARANOID LOG: Final State ===
+        console.warn('[ZOMBIE DEBUG] Step 6 Complete - Final NOBs:',
+            sanitized.filter(r => r.promotionRecommendation === 'NOB')
+                .map(r => ({ id: r.id, mta: r.traitAverage })));
+
+        // Final defensive sort to ensure NOBs remain at bottom
+        sanitized.sort((a, b) => {
+            const aIsNob = a.promotionRecommendation === 'NOB';
+            const bIsNob = b.promotionRecommendation === 'NOB';
+            if (aIsNob && !bIsNob) return 1;
+            if (!aIsNob && bIsNob) return -1;
+            return b.traitAverage - a.traitAverage;
+        });
+
+        setProposedReports(sanitized);
+
+        // BLOCKING FIX: Defer isOptimizing=false to next animation frame
+        // Ensures React commits proposedReports BEFORE UI re-renders with !isOptimizing
+        requestAnimationFrame(() => {
+            setIsOptimizing(false);
+        });
+
+    }, [latestResult, isOptimizing, activeGroup]);
+
+    const handleAcceptOptimization = () => {
+        if (!activeGroup || !proposedReports) return;
+
+        // Commit to Store
+        // We need to update the group with the new reports list.
+        // We can use updateReport iteratively or a bulk update if available.
+        // useNavfitStore doesn't have "updateGroupReports", but we have `setSummaryGroups`.
+        // We'll manually construct the update.
+        const newGroup = { ...activeGroup, reports: proposedReports };
+
+        const allGroups = summaryGroups.map(g => g.id === activeGroup.id ? newGroup : g);
+        useNavfitStore.getState().setSummaryGroups(allGroups);
+
+        setProposedReports(null);
+        setPreviewProjections({});
+    };
+
+    const handleCancelOptimization = () => {
+        setProposedReports(null);
+        setPreviewProjections({});
+    };
+
+
     const handleOptimize = () => {
         if (!activeGroup || !rsConfig) return;
+
+        setIsOptimizing(true);
+        setProposedReports(null);
 
         // Ensure strict sorting based on current state before optimizing
         const sortedReports = [...activeGroup.reports].sort((a, b) => b.traitAverage - a.traitAverage);
@@ -127,9 +270,16 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
     const contextData = useMemo(() => {
         if (!activeGroup) return null;
 
-        // Use stored summaryGroups instead of regenerating - regeneration creates new 
-        // report IDs that don't match the projections keys, breaking reactivity
-        const allGroups = summaryGroups;
+        // Determine Effective Reports (Active vs Proposed)
+        const effectiveReports = proposedReports || activeGroup.reports;
+
+        // Use stored summaryGroups but override the active group with proposed state for calculation context
+        const allGroups = summaryGroups.map(g =>
+            (g.id === activeGroup.id && proposedReports)
+                ? { ...g, reports: proposedReports }
+                : g
+        );
+
 
         // Rank Logic
         // Derive Rank from competitiveGroupKey (e.g., "O-3 1110" -> "O-3") or use paygrade
@@ -143,6 +293,16 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
         // We do NOT include "Rejected".
         // Merge store projections with real-time preview for live slider updates
         const effectiveProjections = { ...projections, ...previewProjections };
+
+        // Optimization Preview Overlay:
+        // If we have proposed reports, their MTAs are the "projections" we want to see.
+        // We should override effectiveProjections with the proposed values so the HeadsUpDisplay updates.
+        if (proposedReports) {
+            proposedReports.forEach(r => {
+                effectiveProjections[r.id] = r.traitAverage;
+            });
+        }
+
         const projectedRsca = calculateCumulativeRSCA(
             allGroups,
             rank,
@@ -166,8 +326,8 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
         const currentRsca = baselineStats.average;
 
         // Stats (Moved up for use in EOT calc)
-        const totalReports = activeGroup.reports.length;
-        const assignedEPs = activeGroup.reports.filter(r => r.promotionRecommendation === 'EP').length;
+        const totalReports = effectiveReports.length;
+        const assignedEPs = effectiveReports.filter(r => r.promotionRecommendation === 'EP').length;
         const maxEPs = Math.floor(totalReports * 0.2); // Simple Rule of thumb
         const gap = Math.max(0, maxEPs - assignedEPs);
 
@@ -187,7 +347,7 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
         const globalEotRsca = typeof eotResult === 'object' ? eotResult.eotRsca : eotResult;
         const memberEotProjections = typeof eotResult === 'object' ? eotResult.memberProjections : {};
 
-        const draftStats = activeGroup.reports.reduce((acc, r) => {
+        const draftStats = effectiveReports.reduce((acc, r) => {
             const status = r.draftStatus || 'Projected';
             acc[status] = (acc[status] || 0) + 1;
             return acc;
@@ -199,7 +359,7 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
         const mainDraftStatus = (activeGroup.status && activeGroup.status !== 'Pending') ? activeGroup.status : derivedStatus;
 
         // Prepare Member List Data
-        const rankedMembers = activeGroup.reports
+        const rankedMembers = effectiveReports
             .map(report => {
                 const member = roster.find(m => m.id === report.memberId);
                 const currentMta = projections[report.id] || report.traitAverage || 0;
@@ -260,7 +420,7 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
 
         // Calculate Distribution
         const distribution: { [key: string]: number; SP: number; PR: number; P: number; MP: number; EP: number; } = { SP: 0, PR: 0, P: 0, MP: 0, EP: 0 };
-        activeGroup.reports.forEach(r => {
+        effectiveReports.forEach(r => {
             const rec = r.promotionRecommendation;
             if (rec === 'SP') distribution.SP++;
             else if (rec === 'Prog') distribution.PR++;
@@ -285,11 +445,8 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
             eotRsca: globalEotRsca,
             isEnlisted
         };
-    }, [activeGroup, roster, rsConfig, projections, previewProjections, summaryGroups]); // Depend on previewProjections for real-time slider reactivity
+    }, [activeGroup, roster, rsConfig, projections, previewProjections, summaryGroups, proposedReports]); // Added proposedReports dependency
 
-    // Local Rank Mode State
-    const [isRankingMode, setIsRankingMode] = useState(false);
-    const [isSubmitModalOpen, setIsSubmitModalOpen] = useState(false);
 
     // Local Drag State for Live Reordering (iOS-style)
     const [localOrderedMembers, setLocalOrderedMembers] = useState<RankedMember[] | null>(null);
@@ -463,14 +620,40 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
 
                                 {/* Optimize Button - Moved to Right */}
                                 {!isRankingMode && (
-                                    <button
-                                        onClick={handleOptimize}
-                                        className="flex items-center justify-center gap-2 px-3 py-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 rounded-lg transition-colors text-xs font-medium"
-                                        title="Optimize MTA Distribution"
-                                    >
-                                        <Sparkles className="w-3.5 h-3.5 text-indigo-500" />
-                                        <span>Optimize</span>
-                                    </button>
+                                    proposedReports ? (
+                                        <>
+                                            <button
+                                                onClick={handleAcceptOptimization}
+                                                className="flex items-center justify-center gap-2 px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white border border-transparent rounded-lg transition-colors text-xs font-medium shadow-sm animate-in fade-in slide-in-from-right-4"
+                                                title="Accept Proposed Strategy"
+                                            >
+                                                <Check className="w-3.5 h-3.5" />
+                                                <span>Accept</span>
+                                            </button>
+                                            <button
+                                                onClick={handleCancelOptimization}
+                                                className="flex items-center justify-center gap-2 px-3 py-2 bg-white hover:bg-rose-50 text-rose-600 border border-slate-200 rounded-lg transition-colors text-xs font-medium animate-in fade-in slide-in-from-right-4"
+                                                title="Discard Changes"
+                                            >
+                                                <X className="w-3.5 h-3.5" />
+                                                <span>Cancel</span>
+                                            </button>
+                                        </>
+                                    ) : (
+                                        <button
+                                            onClick={handleOptimize}
+                                            disabled={isOptimizing}
+                                            className="flex items-center justify-center gap-2 px-3 py-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 rounded-lg transition-colors text-xs font-medium disabled:opacity-50"
+                                            title="Optimize MTA Distribution"
+                                        >
+                                            {isOptimizing ? (
+                                                <div className="w-3.5 h-3.5 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+                                            ) : (
+                                                <Sparkles className="w-3.5 h-3.5 text-indigo-500" />
+                                            )}
+                                            <span>{isOptimizing ? 'Calcul...' : 'Optimize'}</span>
+                                        </button>
+                                    )
                                 )}
                             </div>
                         </div>
@@ -478,25 +661,36 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
                 </div>
 
                 {/* 3. Member List (Scrollable Main) */}
-                <CycleMemberList
-                    isRankingMode={isRankingMode}
-                    isEnlisted={isEnlisted}
-                    rankedMembers={rankedMembers as RankedMember[]}
-                    localOrderedMembers={localOrderedMembers}
-                    setLocalOrderedMembers={setLocalOrderedMembers}
-                    draggedReportId={draggedReportId}
-                    setDraggedReportId={setDraggedReportId}
-                    activeGroupId={activeGroup.id}
-                    selectedMemberId={selectedMemberId}
-                    onSelectMember={selectMember}
-                    onReorderMembers={handleReorderMembers}
-                    setDraggingItemType={setDraggingItemType}
-                />
+                <div className={`flex-1 overflow-y-auto relative ${proposedReports ? 'ring-4 ring-emerald-500/20' : ''}`}>
+                    {/* Blocking Overlay during Review - intercepts all clicks */}
+                    {proposedReports && (
+                        <div className="absolute inset-0 z-50 bg-emerald-50/20 cursor-not-allowed" aria-hidden="true" />
+                    )}
+
+                    <CycleMemberList
+                        isRankingMode={isRankingMode}
+                        isEnlisted={isEnlisted}
+                        rankedMembers={rankedMembers as RankedMember[]}
+                        localOrderedMembers={localOrderedMembers}
+                        setLocalOrderedMembers={setLocalOrderedMembers}
+                        draggedReportId={draggedReportId}
+                        setDraggedReportId={setDraggedReportId}
+                        activeGroupId={activeGroup.id}
+                        selectedMemberId={selectedMemberId}
+                        onSelectMember={(id) => {
+                            if (!proposedReports) selectMember(id);
+                        }}
+                        onReorderMembers={(g, d, t) => {
+                            if (!proposedReports) handleReorderMembers(g, d, t);
+                        }}
+                        setDraggingItemType={setDraggingItemType}
+                    />
+                </div>
             </div>
 
-
+            {/* Sidebar: Hidden during optimization review to prevent any edits */}
             {
-                selectedMemberId && (
+                selectedMemberId && !proposedReports && (
                     <MemberDetailSidebar
                         memberId={selectedMemberId}
                         rosterMember={(() => {
@@ -580,6 +774,7 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
                             const idx = rankedMembers.findIndex(m => m.id === selectedMemberId);
                             if (idx < rankedMembers.length - 1) selectMember(rankedMembers[idx + 1].id);
                         }}
+
                     />
                 )
             }

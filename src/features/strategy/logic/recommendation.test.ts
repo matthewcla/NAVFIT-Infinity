@@ -161,4 +161,53 @@ describe('assignRecommendationsByRank', () => {
         expect(result[2].promotionRecommendation).toBe('MP');
         expect(result[3].promotionRecommendation).toBe('MP');
     });
+
+    it('skips NOB reports during EP/MP assignment', () => {
+        // Size 5: EP=1, MP=2 for O-3.
+        // Rank 1 = NOB (should be skipped)
+        // Rank 2 = should get EP
+        // Rank 3, 4 = should get MP
+        // Rank 5 = should get P
+        const group = createMockGroup(5, 'O-3');
+        const reports = group.reports;
+
+        // Mark rank 1 as NOB
+        reports[0].promotionRecommendation = PromotionRecommendation.NOB;
+
+        const result = assignRecommendationsByRank(reports, group);
+
+        // NOB should remain NOB (skipped entirely)
+        expect(result[0].promotionRecommendation).toBe('NOB');
+
+        // EP goes to next eligible: Rank 2
+        expect(result[1].promotionRecommendation).toBe('EP');
+
+        // MP goes to Rank 3, 4
+        expect(result[2].promotionRecommendation).toBe('MP');
+        expect(result[3].promotionRecommendation).toBe('MP');
+
+        // Rank 5 gets P
+        expect(result[4].promotionRecommendation).toBe('P');
+    });
+
+    it('NOB traitAverage is NOT modified by assignRecommendationsByRank', () => {
+        // This test verifies the function does NOT touch traitAverage
+        const group = createMockGroup(3, 'O-3');
+        const reports = group.reports;
+
+        // NOB with MTA = 3.5 (should remain unchanged by this function)
+        reports[0].promotionRecommendation = PromotionRecommendation.NOB;
+        reports[0].traitAverage = 3.5;
+
+        // Non-NOB reports
+        reports[1].traitAverage = 4.0;
+        reports[2].traitAverage = 3.8;
+
+        const result = assignRecommendationsByRank(reports, group);
+
+        // Verify traitAverage is NOT modified (the function only changes promotionRecommendation)
+        expect(result[0].traitAverage).toBe(3.5); // NOB - unchanged
+        expect(result[1].traitAverage).toBe(4.0); // unchanged
+        expect(result[2].traitAverage).toBe(3.8); // unchanged
+    });
 });
