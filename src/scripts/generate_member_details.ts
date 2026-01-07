@@ -117,7 +117,7 @@ const main = () => {
         const dateOfRank = addDays(new Date(), -1 * yearsInRank * 365);
 
         // Commissioning Date
-        const yearsService = getYearsForRank(rank) + yearsInRank;
+        // Years in service calculated from rank and time in rank (used for commissioning date below)
         const commissioningDate = rank.startsWith('O') || rank.startsWith('W')
             ? addDays(dateOfRank, -1 * getYearsForRank(rank) * 365)
             : null;
@@ -184,7 +184,7 @@ const main = () => {
             const yearsInRank = getRandomInt(1, 3);
             const dateOfRank = addDays(new Date(), -1 * yearsInRank * 365);
 
-             // Commissioning Date
+            // Commissioning Date
             const commissioningDate = rank.startsWith('O') || rank.startsWith('W')
                 ? addDays(dateOfRank, -1 * getYearsForRank(rank) * 365)
                 : null;

@@ -154,7 +154,7 @@ export function validateReportState(
 
     // 2. Trait Validation
     // report.traitGrades is Record<string, number>. Domain expects TraitId or string keys.
-    const traitSet: TraitGradeSet = report.traitGrades;
+    const traitSet: TraitGradeSet = report.traitGrades ?? {};
     violations.push(...validateRecommendationAgainstTraits(traitSet, rec, context));
 
     // 3. Ensign/LTJG Cap

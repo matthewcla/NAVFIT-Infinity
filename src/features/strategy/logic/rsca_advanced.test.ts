@@ -13,7 +13,7 @@ describe('calculateEotRsca', () => {
 
     const TODAY = new Date();
     const CURRENT_YEAR = TODAY.getFullYear();
-    const NEXT_YEAR = CURRENT_YEAR + 1;
+
 
     const makeRelativeDate = (monthsOffset: number) => {
         const d = new Date();
@@ -22,7 +22,7 @@ describe('calculateEotRsca', () => {
     };
 
     it('should return currentRsca if no members of target rank exist', () => {
-        const roster = [createMember('1', 'O-3', '2030-01-01', 4.0)];
+        // Test that empty roster returns currentRsca
         const result = calculateEotRsca([], 3.50, 10, '2030-01-01', 'O-4');
         expect(result.eotRsca).toBe(3.50);
     });

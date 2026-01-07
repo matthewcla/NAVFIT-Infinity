@@ -1,6 +1,6 @@
 
 import { redistributeMTA } from './redistribution';
-import type { Member, Constraints } from './types';
+import type { Member, Constraints, AlgorithmParams } from './types';
 
 // Simple benchmark harness
 console.log('Running RSCA Redistribution Benchmark...');
@@ -10,6 +10,15 @@ const DEFAULT_CONSTRAINTS: Constraints = {
   controlBandUpper: 4.2,
   mtaLowerBound: 2.0,
   mtaUpperBound: 5.0,
+  tolerance: 0.005,
+  maxIterations: 30,
+};
+
+const DEFAULT_ALGORITHM_PARAMS: AlgorithmParams = {
+  delta: 0.1,
+  p: 1.0,
+  alpha: 0.1,
+  tau: 0.05,
 };
 
 const createMembers = (n: number): Member[] => {
@@ -32,7 +41,7 @@ const runBenchmark = (n: number, iterations = 100) => {
 
   const start = performance.now();
   for (let i = 0; i < iterations; i++) {
-    redistributeMTA(members, DEFAULT_CONSTRAINTS);
+    redistributeMTA(members, DEFAULT_CONSTRAINTS, DEFAULT_ALGORITHM_PARAMS);
   }
   const end = performance.now();
   const avgTime = (end - start) / iterations;

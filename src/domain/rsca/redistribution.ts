@@ -119,7 +119,7 @@ export function boundedIsotonicWithAnchors(
   H: number
 ): number[] {
   // Start from y, overwrite anchors
-  let x = y.map((v, i) => clamp(v, L, H));
+  let x = y.map((v, _i) => clamp(v, L, H));
   for (const [i, a] of anchors.entries()) x[i] = clamp(a, L, H);
 
   // Iteratively project to satisfy both monotonicity and anchors.
@@ -131,19 +131,17 @@ export function boundedIsotonicWithAnchors(
     x = isotonicNonIncreasingWeighted(x, w);
 
     // 2. Enforce Bounds and Anchors (hard constraints)
-    let violation = false;
     for (let i = 0; i < x.length; i++) {
       let v = x[i];
       // Clamp bounds
-      if (v < L) { v = L; violation = true; }
-      if (v > H) { v = H; violation = true; }
+      if (v < L) { v = L; }
+      if (v > H) { v = H; }
 
       // Pin anchors
       if (anchors.has(i)) {
         const a = clamp(anchors.get(i)!, L, H);
         if (Math.abs(v - a) > 1e-9) {
-           v = a;
-           violation = true;
+          v = a;
         }
       }
       x[i] = v;
@@ -187,7 +185,7 @@ function suggestAnchorEditsTowardFeasibleMean(
 
   if (desiredMu > meanMax) {
     for (const [idx, a] of anchors.entries()) {
-       // Corrected logic: Raise anchor to allow higher mean
+      // Corrected logic: Raise anchor to allow higher mean
       suggestions.push({
         id: members[idx].id,
         suggestedMta: a + 0.05,
@@ -228,9 +226,9 @@ export function redistributeMTA(
 ): RedistributionEngineResult {
   const N = members.length;
   if (N === 0) {
-      return {
-          mtaVector: [], finalRSCA: 0, isFeasible: true, deltas: [], explanation: "Empty Group"
-      }
+    return {
+      mtaVector: [], finalRSCA: 0, isFeasible: true, deltas: [], explanation: "Empty Group"
+    }
   }
 
   const { controlBandLower: muMin, controlBandUpper: muMax, mtaLowerBound: L, mtaUpperBound: H, maxIterations, tolerance: tol } = constraints;
@@ -334,19 +332,19 @@ export function redistributeMTA(
     delta: x[idx] - old[idx],
   })).filter(r => Math.abs(r.delta) > 1e-9);
 
-  const reasonCodes = [
-      RedistributionReasonCode.REDISTRIBUTED,
-      RedistributionReasonCode.MONOTONICITY_ENFORCED,
-      RedistributionReasonCode.BOUNDS_ENFORCED,
-      RedistributionReasonCode.RSCA_TARGETED
+  const baseReasonCodes: RedistributionReasonCode[] = [
+    RedistributionReasonCode.REDISTRIBUTED,
+    RedistributionReasonCode.MONOTONICITY_ENFORCED,
+    RedistributionReasonCode.BOUNDS_ENFORCED,
+    RedistributionReasonCode.RSCA_TARGETED
   ];
-  if (anchors.size > 0) reasonCodes.push(RedistributionReasonCode.ANCHOR_CONSTRAINT);
+  if (anchors.size > 0) baseReasonCodes.push(RedistributionReasonCode.ANCHOR_CONSTRAINT);
 
   const result: RedistributionEngineResult = {
     mtaVector: x,
     finalRSCA: finalRsca,
     isFeasible: feasible,
-    reasonCodes,
+    reasonCodes: baseReasonCodes,
     changedMembers: changed,
     deltas: x.map((v, i) => v - old[i]),
     explanation: "",

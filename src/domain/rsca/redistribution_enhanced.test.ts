@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { redistributeMTA } from './redistribution';
-import type { Member, Constraints } from './types';
+import type { Member, Constraints, AlgorithmParams } from './types';
 import { RedistributionReasonCode } from './types';
 
 // Helper to create members
@@ -19,6 +19,15 @@ const DEFAULT_CONSTRAINTS: Constraints = {
   controlBandUpper: 4.2,
   mtaLowerBound: 2.0,
   mtaUpperBound: 5.0,
+  tolerance: 0.005,
+  maxIterations: 30,
+};
+
+const DEFAULT_ALGORITHM_PARAMS: AlgorithmParams = {
+  delta: 0.1,
+  p: 1.0,
+  alpha: 0.1,
+  tau: 0.05,
 };
 
 describe('Redistribution Engine Enhanced', () => {
@@ -26,7 +35,7 @@ describe('Redistribution Engine Enhanced', () => {
     it('should report changed members', () => {
       const members = createMembers([3.0, 3.0, 3.0]);
       // Target 4.0. All should change.
-      const result = redistributeMTA(members, DEFAULT_CONSTRAINTS, 4.0);
+      const result = redistributeMTA(members, DEFAULT_CONSTRAINTS, DEFAULT_ALGORITHM_PARAMS);
       expect(result.changedMembers).toHaveLength(3);
       expect(result.changedMembers![0].delta).toBeGreaterThan(0);
       expect(result.changedMembers![0].id).toBe('m-0');
@@ -35,7 +44,7 @@ describe('Redistribution Engine Enhanced', () => {
     it('should not include unchanged members', () => {
       const members = createMembers([4.0, 4.0, 4.0]);
       // Target 4.0. No change needed.
-      const result = redistributeMTA(members, DEFAULT_CONSTRAINTS, 4.0);
+      const result = redistributeMTA(members, DEFAULT_CONSTRAINTS, DEFAULT_ALGORITHM_PARAMS);
       expect(result.changedMembers).toHaveLength(0);
     });
   });
@@ -43,13 +52,13 @@ describe('Redistribution Engine Enhanced', () => {
   describe('reasonCodes', () => {
     it('should include RSCA_BAND_ENFORCED', () => {
       const members = createMembers([3.0, 3.0]);
-      const result = redistributeMTA(members, DEFAULT_CONSTRAINTS);
+      const result = redistributeMTA(members, DEFAULT_CONSTRAINTS, DEFAULT_ALGORITHM_PARAMS);
       expect(result.reasonCodes).toContain(RedistributionReasonCode.RSCA_BAND_ENFORCED);
     });
 
     it('should include ANCHOR_CONSTRAINT if anchors present', () => {
       const members = createMembers([4.0, 3.0], [{ index: 0, value: 4.0 }]);
-      const result = redistributeMTA(members, DEFAULT_CONSTRAINTS);
+      const result = redistributeMTA(members, DEFAULT_CONSTRAINTS, DEFAULT_ALGORITHM_PARAMS);
       expect(result.reasonCodes).toContain(RedistributionReasonCode.ANCHOR_CONSTRAINT);
     });
 
@@ -57,7 +66,7 @@ describe('Redistribution Engine Enhanced', () => {
       // Force values to hit 5.0
       const members = createMembers([4.0]);
       const constraints = { ...DEFAULT_CONSTRAINTS, controlBandLower: 5.0, controlBandUpper: 5.0 };
-      const result = redistributeMTA(members, constraints);
+      const result = redistributeMTA(members, constraints, DEFAULT_ALGORITHM_PARAMS);
       expect(result.reasonCodes).toContain(RedistributionReasonCode.BOUNDS_CLAMPED);
       expect(result.mtaVector[0]).toBe(5.0);
     });
@@ -79,7 +88,7 @@ describe('Redistribution Engine Enhanced', () => {
         controlBandLower: 2.0,
         controlBandUpper: 3.0
       };
-      const result = redistributeMTA(members, constraints);
+      const result = redistributeMTA(members, constraints, DEFAULT_ALGORITHM_PARAMS);
       expect(result.isFeasible).toBe(false);
       expect(result.infeasibilityReport).toBeDefined();
       expect(result.infeasibilityReport?.meanMin).toBeCloseTo(4.0, 1);
@@ -89,7 +98,7 @@ describe('Redistribution Engine Enhanced', () => {
       // We need to LOWER the mean.
       // Anchor at index 1 is 5.0. If we lower it, mean should drop.
       // So sensitivity (impactOnMin) should be positive.
-      const sensitivity = result.infeasibilityReport?.anchorSensitivity.find(s => s.anchorIndex === 1);
+      const sensitivity = result.infeasibilityReport?.anchorSensitivity?.find(s => s.anchorIndex === 1);
       expect(sensitivity).toBeDefined();
       expect(sensitivity?.impactOnMin).toBeGreaterThan(0);
 
@@ -99,7 +108,7 @@ describe('Redistribution Engine Enhanced', () => {
       // So impactOnMin should be approx 0.33.
       // To lower mean by 1.0, we need to lower anchor by 3.0.
       // So suggested value should be 5.0 - 3.0 = 2.0.
-      const adjustment = result.infeasibilityReport?.minimalAdjustments.find(a => a.memberId === 'm-1');
+      const adjustment = result.infeasibilityReport?.minimalAdjustments?.find(a => a.memberId === 'm-1');
       expect(adjustment).toBeDefined();
       expect(adjustment?.suggestedValue).toBeLessThan(5.0);
     });
@@ -115,11 +124,11 @@ describe('Redistribution Engine Enhanced', () => {
         controlBandLower: 4.0,
         controlBandUpper: 4.2
       };
-      const result = redistributeMTA(members, constraints);
+      const result = redistributeMTA(members, constraints, DEFAULT_ALGORITHM_PARAMS);
       expect(result.isFeasible).toBe(false);
       expect(result.infeasibilityReport).toBeDefined();
 
-      const adjustment = result.infeasibilityReport?.minimalAdjustments.find(a => a.memberId === 'm-1');
+      const adjustment = result.infeasibilityReport?.minimalAdjustments?.find(a => a.memberId === 'm-1');
       expect(adjustment).toBeDefined();
       expect(adjustment?.suggestedValue).toBeGreaterThan(2.0);
     });

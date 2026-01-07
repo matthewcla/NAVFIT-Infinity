@@ -26,6 +26,7 @@ const MOCK_BOARDS: Board[] = [
         id: 'b-1',
         name: 'FY-26 Active-Duty Lieutenant Commander Line',
         type: 'Statutory',
+        conveneDate: '2025-05-12',
         conveningDate: '2025-05-12',
         zones: {
             aboveZone: [],
@@ -37,6 +38,7 @@ const MOCK_BOARDS: Board[] = [
         id: 'b-2',
         name: 'FY-26 Active-Duty Commander Staff',
         type: 'Statutory',
+        conveneDate: '2025-04-01',
         conveningDate: '2025-04-01',
         zones: {
             aboveZone: [],
@@ -48,6 +50,7 @@ const MOCK_BOARDS: Board[] = [
         id: 'b-3',
         name: 'Command Screen',
         type: 'Administrative',
+        conveneDate: '2025-09-15',
         conveningDate: '2025-09-15',
         eligibles: ['m-1']
     }
@@ -56,7 +59,11 @@ const MOCK_BOARDS: Board[] = [
 export const BoardService = {
     getSchedule: async (year: number): Promise<BoardSchedule> => {
         // Simulate API call
-        const schedule = {
+        const schedule: BoardSchedule = {
+            id: `sched-${year}`,
+            boardId: `board-schedule-${year}`,
+            paygrade: 'ALL',
+            recordsDueDate: `${year}-01-01`,
             year,
             boards: MOCK_BOARDS
         };

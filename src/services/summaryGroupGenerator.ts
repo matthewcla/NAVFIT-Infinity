@@ -169,6 +169,8 @@ function createDraftReport(member: RosterMember, type: 'Periodic' | 'Detachment 
     return {
         id: `r-auto-${member.id}-${type}`,
         memberId: member.id,
+        memberRank: member.rank,
+        memberName: `${member.lastName}, ${member.firstName}`,
         periodEndDate: date.toISOString().split('T')[0],
         type: type === 'Detachment of Individual' ? 'Detachment' : type,
         traitGrades: {},
