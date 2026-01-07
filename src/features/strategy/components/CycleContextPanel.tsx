@@ -34,7 +34,7 @@ interface CycleContextPanelProps {
     onOpenWorkspace?: () => void;
 }
 
-export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelProps) {
+export function CycleContextPanel({ group }: CycleContextPanelProps) {
 
     const {
         roster,
@@ -91,7 +91,7 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
     const [isOptimizing, setIsOptimizing] = useState(false);
     const [proposedReports, setProposedReports] = useState<Report[] | null>(null);
 
-    // Watch for Optimization Result
+    // Watch for Optimization Result - PARANOID/HARDENED VERSION
     useEffect(() => {
         if (!isOptimizing || !activeGroup || !latestResult[activeGroup.id]) return;
 
@@ -99,21 +99,36 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
         const result = latestResult[activeGroup.id]!;
         const currentReports = [...activeGroup.reports];
 
-        // 1. Map Results
+        // === PARANOID LOGGING START ===
+        console.warn('[ZOMBIE DEBUG] Step 0 - Raw Worker Result:',
+            result.updatedMembers.map(m => ({ id: m.id, mta: m.mta })));
+        console.warn('[ZOMBIE DEBUG] Step 0 - Current Reports NOBs:',
+            currentReports.filter(r => r.promotionRecommendation === 'NOB')
+                .map(r => ({ id: r.id, promRec: r.promotionRecommendation, mta: r.traitAverage })));
+
+        // Step 1: Map worker results to a lookup with STRICT number parsing
         const optimizedMtas: Record<string, number> = {};
         result.updatedMembers.forEach(m => {
-            optimizedMtas[m.id] = m.mta;
+            // STRICT: Force number type, round to 2 decimals
+            optimizedMtas[m.id] = parseFloat(Number(m.mta).toFixed(2));
         });
 
-        // 2. Apply updates to a temp array
+        // Step 2: Apply worker MTA values, but STRICTLY force ALL NOBs to 0.00
         let proposed = currentReports.map(r => {
-            const newMta = optimizedMtas[r.id] !== undefined ? optimizedMtas[r.id] : r.traitAverage;
-            let finalMta = parseFloat(newMta.toFixed(2));
+            const isNob = r.promotionRecommendation === 'NOB';
 
-            // NOB Logic: Locked NOB -> Force 0.00
-            if (r.isLocked && r.promotionRecommendation === 'NOB' && finalMta > 0) {
-                finalMta = 0.00;
+            // NOB always gets 0, regardless of locked status or worker result
+            if (isNob) {
+                console.warn(`[ZOMBIE DEBUG] Step 2 - Forcing NOB ${r.id} MTA: ${r.traitAverage} -> 0`);
+                return {
+                    ...r,
+                    traitAverage: 0 // Use integer zero for clarity
+                };
             }
+
+            // For non-NOB reports, apply worker result or keep existing
+            const newMta = optimizedMtas[r.id] !== undefined ? optimizedMtas[r.id] : r.traitAverage;
+            const finalMta = parseFloat(Number(newMta).toFixed(2));
 
             return {
                 ...r,
@@ -121,38 +136,66 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
             };
         });
 
-        // 3. Sort Logic: MTA Descending, with NOB/0 forced to bottom
-        // Note: Strict NOB check or just MTA=0? Requirement says "re-rank all NOBs to the bottom".
-        // We use MTA for primary sort. If MTA is 0, they go to bottom naturally?
-        // 0 is < 2.0, so yes. But we ensure stability or specific NOB handling if multiple 0s exist.
-        // Existing logic usually stable or index based.
-        // Let's rely on standard sort for equal MTA.
+        // === PARANOID LOG: Post-Step-2 NOB Values ===
+        console.warn('[ZOMBIE DEBUG] Step 2 Complete - NOBs after initial map:',
+            proposed.filter(r => r.promotionRecommendation === 'NOB')
+                .map(r => ({ id: r.id, mta: r.traitAverage })));
+
+        // Step 3 & 4: Sort by MTA Descending, with NOBs absolutely at the bottom
         proposed.sort((a, b) => {
-             // Primary: MTA Descending
-             if (b.traitAverage !== a.traitAverage) {
-                 return b.traitAverage - a.traitAverage;
-             }
-             return 0;
+            const aIsNob = a.promotionRecommendation === 'NOB';
+            const bIsNob = b.promotionRecommendation === 'NOB';
+
+            // NOBs always go to bottom
+            if (aIsNob && !bIsNob) return 1;
+            if (!aIsNob && bIsNob) return -1;
+
+            // Both NOB or both non-NOB: sort by MTA descending
+            return b.traitAverage - a.traitAverage;
         });
 
-        // Force NOB to bottom explicit check (defensive)
-        // If a NOB has > 0 (which shouldn't happen due to logic above if Locked, but if Unlocked NOB was optimized to > 0?)
-        // Unlocked NOB should probably receive 0 too?
-        // Prompt said "NOB reports are regraded".
-        proposed = proposed.map(r => r.promotionRecommendation === 'NOB' ? { ...r, traitAverage: 0.00 } : r);
-
-        // Re-sort again after forcing all NOBs to 0
-        proposed.sort((a, b) => b.traitAverage - a.traitAverage);
-
-
-        // 4. Assign Recommendations (EP/MP/P) based on new Rank Order
-        // assignRecommendationsByRank requires a group with the reports. We can pass a dummy group or the active group.
-        // It reads paygrade/constraints from group.
-        // We need to pass the proposed reports array as the first arg.
+        // Step 5: Assign Recommendations (EP/MP/P) based on new Rank Order
         const reallocated = assignRecommendationsByRank(proposed, activeGroup);
 
-        setProposedReports(reallocated);
-        setIsOptimizing(false);
+        // === PARANOID LOG: Post-assignRecommendationsByRank ===
+        console.warn('[ZOMBIE DEBUG] Step 5 Complete - NOBs after assignRecommendationsByRank:',
+            reallocated.filter(r => r.promotionRecommendation === 'NOB')
+                .map(r => ({ id: r.id, mta: r.traitAverage })));
+
+        // Step 6 (BRUTAL ENFORCEMENT): Force ALL NOBs to zero using epsilon comparison
+        const sanitized = reallocated.map(r => {
+            if (r.promotionRecommendation === 'NOB') {
+                // Use epsilon: any MTA above 0.001 is a zombie
+                const currentMta = parseFloat(Number(r.traitAverage).toFixed(2));
+                if (Math.abs(currentMta) > 0.001) {
+                    console.warn(`[ZOMBIE DEBUG] Step 6 - CAUGHT ZOMBIE! ${r.id} had MTA ${currentMta}, forcing to 0`);
+                }
+                return { ...r, traitAverage: 0 };
+            }
+            return r;
+        });
+
+        // === PARANOID LOG: Final State ===
+        console.warn('[ZOMBIE DEBUG] Step 6 Complete - Final NOBs:',
+            sanitized.filter(r => r.promotionRecommendation === 'NOB')
+                .map(r => ({ id: r.id, mta: r.traitAverage })));
+
+        // Final defensive sort to ensure NOBs remain at bottom
+        sanitized.sort((a, b) => {
+            const aIsNob = a.promotionRecommendation === 'NOB';
+            const bIsNob = b.promotionRecommendation === 'NOB';
+            if (aIsNob && !bIsNob) return 1;
+            if (!aIsNob && bIsNob) return -1;
+            return b.traitAverage - a.traitAverage;
+        });
+
+        setProposedReports(sanitized);
+
+        // BLOCKING FIX: Defer isOptimizing=false to next animation frame
+        // Ensures React commits proposedReports BEFORE UI re-renders with !isOptimizing
+        requestAnimationFrame(() => {
+            setIsOptimizing(false);
+        });
 
     }, [latestResult, isOptimizing, activeGroup]);
 
@@ -619,9 +662,9 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
 
                 {/* 3. Member List (Scrollable Main) */}
                 <div className={`flex-1 overflow-y-auto relative ${proposedReports ? 'ring-4 ring-emerald-500/20' : ''}`}>
-                    {/* Blocking Overlay during Review */}
+                    {/* Blocking Overlay during Review - intercepts all clicks */}
                     {proposedReports && (
-                        <div className="absolute inset-0 z-50 pointer-events-none bg-emerald-50/10 mix-blend-multiply" />
+                        <div className="absolute inset-0 z-50 bg-emerald-50/20 cursor-not-allowed" aria-hidden="true" />
                     )}
 
                     <CycleMemberList
@@ -645,9 +688,9 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
                 </div>
             </div>
 
-
+            {/* Sidebar: Hidden during optimization review to prevent any edits */}
             {
-                selectedMemberId && (
+                selectedMemberId && !proposedReports && (
                     <MemberDetailSidebar
                         memberId={selectedMemberId}
                         rosterMember={(() => {
@@ -731,7 +774,7 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
                             const idx = rankedMembers.findIndex(m => m.id === selectedMemberId);
                             if (idx < rankedMembers.length - 1) selectMember(rankedMembers[idx + 1].id);
                         }}
-                        readOnly={!!proposedReports} // Disable sidebar edits during review
+
                     />
                 )
             }
