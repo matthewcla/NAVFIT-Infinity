@@ -1,6 +1,5 @@
-import type { RedistributionEngineResult } from '@/domain/rsca/redistribution';
+import type { RedistributionEngineResult, Member, RedistributionResult } from '@/domain/rsca/types';
 import { redistributeMTA } from '@/domain/rsca/redistribution';
-import type { Member, RedistributionResult } from '@/domain/rsca/types';
 import type { WorkerInput, WorkerOutput } from './types';
 
 export function processWorkerMessage(data: WorkerInput): WorkerOutput {
@@ -23,7 +22,7 @@ export function processWorkerMessage(data: WorkerInput): WorkerOutput {
         const engineResult: RedistributionEngineResult = redistributeMTA(
             effectiveMembers,
             params,
-            params.targetRSCA
+            params.algorithmParams
         );
 
         const updatedMembers = effectiveMembers.map((m, i) => ({

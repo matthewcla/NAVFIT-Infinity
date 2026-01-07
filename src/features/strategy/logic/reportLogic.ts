@@ -123,7 +123,7 @@ export function checkAdverseConditions(report: Report): boolean {
     }
 
     // 2. Check for any 1.0 trait grade
-    const grades = Object.values(report.traitGrades);
+    const grades = Object.values(report.traitGrades ?? {});
     if (grades.some(grade => grade === 1.0)) {
         return true;
     }

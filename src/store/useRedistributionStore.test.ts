@@ -77,7 +77,9 @@ describe('useRedistributionStore', () => {
             controlBandLower: 3.8,
             controlBandUpper: 4.2,
             mtaLowerBound: 2.0,
-            mtaUpperBound: 5.0
+            mtaUpperBound: 5.0,
+            tolerance: 0.005,
+            maxIterations: 30
         });
 
         // Initially calculating

@@ -13,7 +13,7 @@ export function SelectionBoardsManager() {
         setLoading(true);
         try {
             const schedule = await BoardService.getSchedule(year);
-            setBoards(schedule.boards);
+            setBoards(schedule.boards ?? []);
         } catch (e) {
             console.error("Error loading board data", e);
         } finally {
@@ -32,6 +32,7 @@ export function SelectionBoardsManager() {
         await BoardService.addCustomBoard({
             name,
             type: 'Custom',
+            conveneDate: new Date().toISOString().split('T')[0],
             conveningDate: new Date().toISOString().split('T')[0],
             eligibles: []
         });

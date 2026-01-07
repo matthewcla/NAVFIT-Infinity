@@ -10,6 +10,10 @@ describe('competitiveGroupUtils', () => {
             expect(getCompetitiveCategory('1320').code).toBe('URL');
             expect(getCompetitiveCategory('1910').code).toBe('URL'); // 19xx
             expect(getCompetitiveCategory('1105').code).toBe('URL'); // Reserve URL is still URL by default if not specified otherwise
+
+            // Mixed Case Checks
+            expect(getCompetitiveCategory('11xx').code).toBe('URL');
+            expect(getCompetitiveCategory('11XX').code).toBe('URL');
         });
 
         it('should identify Restricted Line (RL) designators', () => {

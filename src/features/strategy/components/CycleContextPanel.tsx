@@ -1,16 +1,17 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { useNavfitStore } from '@/store/useNavfitStore';
 import { useRedistributionStore } from '@/store/useRedistributionStore';
-import type { SummaryGroup } from '@/types';
+import type { SummaryGroup, Report } from '@/types';
 import type { RosterMember } from '@/types/roster';
 import { RscaHeadsUpDisplay } from './RscaHeadsUpDisplay';
-import { generateSummaryGroups } from '@/features/strategy/logic/reportGenerator';
-import { calculateCumulativeRSCA, calculateEotRsca } from '@/features/strategy/logic/rsca';
+import { RscaScattergram } from './RscaScattergram';
+// generateSummaryGroups import removed - now using stored summaryGroups directly
+import { calculateCumulativeRSCA, calculateEotRsca, getCompetitiveGroupStats } from '@/features/strategy/logic/rsca';
+import { getCompetitiveCategory } from '@/features/strategy/logic/competitiveGroupUtils';
+import { mapUiPaygradeToDomain } from '@/features/strategy/logic/recommendation';
 
 import {
-    ArrowRight,
     Layout,
-    BarChart,
     ListOrdered,
     Calendar,
     Check,
@@ -27,6 +28,7 @@ import { CycleMemberList, type RankedMember } from './CycleMemberList';
 import { SubmissionConfirmationModal } from './SubmissionConfirmationModal';
 import { createSummaryGroupContext } from '@/features/strategy/logic/validation';
 import { DEFAULT_CONSTRAINTS } from '@/domain/rsca/constants';
+import { assignRecommendationsByRank } from '@/features/strategy/logic/recommendation';
 
 
 interface CycleContextPanelProps {
@@ -34,7 +36,7 @@ interface CycleContextPanelProps {
     onOpenWorkspace?: () => void;
 }
 
-export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelProps) {
+export function CycleContextPanel({ group }: CycleContextPanelProps) {
 
     const {
         roster,
@@ -62,8 +64,159 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
 
     const activeGroup = latestGroup || group;
 
+    // Real-time preview projections for MTA slider (merged with store projections in useMemo)
+    const [previewProjections, setPreviewProjections] = useState<Record<string, number>>({});
+
+    // Handler for real-time MTA preview during slider drag
+    const handlePreviewMTA = (memberId: string, newMta: number) => {
+        if (!activeGroup) return;
+        const report = activeGroup.reports.find(r => r.memberId === memberId);
+        if (report) {
+            setPreviewProjections(prev => ({
+                ...prev,
+                [report.id]: newMta
+            }));
+        }
+    };
+
+    // Clear preview when member selection changes
+    const handleMemberSelect = (id: string | null) => {
+        setPreviewProjections({});
+        selectMember(id);
+    };
+
+    // Local Rank Mode State
+    const [isRankingMode, setIsRankingMode] = useState(false);
+    const [isSubmitModalOpen, setIsSubmitModalOpen] = useState(false);
+
+    // Optimization Review State
+    const [isOptimizing, setIsOptimizing] = useState(false);
+    const [proposedReports, setProposedReports] = useState<Report[] | null>(null);
+
+    // Watch for Optimization Result - PARANOID/HARDENED VERSION
+    useEffect(() => {
+        if (!isOptimizing || !activeGroup || !latestResult[activeGroup.id]) return;
+
+        // Process Result
+        const result = latestResult[activeGroup.id]!;
+        const currentReports = [...activeGroup.reports];
+
+        // Step 1: Hydrate from Worker Result
+        const optimizedMtas: Record<string, number> = {};
+        result.updatedMembers.forEach(m => {
+            optimizedMtas[m.id] = parseFloat(Number(m.mta).toFixed(2));
+        });
+
+        // Step 2: Sanitize Phase 1 - Apply MTAs and Force NOB to 0.00
+        const hydrated = currentReports.map(r => {
+            const isNob = r.promotionRecommendation === 'NOB';
+            // Use worker result if available, otherwise keep existing
+            const newMta = optimizedMtas[r.id] !== undefined ? optimizedMtas[r.id] : r.traitAverage;
+
+            // Force NOB to 0.00, otherwise ensure precision
+            const finalMta = isNob ? 0.00 : parseFloat(Number(newMta).toFixed(2));
+
+            return {
+                ...r,
+                traitAverage: finalMta
+            };
+        });
+
+        // Step 3: Sort Phase 1 - Descending MTA
+        hydrated.sort((a, b) => b.traitAverage - a.traitAverage);
+
+        // Tracer Log 1
+        console.log('[Optimize Pipeline] Post-Sort Phase 1 (NOBs should be at bottom):',
+            hydrated.filter(r => r.promotionRecommendation === 'NOB').map(r => ({ id: r.id, mta: r.traitAverage }))
+        );
+
+        // Step 4: Assign Recommendations based on Rank
+        const reallocated = assignRecommendationsByRank(hydrated, activeGroup);
+
+        // Step 5: Sanitize Phase 2 - Safety Net
+        const sanitized = reallocated.map(r => {
+            if (r.promotionRecommendation === 'NOB') {
+                return { ...r, traitAverage: 0.00 };
+            }
+            return r;
+        });
+
+        // Tracer Log 2
+        console.log('[Optimize Pipeline] Post-Sanitize Phase 2 (NOBs confirmed 0.00):',
+            sanitized.filter(r => r.promotionRecommendation === 'NOB').map(r => ({ id: r.id, mta: r.traitAverage }))
+        );
+
+        // Step 6: Sanitize Phase 3 - Enforce Enlisted/Officer Logic and Restrictions
+        // Specifically: ENS (O1) and LTJG (O2) are not allowed EP and MP unless they are LDO.
+        const enforced = sanitized.map(r => {
+            // Determine Paygrade from report or generic group context
+            const paygradeStr = r.grade || activeGroup.paygrade;
+            // Map to Domain Paygrade (e.g. "O1", "O2")
+            // Note: r.grade might be "O-1", mapUiPaygradeToDomain handles "O-1" -> "O1"
+            const paygrade = mapUiPaygradeToDomain(paygradeStr);
+
+            // Determine Competitive Category (LDO check)
+            // Use report designator if available (preferred), else group default
+            const designator = r.designator || activeGroup.designator || '';
+            const category = getCompetitiveCategory(designator);
+            const isLDO = category.code === 'LDO_ACTIVE' || category.code === 'LDO_CWO_RESERVE';
+
+            // Check Condition: O1/O2 AND Not LDO
+            const isJuniorOfficer = paygrade === 'O1' || paygrade === 'O2';
+
+            if (isJuniorOfficer && !isLDO) {
+                // Check if they were assigned EP or MP
+                if (r.promotionRecommendation === 'EP' || r.promotionRecommendation === 'MP') {
+                    console.log(`[Optimize Pipeline] Enforcing O1/O2 Restriction for ${r.memberName} (${paygrade}/${designator}): Downgrading ${r.promotionRecommendation} -> P`);
+                    return {
+                        ...r,
+                        promotionRecommendation: 'P' as Report['promotionRecommendation']
+                    };
+                }
+            }
+            return r;
+        });
+
+        // Step 7: Sort Phase 2 - Final Index Integrity
+        enforced.sort((a, b) => b.traitAverage - a.traitAverage);
+
+        // Step 8: Commit
+        setProposedReports(enforced);
+
+        // Defer isOptimizing=false to next animation frame
+        requestAnimationFrame(() => {
+            setIsOptimizing(false);
+        });
+
+    }, [latestResult, isOptimizing, activeGroup]);
+
+    const handleAcceptOptimization = () => {
+        if (!activeGroup || !proposedReports) return;
+
+        // Commit to Store
+        // Use the dedicated commitOptimization action which handles updating reports AND clearing stale projections
+        useNavfitStore.getState().commitOptimization(activeGroup.id, proposedReports);
+
+        // State update handled by store, we just clear local
+        // const newGroup = { ...activeGroup, reports: proposedReports };
+        // const allGroups = summaryGroups.map(g => g.id === activeGroup.id ? newGroup : g);
+        // useNavfitStore.getState().setSummaryGroups(allGroups);
+
+        setProposedReports(null);
+        setPreviewProjections({});
+    };
+
+    const handleCancelOptimization = () => {
+        setProposedReports(null);
+        setPreviewProjections({});
+    };
+
+
     const handleOptimize = () => {
         if (!activeGroup || !rsConfig) return;
+
+        setIsOptimizing(true);
+        setProposedReports(null);
 
         // Ensure strict sorting based on current state before optimizing
         const sortedReports = [...activeGroup.reports].sort((a, b) => b.traitAverage - a.traitAverage);
@@ -107,25 +260,87 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
     const contextData = useMemo(() => {
         if (!activeGroup) return null;
 
-        // Re-generate all groups for cumulative RSCA context
-        const allGroups = generateSummaryGroups(roster, rsConfig, 2023, projections);
+        // Determine Effective Reports (Active vs Proposed)
+        const effectiveReports = proposedReports || activeGroup.reports;
 
+        // Use stored summaryGroups but override the active group with proposed state for calculation context
+        const allGroups = summaryGroups.map(g =>
+            (g.id === activeGroup.id && proposedReports)
+                ? { ...g, reports: proposedReports }
+                : g
+        );
+
+
+        // Rank Logic
         // Derive Rank from competitiveGroupKey (e.g., "O-3 1110" -> "O-3") or use paygrade
         const rank = activeGroup.paygrade || (activeGroup.competitiveGroupKey ? activeGroup.competitiveGroupKey.split(' ')[0] : 'Unknown');
         // Robust Enlisted Check: Start with E or explicitly matched paygrades
         const isEnlisted = rank.startsWith('E') || ['E-1', 'E-2', 'E-3', 'E-4', 'E-5', 'E-6', 'E-7', 'E-8', 'E-9'].includes(activeGroup.paygrade || '');
 
 
-        // Calculate Rank-Wide Cumulative Average (Current State of all reports)
-        const cumulativeRsca = calculateCumulativeRSCA(allGroups, rank);
+        // Calculate Projected RSCA (Includes Final + [Submitted, Review, Draft])
+        // We include "Submitted", "Review", "Draft" to see the "Projected" impact.
+        // We do NOT include "Rejected".
+        // Merge store projections with real-time preview for live slider updates
+        const effectiveProjections = { ...projections, ...previewProjections };
 
-        // Stats
-        const totalReports = activeGroup.reports.length;
-        const assignedEPs = activeGroup.reports.filter(r => r.promotionRecommendation === 'EP').length;
-        const maxEPs = Math.floor(totalReports * 0.2); // Simple Rule of thumb
+        // Optimization Preview Overlay:
+        // If we have proposed reports, their MTAs are the "projections" we want to see.
+        // We should override effectiveProjections with the proposed values so the HeadsUpDisplay updates.
+        if (proposedReports) {
+            proposedReports.forEach(r => {
+                effectiveProjections[r.id] = r.traitAverage;
+            });
+        }
+
+        const projectedRsca = calculateCumulativeRSCA(
+            allGroups,
+            rank,
+            ['Final', 'Submitted', 'Review', 'Draft'],
+            effectiveProjections
+        );
+
+        // Calculate Baseline (Current RSCA - Only Final Reports)
+        // Strictly "Current" means what is on the books.
+        // We exclude the current active group and any other drafts.
+        // Note: Logic in rsca.ts excludes activeGroup.id if passed to getCompetitiveGroupStats, 
+        // but here we primarily rely on Status Filter 'Final'.
+        // If the active group is somehow 'Final' (not possible here given context, but logic holds), it would be included if we didn't exclude.
+        // Safe bet: currentRsca is HISTORICAL FINAL.
+        const baselineStats = getCompetitiveGroupStats(
+            allGroups,
+            rank,
+            activeGroup.id,
+            ['Final']
+        );
+        const currentRsca = baselineStats.average;
+
+        // Stats (Moved up for use in EOT calc)
+        const totalReports = effectiveReports.length;
+        // Exclude NOB reports from effective size for quota calculations (matches assignment logic)
+        const nobCount = effectiveReports.filter(r => r.promotionRecommendation === 'NOB').length;
+        const effectiveSize = totalReports - nobCount;
+        const assignedEPs = effectiveReports.filter(r => r.promotionRecommendation === 'EP').length;
+        const maxEPs = Math.floor(effectiveSize * 0.2); // Use effectiveSize for quota calc
         const gap = Math.max(0, maxEPs - assignedEPs);
 
-        const draftStats = activeGroup.reports.reduce((acc, r) => {
+
+        // Calculate EOT Projection
+        const eotResult = calculateEotRsca(
+            roster,
+            projectedRsca, // Use Projected as baseline for future
+            (rsConfig.totalReports || 0) + totalReports,
+            rsConfig.changeOfCommandDate,
+            rank
+        );
+
+        // Handle Return: rsca.ts now returns object { eotRsca, memberProjections }
+        // Ensure we handle potential legacy return if hot-reload hasn't caught up (though we just edited it).
+        // TypeScript might complain if types aren't fully synced. Assuming updated signature:
+        const globalEotRsca = typeof eotResult === 'object' ? eotResult.eotRsca : eotResult;
+        const memberEotProjections = typeof eotResult === 'object' ? eotResult.memberProjections : {};
+
+        const draftStats = effectiveReports.reduce((acc, r) => {
             const status = r.draftStatus || 'Projected';
             acc[status] = (acc[status] || 0) + 1;
             return acc;
@@ -137,11 +352,12 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
         const mainDraftStatus = (activeGroup.status && activeGroup.status !== 'Pending') ? activeGroup.status : derivedStatus;
 
         // Prepare Member List Data
-        const rankedMembers = activeGroup.reports
+        const rankedMembers = effectiveReports
             .map(report => {
                 const member = roster.find(m => m.id === report.memberId);
-                const currentMta = projections[report.id] || report.traitAverage || 0;
-                const rscaMargin = currentMta - cumulativeRsca;
+                // Use effectiveProjections (includes proposed values during optimization), not projections
+                const currentMta = effectiveProjections[report.id] ?? report.traitAverage ?? 0;
+                const rscaMargin = currentMta - projectedRsca; // Margin against Projected RSCA
 
                 // Robust Fallback: Use Report Snapshot if Roster Lookup Fails
                 const name = member
@@ -153,6 +369,31 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
                 const memberRank = member?.rank || report.memberRank || report.grade || rank;
                 const memberDesignator = member?.designator || report.designator || '';
 
+                let reportsRemaining = report.reportsRemaining;
+                if (reportsRemaining === undefined && member?.prd && report.periodEndDate) {
+                    const prdYear = new Date(member.prd).getFullYear();
+                    const reportYear = new Date(report.periodEndDate).getFullYear();
+                    if (!isNaN(prdYear) && !isNaN(reportYear)) {
+                        reportsRemaining = Math.max(0, prdYear - reportYear);
+                    }
+                }
+
+                // EOT Projection for this member
+                const eotMta = memberEotProjections[report.memberId] || 0;
+
+                // Calculate Delta vs Last Report
+                let delta = 0;
+                if (member?.history && member.history.length > 0) {
+                    const currentEndDate = new Date(report.periodEndDate);
+
+                    const previousReport = member.history
+                        .filter(h => new Date(h.periodEndDate) < currentEndDate)
+                        .sort((a, b) => new Date(b.periodEndDate).getTime() - new Date(a.periodEndDate).getTime())[0];
+
+                    if (previousReport) {
+                        delta = currentMta - previousReport.traitAverage;
+                    }
+                }
                 return {
                     id: report.memberId, // Use memberId for selection
                     reportId: report.id,
@@ -161,9 +402,10 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
                     designator: memberDesignator,
                     promRec: report.promotionRecommendation || 'NOB',
                     mta: currentMta,
-                    delta: 0, // Placeholder for delta logic if history exists
+                    delta,
                     rscaMargin,
-                    reportsRemaining: report.reportsRemaining,
+                    eotMta, // New Prop
+                    reportsRemaining,
                     report
                 };
             })
@@ -172,7 +414,7 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
 
         // Calculate Distribution
         const distribution: { [key: string]: number; SP: number; PR: number; P: number; MP: number; EP: number; } = { SP: 0, PR: 0, P: 0, MP: 0, EP: 0 };
-        activeGroup.reports.forEach(r => {
+        effectiveReports.forEach(r => {
             const rec = r.promotionRecommendation;
             if (rec === 'SP') distribution.SP++;
             else if (rec === 'Prog') distribution.PR++;
@@ -185,27 +427,21 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
         const domainContext = createSummaryGroupContext(activeGroup);
 
         return {
-            cumulativeRsca,
+            currentRsca,
+            projectedRsca,
             rank,
             totalReports,
+            effectiveSize, // NOB-excluded size for quota calculations
             gap,
             mainDraftStatus,
             rankedMembers,
             distribution,
             domainContext,
-            eotRsca: calculateEotRsca(
-                roster,
-                cumulativeRsca,
-                rsConfig.totalReports || 100, // Fallback if 0
-                rsConfig.changeOfCommandDate
-            ),
+            eotRsca: globalEotRsca,
             isEnlisted
         };
-    }, [activeGroup, roster, rsConfig, projections]); // Depend on activeGroup
+    }, [activeGroup, roster, rsConfig, projections, previewProjections, summaryGroups, proposedReports]); // Added proposedReports dependency
 
-    // Local Rank Mode State
-    const [isRankingMode, setIsRankingMode] = useState(false);
-    const [isSubmitModalOpen, setIsSubmitModalOpen] = useState(false);
 
     // Local Drag State for Live Reordering (iOS-style)
     const [localOrderedMembers, setLocalOrderedMembers] = useState<RankedMember[] | null>(null);
@@ -221,7 +457,7 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
         );
     }
 
-    const { cumulativeRsca, gap, mainDraftStatus, rankedMembers, distribution, eotRsca, totalReports, domainContext, isEnlisted } = contextData;
+    const { currentRsca, projectedRsca, gap, mainDraftStatus, rankedMembers, distribution, eotRsca, totalReports, effectiveSize, domainContext, isEnlisted } = contextData;
 
     // Helper for Badge
     const getPromotionStatusBadge = (s?: string) => {
@@ -298,21 +534,29 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
 
                         {/* Row 2: RSCA Scoreboard Container */}
                         <div className="flex items-stretch gap-2">
-                            {/* 2A. RSCA Heads Up Display (Left) - Framed */}
-                            <div className="rounded-xl border border-slate-200 shadow-sm overflow-hidden bg-white/50 shrink-0">
+                            {/* 2A. RSCA Heads Up Display (Left) - Equal Width */}
+                            <div className="flex-1 min-w-0 rounded-xl border border-slate-200 shadow-sm overflow-hidden bg-white/50">
                                 <RscaHeadsUpDisplay
-                                    currentRsca={cumulativeRsca}
-                                    projectedRsca={cumulativeRsca}
+                                    currentRsca={currentRsca}
+                                    projectedRsca={projectedRsca}
                                     eotRsca={eotRsca}
                                     rankLabel="Curr. RSCA"
                                     showSuffix={false}
                                 />
                             </div>
 
-                            {/* 2B. Promotion Recommendation Quota HUD (Right) - Framed & Flexible */}
-                            <div className="flex-1 rounded-xl border border-slate-200 shadow-sm overflow-hidden bg-white/50">
+                            {/* 2B. Scattergram (Middle) - Equal Width */}
+                            <div className="flex-1 min-w-0 rounded-xl border border-slate-200 shadow-sm overflow-hidden bg-white">
+                                <RscaScattergram
+                                    members={rankedMembers}
+                                    rsca={projectedRsca}
+                                />
+                            </div>
+
+                            {/* 2C. Promotion Recommendation Scoreboard (Right) - Equal Width */}
+                            <div className="flex-1 min-w-0 rounded-xl border border-slate-200 shadow-sm overflow-hidden bg-white/50">
                                 <div className="h-full bg-white/95 backdrop-blur-sm transition-all duration-300">
-                                    <QuotaHeadsUpDisplay distribution={distribution} totalReports={totalReports} context={domainContext} />
+                                    <QuotaHeadsUpDisplay distribution={distribution} totalReports={effectiveSize} context={domainContext} />
                                 </div>
                             </div>
                         </div>
@@ -321,116 +565,127 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
                     {/* 2. Sticky Toolbar (Below Header) */}
                     <div className="sticky top-0 z-20 bg-white/95 backdrop-blur border-b border-slate-200 p-4 pt-2">
                         <div className="flex items-center justify-between">
-                            {/* Left: Action Buttons */}
+                            {/* Left: Rank / Edit Controls */}
                             <div className="flex items-center gap-2">
+                                {isRankingMode ? (
+                                    <>
+                                        <button
+                                            onClick={() => {
+                                                setIsRankingMode(false);
+                                                setLocalOrderedMembers(null);
+                                            }}
+                                            className="flex items-center justify-center gap-2 px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white border border-transparent rounded-lg transition-colors text-xs font-medium shadow-sm"
+                                            title="Save Order"
+                                        >
+                                            <Check className="w-3.5 h-3.5" />
+                                            <span>Done</span>
+                                        </button>
+                                        <button
+                                            onClick={() => {
+                                                setIsRankingMode(false);
+                                                setLocalOrderedMembers(null);
+                                            }}
+                                            className="flex items-center justify-center gap-2 px-3 py-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 rounded-lg transition-colors text-xs font-medium"
+                                            title="Cancel Reordering"
+                                        >
+                                            <X className="w-3.5 h-3.5 text-slate-500" />
+                                            <span>Cancel</span>
+                                        </button>
+                                    </>
+                                ) : (
+                                    <button
+                                        onClick={() => setIsRankingMode(true)}
+                                        className="flex items-center justify-center gap-2 px-3 py-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 rounded-lg transition-colors text-xs font-medium"
+                                        title="Rank Members"
+                                    >
+                                        <ListOrdered className="w-3.5 h-3.5 text-slate-500" />
+                                        <span>Rank</span>
+                                    </button>
+                                )}
+                            </div>
 
-                                <div className="flex items-center gap-2">
+                            {/* Right: Alerts & Optimize */}
+                            <div className="flex items-center gap-2 px-2">
+                                {/* Alert Badge */}
+                                {gap > 0 && (
+                                    <div className="flex items-center gap-1.5 px-2.5 py-1.5 bg-amber-50 rounded-md text-xs font-bold text-amber-700 border border-amber-200 shadow-sm animate-in fade-in slide-in-from-right-2">
+                                        <span>{gap} Attention Needed</span>
+                                    </div>
+                                )}
 
-                                    {isRankingMode ? (
+                                {/* Optimize Button - Moved to Right */}
+                                {!isRankingMode && (
+                                    proposedReports ? (
                                         <>
                                             <button
-                                                onClick={() => {
-                                                    setIsRankingMode(false);
-                                                    setLocalOrderedMembers(null);
-                                                }}
-                                                className="flex items-center justify-center gap-2 px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white border border-transparent rounded-lg transition-colors text-xs font-medium shadow-sm"
-                                                title="Save Order"
+                                                onClick={handleAcceptOptimization}
+                                                className="flex items-center justify-center gap-2 px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white border border-transparent rounded-lg transition-colors text-xs font-medium shadow-sm animate-in fade-in slide-in-from-right-4"
+                                                title="Accept Proposed Strategy"
                                             >
                                                 <Check className="w-3.5 h-3.5" />
-                                                <span>Done</span>
+                                                <span>Accept</span>
                                             </button>
                                             <button
-                                                onClick={() => {
-                                                    setIsRankingMode(false);
-                                                    setLocalOrderedMembers(null);
-                                                }}
-                                                className="flex items-center justify-center gap-2 px-3 py-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 rounded-lg transition-colors text-xs font-medium"
-                                                title="Cancel Reordering"
+                                                onClick={handleCancelOptimization}
+                                                className="flex items-center justify-center gap-2 px-3 py-2 bg-white hover:bg-rose-50 text-rose-600 border border-slate-200 rounded-lg transition-colors text-xs font-medium animate-in fade-in slide-in-from-right-4"
+                                                title="Discard Changes"
                                             >
-                                                <X className="w-3.5 h-3.5 text-slate-500" />
+                                                <X className="w-3.5 h-3.5" />
                                                 <span>Cancel</span>
                                             </button>
                                         </>
                                     ) : (
-                                        <>
-                                            {/* Rank Button */}
-                                            <button
-                                                onClick={() => setIsRankingMode(true)}
-                                                className="flex items-center justify-center gap-2 px-3 py-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 rounded-lg transition-colors text-xs font-medium"
-                                                title="Rank Members"
-                                            >
-                                                <ListOrdered className="w-3.5 h-3.5 text-slate-500" />
-                                                <span>Rank</span>
-                                            </button>
-
-                                            {/* Waterfall Button */}
-                                            <button
-                                                className="flex items-center justify-center gap-2 px-3 py-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 rounded-lg transition-colors text-xs font-medium"
-                                                title="Waterfall View"
-                                            >
-                                                <BarChart className="w-3.5 h-3.5 text-slate-500" />
-                                                <span>Waterfall</span>
-                                            </button>
-
-                                            {/* Optimize Button */}
-                                            <button
-                                                onClick={handleOptimize}
-                                                className="flex items-center justify-center gap-2 px-3 py-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 rounded-lg transition-colors text-xs font-medium"
-                                                title="Optimize MTA Distribution"
-                                            >
-                                                <Sparkles className="w-3.5 h-3.5 text-indigo-500" />
-                                                <span>Optimize</span>
-                                            </button>
-
-                                        </>
-                                    )}
-                                </div>
-
-                                {/* Right: Workspace Control & Alerts */}
-                                <div className="flex items-center gap-3 text-[10px] px-2">
-
-                                    {!isRankingMode && (
                                         <button
-                                            onClick={onOpenWorkspace}
-                                            className="flex items-center justify-center gap-2 px-3 py-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 rounded-lg transition-colors text-xs font-medium"
+                                            onClick={handleOptimize}
+                                            disabled={isOptimizing}
+                                            className="flex items-center justify-center gap-2 px-3 py-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 rounded-lg transition-colors text-xs font-medium disabled:opacity-50"
+                                            title="Optimize MTA Distribution"
                                         >
-                                            <ArrowRight className="w-3.5 h-3.5 text-slate-500" />
-                                            <span>Workspace</span>
+                                            {isOptimizing ? (
+                                                <div className="w-3.5 h-3.5 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+                                            ) : (
+                                                <Sparkles className="w-3.5 h-3.5 text-indigo-500" />
+                                            )}
+                                            <span>{isOptimizing ? 'Calcul...' : 'Optimize'}</span>
                                         </button>
-                                    )}
-
-                                    {/* Moved Alert Badge - Adjusted to be Right-Most Edge */}
-                                    {gap > 0 && (
-                                        <div className="flex items-center gap-1.5 px-2.5 py-1.5 bg-amber-50 rounded-md text-xs font-bold text-amber-700 border border-amber-200 shadow-sm animate-in fade-in slide-in-from-right-2">
-                                            <span>{gap} Attention Needed</span>
-                                        </div>
-                                    )}
-                                </div>
+                                    )
+                                )}
                             </div>
                         </div>
                     </div>
                 </div>
 
                 {/* 3. Member List (Scrollable Main) */}
-                <CycleMemberList
-                    isRankingMode={isRankingMode}
-                    isEnlisted={isEnlisted}
-                    rankedMembers={rankedMembers as RankedMember[]}
-                    localOrderedMembers={localOrderedMembers}
-                    setLocalOrderedMembers={setLocalOrderedMembers}
-                    draggedReportId={draggedReportId}
-                    setDraggedReportId={setDraggedReportId}
-                    activeGroupId={activeGroup.id}
-                    selectedMemberId={selectedMemberId}
-                    onSelectMember={selectMember}
-                    onReorderMembers={handleReorderMembers}
-                    setDraggingItemType={setDraggingItemType}
-                />
+                <div className={`flex-1 overflow-y-auto relative ${proposedReports ? 'ring-4 ring-emerald-500/20' : ''}`}>
+                    {/* Blocking Overlay during Review - intercepts all clicks */}
+                    {proposedReports && (
+                        <div className="absolute inset-0 z-50 bg-emerald-50/20 cursor-not-allowed" aria-hidden="true" />
+                    )}
+
+                    <CycleMemberList
+                        isRankingMode={isRankingMode}
+                        isEnlisted={isEnlisted}
+                        rankedMembers={rankedMembers as RankedMember[]}
+                        localOrderedMembers={localOrderedMembers}
+                        setLocalOrderedMembers={setLocalOrderedMembers}
+                        draggedReportId={draggedReportId}
+                        setDraggedReportId={setDraggedReportId}
+                        activeGroupId={activeGroup.id}
+                        selectedMemberId={selectedMemberId}
+                        onSelectMember={(id) => {
+                            if (!proposedReports) selectMember(id);
+                        }}
+                        onReorderMembers={(g, d, t) => {
+                            if (!proposedReports) handleReorderMembers(g, d, t);
+                        }}
+                        setDraggingItemType={setDraggingItemType}
+                    />
+                </div>
             </div>
 
-
+            {/* Sidebar: Hidden during optimization review to prevent any edits */}
             {
-                selectedMemberId && (
+                selectedMemberId && !proposedReports && (
                     <MemberDetailSidebar
                         memberId={selectedMemberId}
                         rosterMember={(() => {
@@ -459,6 +714,7 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
                         groupContext={domainContext}
                         groupId={activeGroup.id}
                         isRankingMode={isRankingMode}
+                        onPreviewMTA={handlePreviewMTA}
 
                         // Pass Rank Context
                         rankContext={(() => {
@@ -488,7 +744,7 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
                             };
                         })()}
 
-                        onClose={() => selectMember(null)}
+                        onClose={() => handleMemberSelect(null)}
                         onUpdateMTA={(id, val) => {
                             const report = activeGroup.reports.find(r => r.memberId === id);
                             if (report) {
@@ -504,6 +760,7 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
                                 updateReport(activeGroup.id, report.id, { promotionRecommendation: rec });
                             }
                         }}
+                        currentRsca={activeGroup.rsca}
                         onNavigatePrev={() => {
                             const idx = rankedMembers.findIndex(m => m.id === selectedMemberId);
                             if (idx > 0) selectMember(rankedMembers[idx - 1].id);
@@ -512,6 +769,7 @@ export function CycleContextPanel({ group, onOpenWorkspace }: CycleContextPanelP
                             const idx = rankedMembers.findIndex(m => m.id === selectedMemberId);
                             if (idx < rankedMembers.length - 1) selectMember(rankedMembers[idx + 1].id);
                         }}
+
                     />
                 )
             }

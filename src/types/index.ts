@@ -4,6 +4,8 @@ export type PayGrade = 'O-1' | 'O-2' | 'O-3' | 'O-4' | 'O-5' | 'O-6' | 'O-7' | '
 
 export type Designator = string; // Broaden type definition to allow enlisted rates and diverse designators
 
+export type TraitGradeSet = { [key: string]: number };
+
 export interface Member {
     id: string;
     name: string; // Combined for display
@@ -15,11 +17,12 @@ export interface Member {
     prd?: string; // Projected Rotation Date YYYY-MM-DD
     status: 'Onboard' | 'Gain' | 'Loss';
     gainDate?: string;
-    lastTrait?: number;
-    target?: number;
+    lastTrait?: number | null;
+    target?: number | null;
     lastExam?: number;
     history?: Report[];
     promotionStatus?: 'REGULAR' | 'FROCKED' | 'SELECTED' | 'SPOT';
+    nextPlan?: number | string | null; // Planned next report MTA
 }
 
 export interface Report {
@@ -42,9 +45,7 @@ export interface Report {
     isLocked?: boolean; // If locked, optimization engine won't touch
 
     // Validation
-    traitGrades?: {
-        [key: string]: number // 'Professional Expertise': 4.0
-    };
+    traitGrades?: TraitGradeSet;
     violations?: PolicyViolation[];
 
     // Detailed Report Flags
@@ -53,6 +54,21 @@ export interface Report {
     detachmentOfIndividual?: boolean;
     reportingSeniorName?: string;
     reportsRemaining?: number;
+
+    // Type of Report (Blocks 17-19)
+    isRegular?: boolean;
+    isConcurrent?: boolean;
+    isOpsCdr?: boolean;
+
+    // Additional Administrative Fields
+    physicalReadiness?: string; // Block 20
+    billetSubcategory?: string; // Block 21
+    reportingSeniorGrade?: string; // Block 23
+    reportingSeniorDesig?: string; // Block 24
+    reportingSeniorTitle?: string; // Block 25
+    reportingSeniorUic?: string; // Block 26
+    reportingSeniorSsn?: string; // Block 27
+    openingStatement?: string; // Block 43 opening
 
     // Administrative Data
     grade?: string; // Block 2
@@ -69,6 +85,7 @@ export interface Report {
     primaryDuty?: string; // Block 29
 
     comments?: string; // Block 43
+    narrative?: string; // Alternative to comments
 }
 
 export interface SummaryGroup {
@@ -102,3 +119,57 @@ export interface RosterEntry {
     // Extended admin data from feed
     gender?: string;
 }
+
+// Timeline types for ManningWaterfall
+export interface TimelineMonth {
+    label: string;
+    monthIndex: number;
+    year: number;
+    index: number;
+}
+
+export interface WaterfallMember extends Member {
+    history: Report[];
+    periodicReportId?: string;
+    transferReportId?: string;
+}
+
+// Board types
+export interface BoardZones {
+    inZone: string[];
+    aboveZone: string[];
+    belowZone: string[];
+}
+
+export interface Board {
+    id: string;
+    name: string;
+    conveneDate: string;
+    conveningDate?: string; // Alias for conveneDate used in some places
+    type: 'Promotion' | 'Selection' | 'Review' | 'Statutory' | 'Administrative' | 'Custom';
+    status?: 'Scheduled' | 'In Progress' | 'Complete';
+    zones?: BoardZones;
+    eligibles?: string[];
+}
+
+export interface BoardSchedule {
+    id: string;
+    boardId: string;
+    paygrade: string;
+    designator?: string;
+    recordsDueDate: string;
+    year?: number;
+    boards?: Board[];
+}
+
+// Reporting Senior types
+export interface ReportingSenior {
+    id: string;
+    name: string;
+    rank: string;
+    title: string;
+    uic?: string;
+    ssn?: string;
+    designator?: string;
+}
+

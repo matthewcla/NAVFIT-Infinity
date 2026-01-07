@@ -22,6 +22,7 @@ interface MemberReportRowProps {
     mta: number;
     delta: number;
     rscaMargin: number;
+    eotMta?: number;
     isSelected: boolean;
     isRankMode: boolean;
     onClick: () => void;
@@ -43,6 +44,7 @@ export function MemberReportRow({
     mta,
     delta,
     rscaMargin,
+    eotMta,
     isSelected,
     isRankMode,
     onClick,
@@ -171,6 +173,9 @@ export function MemberReportRow({
                 </td>
                 <td className={`px-4 py-3 text-sm font-mono text-center font-medium w-20 ${rscaMargin >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>
                     {rscaMargin > 0 ? '+' : ''}{rscaMargin.toFixed(2)}
+                </td>
+                <td className="px-4 py-3 text-sm font-mono text-slate-400 text-center w-20">
+                    {eotMta ? eotMta.toFixed(2) : '-'}
                 </td>
             </tr>
         </>

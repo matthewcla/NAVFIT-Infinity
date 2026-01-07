@@ -467,7 +467,8 @@ export const TimelineRow = ({
                         onMouseDown={(e) => {
                             const pid = getReportId('periodic');
                             const proj = projections[pid];
-                            const val = proj !== undefined ? proj : (member.nextPlan ?? null);
+                            const np = member.nextPlan;
+                            const val: number | 'NOB' | null = proj !== undefined ? proj : (typeof np === 'number' ? np : null);
                             handleReportMouseDown(e, pid, val);
                         }}
                     >

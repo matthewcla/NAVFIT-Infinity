@@ -105,7 +105,7 @@ export function SubmissionConfirmationModal({
                                 </p>
 
                                 <div className="border border-slate-200 rounded-lg overflow-hidden divide-y divide-slate-100">
-                                    {infeasibilityReport.minimalAdjustments.map((adj) => (
+                                    {infeasibilityReport.minimalAdjustments?.map((adj) => (
                                         <div key={adj.memberId} className="p-3 flex items-center justify-between hover:bg-slate-50 transition-colors">
                                             <div className="flex flex-col">
                                                 <span className="text-sm font-semibold text-slate-700">{getMemberName(adj.memberId)}</span>
@@ -128,7 +128,7 @@ export function SubmissionConfirmationModal({
                                             </div>
                                         </div>
                                     ))}
-                                    {infeasibilityReport.minimalAdjustments.length === 0 && (
+                                    {(infeasibilityReport.minimalAdjustments?.length ?? 0) === 0 && (
                                         <div className="p-4 text-center text-sm text-slate-400 italic">
                                             No specific single-member adjustments found. Try relaxing global constraints.
                                         </div>

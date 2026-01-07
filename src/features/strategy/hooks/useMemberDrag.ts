@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import type { Member } from '@/types';
 
-export function useMemberDrag(initialGroups: Record<string, Member[]>) {
+export function useMemberDrag<T extends Member>(initialGroups: Record<string, T[]>) {
     const [groupOrder, setGroupOrder] = useState<Record<string, string[]>>({});
 
     // Sync groupOrder with incoming groups (maintenance of state)
@@ -78,7 +78,7 @@ export function useMemberDrag(initialGroups: Record<string, Member[]>) {
         }
     }, []);
 
-    const getSortedGroupList = useCallback((key: string, list: Member[]) => {
+    const getSortedGroupList = useCallback((key: string, list: T[]) => {
         const order = groupOrder[key];
         if (!order) return list.sort((a, b) => a.name.localeCompare(b.name));
 
@@ -86,7 +86,7 @@ export function useMemberDrag(initialGroups: Record<string, Member[]>) {
         const map = new Map(list.map(m => [m.id, m]));
 
         // Return ordered list, filter out any missing ids (safety)
-        const sorted = order.map(id => map.get(id)).filter(Boolean) as Member[];
+        const sorted = order.map(id => map.get(id)).filter(Boolean) as T[];
 
         // Append any potentially missing members (safety)
         const returnedIds = new Set(sorted.map(m => m.id));

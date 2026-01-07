@@ -1,4 +1,4 @@
-import type { Member } from './types';
+// Types specific to the redistribution engine - Member is defined locally below
 
 // Types specific to the redistribution engine
 

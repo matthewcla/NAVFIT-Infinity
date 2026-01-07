@@ -9,6 +9,7 @@ import { useNavfitStore } from '@/store/useNavfitStore';
 import { useSummaryGroups } from '@/features/strategy/hooks/useSummaryGroups';
 import { Filter, ArrowUpDown } from 'lucide-react';
 import { AddSummaryGroupModal } from '@/features/dashboard/components/AddSummaryGroupModal';
+import { ReportEditorModal } from './ReportEditorModal';
 
 
 export function CommandStrategyCenter() {
@@ -224,6 +225,7 @@ export function CommandStrategyCenter() {
                 competitiveGroups={allCompetitiveGroups.length > 0 ? allCompetitiveGroups : ['O-1', 'O-2', 'O-3', 'O-4', 'O-5', 'O-6', 'E-1', 'E-2', 'E-3', 'E-4', 'E-5', 'E-6', 'E-7', 'E-8', 'E-9']}
                 onCreate={handleCreateGroups}
             />
+            <ReportEditorModal />
         </div>
     );
 }

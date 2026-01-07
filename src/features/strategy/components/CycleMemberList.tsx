@@ -14,6 +14,7 @@ export interface RankedMember {
     mta: number;
     delta: number;
     rscaMargin: number;
+    eotMta?: number;
     reportsRemaining: number | undefined;
     report: Report;
 }
@@ -72,7 +73,7 @@ export function CycleMemberList({
                         <tr>
                             <th className="px-4 py-3 border-b border-slate-200 w-12 text-center">#</th>
                             <th className="w-8 px-0 py-3 border-b border-slate-200"></th> {/* Spacer for Handle */}
-                            <th className="px-4 py-3 border-b border-slate-200 text-left w-[30%]">Name</th>
+                            <th className="px-4 py-3 border-b border-slate-200 text-left w-[25%]">Name</th>
                             <th className="px-4 py-3 border-b border-slate-200 text-center w-24">
                                 {isEnlisted ? 'Rate/Rank' : 'Desig'}
                             </th>
@@ -81,6 +82,7 @@ export function CycleMemberList({
                             <th className="px-4 py-3 border-b border-slate-200 text-center w-20">MTA</th>
                             <th className="px-4 py-3 border-b border-slate-200 text-center w-20">Delta</th>
                             <th className="px-4 py-3 border-b border-slate-200 text-center w-20">Margin</th>
+                            <th className="px-4 py-3 border-b border-slate-200 text-center w-20" title="Projected End of Tour MTA">Proj. EOT</th>
                         </tr>
                     )}
                 </thead>
@@ -187,6 +189,7 @@ export function CycleMemberList({
                                 mta={member.mta}
                                 delta={member.delta}
                                 rscaMargin={member.rscaMargin}
+                                eotMta={member.eotMta || 0}
                                 isSelected={selectedMemberId === member.id}
                                 isRankMode={false}
                                 onClick={() => onSelectMember(selectedMemberId === member.id ? null : member.id)}

@@ -26,13 +26,20 @@ vi.mock('@/domain/rsca/redistribution', async (importOriginal) => {
 });
 
 describe('Worker Logic', () => {
+    const DEFAULT_ALGORITHM_PARAMS = {
+        delta: DEFAULT_CONSTRAINTS.delta ?? 0.1,
+        p: DEFAULT_CONSTRAINTS.p ?? 1.0,
+        alpha: DEFAULT_CONSTRAINTS.alpha ?? 0.1,
+        tau: DEFAULT_CONSTRAINTS.tau ?? 0.05,
+    };
+
     it('processes valid input correctly', () => {
         const input: WorkerInput = {
             members: [
                 { id: '1', rank: 1, mta: 4.2, isAnchor: false }
             ],
             anchors: {},
-            params: { ...DEFAULT_CONSTRAINTS, targetRSCA: 4.0 },
+            params: { ...DEFAULT_CONSTRAINTS, targetRSCA: 4.0, algorithmParams: DEFAULT_ALGORITHM_PARAMS },
             requestId: 'req-1'
         };
 
@@ -52,7 +59,7 @@ describe('Worker Logic', () => {
                 { id: '1', rank: 1, mta: 4.2, isAnchor: false }
             ],
             anchors: { '1': 4.5 },
-            params: { ...DEFAULT_CONSTRAINTS, targetRSCA: 4.0 },
+            params: { ...DEFAULT_CONSTRAINTS, targetRSCA: 4.0, algorithmParams: DEFAULT_ALGORITHM_PARAMS },
             requestId: 'req-2'
         };
 
@@ -74,7 +81,7 @@ describe('Worker Logic', () => {
         const input: WorkerInput = {
             members: [],
             anchors: {},
-            params: { ...DEFAULT_CONSTRAINTS },
+            params: { ...DEFAULT_CONSTRAINTS, algorithmParams: DEFAULT_ALGORITHM_PARAMS },
             requestId: 'req-3'
         };
 
