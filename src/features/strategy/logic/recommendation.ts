@@ -3,6 +3,7 @@ import { Paygrade, PromotionRecommendation, RankCategory } from '@/domain/policy
 import type { SummaryGroupContext } from '@/domain/policy/types';
 import { computeEpMax, computeMpMax } from '@/domain/policy/quotas';
 import { validateRecommendationAgainstTraits, validateEnsignLTJGCap } from '@/domain/policy/validation';
+import { getCompetitiveCategory } from './competitiveGroupUtils';
 
 /**
  * Maps UI paygrade string (e.g. "O-3") to Domain Paygrade (e.g. "O3").
@@ -19,15 +20,22 @@ export function mapUiPaygradeToDomain(uiPaygrade?: string): Paygrade | null {
 
 /**
  * Constructs the SummaryGroupContext from the UI SummaryGroup.
+ * Uses getCompetitiveCategory for proper LDO/CWO detection based on designator patterns.
  */
 export function getContextFromGroup(group: SummaryGroup): SummaryGroupContext | null {
     const paygrade = mapUiPaygradeToDomain(group.paygrade);
     if (!paygrade) return null;
 
-    // Determine LDO / CWO from designator or other fields if available.
+    // Use proper competitive category logic for LDO/CWO detection
     const designator = group.designator || '';
-    const isLDO = designator.startsWith('6');
-    const isCWO = designator.startsWith('7') || ['W1', 'W2', 'W3', 'W4', 'W5'].includes(paygrade);
+    const category = getCompetitiveCategory(designator);
+
+    // LDO includes both Active and Reserve LDO
+    const isLDO = category.code === 'LDO_ACTIVE' || category.code === 'LDO_CWO_RESERVE';
+    // CWO includes Active CWO and W paygrades
+    const isCWO = category.code === 'CWO_ACTIVE' ||
+        category.code === 'LDO_CWO_RESERVE' ||
+        ['W1', 'W2', 'W3', 'W4', 'W5'].includes(paygrade);
 
     // Rank Category
     let rankCategory: RankCategory = RankCategory.OFFICER;
@@ -52,14 +60,14 @@ function isBlocked(report: Report, rec: PromotionRecommendation, context: Summar
     // 1. Check Trait Validation
     const traitViolations = validateRecommendationAgainstTraits(traits, rec, context);
     if (traitViolations.length > 0) {
-        // console.log(`Blocked ${rec} for ${report.id} due to traits:`, traitViolations);
+        console.warn(`[BLOCK DEBUG] ${report.id} blocked for ${rec} due to traits:`, traitViolations);
         return true;
     }
 
     // 2. Check Rank/Paygrade specific caps (e.g. O1/O2)
     const capViolations = validateEnsignLTJGCap(context, rec);
     if (capViolations.length > 0) {
-        // console.log(`Blocked ${rec} for ${report.id} due to cap:`, capViolations);
+        console.warn(`[BLOCK DEBUG] ${report.id} blocked for ${rec} due to O1/O2 cap:`, capViolations);
         return true;
     }
 
@@ -76,6 +84,16 @@ export function assignRecommendationsByRank(reports: Report[], group: SummaryGro
         console.warn("Invalid group context for auto-assignment", group);
         return reports;
     }
+
+    // DEBUG: Log context to trace O-1/O-2 EP blocking issue
+    console.warn('[EP DEBUG] assignRecommendationsByRank called:', {
+        groupPaygrade: group.paygrade,
+        groupDesignator: group.designator,
+        contextPaygrade: context.paygrade,
+        isLDO: context.isLDO,
+        isCWO: context.isCWO,
+        reportsCount: reports.length
+    });
 
     // Calculate Max Quotas
     const totalReports = reports.length;

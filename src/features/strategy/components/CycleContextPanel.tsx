@@ -133,13 +133,13 @@ export function CycleContextPanel({ group }: CycleContextPanelProps) {
 
         // Step 5: Sanitize Phase 2 - Safety Net
         const sanitized = reallocated.map(r => {
-             if (r.promotionRecommendation === 'NOB') {
-                 return { ...r, traitAverage: 0.00 };
-             }
-             return r;
+            if (r.promotionRecommendation === 'NOB') {
+                return { ...r, traitAverage: 0.00 };
+            }
+            return r;
         });
 
-         // Tracer Log 2
+        // Tracer Log 2
         console.log('[Optimize Pipeline] Post-Sanitize Phase 2 (NOBs confirmed 0.00):',
             sanitized.filter(r => r.promotionRecommendation === 'NOB').map(r => ({ id: r.id, mta: r.traitAverage }))
         );
@@ -320,7 +320,8 @@ export function CycleContextPanel({ group }: CycleContextPanelProps) {
         const rankedMembers = effectiveReports
             .map(report => {
                 const member = roster.find(m => m.id === report.memberId);
-                const currentMta = projections[report.id] || report.traitAverage || 0;
+                // Use effectiveProjections (includes proposed values during optimization), not projections
+                const currentMta = effectiveProjections[report.id] ?? report.traitAverage ?? 0;
                 const rscaMargin = currentMta - projectedRsca; // Margin against Projected RSCA
 
                 // Robust Fallback: Use Report Snapshot if Roster Lookup Fails
