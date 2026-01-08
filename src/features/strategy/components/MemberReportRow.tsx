@@ -167,7 +167,7 @@ export function MemberReportRow({
                 <td className="px-4 py-3 text-sm text-center w-16">
                     <PromotionBadge recommendation={promRec} size="xs" className="rounded-sm px-1.5" />
                 </td>
-                <td className="px-4 py-3 text-sm font-mono text-slate-700 text-center w-20">{mta.toFixed(2)}</td>
+                <td className="px-4 py-3 text-sm font-mono text-slate-700 text-center w-20">{promRec === 'NOB' ? '-' : mta.toFixed(2)}</td>
                 <td className="px-4 py-3 text-sm font-mono text-slate-400 text-center w-20">
                     {delta === 0 ? '-' : (delta > 0 ? `+${delta.toFixed(2)}` : delta.toFixed(2))}
                 </td>

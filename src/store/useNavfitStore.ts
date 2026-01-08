@@ -46,7 +46,7 @@ interface NavfitStore {
     summaryGroups: SummaryGroup[];
     setSummaryGroups: (groups: SummaryGroup[]) => void;
     addSummaryGroup: (group: SummaryGroup) => void;
-    updateGroupStatus: (groupId: string, status: 'Draft' | 'Review' | 'Submitted' | 'Final' | 'Projected') => void;
+    updateGroupStatus: (groupId: string, status: 'Draft' | 'Review' | 'Submitted' | 'Final' | 'Planned') => void;
 
     // State for persistence (Deletions)
     deletedGroupIds: string[];
@@ -108,8 +108,8 @@ interface NavfitStore {
     setStrategyViewMode: (mode: 'landing' | 'workspace') => void;
 
     // History View State
-    cycleListPhase: 'Active' | 'Archive' | 'Projected';
-    setCycleListPhase: (phase: 'Active' | 'Archive' | 'Projected') => void;
+    cycleListPhase: 'Active' | 'Archive' | 'Planned';
+    setCycleListPhase: (phase: 'Active' | 'Archive' | 'Planned') => void;
     // Drag State
     draggingItemType: string | null;
     setDraggingItemType: (type: string | null) => void;

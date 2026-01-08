@@ -85,54 +85,65 @@ export function assignRecommendationsByRank(reports: Report[], group: SummaryGro
         return reports;
     }
 
-    // DEBUG: Log context to trace O-1/O-2 EP blocking issue
-    console.warn('[EP DEBUG] assignRecommendationsByRank called:', {
-        groupPaygrade: group.paygrade,
-        groupDesignator: group.designator,
-        contextPaygrade: context.paygrade,
-        isLDO: context.isLDO,
-        isCWO: context.isCWO,
-        reportsCount: reports.length
+    // We create a shallow copy of reports to modify
+    let updatedReports = reports.map(r => ({ ...r }));
+
+    // 1. Handle Locked Reports & Calculate Usage
+    let lockedEPs = 0;
+    let lockedMPs = 0;
+
+    updatedReports.forEach(r => {
+        if (r.isLocked) {
+            // Special Case: Locked NOB should have 0.00 MTA
+            if (r.promotionRecommendation === PromotionRecommendation.NOB && r.traitAverage > 0) {
+                r.traitAverage = 0.00;
+            }
+
+            if (r.promotionRecommendation === PromotionRecommendation.EARLY_PROMOTE) lockedEPs++;
+            if (r.promotionRecommendation === PromotionRecommendation.MUST_PROMOTE) lockedMPs++;
+        }
     });
 
-    // Calculate Max Quotas
+    // 2. Determine Scope for Assignment
     // NOB reports are excluded from summary group size for quota purposes
-    const effectiveReports = reports.filter(r => r.promotionRecommendation !== PromotionRecommendation.NOB);
+    // We also exclude reports explicitly flagged as notObservedReport, even if the recommendation is stale (e.g. 'P')
+    const effectiveReports = updatedReports.filter(r =>
+        r.promotionRecommendation !== PromotionRecommendation.NOB && !r.notObservedReport
+    );
     const effectiveSize = effectiveReports.length;
-
-    // DEBUG: Log checks
-    // console.log(`Group Size: ${reports.length}, Effective Size (excl NOB): ${effectiveSize}`);
 
     const epLimit = computeEpMax(effectiveSize, context);
 
-    // Identify Locked Usage
-    const lockedEPs = reports.filter(r => r.isLocked && r.promotionRecommendation === PromotionRecommendation.EARLY_PROMOTE).length;
-    const lockedMPs = reports.filter(r => r.isLocked && r.promotionRecommendation === PromotionRecommendation.MUST_PROMOTE).length;
+    // 3. Identify Assignable Candidates (Unlocked, Non-NOB)
+    const candidates = updatedReports.filter(r =>
+        !r.isLocked &&
+        r.promotionRecommendation !== PromotionRecommendation.NOB &&
+        !r.notObservedReport
+    );
 
+    // 4. Reset all candidate recommendations to 'P' before re-assignment
+    // This ensures the algorithm starts from a clean slate and properly enforces quotas.
+    // Without this reset, pre-existing EP/MP recommendations would pass through unchanged
+    // even when they exceed quota limits.
+    for (const report of candidates) {
+        report.promotionRecommendation = PromotionRecommendation.PROMOTABLE;
+    }
+
+    // 5. Sort Candidates by MTA Descending (Strict Merit)
+    // Stable sort: keep original order if MTA is equal
+    candidates.sort((a, b) => b.traitAverage - a.traitAverage);
+
+    // 6. Assign EP
     let availableEP = Math.max(0, epLimit - lockedEPs);
-    console.log('[EP DEBUG] Quota Limits:', { effectiveSize, epLimit, lockedEPs, availableEP });
-    // Note: MP limit depends on total EP assigned (locked + newly assigned), so we calculate it dynamically or conservatively.
-    // Actually, MP limit is typically a function of Group Size and EP count.
-    // Standard rule: (EP + MP) combined limit is often 50% or 60%.
-    // computeMpMax usually takes (total, context, assignedEP).
-    // so we'll calculate mpLimit AFTER assigning EPs.
 
-    // We create a shallow copy of reports to modify
-    const updatedReports = reports.map(r => ({ ...r }));
-
-    // First Pass: Assign EP to UNLOCKED records
-    for (let i = 0; i < updatedReports.length; i++) {
-        const report = updatedReports[i];
-
-        if (report.isLocked) continue; // Skip locked
-        if (report.promotionRecommendation === PromotionRecommendation.NOB) continue;
-
-        // Attempt EP
+    for (const report of candidates) {
         if (availableEP > 0) {
             if (!isBlocked(report, PromotionRecommendation.EARLY_PROMOTE, context)) {
                 report.promotionRecommendation = PromotionRecommendation.EARLY_PROMOTE;
                 availableEP--;
-                continue;
+            } else {
+                // Was not assigned EP due to block
+                // Fallthrough to next candidate
             }
         }
     }
@@ -140,21 +151,15 @@ export function assignRecommendationsByRank(reports: Report[], group: SummaryGro
     // Recalculate Total EP Assigned (Locked + New)
     const totalEpAssigned = updatedReports.filter(r => r.promotionRecommendation === PromotionRecommendation.EARLY_PROMOTE).length;
 
-    // Calculate MP Limit based on ACTUAL EP usage
-    // Use effectiveSize here too
+    // 7. Assign MP
+    // MP limit depends on Total EP assigned
     const mpLimit = computeMpMax(effectiveSize, context, totalEpAssigned);
     let availableMP = Math.max(0, mpLimit - lockedMPs);
-    console.log('[EP DEBUG] MP Quota Limits:', { mpLimit, lockedMPs, availableMP, totalEpAssigned });
 
-    // Second Pass: Assign MP to UNLOCKED records (who didn't get EP)
-    for (let i = 0; i < updatedReports.length; i++) {
-        const report = updatedReports[i];
+    for (const report of candidates) {
+        // Skip those who already got EP
+        if (report.promotionRecommendation === PromotionRecommendation.EARLY_PROMOTE) continue;
 
-        if (report.isLocked) continue; // Skip locked
-        if (report.promotionRecommendation === PromotionRecommendation.NOB) continue;
-        if (report.promotionRecommendation === PromotionRecommendation.EARLY_PROMOTE) continue; // Already assigned EP
-
-        // Attempt MP
         if (availableMP > 0) {
             if (!isBlocked(report, PromotionRecommendation.MUST_PROMOTE, context)) {
                 report.promotionRecommendation = PromotionRecommendation.MUST_PROMOTE;
@@ -174,6 +179,11 @@ export function assignRecommendationsByRank(reports: Report[], group: SummaryGro
             }
         }
     }
+
+    // Return current array (mapped objects are already modified references)
+    // Note: The original generic order is preserved because we modified objects within 'updatedReports' derived list.
+    // Wait, reference issue: 'candidates' contains references to objects in 'updatedReports'. modifying candidate modifies updatedReport.
+    // Yes, correctly implemented.
 
     return updatedReports;
 }

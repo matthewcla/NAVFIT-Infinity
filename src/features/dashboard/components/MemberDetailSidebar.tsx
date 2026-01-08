@@ -15,7 +15,7 @@ import {
     RotateCw
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { RankChangeModal } from './RankChangeModal';
+
 import { UnsavedChangesModal } from './UnsavedChangesModal';
 
 import type { Report } from '@/types';
@@ -33,7 +33,7 @@ interface MemberDetailSidebarProps {
     onUpdatePromRec: (memberId: string, rec: 'EP' | 'MP' | 'P' | 'Prog' | 'SP' | 'NOB') => void;
     onNavigateNext: () => void;
     onNavigatePrev: () => void;
-    rosterMember: RosterMember;
+    rosterMember?: RosterMember;
     currentReport?: Report;
     currentRsca?: number;
 
@@ -75,6 +75,11 @@ export function MemberDetailSidebar({
     // Source of Truth: Fetch directly from store if possible
     const rosterMember = roster.find(m => m.id === memberId) || _passedRosterMember;
 
+    // Early return if no roster member found
+    if (!rosterMember) {
+        return null;
+    }
+
     // Determine "Rank" label logic similar to CycleMemberList
     const isEnlisted = rosterMember.rank?.startsWith('E') ||
         ['E-1', 'E-2', 'E-3', 'E-4', 'E-5', 'E-6', 'E-7', 'E-8', 'E-9'].includes(rosterMember.payGrade || '');
@@ -109,10 +114,7 @@ export function MemberDetailSidebar({
     const [history, setHistory] = useState<{ mta: number; rec: string }[]>([]);
     const [future, setFuture] = useState<{ mta: number; rec: string }[]>([]);
 
-    // Warning Modal State
-    const [showWarning, setShowWarning] = useState(false);
-    const [pendingMta, setPendingMta] = useState<number | null>(null);
-    const [warningDirection, setWarningDirection] = useState<'up' | 'down'>('up');
+
 
     // Unsaved Changes Modal State
     const [showUnsavedModal, setShowUnsavedModal] = useState(false);
@@ -126,8 +128,7 @@ export function MemberDetailSidebar({
             setMtaInputValue(mta.toFixed(2)); // Init string value
             setSimulatedRec(currentReport?.promotionRecommendation || 'P');
             setPreviousMta(null);
-            setShowWarning(false);
-            setPendingMta(null);
+
 
             // Reset History
             setHistory([]);
@@ -277,39 +278,8 @@ export function MemberDetailSidebar({
             commitToHistory();
         }
 
-        // Check Upward Rank Change (Higher MTA > ANY Next Rank's MTA)
-        const immediateNext = rankContext?.nextRanks?.[0];
-        if (immediateNext && newValue > immediateNext.mta) {
-            setPendingMta(newValue);
-            setWarningDirection('up');
-            setShowWarning(true);
-            return;
-        }
-
-        // Check Downward Rank Change (Lower MTA < Prev Rank's MTA)
-        const immediatePrev = rankContext?.prevRanks?.[0];
-        if (immediatePrev && newValue < immediatePrev.mta) {
-            setPendingMta(newValue);
-            setWarningDirection('down');
-            setShowWarning(true);
-            return;
-        }
-
-        // If no crossing, just update
+        // Directly update without warning
         setSimulatedMta(newValue);
-    };
-
-    const confirmMtaChange = () => {
-        if (pendingMta !== null) {
-            setSimulatedMta(pendingMta);
-            setShowWarning(false);
-            setPendingMta(null);
-        }
-    };
-
-    const cancelMtaChange = () => {
-        setShowWarning(false);
-        setPendingMta(null);
     };
 
 
@@ -652,115 +622,7 @@ export function MemberDetailSidebar({
                         <div className="flex gap-4 h-[166px]">
                             <div className="flex-1 bg-white rounded-lg border border-slate-200 p-2 relative">
                                 <svg className="w-full h-full overflow-visible" viewBox="0 0 100 100" preserveAspectRatio="none">
-                                    {(() => {
-                                        // 1. Prepare Data Points with RSCA
-                                        const pastPoints = (rosterMember.history || []).map(h => ({
-                                            type: 'Past' as const,
-                                            val: h.traitAverage,
-                                            rsca: h.rscaAtTime,
-                                            label: h.promotionRecommendation
-                                        }));
-                                        const currentPoint = {
-                                            type: 'Current' as const,
-                                            val: simulatedMta,
-                                            rsca: currentRsca,
-                                            label: simulatedRec
-                                        };
 
-                                        // Planned Logic
-                                        let plannedCount = currentReport?.reportsRemaining;
-                                        if (plannedCount === undefined && rosterMember.prd && currentReport?.periodEndDate) {
-                                            const prdYear = new Date(rosterMember.prd).getFullYear();
-                                            const reportYear = new Date(currentReport.periodEndDate).getFullYear();
-                                            if (!isNaN(prdYear) && !isNaN(reportYear)) {
-                                                plannedCount = Math.max(0, prdYear - reportYear);
-                                            }
-                                        }
-                                        plannedCount = plannedCount || 0;
-
-                                        const plannedPoints = Array.from({ length: plannedCount }).map((_, i) => ({
-                                            type: (i === plannedCount! - 1) ? 'Transfer' as const : 'Planned' as const,
-                                            val: simulatedMta, // Flat projection
-                                            rsca: currentRsca, // Flat RSCA projection for trendline context
-                                            label: (i === plannedCount! - 1) ? 'PRD' : 'Plan'
-                                        }));
-
-                                        // Combine
-                                        // Limit history to last 3 to keep chart focused, but ensure we have context
-                                        const visibleHistory = pastPoints.slice(-3);
-                                        const allPoints = [...visibleHistory, currentPoint, ...plannedPoints];
-
-                                        if (allPoints.length === 0) return null;
-
-                                        // 2. Dynamic Scale Calculation
-                                        // 10% above Max MTA, 10% below Min RSCA
-                                        // Gather relevant values for domain calculation
-                                        const allMtas = allPoints.map(p => p.val);
-                                        const allRscas = allPoints.map(p => p.rsca).filter((r): r is number => r !== undefined);
-                                        const allValues = [...allMtas, ...allRscas];
-
-                                        const minVal = Math.min(...allValues);
-                                        const maxVal = Math.max(...allValues);
-
-                                        // Robust range calculation
-                                        let range = maxVal - minVal;
-                                        if (range < 0.2) range = 0.2; // Min range
-
-                                        // User logic: 10% above MAX MTA, 10% below MIN RSCA.
-                                        // But visually we need a single coord system.
-                                        // So Domain Top = MaxVal + Margin. Domain Bot = MinVal - Margin.
-                                        // Margin = range * 0.10.
-
-                                        const margin = range * 0.30;
-                                        const domainMin = Math.max(0, minVal - margin);
-                                        const domainMax = Math.min(5.0, maxVal + margin);
-                                        const domainRange = domainMax - domainMin || 1; // avoid /0
-
-                                        // Helper: Map Value to Y (0-100)
-                                        // Y=0 is bottom (svg 100), Y=100 is top (svg 0)
-                                        // svgY = 100 - ((val - min) / range * 100)
-                                        const getY = (val: number) => 100 - ((val - domainMin) / domainRange * 100);
-
-                                        // Helper: Map Index to X (10% - 90%)
-                                        const maxIdx = Math.max(1, allPoints.length - 1);
-                                        const getX = (i: number) => 10 + (i / maxIdx) * 80;
-
-                                        return (
-                                            <>
-
-
-                                                {/* Start/End Dots for Trendline? Optional but helps anchor. 
-                                                    User just asked for trendline. Polyline covers it. 
-                                                */}
-
-                                                {/* Connecting Lines (Dotted Grey) - 90° exit, 270° entry */}
-                                                {allPoints.slice(0, -1).map((p, i) => {
-                                                    const nextP = allPoints[i + 1];
-                                                    const x1 = getX(i);
-                                                    const y1 = getY(p.val);
-                                                    const x2 = getX(i + 1);
-                                                    const y2 = getY(nextP.val);
-
-                                                    // Icon radius offset (roughly 2 SVG units for w-4/w-5 icons)
-                                                    const iconOffset = 2;
-
-                                                    return (
-                                                        <line
-                                                            key={i}
-                                                            x1={x1 + iconOffset}
-                                                            y1={y1}
-                                                            x2={x2 - iconOffset}
-                                                            y2={y2}
-                                                            stroke="#9ca3af"
-                                                            strokeWidth="1"
-                                                            strokeLinecap="round"
-                                                            strokeDasharray="2,3"
-                                                        />
-                                                    );
-                                                })}
-                                            </>
-                                        );
-                                    })()}
                                 </svg>
 
                                 {/* HTML Overlay */}
@@ -1157,15 +1019,7 @@ export function MemberDetailSidebar({
                 </div>
             </div>
 
-            <RankChangeModal
-                isOpen={showWarning}
-                onClose={cancelMtaChange}
-                onConfirm={confirmMtaChange}
-                direction={warningDirection}
-                currentRank={rankContext?.currentRank || 0}
-                newRank={(rankContext?.currentRank || 0) + (warningDirection === 'up' ? -1 : 1)}
-                memberName={`${rosterMember.firstName} ${rosterMember.lastName}`}
-            />
+
 
             <UnsavedChangesModal
                 isOpen={showUnsavedModal}
