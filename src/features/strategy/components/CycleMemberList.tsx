@@ -166,7 +166,7 @@ export function CycleMemberList({
                                     <span className="ml-2 text-xs font-normal text-slate-400">{member.rank}</span>
                                 </td>
                                 <td className="px-4 py-3 text-sm text-slate-600 text-center font-mono">
-                                    {member.mta.toFixed(2)}
+                                    {member.promRec === 'NOB' ? '-' : member.mta.toFixed(2)}
                                 </td>
                                 <td className="px-4 py-3 text-center">
                                     <PromotionBadge recommendation={member.promRec} size="sm" />
