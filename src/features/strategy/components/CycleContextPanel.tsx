@@ -530,7 +530,6 @@ export function CycleContextPanel({ group }: CycleContextPanelProps) {
                                     currentRsca={currentRsca}
                                     projectedRsca={projectedRsca}
                                     eotRsca={eotRsca}
-                                    rankLabel="Curr. RSCA"
                                     showSuffix={false}
                                 />
                             </div>

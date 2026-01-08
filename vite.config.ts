@@ -15,4 +15,27 @@ export default defineConfig({
     port: 5173,
     strictPort: true,
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: (id) => {
+          if (id.includes('node_modules')) {
+            if (id.includes('react') || id.includes('react-dom')) {
+              return 'react-vendor';
+            }
+            if (id.includes('lucide-react') || id.includes('clsx') || id.includes('tailwind-merge')) {
+              return 'ui-vendor';
+            }
+            if (id.includes('@dnd-kit')) {
+              return 'dnd-vendor';
+            }
+            if (id.includes('lodash') || id.includes('zustand')) {
+              return 'utils-vendor';
+            }
+            return 'vendor';
+          }
+        },
+      },
+    },
+  },
 })

@@ -109,12 +109,7 @@ export function StrategyWorkspace() {
                         const rank = selectedGroup.paygrade || selectedGroup.competitiveGroupKey.split(' ')[0];
                         return calculateCumulativeRSCA(summaryGroups, rank);
                     })()}
-                    rankLabel={(() => {
-                        const selectedId = useNavfitStore.getState().selectedCycleId;
-                        const selectedGroup = summaryGroups.find(g => g.id === selectedId);
-                        const rank = selectedGroup ? (selectedGroup.paygrade || selectedGroup.competitiveGroupKey.split(' ')[0]) : 'Group';
-                        return `${rank} Cumulative Average`;
-                    })()}
+
                 />
             </div>
 
