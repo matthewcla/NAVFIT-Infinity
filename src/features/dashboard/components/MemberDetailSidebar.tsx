@@ -50,7 +50,6 @@ interface MemberDetailSidebarProps {
     };
     groupContext?: SummaryGroupContext;
     groupId?: string; // Added for store actions
-    isRankingMode?: boolean;
 }
 
 export function MemberDetailSidebar({
@@ -67,8 +66,7 @@ export function MemberDetailSidebar({
     rankContext,
     quotaContext,
     groupContext,
-    groupId,
-    isRankingMode = false
+    groupId
 }: MemberDetailSidebarProps) {
     const { roster, toggleReportLock, summaryGroups, setEditingReport, selectReport } = useNavfitStore();
 
@@ -339,7 +337,7 @@ export function MemberDetailSidebar({
             }
         }
 
-        if (isRankingMode && quotaContext && groupContext) {
+        if (quotaContext && groupContext) {
             const { distribution, totalReports } = quotaContext;
             const currentAssignedRec = currentReport?.promotionRecommendation;
 

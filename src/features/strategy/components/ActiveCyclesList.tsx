@@ -15,7 +15,20 @@ interface ActiveCyclesListProps {
 }
 
 export function ActiveCyclesList({ groups, onSelect, selectedGroupId, onAddClick }: ActiveCyclesListProps) {
-    const { setDraggingItemType, deleteSummaryGroup, deleteReport, draggingItemType, cycleSort, summaryGroups } = useNavfitStore();
+    const {
+        setDraggingItemType,
+        deleteSummaryGroup,
+        deleteReport,
+        draggingItemType,
+        cycleSort,
+        summaryGroups,
+        cycleFilter,
+        setCycleFilter,
+        setCycleSort
+    } = useNavfitStore();
+
+    // Search State
+    const [searchTerm, setSearchTerm] = useState('');
     const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({});
 
     // Helper: RSCA Impact Calculation
@@ -53,10 +66,46 @@ export function ActiveCyclesList({ groups, onSelect, selectedGroupId, onAddClick
         return newAvg - baselineAvg;
     };
 
-    // Grouping Logic Dynamic
+    // Helper: Report Type
+    const getReportType = (name: string): string => {
+        const n = name.toLowerCase();
+        if (n.includes('periodic')) return 'Periodic';
+        if (n.includes('detachment of rs') || n.includes('det. of rs') || n.includes('dors')) return 'RS Det.';
+        if (n.includes('detachment of individual') || n.includes('doi')) return 'Ind Det.';
+        if (n.includes('special')) return 'Special';
+        if (n.includes('detachment')) return 'Ind Det.'; // Default detachment 
+        return 'Periodic'; // Default
+    };
+
+    // Search Logic
+    const filteredGroups = useMemo(() => {
+        if (!searchTerm) return groups;
+
+        const lowerTerm = searchTerm.toLowerCase();
+
+        return groups.filter(g => {
+            // 1. Group Name
+            if (g.name.toLowerCase().includes(lowerTerm)) return true;
+
+            // 2. Report Type
+            if (getReportType(g.name).toLowerCase().includes(lowerTerm)) return true;
+
+            // 3. End Date (Month Year)
+            const dateStr = new Date(g.periodEndDate).toLocaleDateString('en-US', { month: 'long', year: 'numeric' }).toLowerCase();
+            if (dateStr.includes(lowerTerm)) return true;
+
+            // 4. Member Names
+            const hasMember = g.reports.some(r => r.memberName.toLowerCase().includes(lowerTerm));
+            if (hasMember) return true;
+
+            return false;
+        });
+    }, [groups, searchTerm]);
+
+    // Grouping Logic Dynamic (uses filteredGroups)
     const groupedMap = useMemo(() => {
         const map = new Map<string, SummaryGroup[]>();
-        groups.forEach(g => {
+        filteredGroups.forEach(g => {
             let key = 'Uncategorized';
 
             if (cycleSort === 'CompGroup') {
@@ -74,7 +123,7 @@ export function ActiveCyclesList({ groups, onSelect, selectedGroupId, onAddClick
             map.get(key)!.push(g);
         });
         return map;
-    }, [groups, cycleSort]);
+    }, [filteredGroups, cycleSort]); // Changed logic to use filteredGroups
 
     // Sorting the Groups (Keys)
     const sortedKeys = useMemo(() => {
@@ -126,14 +175,61 @@ export function ActiveCyclesList({ groups, onSelect, selectedGroupId, onAddClick
         <div className="relative h-full flex flex-col">
 
             {/* Header / Controls */}
-            <div className="px-6 py-3 flex justify-between items-center bg-slate-50 border-b border-slate-100 mb-2">
-                <div className="text-xs font-bold text-slate-400 uppercase tracking-wider">
-                    {cycleSort === 'CompGroup' ? 'Competitive Groups' : cycleSort === 'Status' ? 'By Status' : 'TIMELINE'}
+            <div className="px-6 pb-2 pt-2 bg-slate-50 border-b border-slate-100 flex flex-col gap-3 sticky top-0 z-20">
+                {/* Search Bar */}
+                <div className="relative">
+                    <input
+                        type="text"
+                        placeholder="Search cycles, members..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm text-slate-700 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all font-medium shadow-sm"
+                    />
+                    {/* Optional: Add search icon inside input? */}
                 </div>
-                <div className="flex gap-2 text-[10px] font-medium text-slate-500">
-                    <button onClick={handleExpandAll} className="hover:text-indigo-600 transition-colors">Expand All</button>
-                    <span className="text-slate-300">|</span>
-                    <button onClick={handleCollapseAll} className="hover:text-indigo-600 transition-colors">Collapse All</button>
+
+                {/* Filter & Sort Controls Row */}
+                <div className="flex items-center justify-between">
+                    {/* Filter Buttons */}
+                    <div className="flex items-center gap-1 bg-slate-200/50 p-0.5 rounded-lg">
+                        {['All', 'Officer', 'Enlisted'].map((filter) => (
+                            <button
+                                key={filter}
+                                onClick={() => setCycleFilter(filter as 'All' | 'Officer' | 'Enlisted')}
+                                className={`px-2.5 py-1 rounded-md text-[10px] uppercase tracking-wider font-bold transition-all ${cycleFilter === filter
+                                    ? 'bg-white text-indigo-600 shadow-sm'
+                                    : 'text-slate-500 hover:text-slate-700 hover:bg-slate-200/50'
+                                    }`}
+                            >
+                                {filter}
+                            </button>
+                        ))}
+                    </div>
+
+                    {/* Sort & Sort Label */}
+                    <div className="flex items-center gap-2">
+                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                            Sort By
+                        </span>
+                        <button
+                            onClick={() => setCycleSort(cycleSort === 'DueDate' ? 'Status' : 'DueDate')}
+                            className="px-2 py-1 bg-white border border-slate-200 rounded text-[10px] font-bold text-slate-600 uppercase tracking-wider hover:border-slate-300 hover:text-slate-800 transition-colors shadow-sm"
+                        >
+                            {cycleSort === 'DueDate' ? 'Due Date' : 'Status'}
+                        </button>
+                    </div>
+                </div>
+
+                {/* Expand/Collapse Controls - Integrated lightly */}
+                <div className="flex justify-between items-center pt-1">
+                    <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                        {filteredGroups.length} Cycles Found
+                    </div>
+                    <div className="flex gap-2 text-[10px] font-medium text-slate-500">
+                        <button onClick={handleExpandAll} className="hover:text-indigo-600 transition-colors">Expand</button>
+                        <span className="text-slate-300">|</span>
+                        <button onClick={handleCollapseAll} className="hover:text-indigo-600 transition-colors">Collapse</button>
+                    </div>
                 </div>
             </div>
 
@@ -145,10 +241,12 @@ export function ActiveCyclesList({ groups, onSelect, selectedGroupId, onAddClick
                         <p className="text-sm">No summary groups found.</p>
                     </div>
                 ) : (
-                    <div className="space-y-6">
+                    <div className="space-y-6 pt-2">
                         {sortedKeys.map(key => {
                             const subGroups = groupedMap.get(key) || [];
                             const isCollapsed = collapsedGroups[key] || false;
+
+                            if (subGroups.length === 0) return null;
 
                             return (
                                 <div key={key} className="flex flex-col gap-3 px-4">
@@ -184,15 +282,6 @@ export function ActiveCyclesList({ groups, onSelect, selectedGroupId, onAddClick
                                                         status = 'Overdue';
                                                     }
 
-                                                    const dist = group.reports.reduce((acc, r) => {
-                                                        const rec = r.promotionRecommendation;
-                                                        if (rec && rec !== 'NOB') {
-                                                            const key = rec === 'Prog' ? 'PR' : rec;
-                                                            acc[key] = (acc[key] || 0) + 1;
-                                                        }
-                                                        return acc;
-                                                    }, {} as Record<string, number>);
-
                                                     return (
                                                         <StrategyGroupCard
                                                             key={group.id}
@@ -203,8 +292,8 @@ export function ActiveCyclesList({ groups, onSelect, selectedGroupId, onAddClick
                                                             workflowStatus={group.status}
                                                             rscaImpact={rscaImpact}
                                                             promotionStatus={group.promotionStatus}
+                                                            reportType={getReportType(group.name)}
                                                             isSelected={selectedGroupId === group.id}
-                                                            distribution={dist}
                                                             onClick={() => onSelect(group)}
                                                             draggable={true}
                                                             onDragStart={(e) => {

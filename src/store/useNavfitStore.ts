@@ -14,6 +14,7 @@ import { validateReportState, checkQuota, createSummaryGroupContext } from '@/fe
 import type { SummaryGroup, Report } from '@/types';
 import { assignRecommendationsByRank } from '@/features/strategy/logic/recommendation';
 import { fetchInitialData } from '@/services/dataLoader';
+import { planAllSummaryGroups } from '@/features/strategy/logic/planSummaryGroups';
 
 interface NavfitStore {
     // Loading State
@@ -54,7 +55,8 @@ interface NavfitStore {
 
     deleteSummaryGroup: (groupId: string) => void;
     deleteReport: (groupId: string, reportId: string) => void;
-    toggleReportLock: (groupId: string, reportId: string) => void;
+    toggleReportLock: (groupId: string, reportId: string, targetValue?: number) => void;
+    setGroupLockState: (groupId: string, isLocked: boolean, valueMap?: Record<string, number>) => void;
 
     rsConfig: ReportingSeniorConfig;
     setRsConfig: (config: ReportingSeniorConfig) => void;
@@ -211,9 +213,15 @@ export const useNavfitStore = create<NavfitStore>((set) => ({
                 };
             });
 
+            // Auto-generate planned summary groups
+            const rsConfig = useNavfitStore.getState().rsConfig;
+            const plannedResults = planAllSummaryGroups(roster, rsConfig, summaryGroups);
+            const plannedGroups = plannedResults.map(r => r.group);
+            const allGroups = [...summaryGroups, ...plannedGroups];
+
             set({
                 roster,
-                summaryGroups,
+                summaryGroups: allGroups,
                 isLoading: false,
                 // Reset dependent state
                 selectedCycleId: null,
@@ -295,7 +303,19 @@ export const useNavfitStore = create<NavfitStore>((set) => ({
             };
         })
     })),
-    toggleReportLock: (groupId, reportId) => {
+    toggleReportLock: (groupId, reportId, targetValue) => {
+        // DEBUG: Entry point
+        const preState = useNavfitStore.getState();
+        const preGroup = preState.summaryGroups.find(g => g.id === groupId);
+        const preReport = preGroup?.reports.find(r => r.id === reportId);
+        const preRank = preGroup?.reports.findIndex(r => r.id === reportId);
+        console.log('[LOCK DEBUG] ENTRY', {
+            groupId, reportId, targetValue,
+            currentMta: preReport?.traitAverage,
+            currentLock: preReport?.isLocked,
+            currentRank: preRank !== undefined ? preRank + 1 : 'NOT FOUND'
+        });
+
         set((state) => ({
             summaryGroups: state.summaryGroups.map((group) => {
                 if (group.id !== groupId) return group;
@@ -303,14 +323,33 @@ export const useNavfitStore = create<NavfitStore>((set) => ({
                     ...group,
                     reports: group.reports.map((report) => {
                         if (report.id !== reportId) return report;
+
+                        const willBeLocked = !report.isLocked;
+                        // If locking and a target value is provided, commit it.
+                        // Otherwise (unlocking or no value), keep existing traitAverage.
+                        const newMta = (willBeLocked && targetValue !== undefined) ? targetValue : report.traitAverage;
+
                         return {
                             ...report,
-                            isLocked: !report.isLocked
+                            isLocked: willBeLocked,
+                            traitAverage: newMta
                         };
                     })
                 };
             })
         }));
+
+        // DEBUG: After first set()
+        const midState = useNavfitStore.getState();
+        const midGroup = midState.summaryGroups.find(g => g.id === groupId);
+        const midReport = midGroup?.reports.find(r => r.id === reportId);
+        const midRank = midGroup?.reports.findIndex(r => r.id === reportId);
+        console.log('[LOCK DEBUG] AFTER SET (pre-sort)', {
+            newMta: midReport?.traitAverage,
+            newLock: midReport?.isLocked,
+            newRank: midRank !== undefined ? midRank + 1 : 'NOT FOUND',
+            allReports: midGroup?.reports.map(r => ({ id: r.id, mta: r.traitAverage, locked: r.isLocked }))
+        });
 
         // Trigger Redistribution for Anchor Update
         const state = useNavfitStore.getState(); // Get fresh state
@@ -321,14 +360,75 @@ export const useNavfitStore = create<NavfitStore>((set) => ({
             useAuditStore.getState().addLog('ANCHOR_SELECTION_CHANGE', {
                 groupId,
                 memberId: reportId,
-                isLocked: report?.isLocked
+                isLocked: report?.isLocked,
+                value: report?.traitAverage
             });
 
             const anchors: Record<string, number> = {};
             group.reports.forEach(r => {
                 if (r.isLocked) anchors[r.id] = r.traitAverage;
             });
-            useRedistributionStore.getState().setAnchors(groupId, anchors);
+
+            // FIX: REMOVED MTA-based re-sorting. Lock/unlock should preserve the user's
+            // manually-set rank order (from drag-and-drop). Automatic reordering by MTA
+            // was destroying the manual order every time a lock was toggled.
+            // The report order now remains unchanged - only the isLocked flag is toggled.
+
+            console.log('[LOCK DEBUG] PRESERVING ORDER - no re-sort on lock toggle');
+
+            console.log('[LOCK DEBUG] SKIPPING setAnchors - lock/unlock should not trigger redistribution', { anchors });
+
+            // FIX: Removed setAnchors call. Lock/unlock is purely a state change.
+            // Redistribution should NOT be triggered because it recalculates all non-anchor MTAs,
+            // which would overwrite committed optimization values.
+            // useRedistributionStore.getState().setAnchors(groupId, anchors);
+        }
+    },
+    setGroupLockState: (groupId, isLocked, valueMap) => {
+        set((state) => ({
+            summaryGroups: state.summaryGroups.map((group) => {
+                if (group.id !== groupId) return group;
+                return {
+                    ...group,
+                    reports: group.reports.map((report) => {
+                        // If locking, check if we have a specific value to commit for this report
+                        const commitValue = (isLocked && valueMap && valueMap[report.id] !== undefined)
+                            ? valueMap[report.id]
+                            : report.traitAverage;
+
+                        return {
+                            ...report,
+                            isLocked,
+                            traitAverage: commitValue
+                        };
+                    })
+                };
+            })
+        }));
+
+        // Trigger Redistribution
+        const state = useNavfitStore.getState();
+        const group = state.summaryGroups.find(g => g.id === groupId);
+        if (group) {
+            useAuditStore.getState().addLog('ANCHOR_SELECTION_CHANGE', {
+                groupId,
+                message: isLocked ? "Locked All Reports" : "Unlocked All Reports"
+            });
+
+            const anchors: Record<string, number> = {};
+            if (isLocked) {
+                group.reports.forEach(r => {
+                    anchors[r.id] = r.traitAverage;
+                });
+            }
+
+            // FIX: REMOVED MTA-based re-sorting. Lock/unlock all should preserve the user's
+            // manually-set rank order (from drag-and-drop). Automatic reordering by MTA
+            // was destroying the manual order.
+            console.log('[LOCK DEBUG] PRESERVING ORDER - no re-sort on lock all toggle');
+            // FIX: Removed setAnchors call. Lock/unlock is purely a state change.
+            // Redistribution should NOT be triggered because it recalculates all non-anchor MTAs.
+            // useRedistributionStore.getState().setAnchors(groupId, anchors);
         }
     },
     reorderMember: (memberId, newIndex) => set((state) => {
@@ -523,7 +623,12 @@ export const useNavfitStore = create<NavfitStore>((set) => ({
             const updatedReports = group.reports.map(r => r.id === reportId ? { ...r, traitAverage: value, isLocked: true } : r);
 
             // 2. Strict Sort by MTA (Descending)
-            updatedReports.sort((a, b) => b.traitAverage - a.traitAverage);
+            // FIX: Use stable sort with secondary key (id) to prevent rank jumping with equal MTA values.
+            updatedReports.sort((a, b) => {
+                const mtaDiff = b.traitAverage - a.traitAverage;
+                if (mtaDiff !== 0) return mtaDiff;
+                return a.id.localeCompare(b.id); // Tiebreaker for stability
+            });
 
             // 3. Auto-Assign Recommendations based on Rank
             // This ensures that if the rank order changes due to MTA change, the recommendations update (Automatic Method)

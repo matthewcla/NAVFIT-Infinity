@@ -9,7 +9,7 @@ interface RscaScattergramProps {
 
 export function RscaScattergram({ members, rsca }: RscaScattergramProps) {
     // Canvas dimensions (internal SVG coordinates)
-    const padding = { top: 25, right: 10, bottom: 20, left: 30 };
+    const padding = { top: 45, right: 10, bottom: 15, left: 30 };
     const width = 300;
     const height = 100; // Aspect ratio controlled by parent, but viewBox is fixed
 
@@ -58,7 +58,7 @@ export function RscaScattergram({ members, rsca }: RscaScattergramProps) {
                 className="w-full h-full"
             >
                 {/* Background Grid Lines (Optional) */}
-                {[3.0, 4.0, 5.0].map(val => {
+                {[2.0, 3.0, 4.0, 5.0].map(val => {
                     const norm = (val - 2.0) / 3.0;
                     const y = height - padding.bottom - (norm * (height - padding.top - padding.bottom));
                     return (

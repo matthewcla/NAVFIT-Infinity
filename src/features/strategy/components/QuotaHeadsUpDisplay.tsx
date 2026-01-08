@@ -66,7 +66,7 @@ export function QuotaHeadsUpDisplay({ distribution, totalReports, context }: Quo
             </div>
 
             {/* Scoreboard */}
-            <div className="flex items-center justify-between w-full gap-2 pt-4">
+            <div className="flex items-center justify-between w-full gap-2 pt-8">
                 {scoreboard.map((item) => (
                     <div key={item.label} className="flex flex-col items-center gap-2">
                         <span className={clsx("text-xl font-bold leading-none",

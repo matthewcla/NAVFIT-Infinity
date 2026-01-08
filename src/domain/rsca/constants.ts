@@ -29,7 +29,7 @@ export const INITIAL_RS_CONFIG: ReportingSeniorConfig = {
     name: 'CAPT J. T. Kirk',
     rank: 'O-6',
     title: 'CO',
-    changeOfCommandDate: '2025-06-01',
+    changeOfCommandDate: '2027-06-01', // Updated to future date for planning
     targetRsca: 4.10,
     totalReports: 124,
 };

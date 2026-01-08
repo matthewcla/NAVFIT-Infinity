@@ -150,7 +150,7 @@ export function CycleContextPanel({ group }: CycleContextPanelProps) {
                     <RscaHeadsUpDisplay
                         currentRsca={currentRsca}
                         projectedRsca={projectedRsca}
-                        rankLabel="Curr. RSCA"
+
                     />
                 </div>
             </div>

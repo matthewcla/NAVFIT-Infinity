@@ -101,6 +101,7 @@ export interface SummaryGroup {
 
     // Metrics
     rsca?: number; // Current RSCA including this group
+    eotRsca?: number; // Projected EOT RSCA including this group
     totalMembers?: number;
 
     // Constraints

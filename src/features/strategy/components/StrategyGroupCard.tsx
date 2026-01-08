@@ -1,7 +1,6 @@
 import { Calendar, Users } from 'lucide-react';
 import { useRef, useState } from 'react';
 import { StatusBadge } from './StatusBadge';
-import { PromotionBadge } from './PromotionBadge';
 
 interface StrategyGroupCardProps {
     title: string;
@@ -10,12 +9,14 @@ interface StrategyGroupCardProps {
     status: 'Upcoming' | 'Active' | 'Overdue' | 'Complete';
     rscaImpact: number; // e.g. +0.02
     promotionStatus?: 'REGULAR' | 'FROCKED' | 'SELECTED' | 'SPOT';
+    reportType?: 'Periodic' | 'RS Det.' | 'Ind Det.' | 'Special' | string;
     isSelected?: boolean;
     onClick?: () => void;
     distribution?: Record<string, number>;
     draggable?: boolean;
     onDragStart?: (e: React.DragEvent<HTMLDivElement>) => void;
     onDragEnd?: (e: React.DragEvent<HTMLDivElement>) => void;
+    workflowStatus?: string;
 }
 
 
@@ -26,24 +27,18 @@ export function StrategyGroupCard({
     status,
     rscaImpact,
     promotionStatus = 'REGULAR',
+    reportType,
     isSelected = false,
     onClick,
     workflowStatus,
-    distribution,
     draggable,
     onDragStart,
     onDragEnd
-}: StrategyGroupCardProps & { workflowStatus?: string; distribution?: Record<string, number> }) {
-
-
+}: StrategyGroupCardProps) {
 
     const dragPreviewRef = useRef<HTMLDivElement>(null);
     const [isDragging, setIsDragging] = useState(false);
 
-    // Helper to clean title
-    const cleanTitle = (t: string) => {
-        return t.replace(/\b(FROCKED|REGULAR|SELECTED|SPOT)\b/gi, '').trim();
-    };
 
     const handleDragStart = (e: React.DragEvent<HTMLDivElement>) => {
         if (dragPreviewRef.current) {
@@ -94,6 +89,35 @@ export function StrategyGroupCard({
         }
     };
 
+    const getReportTypeBadge = (type?: string) => {
+        if (!type) return null;
+        const badgeBase = "px-1.5 py-0.5 rounded-md text-[10px] font-semibold border leading-none";
+
+        // Normalize type for display
+        let displayType = type;
+        let colorClass = "bg-blue-50 text-blue-700 border-blue-200";
+
+        if (type.toLowerCase().includes('periodic')) {
+            displayType = 'Periodic';
+            colorClass = "bg-sky-50 text-sky-700 border-sky-200";
+        } else if (type.toLowerCase().includes('rs det') || type.toLowerCase().includes('detachment of rs')) {
+            displayType = 'RS Det.';
+            colorClass = "bg-orange-50 text-orange-700 border-orange-200";
+        } else if (type.toLowerCase().includes('ind det') || type.toLowerCase().includes('detachment of individual')) {
+            displayType = 'Ind Det.';
+            colorClass = "bg-amber-50 text-amber-700 border-amber-200";
+        } else if (type.toLowerCase().includes('special')) {
+            displayType = 'Special';
+            colorClass = "bg-violet-50 text-violet-700 border-violet-200";
+        }
+
+        return (
+            <div className={`${badgeBase} ${colorClass}`}>
+                {displayType}
+            </div>
+        );
+    };
+
     const formattedDate = new Date(date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
 
     return (
@@ -105,7 +129,7 @@ export function StrategyGroupCard({
             >
                 <div className="flex items-center justify-between">
                     <span className="text-sm font-bold text-indigo-900 truncate mr-2">
-                        {cleanTitle(title)}
+                        {title}
                     </span>
                     {getPromotionStatusBadge(promotionStatus)}
                 </div>
@@ -134,27 +158,15 @@ export function StrategyGroupCard({
                     ${isDragging ? 'opacity-50 ring-2 ring-indigo-400 ring-offset-2 scale-95 grayscale' : ''}
                 `}
             >
-                {/* Status Strip - Removed or Kept? User didn't explicitly say delete, but new layout implies changes. Keeping for specific status indication might be noisy if we have badges. 
-                     Let's keep the strip as it's a good succinct indicator, or rely on the badge. 
-                     Plan said "Position the status badge beneath Impact metric". 
-                     Let's keep the strip for 'Cycle Status' (Active/Overdue) if 'workflowStatus' is different. 
-                     But 'status' prop IS the cycle status. 
-                     Let's look at the old code: 'status' was used for the strip. 'workflowStatus' was used for a badge.
-                     User said: "Position the status badge beneath Impact metric". Use StatusBadge component likely.
-                */}
-
                 <div className="p-3 pl-4 flex-1 relative min-h-[72px]">
-                    {/* Header Row: Title + Badge (Left) */}
-                    <div className="flex flex-col gap-0.5 pr-24">
-                        <div className="flex items-center gap-2">
+                    {/* Header Row: Title + Promotion Badge + Report Type Badge (Left) */}
+                    <div className="flex flex-col gap-1 pr-20">
+                        <div className="flex items-center gap-2 flex-wrap">
                             <h3 className={`text-sm font-bold transition-colors leading-snug ${isSelected ? 'text-indigo-900' : 'text-slate-800 group-hover:text-indigo-700'}`}>
-                                {cleanTitle(title)}
+                                {title}
                             </h3>
                             {getPromotionStatusBadge(promotionStatus)}
-                            <StatusBadge
-                                status={workflowStatus || status}
-                                className="!text-[10px] !px-1.5 !py-0.5 !rounded-md !shadow-sm !leading-none !tracking-wide"
-                            />
+                            {getReportTypeBadge(reportType)}
                         </div>
                         <div className="flex items-center gap-1.5 text-[11px] text-slate-500">
                             <Calendar className="w-3 h-3 text-slate-400" />
@@ -162,16 +174,16 @@ export function StrategyGroupCard({
                         </div>
                     </div>
 
-                    {/* Right Side: Impact (Top) */}
-                    <div className="absolute top-3 right-3 flex items-baseline gap-1.5">
-                        <span className="text-[10px] font-medium text-slate-400 uppercase tracking-wider">Impact</span>
-                        <span className={`font-mono font-bold text-sm ${rscaImpact > 0 ? 'text-red-600' : 'text-emerald-600'}`}>
-                            {rscaImpact > 0 ? '+' : ''}{rscaImpact.toFixed(2)}
-                        </span>
+                    {/* Upper Right: Workflow Status */}
+                    <div className="absolute top-3 right-3">
+                        <StatusBadge
+                            status={workflowStatus || status}
+                            className="!text-[10px] !px-1.5 !py-0.5 !rounded-md !shadow-sm !leading-none !tracking-wide"
+                        />
                     </div>
                 </div>
 
-                {/* Footer: Member Count + Distribution */}
+                {/* Footer: Member Count (Left) + Impact (Right) */}
                 <div className={`px-3 py-2 border-t flex items-center justify-between gap-3 ${isSelected ? 'bg-indigo-100/50 border-indigo-200' : 'bg-slate-50 border-slate-100'}`}>
                     {/* Member Count */}
                     <div className="flex items-center gap-1.5 text-[11px] text-slate-500 shrink-0">
@@ -179,17 +191,13 @@ export function StrategyGroupCard({
                         <span className="font-medium">{memberCount} Members</span>
                     </div>
 
-                    {/* Distribution */}
-                    {distribution && (
-                        <div className="flex items-center gap-3 text-[10px]">
-                            {['SP', 'PR', 'P', 'MP', 'EP'].map(key => (
-                                <div key={key} className="flex flex-col items-center justify-center gap-0.5 min-w-[16px]">
-                                    <span className="text-slate-700 font-bold leading-none">{distribution[key] || 0}</span>
-                                    <PromotionBadge recommendation={key} size="sm" className="rounded-[3px] scale-90" />
-                                </div>
-                            ))}
-                        </div>
-                    )}
+                    {/* Impact - Lower Right */}
+                    <div className="flex items-baseline gap-1.5">
+                        <span className="text-[10px] font-medium text-slate-400 uppercase tracking-wider">Impact</span>
+                        <span className={`font-mono font-bold text-sm ${rscaImpact > 0 ? 'text-red-600' : 'text-emerald-600'}`}>
+                            {rscaImpact > 0 ? '+' : ''}{rscaImpact.toFixed(2)}
+                        </span>
+                    </div>
                 </div>
             </div>
         </>

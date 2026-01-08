@@ -186,7 +186,7 @@ const main = async () => {
             const archiveGroupId = crypto.randomUUID();
             const archiveGroup: SummaryGroup = {
                 id: archiveGroupId,
-                name: `${pg} ${cat.name === 'CWO' ? '' : cat.name + ' '}Archive 2024`.replace(/\s+/g, ' ').trim(),
+                name: `${pg} ${cat.name === 'CWO' ? '' : cat.name + ' '}Active`.replace(/\s+/g, ' ').trim(),
                 paygrade: pg,
                 competitiveGroupKey: `${pg} ${cat.name}`,
                 periodEndDate: LAST_CYCLE_DATE,
@@ -240,7 +240,7 @@ const main = async () => {
         const archiveGroupId = crypto.randomUUID();
         const archiveGroup: SummaryGroup = {
             id: archiveGroupId,
-            name: `${pg} Archive 2024`,
+            name: `${pg} Active`,
             paygrade: pg,
             competitiveGroupKey: `${pg} ENLISTED`,
             periodEndDate: LAST_CYCLE_DATE,
