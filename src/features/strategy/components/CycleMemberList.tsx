@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, useState, useMemo } from 'react';
 import { Sparkles, Check, X, Lock, Unlock } from 'lucide-react';
 import {
     DndContext,
@@ -8,7 +8,7 @@ import {
     useSensor,
     useSensors,
 } from '@dnd-kit/core';
-import type { DragEndEvent } from '@dnd-kit/core';
+import type { DragEndEvent, DragOverEvent, DragStartEvent } from '@dnd-kit/core';
 import {
     SortableContext,
     sortableKeyboardCoordinates,
@@ -97,9 +97,28 @@ export function CycleMemberList({
         toggleReportLock(groupId, reportId, member?.mta);
     }, [rankedMembers, toggleReportLock]);
 
+    // State for tracking drag position (for live rank preview)
+    const [activeId, setActiveId] = useState<string | null>(null);
+    const [overId, setOverId] = useState<string | null>(null);
+
+    // @dnd-kit onDragStart: Track which item is being dragged
+    const handleDragStart = useCallback((event: DragStartEvent) => {
+        setActiveId(event.active.id as string);
+    }, []);
+
+    // @dnd-kit onDragOver: Track which item we're hovering over
+    const handleDragOver = useCallback((event: DragOverEvent) => {
+        const { over } = event;
+        setOverId(over ? (over.id as string) : null);
+    }, []);
+
     // @dnd-kit onDragEnd: Compute final order and call onReorderMembers
     const handleDragEnd = useCallback((event: DragEndEvent) => {
         const { active, over } = event;
+
+        // Clear drag state
+        setActiveId(null);
+        setOverId(null);
 
         if (!over || active.id === over.id) return;
         if (hasProposedReports) return; // Block during optimization review
@@ -121,6 +140,34 @@ export function CycleMemberList({
         onReorderMembers(activeGroupId, active.id as string, newOrderIds);
     }, [rankedMembers, activeGroupId, onReorderMembers, hasProposedReports, selectMember]);
 
+    // Compute preview ranks during drag
+    const previewRankMap = useMemo(() => {
+        const rankMap = new Map<string, number>();
+
+        if (activeId && overId && activeId !== overId) {
+            // Compute the preview order
+            const oldIndex = rankedMembers.findIndex(m => m.reportId === activeId);
+            const newIndex = rankedMembers.findIndex(m => m.reportId === overId);
+
+            if (oldIndex !== -1 && newIndex !== -1) {
+                const previewOrder = [...rankedMembers];
+                const [movedItem] = previewOrder.splice(oldIndex, 1);
+                previewOrder.splice(newIndex, 0, movedItem);
+
+                previewOrder.forEach((member, idx) => {
+                    rankMap.set(member.reportId, idx + 1);
+                });
+                return rankMap;
+            }
+        }
+
+        // No drag preview - use current order
+        rankedMembers.forEach((member, idx) => {
+            rankMap.set(member.reportId, idx + 1);
+        });
+        return rankMap;
+    }, [rankedMembers, activeId, overId]);
+
     // Get sortable IDs - exclude locked items from sortable context
     const sortableIds = rankedMembers
         .filter(m => !m.report.isLocked)
@@ -131,6 +178,8 @@ export function CycleMemberList({
             <DndContext
                 sensors={sensors}
                 collisionDetection={closestCenter}
+                onDragStart={handleDragStart}
+                onDragOver={handleDragOver}
                 onDragEnd={handleDragEnd}
             >
                 <table className="w-full text-left border-collapse">
@@ -172,7 +221,7 @@ export function CycleMemberList({
                                     memberId={member.id}
                                     reportId={member.reportId}
                                     groupId={activeGroupId}
-                                    index={idx}
+                                    index={(previewRankMap.get(member.reportId) || idx + 1) - 1}
                                     name={member.name}
                                     designator={isEnlisted ? member.rank : member.designator}
                                     reportsRemaining={member.reportsRemaining}
