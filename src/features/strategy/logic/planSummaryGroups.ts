@@ -65,7 +65,7 @@ const getCompetitiveGroup = (member: RosterMember): CompGroupKey => {
     // Match the format used by summaryGroupGenerator.ts:
     // Officers: "${rank} ${categoryLabel}" (e.g., "O-3 URL Active")
     // Enlisted: "${rank}" (e.g., "E-6")
-    let labelBase = displayRank;
+    let labelBase: string = displayRank;
 
     if (isOfficer && designator) {
         // Use getCategoryLabel to resolve standard label (e.g. "URL Active")
