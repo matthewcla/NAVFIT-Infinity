@@ -14,6 +14,7 @@ import { validateReportState, checkQuota, createSummaryGroupContext } from '@/fe
 import type { SummaryGroup, Report } from '@/types';
 import { assignRecommendationsByRank } from '@/features/strategy/logic/recommendation';
 import { fetchInitialData } from '@/services/dataLoader';
+import { generateSummaryGroups } from '@/features/strategy/logic/reportGenerator';
 
 interface NavfitStore {
     // Loading State
@@ -204,6 +205,7 @@ export const useNavfitStore = create<NavfitStore>((set) => ({
                     prd: m.prd || '',
                     eda: (m as any).eda,
                     edd: (m as any).edd,
+                    detachDate: (m as any).detachDate, // Needed for report generation
                     milestoneTour: (m as any).milestoneTour,
                     lastTrait: m.lastTrait || 0,
                     status: m.status as any,
@@ -211,9 +213,20 @@ export const useNavfitStore = create<NavfitStore>((set) => ({
                 };
             });
 
+            // Generate Planned Summary Groups based on Roster
+            // We use the current rsConfig from state (assuming it's set or default)
+            // Ideally we should load rsConfig from dataLoader too if available, but for now we use state.
+            const currentRsConfig = get().rsConfig;
+            const plannedGroups = generateSummaryGroups(roster, currentRsConfig);
+
+            // Merge: Prefer existing (fetched) groups over planned ones if IDs collide
+            const existingGroupIds = new Set(summaryGroups.map(g => g.id));
+            const newGroups = plannedGroups.filter(g => !existingGroupIds.has(g.id));
+            const mergedSummaryGroups = [...summaryGroups, ...newGroups];
+
             set({
                 roster,
-                summaryGroups,
+                summaryGroups: mergedSummaryGroups,
                 isLoading: false,
                 // Reset dependent state
                 selectedCycleId: null,

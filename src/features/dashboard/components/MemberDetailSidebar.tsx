@@ -33,7 +33,7 @@ interface MemberDetailSidebarProps {
     onUpdatePromRec: (memberId: string, rec: 'EP' | 'MP' | 'P' | 'Prog' | 'SP' | 'NOB') => void;
     onNavigateNext: () => void;
     onNavigatePrev: () => void;
-    rosterMember?: RosterMember;
+    rosterMember: RosterMember;
     currentReport?: Report;
     currentRsca?: number;
 
@@ -76,14 +76,14 @@ export function MemberDetailSidebar({
     const rosterMember = roster.find(m => m.id === memberId) || _passedRosterMember;
 
     // Determine "Rank" label logic similar to CycleMemberList
-    const isEnlisted = rosterMember?.rank?.startsWith('E') ||
-        ['E-1', 'E-2', 'E-3', 'E-4', 'E-5', 'E-6', 'E-7', 'E-8', 'E-9'].includes(rosterMember?.payGrade || '');
+    const isEnlisted = rosterMember.rank?.startsWith('E') ||
+        ['E-1', 'E-2', 'E-3', 'E-4', 'E-5', 'E-6', 'E-7', 'E-8', 'E-9'].includes(rosterMember.payGrade || '');
 
     // Fallback if needed
-    const displayRank = isEnlisted ? rosterMember?.rank : rosterMember?.rank; // Title for Officer, Rating/Rank for Enlisted?
+    const displayRank = isEnlisted ? rosterMember.rank : rosterMember.rank; // Title for Officer, Rating/Rank for Enlisted?
     const displaySubtext = isEnlisted
-        ? (rosterMember?.rank || rosterMember?.payGrade)
-        : (rosterMember?.designator || rosterMember?.rank);
+        ? (rosterMember.rank || rosterMember.payGrade)
+        : (rosterMember.designator || rosterMember.rank);
 
     // Find latest report if we have a groupId, or fallback to passed report
     let currentReport = _passedCurrentReport;
@@ -531,7 +531,7 @@ export function MemberDetailSidebar({
                                         <span className="px-1.5 py-0.5 text-[10px] font-bold bg-red-100 text-red-800 rounded border border-red-200">ADVERSE</span>
                                     )}
                                     <h2 className="text-lg font-bold text-slate-900 leading-tight truncate">
-                                        {rosterMember?.lastName || 'Unknown'}, {rosterMember?.firstName || ''}
+                                        {rosterMember.lastName}, {rosterMember.firstName}
                                     </h2>
                                 </div>
                                 <div className="text-sm font-medium text-slate-500">
@@ -626,7 +626,7 @@ export function MemberDetailSidebar({
                                         // Re-recreate data points here (duplication is acceptable for render isolation or simple logic reuse)
                                         // Actually better to define data outside SVG, but inline IIFE complicates sharing.
                                         // I'll repeat logic for safety and speed.
-                                        const pastPoints = (rosterMember?.history || []).map(h => ({
+                                        const pastPoints = (rosterMember.history || []).map(h => ({
                                             type: 'Past',
                                             val: h.traitAverage,
                                             rsca: h.rscaAtTime,
@@ -639,7 +639,7 @@ export function MemberDetailSidebar({
                                             label: simulatedRec
                                         };
                                         let plannedCount = currentReport?.reportsRemaining;
-                                        if (plannedCount === undefined && rosterMember?.prd && currentReport?.periodEndDate) {
+                                        if (plannedCount === undefined && rosterMember.prd && currentReport?.periodEndDate) {
                                             const prdYear = new Date(rosterMember.prd).getFullYear();
                                             const reportYear = new Date(currentReport.periodEndDate).getFullYear();
                                             if (!isNaN(prdYear) && !isNaN(reportYear)) plannedCount = Math.max(0, prdYear - reportYear);
