@@ -7,7 +7,7 @@ import { ActiveCyclesList } from './ActiveCyclesList';
 
 import { useNavfitStore } from '@/store/useNavfitStore';
 import { useSummaryGroups } from '@/features/strategy/hooks/useSummaryGroups';
-import { Filter } from 'lucide-react';
+import { Filter, Anchor, Infinity, CheckCircle2, RefreshCw } from 'lucide-react';
 import { AddSummaryGroupModal } from '@/features/dashboard/components/AddSummaryGroupModal';
 import { ReportEditorModal } from './ReportEditorModal';
 
@@ -107,19 +107,30 @@ export function CommandStrategyCenter() {
         <div className="flex flex-col h-full bg-slate-50 overflow-hidden">
             {/* Command Strategy Center Header */}
             <div className={`border-b px-6 py-4 flex items-center justify-between shrink-0 transition-colors duration-300 ${cycleListPhase === 'Archive' ? 'bg-indigo-50 border-indigo-200' : 'bg-white border-slate-200'}`}>
-                <div>
-                    <h1 className={`text-xl font-bold transition-colors ${cycleListPhase === 'Archive' ? 'text-indigo-900' : 'text-slate-900'}`}>
-                        {cycleListPhase === 'Archive' ? 'Command Strategy Archive' :
-                            cycleListPhase === 'Planned' ? 'Strategic Projections' :
-                                'Command Strategy Center'}
+                <div className="flex items-center gap-3">
+                    <div className="relative text-indigo-900 w-8 h-8 flex items-center justify-center">
+                        <Anchor className="absolute w-7 h-7 stroke-[2.5]" />
+                        <Infinity className="absolute w-8 h-8 stroke-[1.5] rotate-6 text-indigo-400 opacity-60" />
+                    </div>
+                    <h1 className="text-xl font-normal text-slate-900">
+                        <span className="font-bold">NAVFIT</span> Infinity
                     </h1>
                     <p className={`text-sm transition-colors ${cycleListPhase === 'Archive' ? 'text-indigo-600/70' : 'text-slate-500'}`}>
-                        {cycleListPhase === 'Archive' ? 'View historical and finalized fitness report cycles.' : 'Select a Competitive Group to view strategy.'}
+                        {cycleListPhase === 'Archive' ? 'View historical and finalized fitness report cycles.' : 'Select a Summary Group to view strategy.'}
                     </p>
                 </div>
 
-                {/* Placeholder for future filters */}
-                <div className="w-16"></div>
+                {/* Sync Status */}
+                <div className="flex items-center space-x-4">
+                    <div className="flex items-center space-x-2 text-green-600 bg-green-50 px-3 py-1 rounded-full border border-green-100">
+                        <CheckCircle2 size={14} />
+                        <span className="font-medium text-xs">CNPC Sync: Active</span>
+                    </div>
+                    <div className="flex items-center space-x-2 text-slate-500 hover:text-blue-600 cursor-pointer transition-colors">
+                        <RefreshCw size={14} />
+                        <span className="text-xs">Last synced: 10:42 AM</span>
+                    </div>
+                </div>
             </div>
 
             {/* Main Content Area - Split Panel */}
