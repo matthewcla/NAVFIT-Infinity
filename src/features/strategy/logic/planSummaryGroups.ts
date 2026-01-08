@@ -12,7 +12,7 @@
 import type { SummaryGroup, Report } from '@/types';
 import type { RosterMember, ReportingSeniorConfig } from '@/types/roster';
 import { PERIODIC_SCHEDULE } from '@/lib/constants';
-import { getCompetitiveCategory, getCategoryLabel } from './competitiveGroupUtils';
+import { getCompetitiveCategory } from './competitiveGroupUtils';
 import { calculateEotRsca, getCompetitiveGroupStats } from './rsca';
 
 // ============================================================================
@@ -55,18 +55,18 @@ const getCompetitiveGroup = (member: RosterMember): CompGroupKey => {
     const displayRank = payGrade || rank;
     const isOfficer = payGrade ? (payGrade.startsWith('O') || payGrade.startsWith('W')) : false;
 
-    let categoryLabel = '';
     let categoryCode = '';
 
     if (isOfficer && designator) {
         const cat = getCompetitiveCategory(designator);
-        categoryLabel = getCategoryLabel(cat);
         categoryCode = cat.code;
     }
 
-    const finalCategoryLabel = categoryLabel === 'CWO' ? '' : categoryLabel;
-    const labelBase = isOfficer && finalCategoryLabel ? `${finalCategoryLabel} ${displayRank}` : displayRank;
-    const label = `${labelBase} ${promotionStatus !== 'REGULAR' ? promotionStatus : ''}`.trim();
+    // Match the format used by summaryGroupGenerator.ts:
+    // Officers: "${rank} ${designator}" (e.g., "O-3 1110")
+    // Enlisted: "${rank}" (e.g., "E-6")
+    const labelBase = isOfficer && designator ? `${displayRank} ${designator}` : displayRank;
+    const label = `${labelBase} ${promotionStatus !== 'REGULAR' ? `(${promotionStatus})` : ''}`.trim();
 
     return {
         paygrade: payGrade || rank,
@@ -287,7 +287,7 @@ export function planDetachmentOfIndividualGroups(
             if (!groupExistsInStore(existingGroups, groupKey.label, prdStr)) {
                 const group: SummaryGroup = {
                     id: `sg-planned-doi-${member.id}-${memberPRD.getFullYear()}`,
-                    name: `Detachment of Individual - ${member.lastName}, ${member.firstName}`,
+                    name: `${groupKey.label} Ind. Det.`,
                     periodEndDate: prdStr,
                     status: 'Planned',
                     reports: [createPlannedReport(member, prdStr, 'Detachment', rsConfig, true)],

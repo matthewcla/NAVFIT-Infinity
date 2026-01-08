@@ -163,7 +163,7 @@ describe('planSummaryGroups', () => {
             const results = planDetachmentOfIndividualGroups(mockRoster, mockRsConfig, mockExistingGroups);
 
             expect(results.length).toBe(1);
-            expect(results[0].group.name).toContain('Detachment of Individual');
+            expect(results[0].group.name).toContain('Ind. Det.');
             expect(results[0].group.status).toBe('Planned');
         });
 
@@ -282,7 +282,7 @@ describe('planSummaryGroups', () => {
             // Should include periodic, DOI, and DORS groups
             const groupTypes = results.map(r => r.group.name);
             expect(groupTypes.some(n => n.includes('Periodic'))).toBe(true);
-            expect(groupTypes.some(n => n.includes('Detachment of Individual'))).toBe(true);
+            expect(groupTypes.some(n => n.includes('Ind. Det.'))).toBe(true);
             expect(groupTypes.some(n => n.includes('Detachment of RS'))).toBe(true);
         });
 
