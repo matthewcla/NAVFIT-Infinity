@@ -209,7 +209,7 @@ export function CycleMemberList({
                             <th className="px-4 py-3 border-b border-slate-200 text-center w-20">Delta</th>
                             <th className="px-4 py-3 border-b border-slate-200 text-center w-20">Margin</th>
                             <th className="px-4 py-3 border-b border-slate-200 text-center w-20" title="Projected End of Tour MTA">Proj. EOT</th>
-                            <th className="w-10 px-0 py-3 border-b border-slate-200 text-center"></th> {/* Trash Button */}
+                            <th className="w-12 px-0 py-3 border-b border-slate-200 text-center"></th> {/* Trash Button */}
                         </tr>
                     </thead>
                     <SortableContext items={sortableIds} strategy={verticalListSortingStrategy}>

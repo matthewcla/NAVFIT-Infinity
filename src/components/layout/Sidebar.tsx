@@ -4,11 +4,10 @@ import {
     Calendar,
     Shield,
     Users,
-    Menu,
-    Download
+    Menu
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { exportSessionData } from '@/utils/exportUtils';
+
 
 // Define the tab type locally or import from a shared type file if needed
 export type Tab = 'strategy' | 'schedule' | 'profiles' | 'admin';
@@ -111,14 +110,7 @@ export function Sidebar({ activeTab, onTabChange, collapsed, onToggleCollapse }:
                     onClick={() => onTabChange('admin')}
                     collapsed={collapsed}
                 />
-                 <div className="my-2 border-t border-slate-800/50 mx-4"></div>
-                <SidebarItem
-                    icon={Download}
-                    label="Export Audit Log"
-                    active={false}
-                    onClick={() => exportSessionData()}
-                    collapsed={collapsed}
-                />
+
             </div>
 
 

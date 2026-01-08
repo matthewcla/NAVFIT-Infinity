@@ -563,6 +563,54 @@ export function MemberDetailSidebar({
                         </div>
                     </div>
                 </div>
+
+
+                {/* --- Toolbar --- */}
+                <div className="flex items-center justify-between mt-4 pt-3 border-t border-slate-100">
+                    <div className="flex items-center gap-1">
+                        <button
+                            onClick={handleUndo}
+                            disabled={history.length === 0}
+                            className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-md transition-colors disabled:opacity-30 disabled:hover:bg-transparent"
+                            title="Undo"
+                        >
+                            <RotateCcw className="w-4 h-4" />
+                        </button>
+                        <button
+                            onClick={handleRedo}
+                            disabled={future.length === 0}
+                            className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-md transition-colors disabled:opacity-30 disabled:hover:bg-transparent"
+                            title="Redo"
+                        >
+                            <RotateCw className="w-4 h-4" />
+                        </button>
+                    </div>
+
+                    <div className="flex items-center gap-3">
+                        <button
+                            className="text-xs font-semibold text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 px-3 py-1.5 rounded-md transition-colors border border-transparent hover:border-indigo-100"
+                            title="Edit Full Report"
+                            onClick={() => {
+                                if (currentReport?.id) {
+                                    selectReport(currentReport.id);
+                                    setEditingReport(true);
+                                }
+                            }}
+                        >
+                            Edit Full Report
+                        </button>
+
+                        {!isLocked && isDirty && (
+                            <button
+                                onClick={handleApply}
+                                className="px-4 py-1.5 bg-indigo-600 text-white text-xs font-bold rounded-md hover:bg-indigo-700 shadow-sm hover:shadow active:transform active:scale-95 transition-all flex items-center gap-1.5"
+                            >
+                                <Check className="w-3.5 h-3.5" />
+                                Apply
+                            </button>
+                        )}
+                    </div>
+                </div>
             </div>
 
             {/* --- Scrollable Content --- */}
@@ -607,177 +655,8 @@ export function MemberDetailSidebar({
                     </div>
                 </div>
 
-                {/* --- Section 2: Member Trajectory --- */}
-                <div className="p-5 pt-10 border-b border-slate-100 bg-slate-50/50">
-                    <div className="flex items-center justify-between mb-3">
-                        <div className="flex items-center gap-2 text-xs font-bold uppercase text-slate-500 tracking-wider">
-                            <TrendingUp className="w-3.5 h-3.5" />
-                            <span>Member Trajectory</span>
-                        </div>
-                    </div>
-
-                    <div className="flex flex-col gap-4">
-                        <div className="flex gap-4 h-[166px]">
-                            <div className="flex-1 bg-white rounded-lg border border-slate-200 p-2 relative">
-                                <svg className="w-full h-full overflow-visible" viewBox="0 0 100 100" preserveAspectRatio="none">
-
-                                </svg>
-
-                                {/* HTML Overlay */}
-                                <div className="absolute inset-0 pointer-events-none">
-                                    {(() => {
-                                        // Re-recreate data points here (duplication is acceptable for render isolation or simple logic reuse)
-                                        // Actually better to define data outside SVG, but inline IIFE complicates sharing.
-                                        // I'll repeat logic for safety and speed.
-                                        const pastPoints = (rosterMember.history || []).map(h => ({
-                                            type: 'Past',
-                                            val: h.traitAverage,
-                                            rsca: h.rscaAtTime,
-                                            label: h.promotionRecommendation
-                                        }));
-                                        const currentPoint = {
-                                            type: 'Current',
-                                            val: simulatedMta,
-                                            rsca: currentRsca,
-                                            label: simulatedRec
-                                        };
-                                        let plannedCount = currentReport?.reportsRemaining;
-                                        if (plannedCount === undefined && rosterMember.prd && currentReport?.periodEndDate) {
-                                            const prdYear = new Date(rosterMember.prd).getFullYear();
-                                            const reportYear = new Date(currentReport.periodEndDate).getFullYear();
-                                            if (!isNaN(prdYear) && !isNaN(reportYear)) plannedCount = Math.max(0, prdYear - reportYear);
-                                        }
-                                        plannedCount = plannedCount || 0;
-                                        const plannedPoints = Array.from({ length: plannedCount }).map((_, i) => ({
-                                            type: (i === plannedCount! - 1) ? 'Transfer' : 'Planned',
-                                            val: simulatedMta,
-                                            rsca: currentRsca, // Reuse for scaling consistency
-                                            label: (i === plannedCount! - 1) ? 'PRD' : 'Plan'
-                                        }));
-
-                                        const allPoints = [...pastPoints.slice(-3), currentPoint, ...plannedPoints];
-
-                                        // Scaling Logic (Duplicated for consistency)
-                                        const allMtas = allPoints.map(p => p.val);
-                                        const allRscas = allPoints.map(p => p.rsca).filter((r): r is number => r !== undefined);
-                                        const allValues = [...allMtas, ...allRscas];
-                                        const minVal = Math.min(...allValues);
-                                        const maxVal = Math.max(...allValues);
-                                        let range = maxVal - minVal;
-                                        if (range < 0.2) range = 0.2;
-                                        const margin = range * 0.30;
-                                        const domainMin = Math.max(0, minVal - margin);
-                                        const domainMax = Math.min(5.0, maxVal + margin);
-                                        const domainRange = domainMax - domainMin || 1;
-                                        const getY = (val: number) => 100 - ((val - domainMin) / domainRange * 100);
-
-                                        const maxIdx = Math.max(1, allPoints.length - 1);
-                                        const getX = (i: number) => 10 + (i / maxIdx) * 80;
-
-                                        return allPoints.map((p, i) => {
-                                            const x = getX(i);
-                                            const y = getY(p.val);
-                                            const isTransfer = p.type === 'Transfer';
-                                            const isCurrent = p.type === 'Current';
-                                            const isAbove = false;
-
-                                            // Delta Calculation
-                                            let deltaDisplay = null;
-                                            if (i > 0) {
-                                                const prev = allPoints[i - 1];
-                                                const delta = p.val - prev.val;
-                                                const prevX = getX(i - 1);
-                                                const prevY = getY(prev.val);
-
-                                                const midX = (prevX + x) / 2;
-                                                const midY = (prevY + y) / 2;
-
-                                                deltaDisplay = (
-                                                    <div
-                                                        className="absolute text-[9px] font-bold text-slate-400 bg-white/50 px-0.5 rounded backdrop-blur-[1px]"
-                                                        style={{ left: `${midX}%`, top: `${midY}%`, transform: 'translate(-50%, -50%)' }}
-                                                    >
-                                                        {delta > 0 ? '+' : ''}{delta.toFixed(2)}
-                                                    </div>
-                                                );
-                                            }
-
-                                            // RSCA Diff
-                                            let rscaDiffDisplay = null;
-                                            if (p.rsca !== undefined) {
-                                                const diff = p.val - p.rsca;
-                                                const diffColor = diff >= 0 ? 'text-green-600' : 'text-red-500';
-                                                rscaDiffDisplay = (
-                                                    <span className={cn("ml-1 text-[8px] font-bold", diffColor)}>
-                                                        ({diff >= 0 ? '+' : ''}{diff.toFixed(2)})
-                                                    </span>
-                                                );
-                                            }
-
-                                            return (
-                                                <div key={i}>
-                                                    {deltaDisplay}
-                                                    <div
-                                                        className="absolute flex items-center justify-center group/point"
-                                                        style={{
-                                                            left: `${x}%`,
-                                                            top: `${y}%`,
-                                                            transform: 'translate(-50%, -50%)'
-                                                        }}
-                                                    >
-                                                        {/* Icon - Clean, no performance rings */}
-                                                        <div className={cn(
-                                                            "w-4 h-4 rounded-full border-2 shadow-sm flex items-center justify-center transition-transform hover:scale-125 z-10 bg-white",
-                                                            isTransfer ? "border-red-500 bg-red-50" : "border-blue-500 bg-blue-50",
-                                                            isCurrent ? "ring-2 ring-blue-200/50 w-5 h-5 border-[3px]" : ""
-                                                        )}>
-                                                        </div>
-
-                                                        {/* Label */}
-                                                        <div className={cn(
-                                                            "absolute pointer-events-auto flex flex-col items-center whitespace-nowrap",
-                                                            isAbove ? "bottom-full mb-2" : "top-full mt-2"
-                                                        )}>
-                                                            <div className="flex items-center gap-0.5 bg-white/90 px-1 rounded shadow-sm border border-slate-100/50 backdrop-blur-sm">
-                                                                <span className="text-[10px] font-black text-slate-700 leading-tight">
-                                                                    {p.val.toFixed(2)}
-                                                                </span>
-                                                                {rscaDiffDisplay}
-                                                            </div>
-                                                            <span className="text-[9px] font-semibold text-slate-400 leading-tight">
-                                                                {p.type}
-                                                            </span>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            );
-                                        });
-                                    })()}
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Legend */}
-                        <div className="flex justify-center gap-6 mt-1 border-t border-slate-100 pt-2">
-                            <div className="flex items-center gap-1.5">
-                                <div className="w-3 h-3 rounded-full bg-blue-50 border-2 border-blue-500"></div>
-                                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">Periodic</span>
-                            </div>
-                            <div className="flex items-center gap-1.5">
-                                <div className="w-4 h-4 rounded-full bg-blue-50 border-2 border-blue-500 ring-1 ring-blue-200"></div>
-                                <span className="text-[10px] font-bold text-slate-900 uppercase tracking-wide">Current</span>
-                            </div>
-                            <div className="flex items-center gap-1.5">
-                                <div className="w-3 h-3 rounded-full bg-red-50 border-2 border-red-500"></div>
-                                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">Transfer</span>
-                            </div>
-
-                        </div>
-                    </div>
-                </div>
-
-                {/* --- Section 3: Trait Average Tuner --- */}
-                <div className="p-5 pt-10 space-y-4">
+                {/* --- Section 2: Trait Average Tuner --- */}
+                <div className="p-5 pt-10 space-y-4 border-b border-slate-100">
                     <div className="flex items-end justify-between">
                         <div className="flex flex-col gap-2">
                             <label className="text-xs font-bold text-slate-700 uppercase tracking-wide">
@@ -947,75 +826,179 @@ export function MemberDetailSidebar({
                     </div>
                 </div>
 
-                {/* --- Section 4: Edit Full Report Control --- */}
-                <div className="px-5 pb-5 mt-10 flex justify-center">
-                    <button
-                        className="text-sm font-semibold text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 px-4 py-2 rounded-lg transition-colors border border-transparent hover:border-indigo-100"
-                        title="Edit Full Report"
-                        onClick={() => {
-                            if (currentReport?.id) {
-                                selectReport(currentReport.id);
-                                setEditingReport(true);
-                            }
-                        }}
-                    >
-                        Edit Full Report
-                    </button>
-                </div>
-
-                <div className="mb-20"></div>
-            </div>
-
-            {/* --- Footer (Sticky) --- */}
-            <div className="flex-none absolute bottom-0 left-0 right-0 bg-white border-t border-slate-200 p-4 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
-                <div className="flex items-center gap-3">
-
-                    {/* Undo / Redo */}
-                    <div className="flex items-center gap-1">
-                        {(isDirty || history.length > 0) && (
-                            <button
-                                onClick={handleUndo}
-                                disabled={history.length === 0}
-                                className="p-2.5 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors disabled:opacity-30 disabled:hover:bg-transparent"
-                                title="Undo"
-                            >
-                                <RotateCcw className="w-4 h-4" />
-                            </button>
-                        )}
-                        {(future.length > 0) && (
-                            <button
-                                onClick={handleRedo}
-                                disabled={future.length === 0}
-                                className="p-2.5 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors disabled:opacity-30 disabled:hover:bg-transparent"
-                                title="Redo"
-                            >
-                                <RotateCw className="w-4 h-4" />
-                            </button>
-                        )}
+                {/* --- Section 3: Member Trajectory --- */}
+                <div className="p-5 pt-20 border-b border-slate-100 bg-slate-50/50">
+                    <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center gap-2 text-xs font-bold uppercase text-slate-500 tracking-wider">
+                            <TrendingUp className="w-3.5 h-3.5" />
+                            <span>Member Trajectory</span>
+                        </div>
                     </div>
 
-                    <div className="flex-1" />
+                    <div className="flex flex-col gap-4">
+                        <div className="flex gap-4 h-[166px]">
+                            <div className="flex-1 bg-white rounded-lg border border-slate-200 p-2 relative">
+                                <svg className="w-full h-full overflow-visible" viewBox="0 0 100 100" preserveAspectRatio="none">
 
-                    {/* Apply Changes (Only if dirty) */}
-                    {!isLocked && isDirty && (
-                        <button
-                            onClick={handleApply}
-                            className="px-6 py-2.5 bg-indigo-600 text-white text-sm font-bold rounded-lg hover:bg-indigo-700 shadow-md hover:shadow-lg active:transform active:scale-[0.98] transition-all flex items-center gap-2"
-                        >
-                            <Check className="w-4 h-4" />
-                            Apply
-                        </button>
-                    )}
+                                </svg>
 
-                    {/* Close (Always Visible) */}
-                    <button
-                        onClick={() => checkUnsavedChanges(onClose)}
-                        className="px-6 py-2.5 bg-white text-slate-700 text-sm font-bold rounded-lg border border-slate-300 hover:bg-slate-50 shadow-sm transition-all"
-                    >
-                        Close
-                    </button>
+                                {/* HTML Overlay */}
+                                <div className="absolute inset-0 pointer-events-none">
+                                    {(() => {
+                                        // Re-recreate data points here (duplication is acceptable for render isolation or simple logic reuse)
+                                        // Actually better to define data outside SVG, but inline IIFE complicates sharing.
+                                        // I'll repeat logic for safety and speed.
+                                        const pastPoints = (rosterMember.history || []).map(h => ({
+                                            type: 'Past',
+                                            val: h.traitAverage,
+                                            rsca: h.rscaAtTime,
+                                            label: h.promotionRecommendation
+                                        }));
+                                        const currentPoint = {
+                                            type: 'Current',
+                                            val: simulatedMta,
+                                            rsca: currentRsca,
+                                            label: simulatedRec
+                                        };
+                                        let plannedCount = currentReport?.reportsRemaining;
+                                        if (plannedCount === undefined && rosterMember.prd && currentReport?.periodEndDate) {
+                                            const prdYear = new Date(rosterMember.prd).getFullYear();
+                                            const reportYear = new Date(currentReport.periodEndDate).getFullYear();
+                                            if (!isNaN(prdYear) && !isNaN(reportYear)) plannedCount = Math.max(0, prdYear - reportYear);
+                                        }
+                                        plannedCount = plannedCount || 0;
+                                        const plannedPoints = Array.from({ length: plannedCount }).map((_, i) => ({
+                                            type: (i === plannedCount! - 1) ? 'Transfer' : 'Planned',
+                                            val: simulatedMta,
+                                            rsca: currentRsca, // Reuse for scaling consistency
+                                            label: (i === plannedCount! - 1) ? 'PRD' : 'Plan'
+                                        }));
+
+                                        const allPoints = [...pastPoints.slice(-3), currentPoint, ...plannedPoints];
+
+                                        // Scaling Logic (Duplicated for consistency)
+                                        const allMtas = allPoints.map(p => p.val);
+                                        const allRscas = allPoints.map(p => p.rsca).filter((r): r is number => r !== undefined);
+                                        const allValues = [...allMtas, ...allRscas];
+                                        const minVal = Math.min(...allValues);
+                                        const maxVal = Math.max(...allValues);
+                                        let range = maxVal - minVal;
+                                        if (range < 0.2) range = 0.2;
+                                        const margin = range * 0.30;
+                                        const domainMin = Math.max(0, minVal - margin);
+                                        const domainMax = Math.min(5.0, maxVal + margin);
+                                        const domainRange = domainMax - domainMin || 1;
+                                        const getY = (val: number) => 100 - ((val - domainMin) / domainRange * 100);
+
+                                        const maxIdx = Math.max(1, allPoints.length - 1);
+                                        const getX = (i: number) => 10 + (i / maxIdx) * 80;
+
+                                        return allPoints.map((p, i) => {
+                                            const x = getX(i);
+                                            const y = getY(p.val);
+                                            const isTransfer = p.type === 'Transfer';
+                                            const isCurrent = p.type === 'Current';
+                                            const isAbove = false;
+
+                                            // Delta Calculation
+                                            let deltaDisplay = null;
+                                            if (i > 0) {
+                                                const prev = allPoints[i - 1];
+                                                const delta = p.val - prev.val;
+                                                const prevX = getX(i - 1);
+                                                const prevY = getY(prev.val);
+
+                                                const midX = (prevX + x) / 2;
+                                                const midY = (prevY + y) / 2;
+
+                                                deltaDisplay = (
+                                                    <div
+                                                        className="absolute text-[9px] font-bold text-slate-400 bg-white/50 px-0.5 rounded backdrop-blur-[1px]"
+                                                        style={{ left: `${midX}%`, top: `${midY}%`, transform: 'translate(-50%, -50%)' }}
+                                                    >
+                                                        {delta > 0 ? '+' : ''}{delta.toFixed(2)}
+                                                    </div>
+                                                );
+                                            }
+
+                                            // RSCA Diff
+                                            let rscaDiffDisplay = null;
+                                            if (p.rsca !== undefined) {
+                                                const diff = p.val - p.rsca;
+                                                const diffColor = diff >= 0 ? 'text-green-600' : 'text-red-500';
+                                                rscaDiffDisplay = (
+                                                    <span className={cn("ml-1 text-[8px] font-bold", diffColor)}>
+                                                        ({diff >= 0 ? '+' : ''}{diff.toFixed(2)})
+                                                    </span>
+                                                );
+                                            }
+
+                                            return (
+                                                <div key={i}>
+                                                    {deltaDisplay}
+                                                    <div
+                                                        className="absolute flex items-center justify-center group/point"
+                                                        style={{
+                                                            left: `${x}%`,
+                                                            top: `${y}%`,
+                                                            transform: 'translate(-50%, -50%)'
+                                                        }}
+                                                    >
+                                                        {/* Icon - Clean, no performance rings */}
+                                                        <div className={cn(
+                                                            "w-4 h-4 rounded-full border-2 shadow-sm flex items-center justify-center transition-transform hover:scale-125 z-10 bg-white",
+                                                            isTransfer ? "border-red-500 bg-red-50" : "border-blue-500 bg-blue-50",
+                                                            isCurrent ? "ring-2 ring-blue-200/50 w-5 h-5 border-[3px]" : ""
+                                                        )}>
+                                                        </div>
+
+                                                        {/* Label */}
+                                                        <div className={cn(
+                                                            "absolute pointer-events-auto flex flex-col items-center whitespace-nowrap",
+                                                            isAbove ? "bottom-full mb-2" : "top-full mt-2"
+                                                        )}>
+                                                            <div className="flex items-center gap-0.5 bg-white/90 px-1 rounded shadow-sm border border-slate-100/50 backdrop-blur-sm">
+                                                                <span className="text-[10px] font-black text-slate-700 leading-tight">
+                                                                    {p.val.toFixed(2)}
+                                                                </span>
+                                                                {rscaDiffDisplay}
+                                                            </div>
+                                                            <span className="text-[9px] font-semibold text-slate-400 leading-tight">
+                                                                {p.type}
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            );
+                                        });
+                                    })()}
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Legend */}
+                        <div className="flex justify-center gap-6 mt-1 border-t border-slate-100 pt-2">
+                            <div className="flex items-center gap-1.5">
+                                <div className="w-3 h-3 rounded-full bg-blue-50 border-2 border-blue-500"></div>
+                                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">Periodic</span>
+                            </div>
+                            <div className="flex items-center gap-1.5">
+                                <div className="w-4 h-4 rounded-full bg-blue-50 border-2 border-blue-500 ring-1 ring-blue-200"></div>
+                                <span className="text-[10px] font-bold text-slate-900 uppercase tracking-wide">Current</span>
+                            </div>
+                            <div className="flex items-center gap-1.5">
+                                <div className="w-3 h-3 rounded-full bg-red-50 border-2 border-red-500"></div>
+                                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">Transfer</span>
+                            </div>
+
+                        </div>
+                    </div>
                 </div>
+
+                <div className="mb-10"></div>
             </div>
+
+
 
 
 
@@ -1026,6 +1009,6 @@ export function MemberDetailSidebar({
                 onCancel={handleUnsavedCancel}
             />
 
-        </div>
+        </div >
         , document.body);
 }
