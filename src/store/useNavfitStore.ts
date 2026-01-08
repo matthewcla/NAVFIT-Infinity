@@ -369,32 +369,12 @@ export const useNavfitStore = create<NavfitStore>((set) => ({
                 if (r.isLocked) anchors[r.id] = r.traitAverage;
             });
 
-            // IMPORTANT: Before redistribution, we must ensure the `summaryGroups` state 
-            // reflects the new SORt order if the committed value changed the rank.
-            // The `reorderMembers` action usually handles drag-and-drop, but here we 
-            // changed a value logically.
-            // We should re-sort the group's reports by MTA descending to keep 'Rank' consistent.
-            // FIX: Use stable sort with secondary key (id) to prevent rank jumping with equal MTA values.
-            const sortedReports = [...group.reports].sort((a, b) => {
-                const mtaDiff = b.traitAverage - a.traitAverage;
-                if (mtaDiff !== 0) return mtaDiff;
-                return a.id.localeCompare(b.id); // Tiebreaker for stability
-            });
+            // FIX: REMOVED MTA-based re-sorting. Lock/unlock should preserve the user's
+            // manually-set rank order (from drag-and-drop). Automatic reordering by MTA
+            // was destroying the manual order every time a lock was toggled.
+            // The report order now remains unchanged - only the isLocked flag is toggled.
 
-            // DEBUG: After sort
-            const postSortRank = sortedReports.findIndex(r => r.id === reportId);
-            console.log('[LOCK DEBUG] POST-SORT', {
-                targetReportRank: postSortRank + 1,
-                sortedOrder: sortedReports.map(r => ({ id: r.id, mta: r.traitAverage, locked: r.isLocked }))
-            });
-
-            // Update the group with sorted reports
-            set((s) => ({
-                summaryGroups: s.summaryGroups.map(g => {
-                    if (g.id !== groupId) return g;
-                    return { ...g, reports: sortedReports };
-                })
-            }));
+            console.log('[LOCK DEBUG] PRESERVING ORDER - no re-sort on lock toggle');
 
             console.log('[LOCK DEBUG] SKIPPING setAnchors - lock/unlock should not trigger redistribution', { anchors });
 
@@ -442,22 +422,10 @@ export const useNavfitStore = create<NavfitStore>((set) => ({
                 });
             }
 
-            // IMPORTANT: Mirroring logic from toggleReportLock.
-            // Ensure state is sorted by MTA descending in case values changed ranking.
-            // FIX: Use stable sort with secondary key (id) to prevent rank jumping with equal MTA values.
-            const sortedReports = [...group.reports].sort((a, b) => {
-                const mtaDiff = b.traitAverage - a.traitAverage;
-                if (mtaDiff !== 0) return mtaDiff;
-                return a.id.localeCompare(b.id); // Tiebreaker for stability
-            });
-
-            // Update the group with sorted reports
-            set((s) => ({
-                summaryGroups: s.summaryGroups.map(g => {
-                    if (g.id !== groupId) return g;
-                    return { ...g, reports: sortedReports };
-                })
-            }));
+            // FIX: REMOVED MTA-based re-sorting. Lock/unlock all should preserve the user's
+            // manually-set rank order (from drag-and-drop). Automatic reordering by MTA
+            // was destroying the manual order.
+            console.log('[LOCK DEBUG] PRESERVING ORDER - no re-sort on lock all toggle');
             // FIX: Removed setAnchors call. Lock/unlock is purely a state change.
             // Redistribution should NOT be triggered because it recalculates all non-anchor MTAs.
             // useRedistributionStore.getState().setAnchors(groupId, anchors);

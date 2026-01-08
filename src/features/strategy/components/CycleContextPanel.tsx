@@ -45,7 +45,6 @@ export function CycleContextPanel({ group }: CycleContextPanelProps) {
 
         selectedMemberId,
         selectMember,
-        setDraggingItemType,
         updateProjection,
         updateGroupStatus,
         updateReport
@@ -407,14 +406,9 @@ export function CycleContextPanel({ group }: CycleContextPanelProps) {
                     reportsRemaining,
                     report
                 };
-            })
-            // Ensure Strict Sorting for Display
-            // FIX: Use stable sort with secondary key (reportId) to prevent rank jumping with equal MTA values.
-            .sort((a, b) => {
-                const mtaDiff = b.mta - a.mta;
-                if (mtaDiff !== 0) return mtaDiff;
-                return a.reportId.localeCompare(b.reportId); // Tiebreaker for stability
             });
+        // NOTE: Do NOT sort rankedMembers here - preserve the report order from the store,
+        // which represents the user's manually-set rank order (via drag-and-drop)
 
         // DEBUG: Log rankedMembers computation
         console.log('[UI DEBUG] rankedMembers computed', {
@@ -459,9 +453,6 @@ export function CycleContextPanel({ group }: CycleContextPanelProps) {
     }, [activeGroup, roster, rsConfig, projections, previewProjections, summaryGroups, proposedReports]); // Added proposedReports dependency
 
 
-    // Local Drag State for Live Reordering (iOS-style)
-    const [localOrderedMembers, setLocalOrderedMembers] = useState<RankedMember[] | null>(null);
-    const [draggedReportId, setDraggedReportId] = useState<string | null>(null);
 
 
     if (!activeGroup || !contextData) {
@@ -583,10 +574,6 @@ export function CycleContextPanel({ group }: CycleContextPanelProps) {
                     <CycleMemberList
                         isEnlisted={isEnlisted}
                         rankedMembers={rankedMembers as RankedMember[]}
-                        localOrderedMembers={localOrderedMembers}
-                        setLocalOrderedMembers={setLocalOrderedMembers}
-                        draggedReportId={draggedReportId}
-                        setDraggedReportId={setDraggedReportId}
                         activeGroupId={activeGroup.id}
                         selectedMemberId={selectedMemberId}
                         onSelectMember={(id) => {
@@ -595,7 +582,6 @@ export function CycleContextPanel({ group }: CycleContextPanelProps) {
                         onReorderMembers={(g, d, t) => {
                             if (!proposedReports) handleReorderMembers(g, d, t);
                         }}
-                        setDraggingItemType={setDraggingItemType}
                         onOptimize={handleOptimize}
                         onAcceptOptimization={handleAcceptOptimization}
                         onCancelOptimization={handleCancelOptimization}
