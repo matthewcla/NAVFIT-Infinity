@@ -86,7 +86,7 @@ export function SortableMemberRow({
             )}
         >
             {/* 1. Drag Handle Column */}
-            <td className="w-10 px-0 py-3 text-center align-middle touch-none relative">
+            <td className="w-12 px-0 py-3 text-center align-middle touch-none relative">
                 {isLocked ? (
                     <div className="flex items-center justify-center p-1 text-slate-300">
                         <Lock className="w-3.5 h-3.5" />
@@ -150,7 +150,7 @@ export function SortableMemberRow({
             </td>
 
             {/* Trash Button */}
-            <td className="w-10 px-0 py-3 text-center align-middle">
+            <td className="w-12 px-0 py-3 text-center align-middle">
                 <button
                     onClick={handleDelete}
                     className="flex items-center justify-center p-1.5 rounded transition-colors mx-auto text-slate-300 hover:text-red-600 hover:bg-red-50 opacity-0 group-hover:opacity-100 focus:opacity-100"

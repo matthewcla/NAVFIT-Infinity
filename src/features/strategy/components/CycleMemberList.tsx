@@ -183,10 +183,10 @@ export function CycleMemberList({
                 onDragEnd={handleDragEnd}
             >
                 <table className="w-full text-left border-collapse">
-                    <thead className="bg-white text-xs font-semibold text-slate-500 uppercase tracking-wider sticky top-0 z-10 shadow-sm">
+                    <thead className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
                         <tr>
-                            <th className="w-12 px-0 py-3 border-b border-slate-200 text-center"></th> {/* Drag Handle */}
-                            <th className="w-12 px-0 py-3 border-b border-slate-200 text-center relative group/header">
+                            <th className="sticky top-0 z-20 bg-white w-12 px-0 py-3 border-b border-slate-200 text-center shadow-sm"></th> {/* Drag Handle */}
+                            <th className="sticky top-0 z-20 bg-white w-12 px-0 py-3 border-b border-slate-200 text-center relative group/header shadow-sm">
                                 <button
                                     onClick={handleToggleAllLocks}
                                     className={`flex items-center justify-center p-1 rounded transition-colors mx-auto ${areAllLocked
@@ -198,18 +198,18 @@ export function CycleMemberList({
                                     {areAllLocked ? <Lock className="w-3.5 h-3.5" /> : <Unlock className="w-3.5 h-3.5" />}
                                 </button>
                             </th>
-                            <th className="w-12 px-0 py-3 border-b border-slate-200 text-center">#</th>
-                            <th className="px-4 py-3 border-b border-slate-200 text-left w-[25%]">Name</th>
-                            <th className="px-4 py-3 border-b border-slate-200 text-center w-24">
+                            <th className="sticky top-0 z-20 bg-white w-12 px-0 py-3 border-b border-slate-200 text-center shadow-sm">#</th>
+                            <th className="sticky top-0 z-20 bg-white px-4 py-3 border-b border-slate-200 text-left w-[25%] shadow-sm">Name</th>
+                            <th className="sticky top-0 z-20 bg-white px-4 py-3 border-b border-slate-200 text-center w-24 shadow-sm">
                                 {isEnlisted ? 'Rate/Rank' : 'Desig'}
                             </th>
-                            <th className="px-4 py-3 border-b border-slate-200 text-center w-16" title="Projected reports remaining until PRD"># Rpts</th>
-                            <th className="px-4 py-3 border-b border-slate-200 text-center w-16">Rec</th>
-                            <th className="px-4 py-3 border-b border-slate-200 text-center w-20">MTA</th>
-                            <th className="px-4 py-3 border-b border-slate-200 text-center w-20">Delta</th>
-                            <th className="px-4 py-3 border-b border-slate-200 text-center w-20">Margin</th>
-                            <th className="px-4 py-3 border-b border-slate-200 text-center w-20" title="Projected End of Tour MTA">Proj. EOT</th>
-                            <th className="w-10 px-0 py-3 border-b border-slate-200 text-center"></th> {/* Trash Button */}
+                            <th className="sticky top-0 z-20 bg-white px-4 py-3 border-b border-slate-200 text-center w-16 shadow-sm" title="Projected reports remaining until PRD"># Rpts</th>
+                            <th className="sticky top-0 z-20 bg-white px-4 py-3 border-b border-slate-200 text-center w-16 shadow-sm">Rec</th>
+                            <th className="sticky top-0 z-20 bg-white px-4 py-3 border-b border-slate-200 text-center w-20 shadow-sm">MTA</th>
+                            <th className="sticky top-0 z-20 bg-white px-4 py-3 border-b border-slate-200 text-center w-20 shadow-sm">Delta</th>
+                            <th className="sticky top-0 z-20 bg-white px-4 py-3 border-b border-slate-200 text-center w-20 shadow-sm">Margin</th>
+                            <th className="sticky top-0 z-20 bg-white px-4 py-3 border-b border-slate-200 text-center w-20 shadow-sm" title="Projected End of Tour MTA">Proj. EOT</th>
+                            <th className="sticky top-0 z-20 bg-white w-12 px-0 py-3 border-b border-slate-200 text-center shadow-sm"></th> {/* Trash Button */}
                         </tr>
                     </thead>
                     <SortableContext items={sortableIds} strategy={verticalListSortingStrategy}>
