@@ -185,13 +185,13 @@ export const generateSummaryGroups = (
                            Determine Status:
                            If date is in the past (relative to NOW/Simulation), it's 'Submitted' or 'Final'.
                            If it's the current active cycle, it's 'Draft'.
-                           If it's future, it's 'Projected'.
+                           If it's future, it's 'Planned'.
                         */
                         const today = new Date(); // In real app, this might be injected 'simulationDate'
-                        let status: Report['draftStatus'] = 'Projected';
+                        let status: Report['draftStatus'] = 'Planned';
                         if (pDate < today) status = 'Final'; // Simplification for demo
                         // For the immediate upcoming cycle, we might want 'Draft'. 
-                        // For now, let's treat everything > today as 'Projected' defaults, 
+                        // For now, let's treat everything > today as 'Planned' defaults, 
                         // logic elsewhere promotes them to 'Draft'.
 
                         // "Kiss Goodbye" check for Transfer logic within Periodic? 
@@ -248,7 +248,7 @@ export const generateSummaryGroups = (
                 detachmentOfIndividual: true,
                 traitAverage: calculatedAvg, // Boosted by logic
                 promotionRecommendation: 'EP', // Usually Transfer is EP if good
-                draftStatus: 'Projected',
+                draftStatus: 'Planned',
                 traitGrades: {},
                 grade: member.rank,
                 designator: member.designator,
@@ -281,7 +281,7 @@ export const generateSummaryGroups = (
                     type: 'Detachment',
                     traitAverage: calculatedAvg,
                     promotionRecommendation: calculatedAvg > 0 ? 'P' : 'NOB',
-                    draftStatus: 'Projected',
+                    draftStatus: 'Planned',
                     traitGrades: {},
                     grade: member.rank,
                     designator: member.designator,
@@ -316,9 +316,9 @@ export const generateSummaryGroups = (
                 // For simplicity, everything future is 'Drafting' unless specific logic
                 status = 'Draft';
 
-                // If it's way out (more than 6 months), maybe 'Planned' (map to Planning)
+                // If it's way out (more than 3 months), set status to 'Planned'
                 const monthsOut = (endDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24 * 30);
-                if (monthsOut > 6) status = 'Planned';
+                if (monthsOut > 3) status = 'Planned';
             }
         }
 

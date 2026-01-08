@@ -89,7 +89,7 @@ interface SummaryGroup {
     paygrade: string;
     competitiveGroupKey: string;
     periodEndDate: string;
-    status: 'Pending' | 'Accepted' | 'Rejected' | 'Projected' | 'Planned' | 'Draft' | 'Submitted' | 'Review' | 'Final';
+    status: 'Pending' | 'Accepted' | 'Rejected' | 'Planned' | 'Draft' | 'Submitted' | 'Review' | 'Final';
     reports: Report[];
 }
 

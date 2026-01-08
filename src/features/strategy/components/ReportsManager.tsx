@@ -97,11 +97,11 @@ export function ReportsManager() {
     };
 
     // Kanban categorisation
-    const getGroupsByStatus = (status: 'Projected' | 'Draft' | 'Submitted' | 'Archived') => {
+    const getGroupsByStatus = (status: 'Planned' | 'Draft' | 'Submitted' | 'Archived') => {
         // Mapping status strings to columns
         return groupsInCurrentCompGroup.filter(g => {
             const s = g.status || 'Pending';
-            if (status === 'Projected') return s === 'Projected' || s === 'Planned';
+            if (status === 'Planned') return s === 'Planned';
             if (status === 'Draft') return s === 'Pending' || s === 'Draft';
             if (status === 'Submitted') return s === 'Submitted' || s === 'Review';
             if (status === 'Archived') return s === 'Accepted' || s === 'Rejected' || s === 'Final';
@@ -295,12 +295,12 @@ export function ReportsManager() {
                                 <div className="p-6">
                                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                                         {[
-                                            { label: 'Planned', key: 'Projected' },
+                                            { label: 'Planned', key: 'Planned' },
                                             { label: 'Drafted', key: 'Draft' },
                                             { label: 'Submitted', key: 'Submitted' },
                                             { label: 'Archived', key: 'Archived' }
                                         ].map((col) => {
-                                            const groups = getGroupsByStatus(col.key as 'Projected' | 'Draft' | 'Submitted' | 'Archived');
+                                            const groups = getGroupsByStatus(col.key as 'Planned' | 'Draft' | 'Submitted' | 'Archived');
                                             return (
                                                 <div key={col.key} className="flex flex-col gap-4">
                                                     <div className="flex items-center justify-between pb-2 border-b border-slate-200">

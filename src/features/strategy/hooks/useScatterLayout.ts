@@ -15,7 +15,7 @@ export interface RSCAReport {
     traitAverage: number;
     isNOB: boolean;
     initialTraitAverage: number;
-    draftStatus?: 'Draft' | 'Review' | 'Submitted' | 'Final' | 'Projected';
+    draftStatus?: 'Draft' | 'Review' | 'Submitted' | 'Final' | 'Planned';
 }
 
 export interface ScatterPoint {

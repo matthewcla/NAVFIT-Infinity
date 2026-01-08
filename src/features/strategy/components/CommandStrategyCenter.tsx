@@ -60,10 +60,10 @@ export function CommandStrategyCenter() {
 
             const activeStatuses = ['Drafting', 'Planning', 'Review', 'Submitted', 'Pending', 'Draft'];
             const archiveStatuses = ['Final', 'Complete', 'Accepted', 'Rejected'];
-            const projectedStatuses = ['Projected', 'Planned'];
+            const projectedStatuses = ['Planned'];
 
             if (cycleListPhase === 'Archive') return archiveStatuses.includes(status);
-            if (cycleListPhase === 'Projected') return projectedStatuses.includes(status);
+            if (cycleListPhase === 'Planned') return projectedStatuses.includes(status);
             return activeStatuses.includes(status);
         });
 
@@ -112,7 +112,7 @@ export function CommandStrategyCenter() {
                 <div>
                     <h1 className={`text-xl font-bold transition-colors ${cycleListPhase === 'Archive' ? 'text-indigo-900' : 'text-slate-900'}`}>
                         {cycleListPhase === 'Archive' ? 'Command Strategy Archive' :
-                            cycleListPhase === 'Projected' ? 'Strategic Projections' :
+                            cycleListPhase === 'Planned' ? 'Strategic Projections' :
                                 'Command Strategy Center'}
                     </h1>
                     <p className={`text-sm transition-colors ${cycleListPhase === 'Archive' ? 'text-indigo-600/70' : 'text-slate-500'}`}>
@@ -135,10 +135,10 @@ export function CommandStrategyCenter() {
 
                         {/* Phase Toggles */}
                         <div className="flex p-1 bg-slate-100 rounded-lg">
-                            {['Active', 'Projected', 'Archive'].map((phase) => (
+                            {['Active', 'Planned', 'Archive'].map((phase) => (
                                 <button
                                     key={phase}
-                                    onClick={() => setCycleListPhase(phase as 'Active' | 'Projected' | 'Archive')}
+                                    onClick={() => setCycleListPhase(phase as 'Active' | 'Planned' | 'Archive')}
                                     className={`flex-1 px-3 py-1.5 text-xs font-semibold rounded-md transition-all ${cycleListPhase === phase
                                         ? 'bg-white text-slate-900 shadow-sm'
                                         : 'text-slate-500 hover:text-slate-700'

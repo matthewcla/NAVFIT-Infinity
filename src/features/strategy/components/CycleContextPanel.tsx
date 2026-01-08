@@ -341,7 +341,7 @@ export function CycleContextPanel({ group }: CycleContextPanelProps) {
         const memberEotProjections = typeof eotResult === 'object' ? eotResult.memberProjections : {};
 
         const draftStats = effectiveReports.reduce((acc, r) => {
-            const status = r.draftStatus || 'Projected';
+            const status = r.draftStatus || 'Planned';
             acc[status] = (acc[status] || 0) + 1;
             return acc;
         }, {} as Record<string, number>);

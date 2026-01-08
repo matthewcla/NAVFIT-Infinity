@@ -39,7 +39,7 @@ export interface Report {
     // Auto-Plan Logic
     isProjected?: boolean;
     isDraft?: boolean;
-    draftStatus?: 'Draft' | 'Review' | 'Submitted' | 'Projected' | 'Final';
+    draftStatus?: 'Draft' | 'Review' | 'Submitted' | 'Planned' | 'Final';
 
     // Constraints (User Overrides)
     isLocked?: boolean; // If locked, optimization engine won't touch
@@ -97,7 +97,7 @@ export interface SummaryGroup {
     promotionStatus?: 'REGULAR' | 'FROCKED' | 'SELECTED' | 'SPOT';
     reports: Report[];
     periodEndDate: string;
-    status?: 'Pending' | 'Accepted' | 'Rejected' | 'Projected' | 'Planned' | 'Draft' | 'Submitted' | 'Review' | 'Final';
+    status?: 'Pending' | 'Accepted' | 'Rejected' | 'Planned' | 'Draft' | 'Submitted' | 'Review' | 'Final';
 
     // Metrics
     rsca?: number; // Current RSCA including this group

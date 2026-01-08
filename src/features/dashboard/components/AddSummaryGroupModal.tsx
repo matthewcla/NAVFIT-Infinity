@@ -58,7 +58,7 @@ export function AddSummaryGroupModal({
                 competitiveGroupKey: groupKey,
                 reports: [],
                 periodEndDate: reportDate,
-                status: 'Projected',
+                status: 'Planned',
                 // Defaulting promotionStatus to REGULAR unless specifically implied by logic not yet defined.
                 // The task asks for specific naming convention which we follow.
                 promotionStatus: 'REGULAR'
