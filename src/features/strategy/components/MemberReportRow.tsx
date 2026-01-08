@@ -60,25 +60,7 @@ export function MemberReportRow({
 
 
 
-    const handleDragStart = (e: React.DragEvent<HTMLTableRowElement>) => {
-        // 1. Check if Locked
-        if (isLocked) {
-            e.preventDefault();
-            return;
-        }
 
-        // 2. Verified Drag Handle Check
-        const target = e.target as HTMLElement;
-        // The event target might be the icon inside the div, so we check closest
-        // But actually dragstart fires on the TR, so target is the element being dragged...
-        // Wait, native HTML5 drag and drop is tricky with specific handles on a draggable parent.
-        // We generally check the "active element" or use a ref, but `onMouseDown` is reliable to set a flag.
-
-        // We will rely on checking if the drag behavior is what we want.
-        // Actually, best practice for "Grip Only" drag in a table row:
-        // Check e.target in onDragStart? No, e.target is the TR.
-        // We use state set by onMouseDown. But I removed the ref. Let's add it back simply.
-    };
 
     // Simpler Re-implementation for Grip Only:
     // We can just keep the TR draggable, but in onDragStart, check if we decided it's a valid drag.

@@ -1,10 +1,10 @@
-import { Activity, ArrowRight } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 
 interface RscaHeadsUpDisplayProps {
     currentRsca: number;
     projectedRsca: number;
     eotRsca?: number; // New EOT Metric
-    rankLabel?: string;
+    // rankLabel (unused removed)
     showSuffix?: boolean;
 }
 
@@ -12,7 +12,7 @@ export function RscaHeadsUpDisplay({
     currentRsca,
     projectedRsca,
     eotRsca,
-    rankLabel,
+    // rankLabel (unused removed)
     // showSuffix (unused)
 }: RscaHeadsUpDisplayProps) {
     const delta = projectedRsca - currentRsca;
@@ -55,17 +55,18 @@ export function RscaHeadsUpDisplay({
     const zoneProjected = getHealthColor(projectedRsca);
     const zoneEot = getEotColor(eotRsca);
 
-    // Background tint based on current health
-    const bgCurrent = currentRsca > 4.10 ? 'bg-red-50' : currentRsca > 3.80 ? 'bg-amber-50' : 'bg-emerald-50';
+    // Background tint based on current health (Unused variable removed)
+    // const bgCurrent = currentRsca > 4.10 ? 'bg-red-50' : currentRsca > 3.80 ? 'bg-amber-50' : 'bg-emerald-50';
 
     return (
-        <div className="bg-white/95 backdrop-blur-sm p-3 h-full transition-all duration-300 flex items-center">
-            <div className="flex items-center w-full gap-2">
+        <div className="bg-white/95 backdrop-blur-sm p-3 h-full transition-all duration-300 flex items-center relative">
+            {/* Title Overlay */}
+            <div className="absolute top-1 left-0 right-0 text-center text-[10px] uppercase font-bold text-slate-400 tracking-wider">
+                RSCA Benchmark
+            </div>
 
-                {/* Icon Block */}
-                <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 transition-colors duration-300 ${bgCurrent} mr-2`}>
-                    <Activity className={`w-5 h-5 ${zoneCurrent}`} />
-                </div>
+            <div className="flex items-center w-full gap-2 pt-8">
+
 
                 {/* Stats Grid - Flex Distribution */}
                 <div className="flex flex-1 items-center justify-between px-2">
@@ -73,7 +74,7 @@ export function RscaHeadsUpDisplay({
                     {/* 1. Left Stat: Current */}
                     <div className="flex flex-col items-center">
                         <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">
-                            {rankLabel || 'Curr. RSCA'}
+                            Current
                         </span>
                         <div className="flex items-baseline leading-none">
                             <span className={`text-2xl font-bold ${zoneCurrent}`}>{currentRsca.toFixed(2)}</span>
@@ -88,7 +89,7 @@ export function RscaHeadsUpDisplay({
                     {/* 2. Middle Stat: Projected */}
                     <div className="flex flex-col items-center relative">
                         <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">
-                            Proj. RSCA
+                            Projected
                         </span>
                         <div className="flex items-baseline relative leading-none">
                             <span className={`text-2xl font-bold ${zoneProjected}`}>{projectedRsca.toFixed(2)}</span>
@@ -110,7 +111,7 @@ export function RscaHeadsUpDisplay({
                     {eotRsca !== undefined ? (
                         <div className="flex flex-col items-center">
                             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">
-                                EOT RSCA
+                                End of Tour
                             </span>
                             <div className="flex items-baseline leading-none">
                                 <span className={`text-2xl font-bold ${zoneEot}`}>{eotRsca.toFixed(2)}</span>
@@ -119,7 +120,7 @@ export function RscaHeadsUpDisplay({
                     ) : (
                         <div className="flex flex-col items-center opacity-30">
                             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">
-                                EOT RSCA
+                                End of Tour
                             </span>
                             <span className="text-xl font-bold text-slate-300">--.--</span>
                         </div>

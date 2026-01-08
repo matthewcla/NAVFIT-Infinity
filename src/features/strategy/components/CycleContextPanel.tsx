@@ -486,9 +486,9 @@ export function CycleContextPanel({ group }: CycleContextPanelProps) {
             <div className="flex-1 flex flex-col bg-slate-50 border-l border-slate-200 min-w-0">
                 {/* 1. Sticky Header (Top) */}
                 <div className="sticky top-0 z-10 bg-white border-b border-slate-200">
-                    <div className="px-6 pt-6 pb-4">
+                    <div className="px-6 pb-6 pt-6">
                         {/* Row 1: Title & Status Badges */}
-                        <div className="flex justify-between items-start mb-4">
+                        <div className="flex justify-between items-start mb-6">
                             <div className="flex flex-col gap-1">
                                 <div className="flex items-center gap-2">
                                     <h2 className="text-2xl font-bold text-slate-900">{activeGroup.name}</h2>
@@ -522,9 +522,9 @@ export function CycleContextPanel({ group }: CycleContextPanelProps) {
                             </div>
                         </div>
 
-                        {/* Row 2: RSCA Scoreboard Container */}
-                        <div className="flex items-stretch gap-2">
-                            {/* 2A. RSCA Heads Up Display (Left) - Equal Width */}
+                        {/* Row 2: RSCA Scoreboard Container - Full Width Equal Distribution */}
+                        <div className="flex justify-between items-stretch gap-4 w-full h-32">
+                            {/* 2A. RSCA Heads Up Display (Left) */}
                             <div className="flex-1 min-w-0 rounded-xl border border-slate-200 shadow-sm overflow-hidden bg-white/50">
                                 <RscaHeadsUpDisplay
                                     currentRsca={currentRsca}
@@ -535,7 +535,7 @@ export function CycleContextPanel({ group }: CycleContextPanelProps) {
                                 />
                             </div>
 
-                            {/* 2B. Scattergram (Middle) - Equal Width */}
+                            {/* 2B. Scattergram (Middle) */}
                             <div className="flex-1 min-w-0 rounded-xl border border-slate-200 shadow-sm overflow-hidden bg-white">
                                 <RscaScattergram
                                     members={rankedMembers}
@@ -543,23 +543,12 @@ export function CycleContextPanel({ group }: CycleContextPanelProps) {
                                 />
                             </div>
 
-                            {/* 2C. Promotion Recommendation Scoreboard (Right) - Equal Width */}
+                            {/* 2C. Promotion Recommendation Scoreboard (Right) */}
                             <div className="flex-1 min-w-0 rounded-xl border border-slate-200 shadow-sm overflow-hidden bg-white/50">
                                 <div className="h-full bg-white/95 backdrop-blur-sm transition-all duration-300">
                                     <QuotaHeadsUpDisplay distribution={distribution} totalReports={effectiveSize} context={domainContext} />
                                 </div>
                             </div>
-                        </div>
-                    </div>
-
-                    {/* 2. Sticky Toolbar (Below Header) */}
-                    <div className="sticky top-0 z-20 bg-white/95 backdrop-blur border-b border-slate-200 p-4 pt-2">
-                        <div className="flex items-center justify-between">
-                            {/* Left: Rank / Edit Controls (Removed) */}
-                            <div className="flex items-center gap-2"></div>
-
-                            {/* Right: Alerts & Optimize */}
-                            <div className="flex items-center gap-2 px-2"></div>
                         </div>
                     </div>
                 </div>
