@@ -29,6 +29,10 @@ interface MemberReportRowProps {
     setDraggingItemType?: (type: string | null) => void;
     rankedMembers?: RankedMember[];
     onReorderMembers?: (groupId: string, reportId: string, newOrderIds: string[]) => void;
+
+    // Locking
+    isLocked: boolean;
+    onToggleLock: (groupId: string, reportId: string) => void;
 }
 
 export function MemberReportRow({
@@ -52,11 +56,14 @@ export function MemberReportRow({
     setDraggedReportId,
     setDraggingItemType,
     rankedMembers,
-    onReorderMembers
+    onReorderMembers,
+
+    isLocked,
+    onToggleLock
 }: MemberReportRowProps) {
     const [isDragging, setIsDragging] = useState(false);
-    const { toggleReportLock, summaryGroups, selectMember, deleteReport } = useNavfitStore();
-    const isLocked = summaryGroups.find(g => g.id === groupId)?.reports.find(r => r.id === reportId)?.isLocked;
+    const { selectMember, deleteReport } = useNavfitStore();
+    // const isLocked = summaryGroups.find(g => g.id === groupId)?.reports.find(r => r.id === reportId)?.isLocked; // Removed direct store dependency
 
 
 
@@ -185,17 +192,12 @@ export function MemberReportRow({
                 )}
             </td>
 
-            {/* 2. Rank Index */}
-            <td className="px-4 py-3 text-center text-sm text-slate-500 font-medium relative w-12">
-                {index + 1}
-            </td>
-
-            {/* 3. Lock Toggle Column */}
-            <td className="w-8 px-0 py-3 text-center align-middle">
+            {/* 2. Lock Toggle Column (Now Second) - Swapped with Rank */}
+            <td className="w-12 px-0 py-3 text-center align-middle">
                 <button
                     onClick={(e) => {
                         e.stopPropagation();
-                        toggleReportLock(groupId, reportId);
+                        onToggleLock(groupId, reportId);
                     }}
                     className={cn(
                         "flex items-center justify-center p-1 rounded transition-colors mx-auto",
@@ -207,6 +209,11 @@ export function MemberReportRow({
                 >
                     {isLocked ? <Lock className="w-3.5 h-3.5" /> : <Unlock className="w-3.5 h-3.5" />}
                 </button>
+            </td>
+
+            {/* 3. Rank Index (Now Third) - Swapped with Lock */}
+            <td className="px-4 py-3 text-center text-sm text-slate-500 font-medium relative w-12">
+                {index + 1}
             </td>
 
             <td className="px-4 py-3 text-sm font-semibold text-slate-700 text-left w-[30%]">{name}</td>

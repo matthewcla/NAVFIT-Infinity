@@ -1,6 +1,7 @@
 import { useRef } from 'react';
-import { Sparkles, Check, X } from 'lucide-react';
+import { Sparkles, Check, X, Lock, Unlock } from 'lucide-react';
 import { MemberReportRow } from './MemberReportRow';
+import { useNavfitStore } from '@/store/useNavfitStore';
 import type { Report } from '@/types';
 
 
@@ -62,15 +63,60 @@ export function CycleMemberList({
 
     const membersToRender = localOrderedMembers || rankedMembers;
     const listContainerRef = useRef<HTMLDivElement>(null);
+    const { toggleReportLock, setGroupLockState } = useNavfitStore();
+
+    // Determine Lock All State
+    // If every rendered member is locked, we show "Locked" state (to unlock).
+    // Otherwise (mix or all unlocked), we show "Unlocked" state (to lock).
+    // Robust check: valid members only.
+    const areAllLocked = membersToRender.length > 0 && membersToRender.every(m => m.report.isLocked);
+
+    const handleToggleAllLocks = () => {
+        // If all are locked, unlock all (false).
+        // If not all locked (some or none), lock all (true).
+        const targetState = !areAllLocked;
+
+        // Commit-on-Lock:
+        // Gather current values to save them as permanent anchors
+        const valueMap: Record<string, number> = {};
+        if (targetState) {
+            membersToRender.forEach(m => {
+                valueMap[m.reportId] = m.mta;
+            });
+        }
+
+        setGroupLockState(activeGroupId, targetState, valueMap);
+    };
+
+    const handleRowToggleLock = (groupId: string, reportId: string) => {
+        // Find the member to get their CURRENT (potentially projected) MTA
+        const member = membersToRender.find(m => m.reportId === reportId);
+        // If locking, pass the current MTA to commit it.
+        // If unlocking, we still pass undefined (or keep existing) handled by store.
+        // Actually store expects `toggleReportLock(id, reportId, targetValue?)`
+        toggleReportLock(groupId, reportId, member?.mta);
+    };
 
     return (
         <div ref={listContainerRef} className="flex-1 overflow-y-auto">
             <table className="w-full text-left border-collapse">
                 <thead className="bg-white text-xs font-semibold text-slate-500 uppercase tracking-wider sticky top-0 z-10 shadow-sm">
                     <tr>
-                        <th className="w-10 px-0 py-3 border-b border-slate-200 text-center"></th> {/* Drag Handle */}
-                        <th className="px-4 py-3 border-b border-slate-200 w-12 text-center">#</th>
-                        <th className="w-8 px-0 py-3 border-b border-slate-200 text-center"></th> {/* Lock Toggle */}
+                        <th className="w-12 px-0 py-3 border-b border-slate-200 text-center"></th> {/* Drag Handle */}
+                        <th className="w-12 px-0 py-3 border-b border-slate-200 text-center relative group/header">
+                            {/* Header Lock Toggle (Swapped Position) - Opacity fixed to always visible */}
+                            <button
+                                onClick={handleToggleAllLocks}
+                                className={`flex items-center justify-center p-1 rounded transition-colors mx-auto ${areAllLocked
+                                    ? "text-red-500 hover:bg-red-50"
+                                    : "text-slate-300 hover:text-slate-500 hover:bg-slate-100"
+                                    }`}
+                                title={areAllLocked ? "Unlock All Reports" : "Lock All Reports"}
+                            >
+                                {areAllLocked ? <Lock className="w-3.5 h-3.5" /> : <Unlock className="w-3.5 h-3.5" />}
+                            </button>
+                        </th>
+                        <th className="w-12 px-0 py-3 border-b border-slate-200 text-center">#</th>
                         <th className="px-4 py-3 border-b border-slate-200 text-left w-[25%]">Name</th>
                         <th className="px-4 py-3 border-b border-slate-200 text-center w-24">
                             {isEnlisted ? 'Rate/Rank' : 'Desig'}
@@ -102,6 +148,10 @@ export function CycleMemberList({
                             eotMta={member.eotMta || 0}
                             isSelected={selectedMemberId === member.id}
                             onClick={() => onSelectMember(selectedMemberId === member.id ? null : member.id)}
+
+                            // Locking
+                            isLocked={member.report.isLocked || false}
+                            onToggleLock={handleRowToggleLock}
 
                             // Drag & Reorder Props
                             draggedReportId={draggedReportId}

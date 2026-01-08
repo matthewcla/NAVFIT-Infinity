@@ -72,17 +72,35 @@ export const useRedistributionStore = create<RedistributionStoreState>((set, get
         // IMPORTANT: Only update projections for NON-anchor members.
         // Anchor members (user-edited via slider) should preserve their values.
         // This prevents the redistribution engine from overwriting manual slider edits.
+        // FIX: Also skip locked reports (except NOB) to preserve committed MTA values.
 
         const navfitStore = useNavfitStore.getState();
         const updatedMembers = result.updatedMembers;
+        const currentGroup = navfitStore.summaryGroups.find(g => g.id === groupId);
 
         const newProjections = { ...navfitStore.projections };
         updatedMembers.forEach(m => {
-            // Only update if not an anchor (user hasn't manually set this value)
-            // If user has manually edited, keep their value
-            if (!m.isAnchor) {
-                newProjections[m.id] = m.mta;
+            // Skip if anchor (user explicitly set this value)
+            if (m.isAnchor) return;
+
+            // FIX: Check if report is locked (and not NOB) - preserve committed traitAverage
+            if (currentGroup) {
+                const report = currentGroup.reports.find(r => r.id === m.id);
+                if (report?.isLocked && report?.promotionRecommendation !== 'NOB') {
+                    return; // Skip - locked reports should not have projections override their committed value
+                }
             }
+
+            newProjections[m.id] = m.mta;
+        });
+
+        // DEBUG: Log redistribution result and projection updates
+        console.log('[REDISTRIB DEBUG] handleSuccess', {
+            groupId,
+            rsca: result.rsca,
+            isFeasible: result.isFeasible,
+            updatedMembers: updatedMembers.map(m => ({ id: m.id, mta: m.mta, isAnchor: m.isAnchor })),
+            newProjections
         });
 
         useNavfitStore.setState({
@@ -252,24 +270,17 @@ export const useRedistributionStore = create<RedistributionStoreState>((set, get
             get().requestRedistribution(groupId, payloadMembers, constraints, navfitStore.rsConfig.targetRsca);
         },
 
-        setAnchors: (groupId, anchorMap) => {
+        setAnchors: (groupId, _anchorMap) => {
+            // FIX: Do NOT update state here - toggleReportLock() already handles state updates.
+            // This function should only trigger redistribution using the current (already sorted) state.
+            // Previously, this was overwriting the sorted state from toggleReportLock(), causing rank jumps.
+
             const navfitStore = useNavfitStore.getState();
-            const groupIndex = navfitStore.summaryGroups.findIndex(g => g.id === groupId);
-            if (groupIndex === -1) return;
+            const group = navfitStore.summaryGroups.find(g => g.id === groupId);
+            if (!group) return;
 
-            const group = navfitStore.summaryGroups[groupIndex];
-            const newReports = group.reports.map(r => {
-                if (Object.prototype.hasOwnProperty.call(anchorMap, r.id)) {
-                    return { ...r, isLocked: true, traitAverage: anchorMap[r.id] };
-                }
-                return r;
-            });
-
-            const newGroups = [...navfitStore.summaryGroups];
-            newGroups[groupIndex] = { ...group, reports: newReports };
-            navfitStore.setSummaryGroups(newGroups);
-
-            const payloadMembers = newReports.map((r, i) => ({
+            // Use current reports from store (already sorted by toggleReportLock)
+            const payloadMembers = group.reports.map((r, i) => ({
                 id: r.id,
                 rank: i + 1,
                 mta: r.traitAverage,
@@ -277,6 +288,7 @@ export const useRedistributionStore = create<RedistributionStoreState>((set, get
                 anchorValue: r.traitAverage,
                 name: r.memberName
             }));
+
             get().requestRedistribution(groupId, payloadMembers, DEFAULT_CONSTRAINTS, navfitStore.rsConfig.targetRsca);
         },
 

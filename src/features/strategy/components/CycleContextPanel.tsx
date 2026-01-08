@@ -351,7 +351,11 @@ export function CycleContextPanel({ group }: CycleContextPanelProps) {
             .map(report => {
                 const member = roster.find(m => m.id === report.memberId);
                 // Use effectiveProjections (includes proposed values during optimization), not projections
-                const currentMta = effectiveProjections[report.id] ?? report.traitAverage ?? 0;
+                // FIX: For locked reports (except NOB), always use committed traitAverage to prevent reversion
+                const isLockedNonNob = report.isLocked && report.promotionRecommendation !== 'NOB';
+                const currentMta = isLockedNonNob
+                    ? report.traitAverage
+                    : (effectiveProjections[report.id] ?? report.traitAverage ?? 0);
                 const rscaMargin = currentMta - projectedRsca; // Margin against Projected RSCA
 
                 // Robust Fallback: Use Report Snapshot if Roster Lookup Fails
@@ -405,7 +409,24 @@ export function CycleContextPanel({ group }: CycleContextPanelProps) {
                 };
             })
             // Ensure Strict Sorting for Display
-            .sort((a, b) => b.mta - a.mta);
+            // FIX: Use stable sort with secondary key (reportId) to prevent rank jumping with equal MTA values.
+            .sort((a, b) => {
+                const mtaDiff = b.mta - a.mta;
+                if (mtaDiff !== 0) return mtaDiff;
+                return a.reportId.localeCompare(b.reportId); // Tiebreaker for stability
+            });
+
+        // DEBUG: Log rankedMembers computation
+        console.log('[UI DEBUG] rankedMembers computed', {
+            effectiveProjections,
+            rankedOrder: rankedMembers.map(m => ({
+                id: m.id,
+                name: m.name,
+                mta: m.mta,
+                reportMta: m.report.traitAverage,
+                locked: m.report.isLocked
+            }))
+        });
 
         // Calculate Distribution
         const distribution: { [key: string]: number; SP: number; PR: number; P: number; MP: number; EP: number; } = { SP: 0, PR: 0, P: 0, MP: 0, EP: 0 };

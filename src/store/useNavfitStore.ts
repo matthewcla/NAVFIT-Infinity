@@ -55,7 +55,8 @@ interface NavfitStore {
 
     deleteSummaryGroup: (groupId: string) => void;
     deleteReport: (groupId: string, reportId: string) => void;
-    toggleReportLock: (groupId: string, reportId: string) => void;
+    toggleReportLock: (groupId: string, reportId: string, targetValue?: number) => void;
+    setGroupLockState: (groupId: string, isLocked: boolean, valueMap?: Record<string, number>) => void;
 
     rsConfig: ReportingSeniorConfig;
     setRsConfig: (config: ReportingSeniorConfig) => void;
@@ -302,7 +303,19 @@ export const useNavfitStore = create<NavfitStore>((set) => ({
             };
         })
     })),
-    toggleReportLock: (groupId, reportId) => {
+    toggleReportLock: (groupId, reportId, targetValue) => {
+        // DEBUG: Entry point
+        const preState = useNavfitStore.getState();
+        const preGroup = preState.summaryGroups.find(g => g.id === groupId);
+        const preReport = preGroup?.reports.find(r => r.id === reportId);
+        const preRank = preGroup?.reports.findIndex(r => r.id === reportId);
+        console.log('[LOCK DEBUG] ENTRY', {
+            groupId, reportId, targetValue,
+            currentMta: preReport?.traitAverage,
+            currentLock: preReport?.isLocked,
+            currentRank: preRank !== undefined ? preRank + 1 : 'NOT FOUND'
+        });
+
         set((state) => ({
             summaryGroups: state.summaryGroups.map((group) => {
                 if (group.id !== groupId) return group;
@@ -310,14 +323,33 @@ export const useNavfitStore = create<NavfitStore>((set) => ({
                     ...group,
                     reports: group.reports.map((report) => {
                         if (report.id !== reportId) return report;
+
+                        const willBeLocked = !report.isLocked;
+                        // If locking and a target value is provided, commit it.
+                        // Otherwise (unlocking or no value), keep existing traitAverage.
+                        const newMta = (willBeLocked && targetValue !== undefined) ? targetValue : report.traitAverage;
+
                         return {
                             ...report,
-                            isLocked: !report.isLocked
+                            isLocked: willBeLocked,
+                            traitAverage: newMta
                         };
                     })
                 };
             })
         }));
+
+        // DEBUG: After first set()
+        const midState = useNavfitStore.getState();
+        const midGroup = midState.summaryGroups.find(g => g.id === groupId);
+        const midReport = midGroup?.reports.find(r => r.id === reportId);
+        const midRank = midGroup?.reports.findIndex(r => r.id === reportId);
+        console.log('[LOCK DEBUG] AFTER SET (pre-sort)', {
+            newMta: midReport?.traitAverage,
+            newLock: midReport?.isLocked,
+            newRank: midRank !== undefined ? midRank + 1 : 'NOT FOUND',
+            allReports: midGroup?.reports.map(r => ({ id: r.id, mta: r.traitAverage, locked: r.isLocked }))
+        });
 
         // Trigger Redistribution for Anchor Update
         const state = useNavfitStore.getState(); // Get fresh state
@@ -328,14 +360,107 @@ export const useNavfitStore = create<NavfitStore>((set) => ({
             useAuditStore.getState().addLog('ANCHOR_SELECTION_CHANGE', {
                 groupId,
                 memberId: reportId,
-                isLocked: report?.isLocked
+                isLocked: report?.isLocked,
+                value: report?.traitAverage
             });
 
             const anchors: Record<string, number> = {};
             group.reports.forEach(r => {
                 if (r.isLocked) anchors[r.id] = r.traitAverage;
             });
-            useRedistributionStore.getState().setAnchors(groupId, anchors);
+
+            // IMPORTANT: Before redistribution, we must ensure the `summaryGroups` state 
+            // reflects the new SORt order if the committed value changed the rank.
+            // The `reorderMembers` action usually handles drag-and-drop, but here we 
+            // changed a value logically.
+            // We should re-sort the group's reports by MTA descending to keep 'Rank' consistent.
+            // FIX: Use stable sort with secondary key (id) to prevent rank jumping with equal MTA values.
+            const sortedReports = [...group.reports].sort((a, b) => {
+                const mtaDiff = b.traitAverage - a.traitAverage;
+                if (mtaDiff !== 0) return mtaDiff;
+                return a.id.localeCompare(b.id); // Tiebreaker for stability
+            });
+
+            // DEBUG: After sort
+            const postSortRank = sortedReports.findIndex(r => r.id === reportId);
+            console.log('[LOCK DEBUG] POST-SORT', {
+                targetReportRank: postSortRank + 1,
+                sortedOrder: sortedReports.map(r => ({ id: r.id, mta: r.traitAverage, locked: r.isLocked }))
+            });
+
+            // Update the group with sorted reports
+            set((s) => ({
+                summaryGroups: s.summaryGroups.map(g => {
+                    if (g.id !== groupId) return g;
+                    return { ...g, reports: sortedReports };
+                })
+            }));
+
+            console.log('[LOCK DEBUG] SKIPPING setAnchors - lock/unlock should not trigger redistribution', { anchors });
+
+            // FIX: Removed setAnchors call. Lock/unlock is purely a state change.
+            // Redistribution should NOT be triggered because it recalculates all non-anchor MTAs,
+            // which would overwrite committed optimization values.
+            // useRedistributionStore.getState().setAnchors(groupId, anchors);
+        }
+    },
+    setGroupLockState: (groupId, isLocked, valueMap) => {
+        set((state) => ({
+            summaryGroups: state.summaryGroups.map((group) => {
+                if (group.id !== groupId) return group;
+                return {
+                    ...group,
+                    reports: group.reports.map((report) => {
+                        // If locking, check if we have a specific value to commit for this report
+                        const commitValue = (isLocked && valueMap && valueMap[report.id] !== undefined)
+                            ? valueMap[report.id]
+                            : report.traitAverage;
+
+                        return {
+                            ...report,
+                            isLocked,
+                            traitAverage: commitValue
+                        };
+                    })
+                };
+            })
+        }));
+
+        // Trigger Redistribution
+        const state = useNavfitStore.getState();
+        const group = state.summaryGroups.find(g => g.id === groupId);
+        if (group) {
+            useAuditStore.getState().addLog('ANCHOR_SELECTION_CHANGE', {
+                groupId,
+                message: isLocked ? "Locked All Reports" : "Unlocked All Reports"
+            });
+
+            const anchors: Record<string, number> = {};
+            if (isLocked) {
+                group.reports.forEach(r => {
+                    anchors[r.id] = r.traitAverage;
+                });
+            }
+
+            // IMPORTANT: Mirroring logic from toggleReportLock.
+            // Ensure state is sorted by MTA descending in case values changed ranking.
+            // FIX: Use stable sort with secondary key (id) to prevent rank jumping with equal MTA values.
+            const sortedReports = [...group.reports].sort((a, b) => {
+                const mtaDiff = b.traitAverage - a.traitAverage;
+                if (mtaDiff !== 0) return mtaDiff;
+                return a.id.localeCompare(b.id); // Tiebreaker for stability
+            });
+
+            // Update the group with sorted reports
+            set((s) => ({
+                summaryGroups: s.summaryGroups.map(g => {
+                    if (g.id !== groupId) return g;
+                    return { ...g, reports: sortedReports };
+                })
+            }));
+            // FIX: Removed setAnchors call. Lock/unlock is purely a state change.
+            // Redistribution should NOT be triggered because it recalculates all non-anchor MTAs.
+            // useRedistributionStore.getState().setAnchors(groupId, anchors);
         }
     },
     reorderMember: (memberId, newIndex) => set((state) => {
@@ -530,7 +655,12 @@ export const useNavfitStore = create<NavfitStore>((set) => ({
             const updatedReports = group.reports.map(r => r.id === reportId ? { ...r, traitAverage: value, isLocked: true } : r);
 
             // 2. Strict Sort by MTA (Descending)
-            updatedReports.sort((a, b) => b.traitAverage - a.traitAverage);
+            // FIX: Use stable sort with secondary key (id) to prevent rank jumping with equal MTA values.
+            updatedReports.sort((a, b) => {
+                const mtaDiff = b.traitAverage - a.traitAverage;
+                if (mtaDiff !== 0) return mtaDiff;
+                return a.id.localeCompare(b.id); // Tiebreaker for stability
+            });
 
             // 3. Auto-Assign Recommendations based on Rank
             // This ensures that if the rank order changes due to MTA change, the recommendations update (Automatic Method)
