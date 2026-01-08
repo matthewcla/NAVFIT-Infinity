@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { useNavfitStore } from './useNavfitStore';
 import { useRedistributionStore } from './useRedistributionStore';
 import type { SummaryGroup, Report } from '@/types';
@@ -28,9 +28,10 @@ const createMockGroup = (id: string, reports: Report[]): SummaryGroup => ({
     status: 'Draft',
     paygrade: 'O-3',
     designator: '1110',
+    competitiveGroupKey: 'O-3 1110',
     rsca: 3.5,
     periodEndDate: '2024-01-01',
-    promotionStatus: 'Regular'
+    promotionStatus: 'REGULAR'
 } as SummaryGroup);
 
 describe('MTA Persistence After Optimization', () => {
