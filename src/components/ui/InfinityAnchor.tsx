@@ -1,4 +1,4 @@
-import { Infinity } from 'lucide-react';
+import { Infinity as InfinityIcon } from 'lucide-react';
 import { THEME_COLORS } from '@/styles/theme';
 
 interface InfinityAnchorProps {
@@ -65,7 +65,7 @@ export const InfinityAnchor = ({ size = 24, className = "" }: InfinityAnchorProp
                     transform: 'translateY(-50%)'
                 }}
             >
-                <Infinity
+                <InfinityIcon
                     size={size * 0.95} // Large and wide 
                     color={infinityColor}
                     strokeWidth={2.5}

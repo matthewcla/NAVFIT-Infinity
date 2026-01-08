@@ -457,7 +457,7 @@ export const TimelineRow = ({
                             const proj = projections[pid];
                             const val = proj !== undefined ? proj : member.nextPlan;
 
-                            if ((val as any) === 'NOB' || !val) return 'border-white';
+                            if ((val as unknown) === 'NOB' || !val) return 'border-white';
                             return (val as number) > avgRSCA ? 'border-green-500' : 'border-yellow-400';
                         })()
                             }`}
@@ -467,7 +467,8 @@ export const TimelineRow = ({
                         onMouseDown={(e) => {
                             const pid = getReportId('periodic');
                             const proj = projections[pid];
-                            const val = proj !== undefined ? proj : (member.nextPlan ?? null);
+                            const np = member.nextPlan;
+                            const val: number | 'NOB' | null = proj !== undefined ? proj : (typeof np === 'number' ? np : null);
                             handleReportMouseDown(e, pid, val);
                         }}
                     >
@@ -514,7 +515,7 @@ export const TimelineRow = ({
                             const val = proj !== undefined ? proj : member.target;
 
                             // Fix TS error: val is number | null, comparison to 'NOB' is invalid without cast
-                            if ((val as any) === 'NOB' || !val) return 'border-white';
+                            if ((val as unknown) === 'NOB' || !val) return 'border-white';
                             return (val as number) > avgRSCA ? 'border-green-500' : 'border-yellow-400';
                         })()
                             }`}

@@ -1,35 +1,38 @@
 import { useState, useEffect, useCallback } from 'react';
 import type { Member } from '@/types';
 
-export function useMemberDrag(initialGroups: Record<string, Member[]>) {
+export function useMemberDrag<T extends Member>(initialGroups: Record<string, T[]>) {
     const [groupOrder, setGroupOrder] = useState<Record<string, string[]>>({});
 
     // Sync groupOrder with incoming groups (maintenance of state)
     useEffect(() => {
-        setGroupOrder(prev => {
-            const newOrder = { ...prev };
-            let hasChanges = false;
+        const t = setTimeout(() => {
+            setGroupOrder(prev => {
+                const newOrder = { ...prev };
+                let hasChanges = false;
 
-            Object.entries(initialGroups).forEach(([key, list]) => {
-                if (!newOrder[key]) {
-                    // Initial sort alphabetical
-                    newOrder[key] = list
-                        .sort((a, b) => a.name.localeCompare(b.name))
-                        .map(m => m.id);
-                    hasChanges = true;
-                } else {
-                    // Check for new members not in order list
-                    const existingIds = new Set(newOrder[key]);
-                    const newMembers = list.filter(m => !existingIds.has(m.id));
-                    if (newMembers.length > 0) {
-                        newOrder[key] = [...newOrder[key], ...newMembers.map(m => m.id)];
+                Object.entries(initialGroups).forEach(([key, list]) => {
+                    if (!newOrder[key]) {
+                        // Initial sort alphabetical
+                        newOrder[key] = list
+                            .sort((a, b) => a.name.localeCompare(b.name))
+                            .map(m => m.id);
                         hasChanges = true;
+                    } else {
+                        // Check for new members not in order list
+                        const existingIds = new Set(newOrder[key]);
+                        const newMembers = list.filter(m => !existingIds.has(m.id));
+                        if (newMembers.length > 0) {
+                            newOrder[key] = [...newOrder[key], ...newMembers.map(m => m.id)];
+                            hasChanges = true;
+                        }
                     }
-                }
-            });
+                });
 
-            return hasChanges ? newOrder : prev;
-        });
+                return hasChanges ? newOrder : prev;
+            });
+        }, 0);
+        return () => clearTimeout(t);
     }, [initialGroups]);
 
     const handleDragStart = useCallback((e: React.DragEvent, memberId: string, groupKey: string) => {
@@ -75,7 +78,7 @@ export function useMemberDrag(initialGroups: Record<string, Member[]>) {
         }
     }, []);
 
-    const getSortedGroupList = useCallback((key: string, list: Member[]) => {
+    const getSortedGroupList = useCallback((key: string, list: T[]) => {
         const order = groupOrder[key];
         if (!order) return list.sort((a, b) => a.name.localeCompare(b.name));
 
@@ -83,7 +86,7 @@ export function useMemberDrag(initialGroups: Record<string, Member[]>) {
         const map = new Map(list.map(m => [m.id, m]));
 
         // Return ordered list, filter out any missing ids (safety)
-        const sorted = order.map(id => map.get(id)).filter(Boolean) as Member[];
+        const sorted = order.map(id => map.get(id)).filter(Boolean) as T[];
 
         // Append any potentially missing members (safety)
         const returnedIds = new Set(sorted.map(m => m.id));

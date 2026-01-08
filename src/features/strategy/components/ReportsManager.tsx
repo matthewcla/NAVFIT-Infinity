@@ -37,7 +37,8 @@ export function ReportsManager() {
 
     // Update Handler
     const handleUpdateReport = (reportId: string, newAverage: number) => {
-        updateProjection(reportId, newAverage);
+        if (!selectedGroupId) return; // Needs context
+        updateProjection(selectedGroupId, reportId, newAverage);
     };
 
 
@@ -299,7 +300,7 @@ export function ReportsManager() {
                                             { label: 'Submitted', key: 'Submitted' },
                                             { label: 'Archived', key: 'Archived' }
                                         ].map((col) => {
-                                            const groups = getGroupsByStatus(col.key as any);
+                                            const groups = getGroupsByStatus(col.key as 'Projected' | 'Draft' | 'Submitted' | 'Archived');
                                             return (
                                                 <div key={col.key} className="flex flex-col gap-4">
                                                     <div className="flex items-center justify-between pb-2 border-b border-slate-200">

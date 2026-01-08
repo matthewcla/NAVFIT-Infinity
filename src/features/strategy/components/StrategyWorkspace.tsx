@@ -143,7 +143,11 @@ export function StrategyWorkspace() {
                                 }
                                 roster={roster}
                                 onOpenReport={handleOpenReport}
-                                onUpdateReport={updateProjection}
+                                onUpdateReport={(reportId, value) => {
+                                    // Need to find group ID for report
+                                    const group = summaryGroups.find(g => g.reports.some(r => r.id === reportId));
+                                    if (group) updateProjection(group.id, reportId, value);
+                                }}
                                 flightPathMode={true}
                                 height={600}
                             />
@@ -156,7 +160,10 @@ export function StrategyWorkspace() {
                                 }
                                 roster={roster}
                                 onOpenReport={handleOpenReport}
-                                onReportUpdate={updateProjection}
+                                onReportUpdate={(reportId, value) => {
+                                    const group = summaryGroups.find(g => g.reports.some(r => r.id === reportId));
+                                    if (group) updateProjection(group.id, reportId, value);
+                                }}
                                 projections={projections}
                             />
                         )}

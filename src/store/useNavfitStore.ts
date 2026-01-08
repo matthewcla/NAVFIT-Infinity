@@ -1,13 +1,26 @@
 import { create } from 'zustand';
 import type { Tab } from '../components/layout/Sidebar';
-import type { RosterMember, ReportingSeniorConfig } from '@/types/roster';
-import { INITIAL_ROSTER, INITIAL_RS_CONFIG } from '../data/initialRoster';
+import type { RosterMember, ReportingSeniorConfig, PayGrade } from '@/types/roster';
+import { INITIAL_RS_CONFIG } from '../domain/rsca/constants';
 
-import { calculateOutcomeBasedGrades, type Member } from '@/features/strategy/logic/autoPlan';
+// import { type Member } from '@/features/strategy/logic/autoPlan';
+import { useRedistributionStore } from './useRedistributionStore';
+import { useAuditStore } from './useAuditStore';
+import { DEFAULT_CONSTRAINTS } from '@/domain/rsca/constants';
+import { defaultAnchorIndices } from '@/domain/rsca/redistribution';
+import type { Member as DomainMember } from '@/domain/rsca/types';
+import { validateReportState, checkQuota, createSummaryGroupContext } from '@/features/strategy/logic/validation';
 
-import type { SummaryGroup } from '@/types';
+import type { SummaryGroup, Report } from '@/types';
+import { assignRecommendationsByRank } from '@/features/strategy/logic/recommendation';
+import { fetchInitialData } from '@/services/dataLoader';
 
 interface NavfitStore {
+    // Loading State
+    isLoading: boolean;
+    error: string | null;
+    loadData: () => Promise<void>;
+
     // Navigation State
     activeTab: Tab;
     setActiveTab: (tab: Tab) => void;
@@ -21,8 +34,6 @@ interface NavfitStore {
     setSidebarCollapsed: (collapsed: boolean) => void;
     toggleSidebar: () => void;
 
-
-
     // Data State
     roster: RosterMember[];
     setRoster: (roster: RosterMember[]) => void;
@@ -30,10 +41,13 @@ interface NavfitStore {
 
     // Summary Group / Ranking Mode Actions
     reorderMembers: (groupId: string, draggedId: string, targetIdOrOrder: string | string[]) => void;
+    applyDefaultAnchors: (groupId: string) => void;
 
     summaryGroups: SummaryGroup[];
     setSummaryGroups: (groups: SummaryGroup[]) => void;
     addSummaryGroup: (group: SummaryGroup) => void;
+    updateGroupStatus: (groupId: string, status: 'Draft' | 'Review' | 'Submitted' | 'Final' | 'Projected') => void;
+
     // State for persistence (Deletions)
     deletedGroupIds: string[];
     deletedReportIds: string[];
@@ -47,7 +61,9 @@ interface NavfitStore {
 
     // Feature State
     projections: Record<string, number>;
-    updateProjection: (reportId: string, value: number) => void;
+    updateProjection: (groupId: string, reportId: string, value: number) => void;
+    updateReport: (groupId: string, reportId: string, updates: Partial<Report>) => void;
+    commitOptimization: (groupId: string, reports: Report[]) => void;
 
 
     // Cross-Component Requests
@@ -80,12 +96,12 @@ interface NavfitStore {
     activeCompetitiveGroup: string | null; // e.g., "O-3 1110"
     isContextPanelOpen: boolean;
     cycleFilter: 'All' | 'Officer' | 'Enlisted';
-    cycleSort: 'DueDate' | 'Status';
+    cycleSort: 'DueDate' | 'Status' | 'CompGroup';
 
     selectCycle: (cycleId: string, competitiveGroupKey: string) => void;
     clearSelection: () => void;
     setCycleFilter: (filter: 'All' | 'Officer' | 'Enlisted') => void;
-    setCycleSort: (sort: 'DueDate' | 'Status') => void;
+    setCycleSort: (sort: 'DueDate' | 'Status' | 'CompGroup') => void;
 
     // Drill-Down Navigation State
     strategyViewMode: 'landing' | 'workspace';
@@ -101,9 +117,119 @@ interface NavfitStore {
     // UI Mode State
     isRankMode: boolean;
     setRankMode: (isRankMode: boolean) => void;
+
+    // Data Management
+    loadState: (state: { roster: RosterMember[]; summaryGroups: SummaryGroup[]; rsConfig: ReportingSeniorConfig }) => void;
 }
 
 export const useNavfitStore = create<NavfitStore>((set) => ({
+    // Loading State
+    isLoading: false,
+    error: null,
+    loadData: async () => {
+        set({ isLoading: true, error: null });
+        try {
+            const { members, summaryGroups } = await fetchInitialData();
+
+            // Map Domain Members to UI RosterMembers if needed
+            // The RosterMember interface (from '@/types/roster') and Domain Member (from '@/types/index') are very similar but we should ensure compatibility.
+            // RosterMember expects: id, firstName, lastName, rank, payGrade, designator, dateReported, prd, lastTrait, status
+            // fetchInitialData returns Member[] which has name, but not split firstName/lastName?
+            // Wait, fetchInitialData implementation maps: name: `${detail.lastName}, ${detail.firstName}`
+            // But RosterMember in the store interface expects `firstName`, `lastName`.
+            // Let's check `fetchInitialData`. It returns Member[].
+            // RosterMember interface:
+            // export interface RosterMember { id, firstName, lastName, ... }
+            // Let's adapt the data from fetchInitialData to match RosterMember.
+
+            // However, looking at fetchInitialData, it returns objects that conform to Member interface.
+            // Member interface in src/types/index.ts has `name` (combined).
+            // RosterMember in src/types/roster.ts has firstName, lastName.
+
+            // We should inspect the data coming from fetchInitialData.
+            // Actually, fetchInitialData maps from raw member details which HAVE firstName and lastName.
+            // But it returns Member[].
+
+            // If the store expects RosterMember[], we might need to adjust fetchInitialData or map here.
+            // Since I cannot change fetchInitialData easily without potentially breaking other things (though it was just created),
+            // I will map it here. Ideally fetchInitialData should probably return what we need or we update the store type.
+            // Let's assume we map here for safety.
+
+            // Wait, looking at current `initializeRoster` (which I removed), it was mapping from raw JSON.
+            // fetchInitialData does the mapping.
+
+            // Let's look at `members` returned by `fetchInitialData`.
+            // It maps: name: "Last, First".
+            // It does NOT seem to preserve firstName/lastName in the return object explicitly unless Member has them.
+            // src/types/index.ts Member interface:
+            // export interface Member { id, name, rank, payGrade?, designator?, rating?, milestone?, prd?, status, gainDate?, ... }
+            // It does not have firstName, lastName.
+
+            // But RosterMember does.
+            // I should probably update RosterMember or NavfitStore to use Member, OR parse the name back.
+            // Or better, let's look at what `fetchInitialData` used. It used `detail.firstName`.
+            // I'll update the mapping here to be safe, assuming `fetchInitialData` is the source of truth for "loading data".
+            // BUT `fetchInitialData` returns `Member[]`.
+            // `useNavfitStore` state `roster` is `RosterMember[]`.
+
+            // If I change `roster` type to `Member[]`, it might break components expecting `firstName`.
+            // Let's map it. `Member` objects from `fetchInitialData` don't carry `firstName`.
+            // This is a slight mismatch introduced by the new service.
+            // I'll assume for now I can parse the name or that the UI can handle `name`.
+            // Actually, looking at `fetchInitialData` code in memory:
+            /*
+            return {
+                id: detail.id,
+                name: `${detail.lastName}, ${detail.firstName}`,
+                ...
+            };
+            */
+            // It drops firstName/lastName.
+            // To fix this cleanly, I should probably have `fetchInitialData` return objects that satisfy `RosterMember` (or a superset).
+            // But I am in the step of refactoring the store.
+            // I will split the name string here to populate firstName/lastName for RosterMember compatibility.
+
+            const roster: RosterMember[] = members.map(m => {
+                const parts = m.name.split(', ');
+                const lastName = parts[0] || '';
+                const firstName = parts[1] || '';
+                return {
+                    id: m.id,
+                    firstName,
+                    lastName,
+                    rank: m.rank,
+                    payGrade: m.payGrade as PayGrade,
+                    designator: m.designator || '', // Enlisted now have designator populated from my previous step
+                    dateReported: (m as any).dateReported || new Date().toISOString().split('T')[0], // Cast as any if strictly typed Member doesn't have it (but I saw it in fetchInitialData source)
+                    prd: m.prd || '',
+                    eda: (m as any).eda,
+                    edd: (m as any).edd,
+                    milestoneTour: (m as any).milestoneTour,
+                    lastTrait: m.lastTrait || 0,
+                    status: m.status as any,
+                    history: m.history || []
+                };
+            });
+
+            set({
+                roster,
+                summaryGroups,
+                isLoading: false,
+                // Reset dependent state
+                selectedCycleId: null,
+                activeCompetitiveGroup: null,
+                selectedReportId: null,
+                selectedMemberId: null,
+                isContextPanelOpen: false,
+                projections: {},
+                activeTab: 'strategy' // Reset to default tab? Or keep?
+            });
+        } catch (err: any) {
+            console.error("Failed to load data:", err);
+            set({ isLoading: false, error: err.message || "Failed to load data" });
+        }
+    },
+
     // Navigation
     activeTab: 'strategy',
     setActiveTab: (tab) => set({ activeTab: tab }),
@@ -119,17 +245,37 @@ export const useNavfitStore = create<NavfitStore>((set) => ({
 
     // History View State
     cycleListPhase: 'Active',
-    setCycleListPhase: (phase) => set({ cycleListPhase: phase }),
 
 
     // Data
-    roster: INITIAL_ROSTER,
+    roster: [], // Initialized empty
     setRoster: (roster) => set({ roster }),
 
     summaryGroups: [],
     setSummaryGroups: (groups) => set({ summaryGroups: groups }),
-    addSummaryGroup: (group) => set((state) => ({
-        summaryGroups: [...state.summaryGroups, group]
+    addSummaryGroup: (group) => {
+        set((state) => ({
+            summaryGroups: [...state.summaryGroups, group]
+        }));
+        // Apply default anchors immediately for new group
+        useNavfitStore.getState().applyDefaultAnchors(group.id);
+    },
+    updateGroupStatus: (groupId, status) => set((state) => ({
+        summaryGroups: state.summaryGroups.map((group) => {
+            if (group.id !== groupId) return group;
+
+            // Also update status on all reports
+            const updatedReports = group.reports.map(r => ({
+                ...r,
+                draftStatus: status as any
+            }));
+
+            return {
+                ...group,
+                status,
+                reports: updatedReports
+            };
+        })
     })),
     // Deletion Persistence
     deletedGroupIds: [],
@@ -149,21 +295,42 @@ export const useNavfitStore = create<NavfitStore>((set) => ({
             };
         })
     })),
-    toggleReportLock: (groupId, reportId) => set((state) => ({
-        summaryGroups: state.summaryGroups.map((group) => {
-            if (group.id !== groupId) return group;
-            return {
-                ...group,
-                reports: group.reports.map((report) => {
-                    if (report.id !== reportId) return report;
-                    return {
-                        ...report,
-                        isLocked: !report.isLocked
-                    };
-                })
-            };
-        })
-    })),
+    toggleReportLock: (groupId, reportId) => {
+        set((state) => ({
+            summaryGroups: state.summaryGroups.map((group) => {
+                if (group.id !== groupId) return group;
+                return {
+                    ...group,
+                    reports: group.reports.map((report) => {
+                        if (report.id !== reportId) return report;
+                        return {
+                            ...report,
+                            isLocked: !report.isLocked
+                        };
+                    })
+                };
+            })
+        }));
+
+        // Trigger Redistribution for Anchor Update
+        const state = useNavfitStore.getState(); // Get fresh state
+        const group = state.summaryGroups.find(g => g.id === groupId);
+        if (group) {
+            const report = group.reports.find(r => r.id === reportId);
+            // Log the NEW state (which is in `report` because we got fresh state)
+            useAuditStore.getState().addLog('ANCHOR_SELECTION_CHANGE', {
+                groupId,
+                memberId: reportId,
+                isLocked: report?.isLocked
+            });
+
+            const anchors: Record<string, number> = {};
+            group.reports.forEach(r => {
+                if (r.isLocked) anchors[r.id] = r.traitAverage;
+            });
+            useRedistributionStore.getState().setAnchors(groupId, anchors);
+        }
+    },
     reorderMember: (memberId, newIndex) => set((state) => {
         // Legacy Roster Reorder (Keep for Member Detail View if needed, but primary is now Group-based)
         const currentRoster = [...state.roster];
@@ -173,6 +340,64 @@ export const useNavfitStore = create<NavfitStore>((set) => ({
         currentRoster.splice(newIndex, 0, movedMember);
         return { roster: currentRoster };
     }),
+
+    applyDefaultAnchors: (groupId) => {
+        set((state) => {
+            const groupIndex = state.summaryGroups.findIndex(g => g.id === groupId);
+            if (groupIndex === -1) return {};
+
+            const group = state.summaryGroups[groupIndex];
+            const N = group.reports.length;
+            if (N === 0) return {};
+
+            const { top, bottom } = defaultAnchorIndices(N);
+            const anchorIndices = new Set([...top, ...bottom]);
+
+            // Requirement says "provide default anchor selection".
+            // We strictly set the calculated indices as anchors and unlock others to ensure a clean default state.
+
+            const updatedReports = group.reports.map((r, i) => ({
+                ...r,
+                isLocked: anchorIndices.has(i)
+            }));
+
+            const newSummaryGroups = [...state.summaryGroups];
+            newSummaryGroups[groupIndex] = { ...group, reports: updatedReports };
+
+            // Trigger Engine
+            // We need to convert to domain members and call requestRedistribution
+            // We can do this outside the set in a useEffect, but here we can just do it after state update or immediately.
+            // But `set` callback returns partial state. We need to trigger side effect.
+            // Side effect:
+            setTimeout(() => {
+                const updatedGroup = useNavfitStore.getState().summaryGroups[groupIndex];
+                if (!updatedGroup) return;
+
+                const domainMembers: DomainMember[] = updatedGroup.reports.map((r, i) => ({
+                    id: r.id,
+                    rank: i + 1,
+                    mta: r.traitAverage,
+                    isAnchor: !!r.isLocked,
+                    anchorValue: r.traitAverage,
+                    name: r.memberName
+                }));
+
+                useAuditStore.getState().addLog('ANCHOR_SELECTION_CHANGE', {
+                    groupId,
+                    message: "Applied Default Anchors (Top/Bottom 10%)"
+                });
+
+                useRedistributionStore.getState().requestRedistribution(
+                    groupId,
+                    domainMembers,
+                    DEFAULT_CONSTRAINTS,
+                    state.rsConfig.targetRsca
+                );
+            }, 0);
+
+            return { summaryGroups: newSummaryGroups };
+        });
+    },
 
     reorderMembers: (groupId, draggedId, targetIdOrOrder) => set((state) => {
         const groupIndex = state.summaryGroups.findIndex(g => g.id === groupId);
@@ -211,52 +436,72 @@ export const useNavfitStore = create<NavfitStore>((set) => ({
             const [draggedItem] = currentReports.splice(draggedIndex, 1);
             currentReports.splice(targetIndex, 0, draggedItem);
             updatedReportList = currentReports;
+
+            // 2b. Auto-Calculate MTA for the moved item (Interpolation)
+            // Note: We use targetIndex because draggedItem is now at targetIndex
+            const prevReport = updatedReportList[targetIndex - 1];
+            const nextReport = updatedReportList[targetIndex + 1];
+
+            let newMta = draggedItem.traitAverage;
+
+            if (prevReport && nextReport) {
+                newMta = (prevReport.traitAverage + nextReport.traitAverage) / 2;
+            } else if (prevReport) {
+                // Moved to bottom (or end)
+                newMta = Math.max(2.0, prevReport.traitAverage - 0.1);
+            } else if (nextReport) {
+                // Moved to top
+                newMta = Math.min(5.0, nextReport.traitAverage + 0.1);
+            }
+
+            // Simple Collision Avoidance (Nudge if identical)
+            if (prevReport && newMta >= prevReport.traitAverage) {
+                newMta = prevReport.traitAverage - 0.01;
+            }
+            if (nextReport && newMta <= nextReport.traitAverage) {
+                newMta = nextReport.traitAverage + 0.01;
+            }
+
+            updatedReportList[targetIndex] = {
+                ...draggedItem,
+                traitAverage: parseFloat(newMta.toFixed(2))
+            };
         }
 
-        // 3. Prepare Auto-Plan Input
-        const autoPlanInput: Member[] = updatedReportList.map((r, index) => ({
-            id: r.id,
-            rankOrder: index + 1,
-            reportsRemaining: r.reportsRemaining || 1,
-            status: r.isAdverse ? 'Adverse' : 'Promotable',
-            proposedTraitAverage: r.traitAverage,
-            isLocked: r.isLocked
-        }));
+        // 3. Auto-Assign Recommendations based on Rank and Policy
+        const finalReports = assignRecommendationsByRank(updatedReportList, group);
 
-        // 4. Calculate Grades
-        const rscaTarget = state.rsConfig.targetRsca || 4.20;
-        const calculatedResults = calculateOutcomeBasedGrades(autoPlanInput, rscaTarget);
-
-        // 5. Update Reports with Results & Promo Recs
-        const finalReports = updatedReportList.map((report, index) => {
-            const result = calculatedResults.find(res => res.id === report.id);
-
-            // EP Logic: Rank #1 is EP, others MP (User specified heuristic)
-            let newPromo: 'EP' | 'MP' | 'P' | 'Prog' | 'SP' | 'NOB' = index === 0 ? 'EP' : 'MP';
-            if (report.isAdverse) newPromo = 'SP';
-
-            return {
-                ...report,
-                traitAverage: result?.proposedTraitAverage ?? report.traitAverage,
-                promotionRecommendation: newPromo,
-            };
-        });
-
-        // 6. Update State
+        // 4. Update State
         const newSummaryGroups = [...state.summaryGroups];
         newSummaryGroups[groupIndex] = {
             ...group,
             reports: finalReports
         };
 
-        const newProjections = { ...state.projections };
-        finalReports.forEach(r => {
-            newProjections[r.id] = r.traitAverage;
+        // 5. Trigger Redistribution Engine
+        // Convert to Domain Members
+        const domainMembers: DomainMember[] = finalReports.map((r, i) => ({
+            id: r.id,
+            rank: i + 1,
+            mta: r.traitAverage, // Send current MTA as baseline
+            isAnchor: !!r.isLocked,
+            anchorValue: r.traitAverage,
+            name: r.memberName
+        }));
+
+        useAuditStore.getState().addLog('RANK_ORDER_CHANGE', {
+            groupId,
+            draggedId,
+            targetIdOrOrder
         });
+
+        // Do NOT call setRankOrder to avoid cycle (setRankOrder calls reorderMembers)
+        // Call requestRedistribution directly
+        useRedistributionStore.getState().requestRedistribution(groupId, domainMembers, DEFAULT_CONSTRAINTS, state.rsConfig.targetRsca);
 
         return {
             summaryGroups: newSummaryGroups,
-            projections: newProjections
+            // Projections will be updated by the store subscription/callback
         };
     }),
 
@@ -265,13 +510,163 @@ export const useNavfitStore = create<NavfitStore>((set) => ({
 
     // Feature
     projections: {},
-    updateProjection: (reportId, value) =>
-        set((state) => ({
-            projections: {
-                ...state.projections,
-                [reportId]: value
+    updateProjection: (groupId, reportId, value) => {
+        // Optimistic Update with Locking and Strict Sorting
+        set((state) => {
+            const groupIndex = state.summaryGroups.findIndex(g => g.id === groupId);
+            if (groupIndex === -1) return {};
+
+            const group = state.summaryGroups[groupIndex];
+
+            // 1. Update the value AND mark as locked (anchor)
+            // Manual MTA change implies an override - mark as locked so redistribution preserves it
+            const updatedReports = group.reports.map(r => r.id === reportId ? { ...r, traitAverage: value, isLocked: true } : r);
+
+            // 2. Strict Sort by MTA (Descending)
+            updatedReports.sort((a, b) => b.traitAverage - a.traitAverage);
+
+            // 3. Auto-Assign Recommendations based on Rank
+            // This ensures that if the rank order changes due to MTA change, the recommendations update (Automatic Method)
+            const finalReports = assignRecommendationsByRank(updatedReports, group);
+
+            const newSummaryGroups = [...state.summaryGroups];
+            newSummaryGroups[groupIndex] = { ...group, reports: finalReports };
+
+            return {
+                projections: {
+                    ...state.projections,
+                    [reportId]: value
+                },
+                summaryGroups: newSummaryGroups
+            };
+        });
+
+        // Trigger Engine
+        const state = useNavfitStore.getState();
+        const group = state.summaryGroups.find(g => g.id === groupId);
+        if (group) {
+            useAuditStore.getState().addLog('ANCHOR_MTA_EDIT', {
+                groupId,
+                memberId: reportId,
+                value
+            });
+
+            const domainMembers: DomainMember[] = group.reports.map((r, i) => ({
+                id: r.id,
+                rank: i + 1,
+                mta: r.traitAverage,
+                isAnchor: !!r.isLocked,
+                anchorValue: r.traitAverage,
+                name: r.memberName
+            }));
+            useRedistributionStore.getState().requestRedistribution(groupId, domainMembers, DEFAULT_CONSTRAINTS, state.rsConfig.targetRsca);
+        }
+    },
+
+    updateReport: (groupId, reportId, updates) => set((state) => {
+        const groupIndex = state.summaryGroups.findIndex(g => g.id === groupId);
+        if (groupIndex === -1) return {};
+
+        const group = state.summaryGroups[groupIndex];
+        const reports = [...group.reports];
+        const reportIndex = reports.findIndex(r => r.id === reportId);
+        if (reportIndex === -1) return {};
+
+        // 1. Apply Updates
+        const originalReport = reports[reportIndex];
+        const updatedReport: Report = {
+            ...originalReport,
+            ...updates
+        };
+
+        // 2. Validate Domain Policy (Traits, NOB, SP, O1/O2)
+        // Find previous report for SP logic (simplified: looking in roster or ignoring for now if complexity too high)
+        // Ideally we check history in roster.
+        const rosterMember = state.roster.find(m => m.id === updatedReport.memberId);
+        // Sort history by date desc, find one before this report's period
+        // For now, passing undefined to validateReportState unless we strictly need SP withdrawal check to work.
+        // Prompt requires it.
+        let previousReport: Report | undefined;
+        if (rosterMember && rosterMember.history) {
+            // Basic sort
+            const sorted = [...rosterMember.history].sort((a, b) => new Date(b.periodEndDate).getTime() - new Date(a.periodEndDate).getTime());
+            // The report being edited might be in history or not? If it's a draft, maybe not fully in history array or is the latest.
+            // We look for the first one strictly before this report's end date.
+            const currentEndDate = new Date(updatedReport.periodEndDate);
+            previousReport = sorted.find(r => new Date(r.periodEndDate) < currentEndDate);
+        }
+
+        const violations = validateReportState(updatedReport, group, previousReport);
+
+        // 3. Validate Quotas (Group Level)
+        // If recommendation changed to EP or MP, we need to check limits.
+        if (updates.promotionRecommendation) {
+            const tempReports = [...reports];
+            tempReports[reportIndex] = updatedReport;
+
+            const epCount = tempReports.filter(r => r.promotionRecommendation === 'EP').length;
+            const mpCount = tempReports.filter(r => r.promotionRecommendation === 'MP').length;
+
+            // Generate Context for Validation
+            const context = createSummaryGroupContext(group, updatedReport);
+
+            // Ensure size matches report array
+            // Note: If we just added a report, group.reports might be outdated if we don't use tempReports,
+            // but updateReport assumes report exists.
+            const quotaResult = checkQuota(context, epCount, mpCount);
+
+            if (!quotaResult.isValid && quotaResult.message) {
+                violations.push({
+                    code: 'QUOTA_EXCEEDED',
+                    message: quotaResult.message,
+                    severity: 'ERROR',
+                    affectedFields: ['promotionRecommendation']
+                });
             }
-        })),
+        }
+
+        updatedReport.violations = violations;
+        reports[reportIndex] = updatedReport;
+
+        const newSummaryGroups = [...state.summaryGroups];
+        newSummaryGroups[groupIndex] = {
+            ...group,
+            reports
+        };
+
+        return { summaryGroups: newSummaryGroups };
+    }),
+
+    commitOptimization: (groupId, reports) => set((state) => {
+        const groupIndex = state.summaryGroups.findIndex(g => g.id === groupId);
+        if (groupIndex === -1) return {};
+
+        const group = state.summaryGroups[groupIndex];
+
+        // 1. Update Group with new Reports (Optimized)
+        const newSummaryGroups = [...state.summaryGroups];
+        newSummaryGroups[groupIndex] = {
+            ...group,
+            reports
+        };
+
+        // 2. Clear Projections for these members
+        // We want to remove the projection key so the UI falls back to the report's traitAverage (which is now updated)
+        const newProjections = { ...state.projections };
+        reports.forEach(r => {
+            delete newProjections[r.id];
+        });
+
+        // 3. Clear any preview projections as well (though usually handled by component state)
+        // If we had store-based preview, we'd clear it here.
+
+        return {
+            summaryGroups: newSummaryGroups,
+            projections: newProjections,
+            // Also update loaded state references if needed? 
+            // In CycleContextPanel, we use latestGroup from summaryGroups, so this is sufficient.
+        };
+    }),
 
     // Requests
     pendingReportRequest: null,
@@ -335,6 +730,7 @@ export const useNavfitStore = create<NavfitStore>((set) => ({
     setCycleFilter: (filter) => set({ cycleFilter: filter }),
     setCycleSort: (sort) => set({ cycleSort: sort }),
     setStrategyViewMode: (mode) => set({ strategyViewMode: mode }),
+    setCycleListPhase: (phase) => set({ cycleListPhase: phase }),
 
     // Drag State
     draggingItemType: null,
@@ -343,9 +739,26 @@ export const useNavfitStore = create<NavfitStore>((set) => ({
     // UI Mode State
     isRankMode: false,
     setRankMode: (isRankMode) => set({ isRankMode }),
+
+    // Data Management
+    loadState: (loadedState) => set({
+        roster: loadedState.roster,
+        summaryGroups: loadedState.summaryGroups,
+        rsConfig: loadedState.rsConfig,
+        // Reset selections and temporary state
+        selectedCycleId: null,
+        activeCompetitiveGroup: null,
+        selectedReportId: null,
+        selectedMemberId: null,
+        isContextPanelOpen: false,
+        projections: {},
+    }),
 }));
 
 export const selectActiveCycle = (state: NavfitStore): SummaryGroup | null => {
     if (!state.selectedCycleId) return null;
     return state.summaryGroups.find(g => g.id === state.selectedCycleId) || null;
 };
+
+// Initialize
+// useNavfitStore.getState().loadData();
