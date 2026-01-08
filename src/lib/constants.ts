@@ -9,10 +9,10 @@ export const PERIODIC_SCHEDULE: Record<string, number> = {
     'O-3': 1, // Jan
     'O-2': 2, // Feb
     'O-1': 5, // May
-    'W-5': 3, // W-2 to W-5 often grouped or specific. Defaulting generally.
-    'W-4': 3,
-    'W-3': 3,
-    'W-2': 3,
+    'W-5': 9, // Sep
+    'W-4': 9, // Sep
+    'W-3': 9, // Sep
+    'W-2': 9, // Sep
     'E-9': 4, // Apr
     'E-8': 9, // Sep
     'E-7': 9, // Sep
@@ -22,4 +22,27 @@ export const PERIODIC_SCHEDULE: Record<string, number> = {
     'E-3': 7,
     'E-2': 7,
     'E-1': 7,
+};
+
+// Day of month for periodic reports. 0 = Last Day of Month.
+export const PERIODIC_DAYS: Record<string, number> = {
+    'O-6': 0,
+    'O-5': 0,
+    'O-4': 0,
+    'O-3': 0,
+    'O-2': 0,
+    'O-1': 0,
+    'W-5': 0,
+    'W-4': 0,
+    'W-3': 0,
+    'W-2': 0,
+    'E-9': 15,
+    'E-8': 15,
+    'E-7': 15,
+    'E-6': 15,
+    'E-5': 15,
+    'E-4': 15,
+    'E-3': 15,
+    'E-2': 15,
+    'E-1': 15,
 };

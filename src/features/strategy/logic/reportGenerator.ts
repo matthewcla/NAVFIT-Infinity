@@ -1,6 +1,6 @@
 import type { RosterMember, ReportingSeniorConfig } from '@/types/roster';
 import type { SummaryGroup, Report } from '@/types';
-import { PERIODIC_SCHEDULE } from '@/lib/constants';
+import { PERIODIC_SCHEDULE, PERIODIC_DAYS } from '@/lib/constants';
 import { getCompetitiveCategory, getCategoryLabel } from './competitiveGroupUtils';
 
 const formatISODate = (year: number, monthIndex: number, day: number) => {
@@ -55,6 +55,47 @@ const getCompetitiveGroup = (member: RosterMember): CompGroupKey => {
     };
 };
 
+/**
+ * Finds the Reporting Senior in the roster based on Milestone Tour ("CO", "MAJ CMD") or Highest Rank.
+ * Returns the detachDate if found, otherwise null.
+ */
+const findReportingSenior = (roster: RosterMember[]): RosterMember | null => {
+    // 1. Look for explicit CO/Command tours
+    const coMembers = roster.filter(m =>
+        m.milestoneTour && (
+            m.milestoneTour.includes('CO') ||
+            m.milestoneTour.includes('COMMAND') ||
+            m.milestoneTour.includes('MAJ CMD')
+        )
+    );
+
+    // Filter out XO if possible, unless they are the only ones (Acting?)
+    // But usually we want the real CO.
+    // If we have "XO/CO" and "MAJ CMD", prefer "MAJ CMD" or pure "CO" if possible.
+    // For now, let's sort by Paygrade descending, then by milestone priority.
+
+    if (coMembers.length > 0) {
+        // Sort by rank (desc)
+        coMembers.sort((a, b) => {
+            // Simple string comparison for O-6 vs O-5 works well enough for standard ranks
+            // but let's be safer if needed. However, O-6 > O-5 lexicographically? No.
+            // O-6 > O-5.
+            // Let's just pick the first one found for now or refine if needed.
+            // Actually, we should probably stick to the highest rank found in the CO list.
+            if (a.payGrade > b.payGrade) return -1;
+            if (a.payGrade < b.payGrade) return 1;
+            return 0;
+        });
+        return coMembers[0];
+    }
+
+    // 2. Fallback: Highest Ranking Officer
+    // Sort entire roster by paygrade?
+    // This is expensive and risky if the CO isn't the highest rank (unlikely but possible).
+    // Let's just return null and rely on config if no explicit CO is found.
+    return null;
+};
+
 
 // --- Logic Engine ---
 
@@ -107,7 +148,16 @@ export const generateSummaryGroups = (
     projections: Record<string, number> = {}
 ): SummaryGroup[] => {
     const groupsMap = new Map<string, SummaryGroup>();
-    const rsEndDate = new Date(rsConfig.changeOfCommandDate); // e.g. 2026-06-01
+
+    // 1. Resolve Reporting Senior Dates
+    const rsMember = findReportingSenior(roster);
+
+    // Determine RS Detach Date: Prefer found member's detachDate, then config date
+    const rsDetachDateStr = (rsMember && rsMember.detachDate)
+        ? rsMember.detachDate
+        : rsConfig.changeOfCommandDate;
+
+    const rsEndDate = new Date(rsDetachDateStr); // e.g. 2026-06-01
 
     // Helper to get-or-create Group
     const ensureGroup = (key: CompGroupKey, endDate: string): SummaryGroup => {
@@ -143,13 +193,20 @@ export const generateSummaryGroups = (
 
 
     roster.forEach(member => {
+        // Skip the Reporting Senior themselves from planning their own reports
+        if (rsMember && member.id === rsMember.id) return;
+
         const groupKey = getCompetitiveGroup(member);
-        const memberPRD = new Date(member.prd);
+
+        // Resolve Member Separation Date (PRD / Detach Date)
+        // Priority: detachDate > edd > prd
+        const memberExitStr = member.detachDate || member.edd || member.prd;
+        const memberExitDate = new Date(memberExitStr);
 
         // Helper to calc remaining reports
         const getReportsRemaining = (rDate: string) => {
             const d = new Date(rDate);
-            const years = memberPRD.getFullYear() - d.getFullYear();
+            const years = memberExitDate.getFullYear() - d.getFullYear();
             return Math.max(0, years);
         };
 
@@ -162,20 +219,36 @@ export const generateSummaryGroups = (
         // 1. ITERATE PERIODIC CYCLES (Long Term Projection)
         // -----------------------------------------------------
         while (currentYear <= endYear + 1) { // Look ahead slightly
-            const periodicMonth = PERIODIC_SCHEDULE[member.rank as string];
+            // Rank might be "ENS", we need paygrade key for schedule if possible, or fallback
+            // The PERIODIC_SCHEDULE uses paygrades (O-1, E-6) or titles?
+            // src/lib/constants.ts uses 'O-6', 'E-5'. So we should use payGrade code.
+            // Fallback to rank if payGrade is missing (legacy).
+            const rankKey = member.payGrade || member.rank;
+            const periodicMonth = PERIODIC_SCHEDULE[rankKey];
 
             if (periodicMonth) {
                 const pMonthIndex = periodicMonth - 1;
-                // Periodic Date for this year
-                const pDate = new Date(currentYear, pMonthIndex + 1, 0); // Last day of month
+
+                // Determine Day: 15th or Last Day?
+                const daySetting = PERIODIC_DAYS[rankKey] ?? 0; // Default to 0 (Last Day) if unknown
+
+                let pDate: Date;
+                if (daySetting === 15) {
+                    pDate = new Date(currentYear, pMonthIndex, 15);
+                } else {
+                    // Last Day of Month
+                    pDate = new Date(currentYear, pMonthIndex + 1, 0);
+                }
 
                 // Constraints:
-                // 1. Report Date must be BEFORE RS Leaves
+                // 1. Report Date must be BEFORE RS Leaves (Strict < or <= depends on if RS signs on their last day. Usually YES).
                 // 2. Report Date must be BEFORE Member Leaves (PRD)
                 // 3. Member must have reported BEFORE Report Date
                 const memberRepDate = new Date(member.dateReported);
 
-                if (pDate <= rsEndDate && pDate <= memberPRD && pDate >= memberRepDate) {
+                // We allow pDate == rsEndDate (RS signs on last day)
+                // We check if member is still onboard.
+                if (pDate <= rsEndDate && pDate <= memberExitDate && pDate >= memberRepDate) {
                     const pDateStr = formatISODate(currentYear, pMonthIndex, pDate.getDate());
                     const group = ensureGroup(groupKey, pDateStr);
 
@@ -229,14 +302,14 @@ export const generateSummaryGroups = (
         }
 
         // -----------------------------------------------------
-        // 2. MEMBER TRANSFER (PRD) REPORT
+        // 2. MEMBER TRANSFER (DETACHMENT OF INDIVIDUAL) REPORT
         // -----------------------------------------------------
-        // If Member leaves BEFORE RS leaves, they get a Transfer Report at PRD.
-        if (memberPRD < rsEndDate && memberPRD > new Date(member.dateReported)) {
-            const prdStr = formatISODate(memberPRD.getFullYear(), memberPRD.getMonth(), memberPRD.getDate());
+        // If Member leaves BEFORE RS leaves, they get a Transfer Report at Detach Date.
+        if (memberExitDate < rsEndDate && memberExitDate > new Date(member.dateReported)) {
+            const prdStr = formatISODate(memberExitDate.getFullYear(), memberExitDate.getMonth(), memberExitDate.getDate());
             const group = ensureGroup(groupKey, prdStr);
 
-            const reportId = `r-${member.id}-transfer-${memberPRD.getFullYear()}`;
+            const reportId = `r-${member.id}-transfer-${memberExitDate.getFullYear()}`;
             const calculatedAvg = projections[reportId] ?? projections[member.id] ?? calculateStartValue(member, 'Transfer', rsConfig);
             const report: Report = {
                 id: reportId,
@@ -263,11 +336,10 @@ export const generateSummaryGroups = (
         // 3. RS DETACH REPORT (The "End of Tour" Mass Report)
         // -----------------------------------------------------
         // Occurs ON `rsEndDate`.
-        // Member must be Onboard (PRD > RS Date)
+        // Member must be Onboard (Exit Date >= RS Date)
         // Member must have reported before RS Date.
-        if (memberPRD >= rsEndDate && new Date(member.dateReported) < rsEndDate) {
-            const rsDateStr = rsConfig.changeOfCommandDate;
-            const group = ensureGroup(groupKey, rsDateStr);
+        if (memberExitDate >= rsEndDate && new Date(member.dateReported) < rsEndDate) {
+            const group = ensureGroup(groupKey, rsDetachDateStr);
 
             if (!group.reports.some(r => r.memberId === member.id)) {
                 const reportId = `r-${member.id}-rsdetach-${rsEndDate.getFullYear()}`;
@@ -277,7 +349,7 @@ export const generateSummaryGroups = (
                     memberId: member.id,
                     memberRank: member.rank,
                     memberName: `${member.lastName}, ${member.firstName} ${member.middleInitial || ''}`.trim(),
-                    periodEndDate: rsDateStr,
+                    periodEndDate: rsDetachDateStr,
                     type: 'Detachment',
                     traitAverage: calculatedAvg,
                     promotionRecommendation: calculatedAvg > 0 ? 'P' : 'NOB',
@@ -287,7 +359,7 @@ export const generateSummaryGroups = (
                     designator: member.designator,
                     promotionStatus: member.promotionStatus,
                     reportingSeniorName: rsConfig.name,
-                    reportsRemaining: getReportsRemaining(rsDateStr),
+                    reportsRemaining: getReportsRemaining(rsDetachDateStr),
                 };
                 group.reports.push(report);
             }

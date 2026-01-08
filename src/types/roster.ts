@@ -20,6 +20,7 @@ export interface RosterMember {
     prd: string;          // Projected Rotation Date
     eda?: string;         // Estimated Date of Arrival
     edd?: string;         // Estimated Date of Departure
+    detachDate?: string;
     milestoneTour?: string;
 
     lastTrait?: number;
