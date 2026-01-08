@@ -12,12 +12,8 @@ import { mapUiPaygradeToDomain } from '@/features/strategy/logic/recommendation'
 
 import {
     Layout,
-    ListOrdered,
     Calendar,
-    Check,
-    X,
-    Send,
-    Sparkles
+    Send
 } from 'lucide-react';
 
 import { MemberDetailSidebar } from '@/features/dashboard/components/MemberDetailSidebar';
@@ -86,7 +82,6 @@ export function CycleContextPanel({ group }: CycleContextPanelProps) {
     };
 
     // Local Rank Mode State
-    const [isRankingMode, setIsRankingMode] = useState(false);
     const [isSubmitModalOpen, setIsSubmitModalOpen] = useState(false);
 
     // Optimization Review State
@@ -457,7 +452,7 @@ export function CycleContextPanel({ group }: CycleContextPanelProps) {
         );
     }
 
-    const { currentRsca, projectedRsca, gap, mainDraftStatus, rankedMembers, distribution, eotRsca, totalReports, effectiveSize, domainContext, isEnlisted } = contextData;
+    const { currentRsca, projectedRsca, mainDraftStatus, rankedMembers, distribution, eotRsca, totalReports, effectiveSize, domainContext, isEnlisted } = contextData;
 
     // Helper for Badge
     const getPromotionStatusBadge = (s?: string) => {
@@ -560,92 +555,11 @@ export function CycleContextPanel({ group }: CycleContextPanelProps) {
                     {/* 2. Sticky Toolbar (Below Header) */}
                     <div className="sticky top-0 z-20 bg-white/95 backdrop-blur border-b border-slate-200 p-4 pt-2">
                         <div className="flex items-center justify-between">
-                            {/* Left: Rank / Edit Controls */}
-                            <div className="flex items-center gap-2">
-                                {isRankingMode ? (
-                                    <>
-                                        <button
-                                            onClick={() => {
-                                                setIsRankingMode(false);
-                                                setLocalOrderedMembers(null);
-                                            }}
-                                            className="flex items-center justify-center gap-2 px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white border border-transparent rounded-lg transition-colors text-xs font-medium shadow-sm"
-                                            title="Save Order"
-                                        >
-                                            <Check className="w-3.5 h-3.5" />
-                                            <span>Done</span>
-                                        </button>
-                                        <button
-                                            onClick={() => {
-                                                setIsRankingMode(false);
-                                                setLocalOrderedMembers(null);
-                                            }}
-                                            className="flex items-center justify-center gap-2 px-3 py-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 rounded-lg transition-colors text-xs font-medium"
-                                            title="Cancel Reordering"
-                                        >
-                                            <X className="w-3.5 h-3.5 text-slate-500" />
-                                            <span>Cancel</span>
-                                        </button>
-                                    </>
-                                ) : (
-                                    <button
-                                        onClick={() => setIsRankingMode(true)}
-                                        className="flex items-center justify-center gap-2 px-3 py-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 rounded-lg transition-colors text-xs font-medium"
-                                        title="Rank Members"
-                                    >
-                                        <ListOrdered className="w-3.5 h-3.5 text-slate-500" />
-                                        <span>Rank</span>
-                                    </button>
-                                )}
-                            </div>
+                            {/* Left: Rank / Edit Controls (Removed) */}
+                            <div className="flex items-center gap-2"></div>
 
                             {/* Right: Alerts & Optimize */}
-                            <div className="flex items-center gap-2 px-2">
-                                {/* Alert Badge */}
-                                {gap > 0 && (
-                                    <div className="flex items-center gap-1.5 px-2.5 py-1.5 bg-amber-50 rounded-md text-xs font-bold text-amber-700 border border-amber-200 shadow-sm animate-in fade-in slide-in-from-right-2">
-                                        <span>{gap} Attention Needed</span>
-                                    </div>
-                                )}
-
-                                {/* Optimize Button - Moved to Right */}
-                                {!isRankingMode && (
-                                    proposedReports ? (
-                                        <>
-                                            <button
-                                                onClick={handleAcceptOptimization}
-                                                className="flex items-center justify-center gap-2 px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white border border-transparent rounded-lg transition-colors text-xs font-medium shadow-sm animate-in fade-in slide-in-from-right-4"
-                                                title="Accept Proposed Strategy"
-                                            >
-                                                <Check className="w-3.5 h-3.5" />
-                                                <span>Accept</span>
-                                            </button>
-                                            <button
-                                                onClick={handleCancelOptimization}
-                                                className="flex items-center justify-center gap-2 px-3 py-2 bg-white hover:bg-rose-50 text-rose-600 border border-slate-200 rounded-lg transition-colors text-xs font-medium animate-in fade-in slide-in-from-right-4"
-                                                title="Discard Changes"
-                                            >
-                                                <X className="w-3.5 h-3.5" />
-                                                <span>Cancel</span>
-                                            </button>
-                                        </>
-                                    ) : (
-                                        <button
-                                            onClick={handleOptimize}
-                                            disabled={isOptimizing}
-                                            className="flex items-center justify-center gap-2 px-3 py-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 rounded-lg transition-colors text-xs font-medium disabled:opacity-50"
-                                            title="Optimize MTA Distribution"
-                                        >
-                                            {isOptimizing ? (
-                                                <div className="w-3.5 h-3.5 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
-                                            ) : (
-                                                <Sparkles className="w-3.5 h-3.5 text-indigo-500" />
-                                            )}
-                                            <span>{isOptimizing ? 'Calcul...' : 'Optimize'}</span>
-                                        </button>
-                                    )
-                                )}
-                            </div>
+                            <div className="flex items-center gap-2 px-2"></div>
                         </div>
                     </div>
                 </div>
@@ -658,7 +572,6 @@ export function CycleContextPanel({ group }: CycleContextPanelProps) {
                     )}
 
                     <CycleMemberList
-                        isRankingMode={isRankingMode}
                         isEnlisted={isEnlisted}
                         rankedMembers={rankedMembers as RankedMember[]}
                         localOrderedMembers={localOrderedMembers}
@@ -674,6 +587,11 @@ export function CycleContextPanel({ group }: CycleContextPanelProps) {
                             if (!proposedReports) handleReorderMembers(g, d, t);
                         }}
                         setDraggingItemType={setDraggingItemType}
+                        onOptimize={handleOptimize}
+                        onAcceptOptimization={handleAcceptOptimization}
+                        onCancelOptimization={handleCancelOptimization}
+                        isOptimizing={isOptimizing}
+                        hasProposedReports={!!proposedReports}
                     />
                 </div>
             </div>
@@ -708,7 +626,6 @@ export function CycleContextPanel({ group }: CycleContextPanelProps) {
                         }}
                         groupContext={domainContext}
                         groupId={activeGroup.id}
-                        isRankingMode={isRankingMode}
                         onPreviewMTA={handlePreviewMTA}
 
                         // Pass Rank Context
