@@ -33,7 +33,7 @@ interface MemberDetailSidebarProps {
     onUpdatePromRec: (memberId: string, rec: 'EP' | 'MP' | 'P' | 'Prog' | 'SP' | 'NOB') => void;
     onNavigateNext: () => void;
     onNavigatePrev: () => void;
-    rosterMember: RosterMember;
+    rosterMember?: RosterMember;
     currentReport?: Report;
     currentRsca?: number;
 
@@ -74,6 +74,11 @@ export function MemberDetailSidebar({
 
     // Source of Truth: Fetch directly from store if possible
     const rosterMember = roster.find(m => m.id === memberId) || _passedRosterMember;
+
+    // Early return if no roster member found
+    if (!rosterMember) {
+        return null;
+    }
 
     // Determine "Rank" label logic similar to CycleMemberList
     const isEnlisted = rosterMember.rank?.startsWith('E') ||

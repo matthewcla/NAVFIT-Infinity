@@ -151,8 +151,6 @@ export function CycleContextPanel({ group }: CycleContextPanelProps) {
                         currentRsca={currentRsca}
                         projectedRsca={projectedRsca}
                         rankLabel="Curr. RSCA"
-                        showSuffix={false}
-                        promotionStatus={group.promotionStatus as any}
                     />
                 </div>
             </div>
@@ -320,6 +318,22 @@ export function CycleContextPanel({ group }: CycleContextPanelProps) {
                         console.log('Update MTA:', id, mta);
                         // Implement update logic or connection store action here
                     }}
+                    onUpdatePromRec={(id, rec) => {
+                        console.log('Update Prom Rec:', id, rec);
+                    }}
+                    onNavigateNext={() => {
+                        const currentIdx = group.reports.findIndex(r => r.memberId === selectedMemberId);
+                        if (currentIdx < group.reports.length - 1) {
+                            setSelectedMemberId(group.reports[currentIdx + 1].memberId);
+                        }
+                    }}
+                    onNavigatePrev={() => {
+                        const currentIdx = group.reports.findIndex(r => r.memberId === selectedMemberId);
+                        if (currentIdx > 0) {
+                            setSelectedMemberId(group.reports[currentIdx - 1].memberId);
+                        }
+                    }}
+                    rosterMember={undefined}
                 />
             )}
         </div>
