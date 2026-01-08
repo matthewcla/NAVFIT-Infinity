@@ -1,5 +1,6 @@
 import type { BoardSchedule, SummaryGroup, Report } from '@/types';
 import type { RosterMember } from '@/types/roster';
+import { getCompetitiveCategory, getCategoryLabel } from '@/features/strategy/logic/competitiveGroupUtils';
 
 // Periodic Cycles (Month index 0-11)
 const PERIODIC_CYCLES: Record<string, number> = {
@@ -87,19 +88,23 @@ export const SummaryGroupGenerator = {
                 const closeoutDate = new Date(year, cycleMonth + 1, 0); // Last day of month
 
                 // Competitive Group Key (The "Pool")
-                // Used for UI Headers to link separate status groups together (e.g. Frocked & Regular)
-                // For Officers: "O-3 1110"
-                // For Enlisted: "E-6"
-                const competitiveGroupKey = designatorContext === 'Enlisted' ? rank : `${rank} ${designatorContext}`;
+                // Used for UI Headers and Group Naming
+                // Format: "O-3 URL Active" using getCategoryLabel
+                let competitiveGroupKey = rank;
+                if (designatorContext !== 'Enlisted') {
+                    const cat = getCompetitiveCategory(designatorContext);
+                    const label = getCategoryLabel(cat);
+                    competitiveGroupKey = `${rank} ${label}`;
+                }
 
                 // Summary Group Name (The "Report Bucket")
-                // Regular: "O-3 1110 Periodic"
-                // Frocked: "O-3 1110 (FROCKED) Periodic"
+                // Regular: "O-3 URL Active Periodic"
+                // Frocked: "O-3 URL Active (FROCKED) Periodic"
                 let groupNamePrefix = competitiveGroupKey;
                 if (status !== 'REGULAR') {
                     groupNamePrefix += ` (${status})`;
                 }
-                const groupName = `${groupNamePrefix} Periodic`;
+                const groupName = groupNamePrefix;
 
                 groups.push({
                     id: `sg-auto-periodic-${rank}-${designatorContext}-${status}-${year}`,
@@ -123,10 +128,13 @@ export const SummaryGroupGenerator = {
 
         detachers.forEach(m => {
             const isOfficer = m.rank.startsWith('O') || m.rank.startsWith('W');
-            const designatorKey = isOfficer ? m.designator : 'Enlisted';
-            // Use same key logic or just rank/desig. Let's use the standard logic for consistency if possible, 
-            // but for simple detachment groups, just Rank/Desig is fine.
-            const competitiveGroupKey = designatorKey === 'Enlisted' ? m.rank : `${m.rank} ${designatorKey}`;
+
+            let competitiveGroupKey = m.rank;
+            if (isOfficer) {
+                const cat = getCompetitiveCategory(m.designator);
+                const label = getCategoryLabel(cat);
+                competitiveGroupKey = `${m.rank} ${label}`;
+            }
 
             groups.push({
                 id: `sg-auto-det-${m.id}`,

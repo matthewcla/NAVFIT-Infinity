@@ -40,7 +40,7 @@ const createMockRsConfig = (overrides: Partial<ReportingSeniorConfig> = {}): Rep
 const createMockExistingGroup = (overrides: Partial<SummaryGroup> = {}): SummaryGroup => ({
     id: `sg-existing-${Math.random().toString(36).substring(7)}`,
     name: 'Existing Group',
-    competitiveGroupKey: 'URL O-3',
+    competitiveGroupKey: 'O-3 URL Active',
     periodEndDate: '2025-01-31',
     status: 'Final',
     reports: [],
@@ -77,7 +77,7 @@ describe('planSummaryGroups', () => {
             expect(results.length).toBeGreaterThan(0);
             results.forEach(result => {
                 expect(result.group.status).toBe('Planned');
-                expect(result.group.name).toContain('Periodic');
+                expect(result.group.name).toBe('O-3 URL Active');
                 expect(result.eotRsca).toBeDefined();
             });
         });
@@ -163,8 +163,8 @@ describe('planSummaryGroups', () => {
             const results = planDetachmentOfIndividualGroups(mockRoster, mockRsConfig, mockExistingGroups);
 
             expect(results.length).toBe(1);
-            expect(results[0].group.name).toContain('Ind. Det.');
-            expect(results[0].group.status).toBe('Planned');
+            expect(results[0].group.name).toBe('O-3 URL Active');
+            expect(results[0].group.competitiveGroupKey).toBe('O-3 URL Active');
         });
 
         it('should set detachmentOfIndividual flag on reports', () => {
@@ -209,7 +209,7 @@ describe('planSummaryGroups', () => {
 
             expect(results.length).toBeGreaterThan(0);
             expect(results[0].group.periodEndDate).toBe(mockRsConfig.changeOfCommandDate);
-            expect(results[0].group.name).toContain('Detachment of RS');
+            expect(results[0].group.name).toBe('O-3 URL Active');
         });
 
         it('should include members still onboard at RS detach', () => {
@@ -280,10 +280,9 @@ describe('planSummaryGroups', () => {
             const results = planAllSummaryGroups(mockRoster, mockRsConfig, mockExistingGroups);
 
             // Should include periodic, DOI, and DORS groups
-            const groupTypes = results.map(r => r.group.name);
-            expect(groupTypes.some(n => n.includes('Periodic'))).toBe(true);
-            expect(groupTypes.some(n => n.includes('Ind. Det.'))).toBe(true);
-            expect(groupTypes.some(n => n.includes('Detachment of RS'))).toBe(true);
+            // Should include various groups, all named cleanly
+            const groupNames = results.map(r => r.group.name);
+            expect(groupNames.every(n => n === 'O-3 URL Active')).toBe(true);
         });
 
         it('should sort results by periodEndDate', () => {

@@ -175,13 +175,13 @@ export const getCompetitiveCategory = (designator: string): CompetitiveCategoryR
  */
 export const getCategoryLabel = (cat: CompetitiveCategoryResult): string => {
     switch (cat.code) {
-        case 'URL': return 'URL';
-        case 'RL': return 'RL';
-        case 'IWL': return 'IWL';
-        case 'STAFF': return 'STAFF';
-        case 'LDO_ACTIVE': return 'LDO';
-        case 'LDO_CWO_RESERVE': return 'RES LDO/CWO'; // Or just LDO? Maybe distinction helps.
-        case 'CWO_ACTIVE': return 'CWO';
+        case 'URL': return 'URL Active';
+        case 'RL': return 'RL Active';
+        case 'IWL': return 'IWL Active';
+        case 'STAFF': return 'Staff Active';
+        case 'LDO_ACTIVE': return 'LDO Active';
+        case 'LDO_CWO_RESERVE': return 'LDO/CWO Reserve';
+        case 'CWO_ACTIVE': return 'CWO Active';
         default: return '';
     }
 };

@@ -12,7 +12,7 @@
 import type { SummaryGroup, Report } from '@/types';
 import type { RosterMember, ReportingSeniorConfig } from '@/types/roster';
 import { PERIODIC_SCHEDULE } from '@/lib/constants';
-import { getCompetitiveCategory } from './competitiveGroupUtils';
+import { getCompetitiveCategory, getCategoryLabel } from './competitiveGroupUtils';
 import { calculateEotRsca, getCompetitiveGroupStats } from './rsca';
 
 // ============================================================================
@@ -63,13 +63,21 @@ const getCompetitiveGroup = (member: RosterMember): CompGroupKey => {
     }
 
     // Match the format used by summaryGroupGenerator.ts:
-    // Officers: "${rank} ${designator}" (e.g., "O-3 1110")
+    // Officers: "${rank} ${categoryLabel}" (e.g., "O-3 URL Active")
     // Enlisted: "${rank}" (e.g., "E-6")
-    const labelBase = isOfficer && designator ? `${displayRank} ${designator}` : displayRank;
+    let labelBase = displayRank;
+
+    if (isOfficer && designator) {
+        // Use getCategoryLabel to resolve standard label (e.g. "URL Active")
+        const cat = getCompetitiveCategory(designator);
+        const catLabel = getCategoryLabel(cat);
+        labelBase = `${displayRank} ${catLabel}`;
+    }
+
     const label = `${labelBase} ${promotionStatus !== 'REGULAR' ? `(${promotionStatus})` : ''}`.trim();
 
     return {
-        paygrade: payGrade || rank,
+        paygrade: (payGrade || rank) as any, // Cast to any/PayGrade to satisfy type check
         designator: designator,
         promotionStatus: promotionStatus as 'REGULAR' | 'FROCKED' | 'SELECTED' | 'SPOT',
         label: label,
@@ -184,7 +192,7 @@ export function planPeriodicGroups(
         if (!groupsMap.has(id)) {
             groupsMap.set(id, {
                 id,
-                name: `${key.label} Periodic`,
+                name: key.label,
                 periodEndDate: endDate,
                 status: 'Planned',
                 reports: [],
@@ -287,7 +295,7 @@ export function planDetachmentOfIndividualGroups(
             if (!groupExistsInStore(existingGroups, groupKey.label, prdStr)) {
                 const group: SummaryGroup = {
                     id: `sg-planned-doi-${member.id}-${memberPRD.getFullYear()}`,
-                    name: `${groupKey.label} Ind. Det.`,
+                    name: groupKey.label,
                     periodEndDate: prdStr,
                     status: 'Planned',
                     reports: [createPlannedReport(member, prdStr, 'Detachment', rsConfig, true)],
@@ -359,7 +367,7 @@ export function planDetachmentOfReportingSeniorGroups(
                 if (!groupsMap.has(id)) {
                     groupsMap.set(id, {
                         id,
-                        name: `${groupKey.label} Detachment of RS`,
+                        name: groupKey.label,
                         periodEndDate: rsDateStr,
                         status: 'Planned',
                         reports: [],
