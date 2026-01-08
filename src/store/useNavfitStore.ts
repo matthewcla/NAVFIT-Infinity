@@ -14,6 +14,7 @@ import { validateReportState, checkQuota, createSummaryGroupContext } from '@/fe
 import type { SummaryGroup, Report } from '@/types';
 import { assignRecommendationsByRank } from '@/features/strategy/logic/recommendation';
 import { fetchInitialData } from '@/services/dataLoader';
+import { planAllSummaryGroups } from '@/features/strategy/logic/planSummaryGroups';
 
 interface NavfitStore {
     // Loading State
@@ -211,9 +212,15 @@ export const useNavfitStore = create<NavfitStore>((set) => ({
                 };
             });
 
+            // Auto-generate planned summary groups
+            const rsConfig = useNavfitStore.getState().rsConfig;
+            const plannedResults = planAllSummaryGroups(roster, rsConfig, summaryGroups);
+            const plannedGroups = plannedResults.map(r => r.group);
+            const allGroups = [...summaryGroups, ...plannedGroups];
+
             set({
                 roster,
-                summaryGroups,
+                summaryGroups: allGroups,
                 isLoading: false,
                 // Reset dependent state
                 selectedCycleId: null,

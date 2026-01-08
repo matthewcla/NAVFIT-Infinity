@@ -184,14 +184,16 @@ export function ActiveCyclesList({ groups, onSelect, selectedGroupId, onAddClick
                                                         status = 'Overdue';
                                                     }
 
-                                                    const dist = group.reports.reduce((acc, r) => {
-                                                        const rec = r.promotionRecommendation;
-                                                        if (rec && rec !== 'NOB') {
-                                                            const key = rec === 'Prog' ? 'PR' : rec;
-                                                            acc[key] = (acc[key] || 0) + 1;
-                                                        }
-                                                        return acc;
-                                                    }, {} as Record<string, number>);
+                                                    // Derive report type from group name
+                                                    const getReportType = (name: string): string => {
+                                                        const n = name.toLowerCase();
+                                                        if (n.includes('periodic')) return 'Periodic';
+                                                        if (n.includes('detachment of rs') || n.includes('det. of rs') || n.includes('dors')) return 'RS Det.';
+                                                        if (n.includes('detachment of individual') || n.includes('doi')) return 'Ind Det.';
+                                                        if (n.includes('special')) return 'Special';
+                                                        if (n.includes('detachment')) return 'Ind Det.'; // Default detachment 
+                                                        return 'Periodic'; // Default
+                                                    };
 
                                                     return (
                                                         <StrategyGroupCard
@@ -203,8 +205,8 @@ export function ActiveCyclesList({ groups, onSelect, selectedGroupId, onAddClick
                                                             workflowStatus={group.status}
                                                             rscaImpact={rscaImpact}
                                                             promotionStatus={group.promotionStatus}
+                                                            reportType={getReportType(group.name)}
                                                             isSelected={selectedGroupId === group.id}
-                                                            distribution={dist}
                                                             onClick={() => onSelect(group)}
                                                             draggable={true}
                                                             onDragStart={(e) => {

@@ -474,11 +474,6 @@ export function CycleContextPanel({ group }: CycleContextPanelProps) {
         }
     };
 
-    // Helper to clean title
-    const cleanTitle = (t: string) => {
-        return t.replace(/\b(FROCKED|REGULAR|SELECTED|SPOT)\b/gi, '').trim();
-    };
-
     const formattedDate = new Date(activeGroup.periodEndDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
 
     const handleConfirmSubmit = () => {
@@ -501,7 +496,7 @@ export function CycleContextPanel({ group }: CycleContextPanelProps) {
                         <div className="flex justify-between items-start mb-4">
                             <div className="flex flex-col gap-1">
                                 <div className="flex items-center gap-2">
-                                    <h2 className="text-2xl font-bold text-slate-900">{cleanTitle(activeGroup.name)}</h2>
+                                    <h2 className="text-2xl font-bold text-slate-900">{activeGroup.name}</h2>
                                     {getPromotionStatusBadge(activeGroup.promotionStatus)}
                                     <StatusBadge
                                         status={mainDraftStatus}
