@@ -29,7 +29,7 @@ interface QuotaTestResult {
 }
 
 // Filter to only Draft groups (the ones we'd optimize)
-const draftGroups = (testData.summaryGroups as SummaryGroup[]).filter(
+const draftGroups = (testData.summaryGroups as unknown as SummaryGroup[]).filter(
     g => g.status === 'Draft'
 );
 
