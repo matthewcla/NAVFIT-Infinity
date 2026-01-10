@@ -263,6 +263,31 @@ export function MemberDetailSidebar({
     }, [isDraggingSlider, simulatedRec]);
 
 
+    const isDirty = Math.abs(simulatedMta - initialMta) > 0.001 || simulatedRec !== initialRec;
+
+    // --- Right-Click Auto-Close ---
+    useEffect(() => {
+        const handleContextMenu = () => {
+            // Check for unsaved changes before just closing?
+            // The existing onClose usually handles it via parental passing or we call checkUnsavedChanges(onClose)
+            // But we can't easily wrap the passed onClose in checkUnsavedChanges inside the event listener 
+            // without explicitly calling the local wrapper.
+
+            // NOTE: The user requested "automatically closes". 
+            // If we want to support the "Unsaved Changes" modal, we should call checkUnsavedChanges(onClose).
+            // However, checkUnsavedChanges expects a function () => void.
+            checkUnsavedChanges(onClose);
+        };
+
+        window.addEventListener('contextmenu', handleContextMenu);
+
+        return () => {
+            window.removeEventListener('contextmenu', handleContextMenu);
+        };
+    }, [onClose, isDirty, simulatedMta, simulatedRec]); // Depend on state needed for checkUnsavedChanges
+
+
+
     // --- Rank Change Logic ---
     const handleMtaChange = (newValue: number, isIntermediate = false) => {
         if (isLocked || simulatedRec === 'NOB') return;
@@ -385,8 +410,6 @@ export function MemberDetailSidebar({
             default: return cn(base, selected, "bg-white border-slate-200 text-slate-500");
         }
     };
-
-    const isDirty = Math.abs(simulatedMta - initialMta) > 0.001 || simulatedRec !== initialRec;
 
     const handleApply = () => {
         onUpdateMTA(memberId, simulatedMta);
