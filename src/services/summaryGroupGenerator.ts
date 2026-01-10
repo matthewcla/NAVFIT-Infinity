@@ -89,12 +89,16 @@ export const SummaryGroupGenerator = {
 
                 // Competitive Group Key (The "Pool")
                 // Used for UI Headers and Group Naming
-                // Format: "O-3 URL Active" using getCategoryLabel
+                // Format: "O-3 URL Active" or "E-6 Active" using getCategoryLabel or component
                 let competitiveGroupKey = rank;
                 if (designatorContext !== 'Enlisted') {
                     const cat = getCompetitiveCategory(designatorContext);
                     const label = getCategoryLabel(cat);
                     competitiveGroupKey = `${rank} ${label}`;
+                } else {
+                    // Enlisted: use component field (default: 'Active')
+                    const enlistedSuffix = members[0]?.component || 'Active';
+                    competitiveGroupKey = `${rank} ${enlistedSuffix}`;
                 }
 
                 // Summary Group Name (The "Report Bucket")
@@ -134,6 +138,10 @@ export const SummaryGroupGenerator = {
                 const cat = getCompetitiveCategory(m.designator);
                 const label = getCategoryLabel(cat);
                 competitiveGroupKey = `${m.rank} ${label}`;
+            } else {
+                // Enlisted: use component field (default: 'Active')
+                const enlistedSuffix = m.component || 'Active';
+                competitiveGroupKey = `${m.rank} ${enlistedSuffix}`;
             }
 
             groups.push({
