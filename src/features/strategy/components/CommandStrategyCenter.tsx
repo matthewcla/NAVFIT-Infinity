@@ -7,7 +7,7 @@ import { ActiveCyclesList } from './ActiveCyclesList';
 
 import { useNavfitStore } from '@/store/useNavfitStore';
 import { useSummaryGroups } from '@/features/strategy/hooks/useSummaryGroups';
-import { Filter, Anchor, Infinity, CheckCircle2, RefreshCw } from 'lucide-react';
+import { Filter, Anchor, CheckCircle2, RefreshCw } from 'lucide-react';
 import { AddSummaryGroupModal } from '@/features/dashboard/components/AddSummaryGroupModal';
 import { ReportEditorModal } from './ReportEditorModal';
 
@@ -110,7 +110,7 @@ export function CommandStrategyCenter() {
                 <div className="flex items-center gap-3">
                     <div className="relative text-indigo-900 w-8 h-8 flex items-center justify-center">
                         <Anchor className="absolute w-7 h-7 stroke-[2.5]" />
-                        <Infinity className="absolute w-8 h-8 stroke-[1.5] rotate-6 text-indigo-400 opacity-60" />
+
                     </div>
                     <h1 className="text-xl font-normal text-slate-900">
                         <span className="font-bold">NAVFIT</span> Infinity

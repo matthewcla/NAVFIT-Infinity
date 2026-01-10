@@ -13,6 +13,9 @@ export interface RosterMember {
     designator: Designator;
     promotionStatus?: 'REGULAR' | 'FROCKED' | 'SELECTED' | 'SPOT'; // Defaults to REGULAR if undefined
 
+    // Duty component: Active Duty, Reserve, etc. Defaults to 'Active' if undefined.
+    component?: 'Active' | 'Reserve' | 'FTS';
+
     // Enlisted Rating (e.g. "BM", "IT"). Undefined for Officers or unrated/undesignated (E-1 to E-3).
     rating?: string;
 

@@ -82,6 +82,69 @@ describe('planSummaryGroups', () => {
             });
         });
 
+        it('should name enlisted Active groups with "Active" suffix', () => {
+            mockRoster = [
+                createMockMember({
+                    id: 'enlisted-active-1',
+                    rank: 'E-6',
+                    payGrade: 'E-6',
+                    designator: '',
+                    component: 'Active',
+                    prd: '2028-06-15'
+                })
+            ];
+
+            const results = planPeriodicGroups(mockRoster, mockRsConfig, mockExistingGroups);
+
+            expect(results.length).toBeGreaterThan(0);
+            results.forEach(result => {
+                expect(result.group.name).toBe('E-6 Active');
+                expect(result.group.competitiveGroupKey).toBe('E-6 Active');
+            });
+        });
+
+        it('should name enlisted Reserve groups with "Reserve" suffix', () => {
+            mockRoster = [
+                createMockMember({
+                    id: 'enlisted-reserve-1',
+                    rank: 'E-6',
+                    payGrade: 'E-6',
+                    designator: '',
+                    component: 'Reserve',
+                    prd: '2028-06-15'
+                })
+            ];
+
+            const results = planPeriodicGroups(mockRoster, mockRsConfig, mockExistingGroups);
+
+            expect(results.length).toBeGreaterThan(0);
+            results.forEach(result => {
+                expect(result.group.name).toBe('E-6 Reserve');
+                expect(result.group.competitiveGroupKey).toBe('E-6 Reserve');
+            });
+        });
+
+        it('should default enlisted groups to "Active" when component is undefined', () => {
+            mockRoster = [
+                createMockMember({
+                    id: 'enlisted-default-1',
+                    rank: 'E-6',
+                    payGrade: 'E-6',
+                    designator: '',
+                    // component is undefined
+                    prd: '2028-06-15'
+                })
+            ];
+
+            const results = planPeriodicGroups(mockRoster, mockRsConfig, mockExistingGroups);
+
+            expect(results.length).toBeGreaterThan(0);
+            results.forEach(result => {
+                expect(result.group.name).toBe('E-6 Active');
+                expect(result.group.competitiveGroupKey).toBe('E-6 Active');
+            });
+        });
+
         it('should group members by competitive group key', () => {
             mockRoster = [
                 createMockMember({ id: 'member-1', designator: '1110', prd: '2028-06-15' }),

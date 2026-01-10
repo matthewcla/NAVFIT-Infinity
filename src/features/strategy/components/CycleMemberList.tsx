@@ -14,7 +14,7 @@ import {
     sortableKeyboardCoordinates,
     verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
-import { SortableMemberRow } from './SortableMemberRow';
+import { SortableMemberRow } from '@/features/strategy/components/SortableMemberRow';
 import { useNavfitStore } from '@/store/useNavfitStore';
 import type { Report } from '@/types';
 
