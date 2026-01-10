@@ -15,8 +15,17 @@ import type { SummaryGroup, Report } from '@/types';
 import { assignRecommendationsByRank } from '@/features/strategy/logic/recommendation';
 import { fetchInitialData } from '@/services/dataLoader';
 import { planAllSummaryGroups } from '@/features/strategy/logic/planSummaryGroups';
+import type { User } from '@/domain/auth/types';
+import { MOCK_USERS } from '@/domain/auth/mockUsers';
 
 interface NavfitStore {
+    // Auth State
+    currentUser: User | null;
+    isAuthenticated: boolean;
+    availableUsers: User[];
+    login: (userId: string) => void;
+    logout: () => void;
+
     // Loading State
     isLoading: boolean;
     error: string | null;
@@ -125,6 +134,21 @@ interface NavfitStore {
 }
 
 export const useNavfitStore = create<NavfitStore>((set) => ({
+    // Auth State
+    currentUser: MOCK_USERS[0], // Default to first user (M. Clark)
+    isAuthenticated: true,
+    availableUsers: MOCK_USERS,
+    login: (userId: string) => {
+        const user = MOCK_USERS.find(u => u.id === userId);
+        if (user) {
+            set({ currentUser: user, isAuthenticated: true });
+        }
+    },
+    logout: () => {
+        console.log("Logging out...");
+        set({ currentUser: null, isAuthenticated: false });
+    },
+
     // Loading State
     isLoading: false,
     error: null,
