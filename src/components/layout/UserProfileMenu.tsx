@@ -4,13 +4,12 @@ import { useNavfitStore } from '@/store/useNavfitStore';
 import {
     Settings,
     LogOut,
-    UserCircle,
     ChevronUp,
     Check,
     LogIn
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import type { User } from '@/domain/auth/types';
+
 
 interface UserProfileMenuProps {
     collapsed: boolean;
@@ -37,10 +36,10 @@ export const UserProfileMenu: React.FC<UserProfileMenuProps> = ({ collapsed }) =
         return (
             <div className={cn("p-4 border-t border-slate-800 flex items-center transition-all duration-300", collapsed ? "justify-center" : "justify-between")}>
                 <Menu as="div" className="relative w-full flex justify-center">
-                   <Menu.Button className="w-10 h-10 rounded-full bg-slate-700 hover:bg-slate-600 flex items-center justify-center text-slate-300 transition-colors">
+                    <Menu.Button className="w-10 h-10 rounded-full bg-slate-700 hover:bg-slate-600 flex items-center justify-center text-slate-300 transition-colors">
                         <LogIn size={20} />
                     </Menu.Button>
-                   <Transition
+                    <Transition
                         as={Fragment}
                         enter="transition ease-out duration-100"
                         enterFrom="transform opacity-0 scale-95"
@@ -68,9 +67,9 @@ export const UserProfileMenu: React.FC<UserProfileMenuProps> = ({ collapsed }) =
                                                 active ? "bg-slate-700 text-white" : "text-slate-300"
                                             )}
                                         >
-                                           <div className="w-6 h-6 rounded-full bg-blue-900 flex items-center justify-center text-xs font-bold text-blue-100">
+                                            <div className="w-6 h-6 rounded-full bg-blue-900 flex items-center justify-center text-xs font-bold text-blue-100">
                                                 {user.initials}
-                                           </div>
+                                            </div>
                                             <div>
                                                 <div className="font-medium">{user.rank} {user.name}</div>
                                                 <div className="text-xs text-slate-400 truncate w-32">{user.title}</div>
@@ -83,11 +82,11 @@ export const UserProfileMenu: React.FC<UserProfileMenuProps> = ({ collapsed }) =
                     </Transition>
                 </Menu>
                 {!collapsed && (
-                     <div className="ml-3 flex-1 overflow-hidden">
-                        <button onClick={() => {/* Trigger menu open programmatically if needed, but button above handles it */}} className="text-sm font-medium text-slate-400 hover:text-white transition-colors">
+                    <div className="ml-3 flex-1 overflow-hidden">
+                        <button onClick={() => {/* Trigger menu open programmatically if needed, but button above handles it */ }} className="text-sm font-medium text-slate-400 hover:text-white transition-colors">
                             Log In
                         </button>
-                     </div>
+                    </div>
                 )}
             </div>
         );
@@ -133,11 +132,11 @@ export const UserProfileMenu: React.FC<UserProfileMenuProps> = ({ collapsed }) =
                                 : "bottom-full left-4 right-4 mb-2 origin-bottom" // Pop up above
                         )}>
                             {/* Header Section in Menu */}
-                             <div className="px-3 py-3">
+                            <div className="px-3 py-3">
                                 <div className="text-xs font-medium text-slate-500">Signed in as</div>
                                 <div className="text-sm font-bold text-white mt-0.5">{currentUser.rank} {currentUser.name}</div>
                                 <div className="text-xs text-slate-400 truncate">{currentUser.command}</div>
-                             </div>
+                            </div>
 
                             {/* Profile Switcher */}
                             <div className="py-1">

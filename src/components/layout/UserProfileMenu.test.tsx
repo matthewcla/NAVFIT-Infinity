@@ -1,5 +1,3 @@
-// @vitest-environment jsdom
-import React from 'react';
 import { render, screen, fireEvent, waitFor, cleanup } from '@testing-library/react';
 import { UserProfileMenu } from './UserProfileMenu';
 import { useNavfitStore } from '@/store/useNavfitStore';
@@ -7,10 +5,10 @@ import { MOCK_USERS } from '@/domain/auth/mockUsers';
 import { expect, test, describe, beforeEach, afterEach, vi } from 'vitest';
 
 // Polyfill ResizeObserver
-global.ResizeObserver = class ResizeObserver {
-    observe() {}
-    unobserve() {}
-    disconnect() {}
+globalThis.ResizeObserver = class ResizeObserver {
+    observe() { }
+    unobserve() { }
+    disconnect() { }
 };
 
 describe('UserProfileMenu', () => {
@@ -44,9 +42,9 @@ describe('UserProfileMenu', () => {
 
         // Wait for menu transition
         await waitFor(() => {
-             // Use getAll because strictly speaking Headless UI might keep hidden nodes or transitions might duplicate?
-             // But usually getByText is fine if open.
-             expect(screen.getByText('Switch Profile')).toBeTruthy();
+            // Use getAll because strictly speaking Headless UI might keep hidden nodes or transitions might duplicate?
+            // But usually getByText is fine if open.
+            expect(screen.getByText('Switch Profile')).toBeTruthy();
         });
 
         // Check for other users
@@ -66,7 +64,7 @@ describe('UserProfileMenu', () => {
 
         // Click on second user
         await waitFor(() => {
-             expect(screen.getByText('RADM K. Kennedy')).toBeTruthy();
+            expect(screen.getByText('RADM K. Kennedy')).toBeTruthy();
         });
 
         const secondUserText = screen.getByText('RADM K. Kennedy');
@@ -97,7 +95,7 @@ describe('UserProfileMenu', () => {
 
         // Click Logout
         await waitFor(() => {
-             expect(screen.getByText('Log out')).toBeTruthy();
+            expect(screen.getByText('Log out')).toBeTruthy();
         });
 
         const logoutText = screen.getByText('Log out');
@@ -110,7 +108,7 @@ describe('UserProfileMenu', () => {
     });
 
     test('shows Login button when logged out', () => {
-         useNavfitStore.setState({
+        useNavfitStore.setState({
             currentUser: null,
             isAuthenticated: false
         });
