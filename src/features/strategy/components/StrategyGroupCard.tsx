@@ -175,10 +175,10 @@ export function StrategyGroupCard({
                     </div>
 
                     {/* Upper Right: Workflow Status */}
-                    <div className="absolute top-3 right-3">
+                    <div className="absolute top-3.5 right-3">
                         <StatusBadge
                             status={workflowStatus || status}
-                            className="!text-[10px] !px-1.5 !py-0.5 !rounded-md !shadow-sm !leading-none !tracking-wide"
+                            className="!text-[10px] !px-1.5 !py-0.5 !rounded-md !shadow-sm !leading-none !tracking-wide !inline-flex !items-center !justify-center"
                         />
                     </div>
                 </div>

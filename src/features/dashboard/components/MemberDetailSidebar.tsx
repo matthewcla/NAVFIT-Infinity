@@ -83,10 +83,11 @@ export function MemberDetailSidebar({
         ['E-1', 'E-2', 'E-3', 'E-4', 'E-5', 'E-6', 'E-7', 'E-8', 'E-9'].includes(rosterMember.payGrade || '');
 
     // Fallback if needed
-    const displayRank = isEnlisted ? rosterMember.rank : rosterMember.rank; // Title for Officer, Rating/Rank for Enlisted?
+    // Fallback if needed
+    const displayRank = rosterMember.rank;
     const displaySubtext = isEnlisted
-        ? (rosterMember.rank || rosterMember.payGrade)
-        : (rosterMember.designator || rosterMember.rank);
+        ? `| ${rosterMember.component || 'Active'}`
+        : (rosterMember.designator || '');
 
     // Find latest report if we have a groupId, or fallback to passed report
     let currentReport = _passedCurrentReport;

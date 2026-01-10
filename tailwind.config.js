@@ -35,6 +35,9 @@ export default {
         'chart-gain': '#64748b',     // slate-500
         'chart-special': '#eab308',  // yellow-500
         'chart-promotion': '#22c55e', // green-500
+      },
+      fontFamily: {
+        sans: ['Inter', 'sans-serif'],
       }
     },
   },

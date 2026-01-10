@@ -136,7 +136,7 @@ export function SortableMemberRow({
                 {reportsRemaining !== undefined ? reportsRemaining : '-'}
             </td>
             <td className="px-4 py-3 text-sm text-center w-16">
-                <PromotionBadge recommendation={promRec} size="xs" className="rounded-sm px-1.5" />
+                <PromotionBadge recommendation={promRec} size="sm" className="rounded-sm px-1.5" />
             </td>
             <td className="px-4 py-3 text-sm font-mono text-slate-700 text-center w-20">{promRec === 'NOB' ? '-' : mta.toFixed(2)}</td>
             <td className="px-4 py-3 text-sm font-mono text-slate-400 text-center w-20">

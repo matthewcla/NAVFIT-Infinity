@@ -75,7 +75,7 @@ export function QuotaHeadsUpDisplay({ distribution, totalReports, context }: Quo
                         )}>
                             {item.count}
                         </span>
-                        <div className={`px-2.5 py-0.5 rounded text-xs font-bold border ${item.color} shadow-sm min-w-[36px] text-center`}>
+                        <div className={`px-2 py-0.5 rounded text-[10px] font-bold border ${item.color} shadow-sm min-w-[30px] text-center`}>
                             {item.label}
                         </div>
                     </div>
