@@ -23,6 +23,7 @@ export interface Member {
     history?: Report[];
     promotionStatus?: 'REGULAR' | 'FROCKED' | 'SELECTED' | 'SPOT';
     nextPlan?: number | string | null; // Planned next report MTA
+    timeInGrade?: number; // Years in current paygrade
 }
 
 export interface Report {
@@ -173,4 +174,3 @@ export interface ReportingSenior {
     ssn?: string;
     designator?: string;
 }
-
