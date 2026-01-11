@@ -15,8 +15,11 @@ export interface Member {
     rating?: string; // Enlisted
     milestone?: string; // DIVO, DH, LPO, etc.
     prd?: string; // Projected Rotation Date YYYY-MM-DD
+    eda?: string; // Estimated Date of Arrival
+    edd?: string; // Estimated Date of Departure
     status: 'Onboard' | 'Gain' | 'Loss';
     gainDate?: string;
+    dateReported?: string;
     lastTrait?: number | null;
     target?: number | null;
     lastExam?: number;
