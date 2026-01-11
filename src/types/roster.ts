@@ -35,6 +35,8 @@ export interface RosterMember {
     status?: 'Promotable' | 'Transferring' | 'Retiring' | string;
     reportsRemaining?: number;
     rankOrder?: number;
+
+    timeInGrade?: number; // Years in present paygrade
 }
 
 export interface ReportingSeniorConfig {

@@ -18,6 +18,7 @@ export interface RawMemberDetail {
     dateReported?: string;
     payGrade?: string;
     rank?: string;
+    timeInGrade?: number;
 }
 
 export type RawMemberDetails = Record<string, RawMemberDetail>;
@@ -78,35 +79,56 @@ export interface RawSummaryGroupData {
     timestamp?: string;
 }
 
-export async function fetchInitialData(): Promise<{ members: Member[]; summaryGroups: SummaryGroup[] }> {
+export async function fetchInitialData(userId: string = 'user_1'): Promise<{ members: Member[]; summaryGroups: SummaryGroup[] }> {
+    const filename = `/user_${userId.replace('user_', '')}.json`;
+
+    // Fallback to user_1 if specific file doesn't exist is risky here as we are client side,
+    // but typically we'd catch error. For now assume files exist if logic is correct.
+    // However, if we fail, we could fallback to summary_groups_test_data.json if needed, but per plan we use user_X.json.
+
+    // We always load the master member list
     const [memberDetailsRes, summaryGroupsRes] = await Promise.all([
         fetch('/member_details.json'),
-        fetch('/summary_groups_test_data.json')
+        fetch(filename)
     ]);
 
-    if (!memberDetailsRes.ok || !summaryGroupsRes.ok) {
-        throw new Error('Failed to load initial data');
+    if (!memberDetailsRes.ok) {
+        throw new Error('Failed to load member details');
+    }
+
+    if (!summaryGroupsRes.ok) {
+        throw new Error(`Failed to load user data for ${userId}`);
     }
 
     const memberDetails: RawMemberDetails = await memberDetailsRes.json();
     const summaryGroupsData: RawSummaryGroupData = await summaryGroupsRes.json();
 
     // Map Members
+    // Only map members that are in the user's roster to keep memory usage sane?
+    // Or map all? The interface returns Member[].
+    // Usually we only need the members relevant to the user.
+    // The roster array in summaryGroupsData defines the user's scope.
+
     const rosterMap = new Map<string, RawRosterItem>();
     summaryGroupsData.roster.forEach(item => rosterMap.set(item.id, item));
 
-    const members: Member[] = Object.values(memberDetails).map(detail => {
-        const rosterItem = rosterMap.get(detail.id);
-        const history: Report[] = (rosterItem?.history || []).map(rawReport => ({
+    const members: Member[] = [];
+
+    // We iterate the ROSTER from the user file, and look up details in the master file.
+    summaryGroupsData.roster.forEach(rosterItem => {
+        const detail = memberDetails[rosterItem.id];
+        if (!detail) return; // Should not happen if data is consistent
+
+        const history: Report[] = (rosterItem.history || []).map(rawReport => ({
             ...rawReport,
-            type: (rawReport.type as any) || 'Periodic', // Default
-            traitGrades: rawReport.traitGrades || {}, // Default empty
+            type: (rawReport.type as any) || 'Periodic',
+            traitGrades: rawReport.traitGrades || {},
             draftStatus: (rawReport.draftStatus as any) || 'Final',
             memberRank: detail.rank || '',
             memberName: `${detail.lastName}, ${detail.firstName}`
         }));
 
-        return {
+        members.push({
             id: detail.id,
             name: `${detail.lastName}, ${detail.firstName}`,
             rank: detail.rank || '',
@@ -116,11 +138,12 @@ export async function fetchInitialData(): Promise<{ members: Member[]; summaryGr
             prd: detail.prd,
             eda: detail.eda,
             edd: detail.edd,
-            status: 'Onboard', // Defaulting as these seem to be active
+            status: 'Onboard', // Default, logic might need refinement if 'Gain' is a status
             gainDate: detail.gainDate,
-            dateReported: detail.dateReported, // Extended field mapping
-            history: history
-        };
+            dateReported: detail.dateReported,
+            history: history,
+            timeInGrade: detail.timeInGrade
+        });
     });
 
     // Map Summary Groups

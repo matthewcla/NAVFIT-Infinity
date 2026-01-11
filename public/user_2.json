@@ -1,0 +1,4831 @@
+{
+  "roster": [
+    {
+      "id": "b127f71e-4194-4c10-bb53-a1261c893f9d",
+      "history": []
+    },
+    {
+      "id": "375ac924-bdd2-4f16-8f82-24f76c6a6576",
+      "history": []
+    },
+    {
+      "id": "5d9923d3-23f6-432d-8ac5-2fbc21e8a105",
+      "history": [
+        {
+          "id": "6899f87f-054d-4ff1-acac-34a0086a5490",
+          "memberId": "5d9923d3-23f6-432d-8ac5-2fbc21e8a105",
+          "periodEndDate": "2023-07-31",
+          "traitAverage": 3.81,
+          "promotionRecommendation": "MP",
+          "firstName": "Joseph",
+          "lastName": "Harris",
+          "rank": "CAPT",
+          "designator": "1120",
+          "draftStatus": "Final",
+          "isLocked": true
+        }
+      ]
+    },
+    {
+      "id": "8a99e3d9-d3f6-4ae4-bb28-63865da614f0",
+      "history": [
+        {
+          "id": "1b1423bd-9ba3-459a-9ff8-09f34e44c813",
+          "memberId": "8a99e3d9-d3f6-4ae4-bb28-63865da614f0",
+          "periodEndDate": "2023-07-31",
+          "traitAverage": 4.53,
+          "promotionRecommendation": "EP",
+          "firstName": "Carol",
+          "lastName": "Sanchez",
+          "rank": "CAPT",
+          "designator": "1110",
+          "draftStatus": "Final",
+          "isLocked": true
+        }
+      ]
+    },
+    {
+      "id": "0ea2b346-af63-4ca9-8859-5f8c20666e7a",
+      "history": [
+        {
+          "id": "20329bbe-d5c0-43e4-a440-74b0b9dad0c7",
+          "memberId": "0ea2b346-af63-4ca9-8859-5f8c20666e7a",
+          "periodEndDate": "2023-07-31",
+          "traitAverage": 3.16,
+          "promotionRecommendation": "P",
+          "firstName": "Donald",
+          "lastName": "Wright",
+          "rank": "CAPT",
+          "designator": "5100",
+          "draftStatus": "Final",
+          "isLocked": true
+        }
+      ]
+    },
+    {
+      "id": "01744b09-4350-4844-8633-36072e146af9",
+      "history": [
+        {
+          "id": "115aeadb-98f1-4b26-91fb-c8d8e1f87da5",
+          "memberId": "01744b09-4350-4844-8633-36072e146af9",
+          "periodEndDate": "2023-07-31",
+          "traitAverage": 4.71,
+          "promotionRecommendation": "EP",
+          "firstName": "Kenneth",
+          "lastName": "Martinez",
+          "rank": "CAPT",
+          "designator": "6180",
+          "draftStatus": "Final",
+          "isLocked": true
+        }
+      ]
+    },
+    {
+      "id": "86a215da-c5ae-4dfb-9e7c-abae84c96be0",
+      "history": [
+        {
+          "id": "40e33030-44bd-4d55-a8d7-50481136a99e",
+          "memberId": "86a215da-c5ae-4dfb-9e7c-abae84c96be0",
+          "periodEndDate": "2023-07-31",
+          "traitAverage": 4.09,
+          "promotionRecommendation": "MP",
+          "firstName": "Joshua",
+          "lastName": "Baker",
+          "rank": "CAPT",
+          "designator": "1110",
+          "draftStatus": "Final",
+          "isLocked": true
+        }
+      ]
+    },
+    {
+      "id": "27e78909-955a-48f3-95fb-678de3ba9f7e",
+      "history": [
+        {
+          "id": "23da801c-10fd-421d-ab0d-ada947130061",
+          "memberId": "27e78909-955a-48f3-95fb-678de3ba9f7e",
+          "periodEndDate": "2023-07-31",
+          "traitAverage": 4.09,
+          "promotionRecommendation": "MP",
+          "firstName": "Elizabeth",
+          "lastName": "Miller",
+          "rank": "CAPT",
+          "designator": "6230",
+          "draftStatus": "Final",
+          "isLocked": true
+        }
+      ]
+    },
+    {
+      "id": "7166add0-6b5e-43c4-9b10-f8b26278d5d9",
+      "history": [
+        {
+          "id": "1fe81b33-681d-4fec-952e-6a74946538e0",
+          "memberId": "7166add0-6b5e-43c4-9b10-f8b26278d5d9",
+          "periodEndDate": "2023-07-31",
+          "traitAverage": 3.61,
+          "promotionRecommendation": "P",
+          "firstName": "James",
+          "lastName": "Roberts",
+          "rank": "CAPT",
+          "designator": "4100",
+          "draftStatus": "Final",
+          "isLocked": true
+        }
+      ]
+    },
+    {
+      "id": "f1103e7b-1d8b-4128-8f78-5c16ee334670",
+      "history": [
+        {
+          "id": "22270ec7-c9c5-49e7-a6b5-b4746f56694c",
+          "memberId": "f1103e7b-1d8b-4128-8f78-5c16ee334670",
+          "periodEndDate": "2023-07-31",
+          "traitAverage": 4.99,
+          "promotionRecommendation": "EP",
+          "firstName": "Donald",
+          "lastName": "King",
+          "rank": "CAPT",
+          "designator": "2300",
+          "draftStatus": "Final",
+          "isLocked": true
+        }
+      ]
+    },
+    {
+      "id": "389f6d89-f5d3-431e-a72d-15f89f84db2d",
+      "history": [
+        {
+          "id": "c83b5d1e-96a3-42ce-9c54-5a2565764294",
+          "memberId": "389f6d89-f5d3-431e-a72d-15f89f84db2d",
+          "periodEndDate": "2023-07-31",
+          "traitAverage": 3.24,
+          "promotionRecommendation": "P",
+          "firstName": "Donna",
+          "lastName": "Johnson",
+          "rank": "CAPT",
+          "designator": "6130",
+          "draftStatus": "Final",
+          "isLocked": true
+        }
+      ]
+    },
+    {
+      "id": "b270a236-bdc7-46cf-96cf-28ca88210c08",
+      "history": [
+        {
+          "id": "e017f3a3-ed2e-4edf-829b-501f124210c4",
+          "memberId": "b270a236-bdc7-46cf-96cf-28ca88210c08",
+          "periodEndDate": "2023-07-31",
+          "traitAverage": 3.36,
+          "promotionRecommendation": "P",
+          "firstName": "Charles",
+          "lastName": "Clark",
+          "rank": "CAPT",
+          "designator": "1320",
+          "draftStatus": "Final",
+          "isLocked": true
+        }
+      ]
+    },
+    {
+      "id": "78373fc2-b3d5-4cb8-88db-de3117bac290",
+      "history": [
+        {
+          "id": "4c950806-d77a-46f7-8444-cb2cb0c8aec0",
+          "memberId": "78373fc2-b3d5-4cb8-88db-de3117bac290",
+          "periodEndDate": "2023-07-31",
+          "traitAverage": 3.93,
+          "promotionRecommendation": "MP",
+          "firstName": "Kimberly",
+          "lastName": "Green",
+          "rank": "CAPT",
+          "designator": "5100",
+          "draftStatus": "Final",
+          "isLocked": true
+        }
+      ]
+    },
+    {
+      "id": "01eb3d8d-774d-4da8-b67a-31f34ed601b0",
+      "history": [
+        {
+          "id": "333ab594-4696-48a1-8a36-e8772009215d",
+          "memberId": "01eb3d8d-774d-4da8-b67a-31f34ed601b0",
+          "periodEndDate": "2023-07-31",
+          "traitAverage": 4.81,
+          "promotionRecommendation": "EP",
+          "firstName": "Amanda",
+          "lastName": "Hill",
+          "rank": "CAPT",
+          "designator": "2100",
+          "draftStatus": "Final",
+          "isLocked": true
+        }
+      ]
+    },
+    {
+      "id": "9a5ffeaf-c296-4815-83ba-1798a487169e",
+      "history": [
+        {
+          "id": "72541aef-4721-4568-9bee-3158d72c6c26",
+          "memberId": "9a5ffeaf-c296-4815-83ba-1798a487169e",
+          "periodEndDate": "2023-07-31",
+          "traitAverage": 3.39,
+          "promotionRecommendation": "P",
+          "firstName": "Robert",
+          "lastName": "Jackson",
+          "rank": "CAPT",
+          "designator": "6280",
+          "draftStatus": "Final",
+          "isLocked": true
+        }
+      ]
+    },
+    {
+      "id": "16c05f11-5802-4a24-89cd-a4d0fcc260c4",
+      "history": [
+        {
+          "id": "8c2aa31d-bcdd-4b82-b381-342421e214de",
+          "memberId": "16c05f11-5802-4a24-89cd-a4d0fcc260c4",
+          "periodEndDate": "2023-07-31",
+          "traitAverage": 4.48,
+          "promotionRecommendation": "MP",
+          "firstName": "Kevin",
+          "lastName": "Johnson",
+          "rank": "CAPT",
+          "designator": "6180",
+          "draftStatus": "Final",
+          "isLocked": true
+        }
+      ]
+    },
+    {
+      "id": "b0c2514a-a81a-4f49-be90-7ae6b75ad8de",
+      "history": [
+        {
+          "id": "e1083d3c-3d43-41e9-b0d1-5f567bf069e1",
+          "memberId": "b0c2514a-a81a-4f49-be90-7ae6b75ad8de",
+          "periodEndDate": "2023-07-31",
+          "traitAverage": 4.18,
+          "promotionRecommendation": "MP",
+          "firstName": "Barbara",
+          "lastName": "Robinson",
+          "rank": "CAPT",
+          "designator": "1320",
+          "draftStatus": "Final",
+          "isLocked": true
+        }
+      ]
+    },
+    {
+      "id": "9c7b0d10-d8cc-4cda-bc21-18703b440ca6",
+      "history": [
+        {
+          "id": "f94a7ba0-9400-418f-9c04-7f7bab3b8f4d",
+          "memberId": "9c7b0d10-d8cc-4cda-bc21-18703b440ca6",
+          "periodEndDate": "2023-04-30",
+          "traitAverage": 4.16,
+          "promotionRecommendation": "MP",
+          "firstName": "Paul",
+          "lastName": "Nelson",
+          "rank": "CDR",
+          "designator": "3100",
+          "draftStatus": "Final",
+          "isLocked": true
+        }
+      ]
+    },
+    {
+      "id": "66216ddb-0540-4238-94ab-eb956f438841",
+      "history": []
+    },
+    {
+      "id": "a69452ea-9cc2-4624-9445-ce4d81217f8f",
+      "history": [
+        {
+          "id": "6071b932-61e9-4e86-9355-f32bb238d943",
+          "memberId": "a69452ea-9cc2-4624-9445-ce4d81217f8f",
+          "periodEndDate": "2023-04-30",
+          "traitAverage": 3.9,
+          "promotionRecommendation": "MP",
+          "firstName": "Mary",
+          "lastName": "Carter",
+          "rank": "CDR",
+          "designator": "2100",
+          "draftStatus": "Final",
+          "isLocked": true
+        }
+      ]
+    },
+    {
+      "id": "289ae54f-c137-42c3-9944-9d09e0818317",
+      "history": [
+        {
+          "id": "e5110422-d32f-4ff7-a799-3ba9a6d1d903",
+          "memberId": "289ae54f-c137-42c3-9944-9d09e0818317",
+          "periodEndDate": "2023-04-30",
+          "traitAverage": 3.2,
+          "promotionRecommendation": "P",
+          "firstName": "Amanda",
+          "lastName": "Baker",
+          "rank": "CDR",
+          "designator": "1820",
+          "draftStatus": "Final",
+          "isLocked": true
+        }
+      ]
+    },
+    {
+      "id": "b00e6e35-6a45-4d62-8791-a264236fb1e4",
+      "history": []
+    },
+    {
+      "id": "f8ae8ccc-88d5-4d23-91e0-3c00470f805f",
+      "history": [
+        {
+          "id": "bf30aade-647f-4bfc-9108-e8f1836b5875",
+          "memberId": "f8ae8ccc-88d5-4d23-91e0-3c00470f805f",
+          "periodEndDate": "2023-04-30",
+          "traitAverage": 3.4,
+          "promotionRecommendation": "P",
+          "firstName": "Jessica",
+          "lastName": "Garcia",
+          "rank": "CDR",
+          "designator": "2200",
+          "draftStatus": "Final",
+          "isLocked": true
+        }
+      ]
+    },
+    {
+      "id": "7160abcc-b758-42b5-93cf-9c59328ec08f",
+      "history": [
+        {
+          "id": "2b9d73f9-eac7-4b22-9d81-6a753cca875b",
+          "memberId": "7160abcc-b758-42b5-93cf-9c59328ec08f",
+          "periodEndDate": "2023-04-30",
+          "traitAverage": 3.51,
+          "promotionRecommendation": "P",
+          "firstName": "Mary",
+          "lastName": "Wright",
+          "rank": "CDR",
+          "designator": "1830",
+          "draftStatus": "Final",
+          "isLocked": true
+        }
+      ]
+    },
+    {
+      "id": "7e6d9d58-580c-488d-abff-2868082e0c57",
+      "history": [
+        {
+          "id": "423c9608-db86-454b-a674-ed43a77729ad",
+          "memberId": "7e6d9d58-580c-488d-abff-2868082e0c57",
+          "periodEndDate": "2023-04-30",
+          "traitAverage": 4.15,
+          "promotionRecommendation": "MP",
+          "firstName": "Michelle",
+          "lastName": "Lewis",
+          "rank": "CDR",
+          "designator": "4100",
+          "draftStatus": "Final",
+          "isLocked": true
+        }
+      ]
+    },
+    {
+      "id": "9bc99063-21d1-464b-a4d5-e798fe86e51d",
+      "history": [
+        {
+          "id": "998cd957-137e-431b-96c4-bcc26c4455c4",
+          "memberId": "9bc99063-21d1-464b-a4d5-e798fe86e51d",
+          "periodEndDate": "2023-04-30",
+          "traitAverage": 3.86,
+          "promotionRecommendation": "MP",
+          "firstName": "Charles",
+          "lastName": "Williams",
+          "rank": "CDR",
+          "designator": "6230",
+          "draftStatus": "Final",
+          "isLocked": true
+        }
+      ]
+    },
+    {
+      "id": "8cf137cf-4fd5-412e-825b-fbf129439801",
+      "history": [
+        {
+          "id": "dd3075c5-5936-43c6-9940-8a039dbd89e3",
+          "memberId": "8cf137cf-4fd5-412e-825b-fbf129439801",
+          "periodEndDate": "2023-04-30",
+          "traitAverage": 4.76,
+          "promotionRecommendation": "EP",
+          "firstName": "George",
+          "lastName": "Wilson",
+          "rank": "CDR",
+          "designator": "6120",
+          "draftStatus": "Final",
+          "isLocked": true
+        }
+      ]
+    },
+    {
+      "id": "6c68e5a3-b9ff-4810-bbb4-da9f376be90b",
+      "history": [
+        {
+          "id": "fb8d4697-9a37-4dcc-9fb5-424fe6bb8fee",
+          "memberId": "6c68e5a3-b9ff-4810-bbb4-da9f376be90b",
+          "periodEndDate": "2023-04-30",
+          "traitAverage": 4.77,
+          "promotionRecommendation": "EP",
+          "firstName": "Kimberly",
+          "lastName": "Taylor",
+          "rank": "CDR",
+          "designator": "1120",
+          "draftStatus": "Final",
+          "isLocked": true
+        }
+      ]
+    },
+    {
+      "id": "8579b754-ee39-427e-a124-21b5d39d7422",
+      "history": [
+        {
+          "id": "05534ded-69d7-41d8-a4da-88453ef50855",
+          "memberId": "8579b754-ee39-427e-a124-21b5d39d7422",
+          "periodEndDate": "2023-04-30",
+          "traitAverage": 4.75,
+          "promotionRecommendation": "EP",
+          "firstName": "Joseph",
+          "lastName": "Sanchez",
+          "rank": "CDR",
+          "designator": "6410",
+          "draftStatus": "Final",
+          "isLocked": true
+        }
+      ]
+    },
+    {
+      "id": "d5711b64-499a-40de-ab81-faa1ffb8722d",
+      "history": [
+        {
+          "id": "df4c5742-d719-49d0-8794-3ba17d9bc2a6",
+          "memberId": "d5711b64-499a-40de-ab81-faa1ffb8722d",
+          "periodEndDate": "2023-04-30",
+          "traitAverage": 4.57,
+          "promotionRecommendation": "EP",
+          "firstName": "Sarah",
+          "lastName": "Williams",
+          "rank": "CDR",
+          "designator": "2200",
+          "draftStatus": "Final",
+          "isLocked": true
+        }
+      ]
+    },
+    {
+      "id": "1e1f7805-d9d5-46e0-8204-2effcf3bc109",
+      "history": [
+        {
+          "id": "5b89a638-bf5b-4295-8b6d-9655351be514",
+          "memberId": "1e1f7805-d9d5-46e0-8204-2effcf3bc109",
+          "periodEndDate": "2023-04-30",
+          "traitAverage": 3.35,
+          "promotionRecommendation": "P",
+          "firstName": "Christopher",
+          "lastName": "Adams",
+          "rank": "CDR",
+          "designator": "6180",
+          "draftStatus": "Final",
+          "isLocked": true
+        }
+      ]
+    },
+    {
+      "id": "984bd9f6-e0a8-4609-9b44-ccacd8dcf3b2",
+      "history": [
+        {
+          "id": "876e95be-9ddf-455b-b339-a96aa0653af3",
+          "memberId": "984bd9f6-e0a8-4609-9b44-ccacd8dcf3b2",
+          "periodEndDate": "2023-04-30",
+          "traitAverage": 4.11,
+          "promotionRecommendation": "MP",
+          "firstName": "Sarah",
+          "lastName": "Garcia",
+          "rank": "CDR",
+          "designator": "5100",
+          "draftStatus": "Final",
+          "isLocked": true
+        }
+      ]
+    },
+    {
+      "id": "93375b68-6d28-4429-9a89-ca936a87ad5e",
+      "history": []
+    },
+    {
+      "id": "840fdb2b-0bfb-44af-b3ab-8d121bbe8aa5",
+      "history": [
+        {
+          "id": "e321655a-1237-4bfa-847e-33dc767a1849",
+          "memberId": "840fdb2b-0bfb-44af-b3ab-8d121bbe8aa5",
+          "periodEndDate": "2023-04-30",
+          "traitAverage": 3.73,
+          "promotionRecommendation": "P",
+          "firstName": "Karen",
+          "lastName": "Rivera",
+          "rank": "CDR",
+          "designator": "6290",
+          "draftStatus": "Final",
+          "isLocked": true
+        }
+      ]
+    },
+    {
+      "id": "6bf40465-3832-4006-befc-59148e2606da",
+      "history": [
+        {
+          "id": "de8cd30c-cbf0-42c0-9971-a3b984caa6cb",
+          "memberId": "6bf40465-3832-4006-befc-59148e2606da",
+          "periodEndDate": "2023-04-30",
+          "traitAverage": 3.22,
+          "promotionRecommendation": "P",
+          "firstName": "Michelle",
+          "lastName": "Jackson",
+          "rank": "CDR",
+          "designator": "6260",
+          "draftStatus": "Final",
+          "isLocked": true
+        }
+      ]
+    },
+    {
+      "id": "c6c71834-0508-4686-930c-7544980a15fc",
+      "history": [
+        {
+          "id": "86dd3669-b261-4237-86e3-f15a9ec8e75d",
+          "memberId": "c6c71834-0508-4686-930c-7544980a15fc",
+          "periodEndDate": "2023-04-30",
+          "traitAverage": 3.19,
+          "promotionRecommendation": "P",
+          "firstName": "William",
+          "lastName": "Jackson",
+          "rank": "CDR",
+          "designator": "6130",
+          "draftStatus": "Final",
+          "isLocked": true
+        }
+      ]
+    },
+    {
+      "id": "cb17ab86-d133-42c4-b884-347b94570a23",
+      "history": [
+        {
+          "id": "6109cc04-742c-481e-93c7-2cf71e8b406a",
+          "memberId": "cb17ab86-d133-42c4-b884-347b94570a23",
+          "periodEndDate": "2023-04-30",
+          "traitAverage": 3.49,
+          "promotionRecommendation": "P",
+          "firstName": "Joseph",
+          "lastName": "Green",
+          "rank": "CDR",
+          "designator": "6130",
+          "draftStatus": "Final",
+          "isLocked": true
+        }
+      ]
+    },
+    {
+      "id": "6efa3d1f-8324-42aa-829c-7f176ad53373",
+      "history": []
+    },
+    {
+      "id": "c0a01bf8-60ab-443c-8866-35d215cde9ae",
+      "history": [
+        {
+          "id": "133413a4-3f93-4db2-8d24-38748eba8383",
+          "memberId": "c0a01bf8-60ab-443c-8866-35d215cde9ae",
+          "periodEndDate": "2023-04-30",
+          "traitAverage": 4.67,
+          "promotionRecommendation": "EP",
+          "firstName": "Steven",
+          "lastName": "Garcia",
+          "rank": "CDR",
+          "designator": "1320",
+          "draftStatus": "Final",
+          "isLocked": true
+        }
+      ]
+    },
+    {
+      "id": "de740d3b-4a72-4eb2-b793-647697c5a7f9",
+      "history": [
+        {
+          "id": "9010a655-4383-4af5-bb7d-ce184ec09960",
+          "memberId": "de740d3b-4a72-4eb2-b793-647697c5a7f9",
+          "periodEndDate": "2023-04-30",
+          "traitAverage": 3.89,
+          "promotionRecommendation": "MP",
+          "firstName": "James",
+          "lastName": "Young",
+          "rank": "CDR",
+          "designator": "6330",
+          "draftStatus": "Final",
+          "isLocked": true
+        }
+      ]
+    },
+    {
+      "id": "4b32ed6c-66f5-4eb6-ac4f-312e3d36001a",
+      "history": [
+        {
+          "id": "83989069-d249-46b3-852f-86bfe73b97c5",
+          "memberId": "4b32ed6c-66f5-4eb6-ac4f-312e3d36001a",
+          "periodEndDate": "2023-04-30",
+          "traitAverage": 4.6,
+          "promotionRecommendation": "EP",
+          "firstName": "Edward",
+          "lastName": "Robinson",
+          "rank": "CDR",
+          "designator": "6230",
+          "draftStatus": "Final",
+          "isLocked": true
+        }
+      ]
+    },
+    {
+      "id": "6cf39e6c-edd8-4181-b00d-87fb4c7f07cf",
+      "history": []
+    },
+    {
+      "id": "1ca8a432-1223-4e96-a09a-81d03a007693",
+      "history": [
+        {
+          "id": "69ef6d7c-8334-4a40-9787-cd2154774f5c",
+          "memberId": "1ca8a432-1223-4e96-a09a-81d03a007693",
+          "periodEndDate": "2023-10-31",
+          "traitAverage": 4.63,
+          "promotionRecommendation": "EP",
+          "firstName": "William",
+          "lastName": "Garcia",
+          "rank": "LCDR",
+          "designator": "1110",
+          "draftStatus": "Final",
+          "isLocked": true
+        }
+      ]
+    },
+    {
+      "id": "c490519b-81aa-4e79-8262-31a327a99f6a",
+      "history": [
+        {
+          "id": "ca5d09b8-8aab-49df-9ecc-aede5f4f6044",
+          "memberId": "c490519b-81aa-4e79-8262-31a327a99f6a",
+          "periodEndDate": "2023-10-31",
+          "traitAverage": 3.07,
+          "promotionRecommendation": "P",
+          "firstName": "Paul",
+          "lastName": "Hall",
+          "rank": "LCDR",
+          "designator": "1820",
+          "draftStatus": "Final",
+          "isLocked": true
+        }
+      ]
+    },
+    {
+      "id": "a22bec26-2475-4587-b42a-34ca3a442815",
+      "history": [
+        {
+          "id": "4cb4b910-7164-4554-8008-12275697baeb",
+          "memberId": "a22bec26-2475-4587-b42a-34ca3a442815",
+          "periodEndDate": "2023-10-31",
+          "traitAverage": 4.97,
+          "promotionRecommendation": "EP",
+          "firstName": "Steven",
+          "lastName": "Robinson",
+          "rank": "LCDR",
+          "designator": "6130",
+          "draftStatus": "Final",
+          "isLocked": true
+        }
+      ]
+    },
+    {
+      "id": "6ede344a-9d23-4297-9149-9ecbcff01ea1",
+      "history": [
+        {
+          "id": "23ffc139-eead-424f-8209-b7090c5e7b9d",
+          "memberId": "6ede344a-9d23-4297-9149-9ecbcff01ea1",
+          "periodEndDate": "2023-10-31",
+          "traitAverage": 3.6,
+          "promotionRecommendation": "P",
+          "firstName": "Donald",
+          "lastName": "Garcia",
+          "rank": "LCDR",
+          "designator": "6120",
+          "draftStatus": "Final",
+          "isLocked": true
+        }
+      ]
+    },
+    {
+      "id": "dcf5a6b2-0ebb-4907-bb41-1b17a70a72cc",
+      "history": [
+        {
+          "id": "e7dfba9b-3754-4143-bc8d-ab982bdff19c",
+          "memberId": "dcf5a6b2-0ebb-4907-bb41-1b17a70a72cc",
+          "periodEndDate": "2023-10-31",
+          "traitAverage": 4.31,
+          "promotionRecommendation": "MP",
+          "firstName": "Elizabeth",
+          "lastName": "Moore",
+          "rank": "LCDR",
+          "designator": "2900",
+          "draftStatus": "Final",
+          "isLocked": true
+        }
+      ]
+    },
+    {
+      "id": "be1ebf40-f3b4-4ab8-b22c-5ee27335d50a",
+      "history": [
+        {
+          "id": "ca50037d-8b46-4176-b196-bd03757f4ad8",
+          "memberId": "be1ebf40-f3b4-4ab8-b22c-5ee27335d50a",
+          "periodEndDate": "2023-10-31",
+          "traitAverage": 3.54,
+          "promotionRecommendation": "P",
+          "firstName": "Mary",
+          "lastName": "Clark",
+          "rank": "LCDR",
+          "designator": "1820",
+          "draftStatus": "Final",
+          "isLocked": true
+        }
+      ]
+    },
+    {
+      "id": "6a36e6be-8bb3-443e-bec2-24430d8bb628",
+      "history": [
+        {
+          "id": "3f381a7e-a34d-41d9-9668-0e0c4bb4a6c5",
+          "memberId": "6a36e6be-8bb3-443e-bec2-24430d8bb628",
+          "periodEndDate": "2023-10-31",
+          "traitAverage": 4.55,
+          "promotionRecommendation": "EP",
+          "firstName": "Andrew",
+          "lastName": "Williams",
+          "rank": "LCDR",
+          "designator": "1820",
+          "draftStatus": "Final",
+          "isLocked": true
+        }
+      ]
+    },
+    {
+      "id": "c9e08377-3f08-4a01-b368-417cd7c2a779",
+      "history": [
+        {
+          "id": "96c2af0c-bccf-4bed-8fce-804be17de9c5",
+          "memberId": "c9e08377-3f08-4a01-b368-417cd7c2a779",
+          "periodEndDate": "2023-10-31",
+          "traitAverage": 3.02,
+          "promotionRecommendation": "P",
+          "firstName": "Sandra",
+          "lastName": "Baker",
+          "rank": "LCDR",
+          "designator": "5100",
+          "draftStatus": "Final",
+          "isLocked": true
+        }
+      ]
+    },
+    {
+      "id": "58e0b400-8dc8-4b0c-b631-091f48bce759",
+      "history": [
+        {
+          "id": "96a18a49-22a8-4ad6-b06c-681e0fa84994",
+          "memberId": "58e0b400-8dc8-4b0c-b631-091f48bce759",
+          "periodEndDate": "2023-10-31",
+          "traitAverage": 4.65,
+          "promotionRecommendation": "EP",
+          "firstName": "Mary",
+          "lastName": "Walker",
+          "rank": "LCDR",
+          "designator": "6120",
+          "draftStatus": "Final",
+          "isLocked": true
+        }
+      ]
+    },
+    {
+      "id": "86d5cded-e223-4722-9f9d-238e6c0e53c6",
+      "history": [
+        {
+          "id": "ca1e32d8-4f50-4bcb-9e98-7c4180cd3234",
+          "memberId": "86d5cded-e223-4722-9f9d-238e6c0e53c6",
+          "periodEndDate": "2023-10-31",
+          "traitAverage": 4.36,
+          "promotionRecommendation": "MP",
+          "firstName": "Steven",
+          "lastName": "Martinez",
+          "rank": "LCDR",
+          "designator": "1110",
+          "draftStatus": "Final",
+          "isLocked": true
+        }
+      ]
+    },
+    {
+      "id": "a33c63bc-75c5-4d31-b2f5-4d84d075ffd2",
+      "history": []
+    },
+    {
+      "id": "a6d25bf1-c443-4ca8-83c5-9fa79e0e519b",
+      "history": [
+        {
+          "id": "936531f3-9b68-4b14-b388-a118ab48bde7",
+          "memberId": "a6d25bf1-c443-4ca8-83c5-9fa79e0e519b",
+          "periodEndDate": "2023-10-31",
+          "traitAverage": 3.95,
+          "promotionRecommendation": "MP",
+          "firstName": "George",
+          "lastName": "Miller",
+          "rank": "LCDR",
+          "designator": "6120",
+          "draftStatus": "Final",
+          "isLocked": true
+        }
+      ]
+    },
+    {
+      "id": "8a87627b-dcd7-42ec-a6ea-1955f546d856",
+      "history": []
+    },
+    {
+      "id": "04f16e04-e173-40bf-a70b-d1b3b63af3bb",
+      "history": [
+        {
+          "id": "08aa48ab-9e89-47f2-b15e-730ba1c20c6a",
+          "memberId": "04f16e04-e173-40bf-a70b-d1b3b63af3bb",
+          "periodEndDate": "2023-10-31",
+          "traitAverage": 4.99,
+          "promotionRecommendation": "EP",
+          "firstName": "Patricia",
+          "lastName": "Jackson",
+          "rank": "LCDR",
+          "designator": "1830",
+          "draftStatus": "Final",
+          "isLocked": true
+        }
+      ]
+    },
+    {
+      "id": "bc20df64-a659-4902-9320-205c768e76b2",
+      "history": [
+        {
+          "id": "bb758383-4591-4430-9a16-3140a7cce46e",
+          "memberId": "bc20df64-a659-4902-9320-205c768e76b2",
+          "periodEndDate": "2023-10-31",
+          "traitAverage": 4.55,
+          "promotionRecommendation": "EP",
+          "firstName": "Susan",
+          "lastName": "Taylor",
+          "rank": "LCDR",
+          "designator": "6180",
+          "draftStatus": "Final",
+          "isLocked": true
+        }
+      ]
+    },
+    {
+      "id": "239516b6-bc20-46e4-9959-9ef227a1b4e3",
+      "history": [
+        {
+          "id": "da5fb26f-afbd-43c9-8eed-fe218445a5e1",
+          "memberId": "239516b6-bc20-46e4-9959-9ef227a1b4e3",
+          "periodEndDate": "2023-10-31",
+          "traitAverage": 4.34,
+          "promotionRecommendation": "MP",
+          "firstName": "Lisa",
+          "lastName": "Martinez",
+          "rank": "LCDR",
+          "designator": "2300",
+          "draftStatus": "Final",
+          "isLocked": true
+        }
+      ]
+    },
+    {
+      "id": "c6b6fcdd-768f-4870-a4d4-e22655d07899",
+      "history": [
+        {
+          "id": "4004fc37-7d7c-4ebb-9b0a-f0f67a7a65e6",
+          "memberId": "c6b6fcdd-768f-4870-a4d4-e22655d07899",
+          "periodEndDate": "2023-10-31",
+          "traitAverage": 3.28,
+          "promotionRecommendation": "P",
+          "firstName": "Ashley",
+          "lastName": "Green",
+          "rank": "LCDR",
+          "designator": "5100",
+          "draftStatus": "Final",
+          "isLocked": true
+        }
+      ]
+    },
+    {
+      "id": "80c31581-b53e-4d84-9435-ea60f3a74584",
+      "history": [
+        {
+          "id": "387a4bc9-0055-4915-ac8e-60b479e83f2a",
+          "memberId": "80c31581-b53e-4d84-9435-ea60f3a74584",
+          "periodEndDate": "2023-10-31",
+          "traitAverage": 4.64,
+          "promotionRecommendation": "EP",
+          "firstName": "Carol",
+          "lastName": "Sanchez",
+          "rank": "LCDR",
+          "designator": "6330",
+          "draftStatus": "Final",
+          "isLocked": true
+        }
+      ]
+    },
+    {
+      "id": "798a2c06-891d-4e11-9527-636b2538146b",
+      "history": [
+        {
+          "id": "62e7b563-b3c8-416e-bd31-103980109d32",
+          "memberId": "798a2c06-891d-4e11-9527-636b2538146b",
+          "periodEndDate": "2023-10-31",
+          "traitAverage": 4.89,
+          "promotionRecommendation": "EP",
+          "firstName": "John",
+          "lastName": "Hall",
+          "rank": "LCDR",
+          "designator": "3100",
+          "draftStatus": "Final",
+          "isLocked": true
+        }
+      ]
+    },
+    {
+      "id": "f64c26b1-d172-4bc9-acad-481f42cb560e",
+      "history": [
+        {
+          "id": "18882b32-6f81-4e7c-865e-0a433e8c0252",
+          "memberId": "f64c26b1-d172-4bc9-acad-481f42cb560e",
+          "periodEndDate": "2023-10-31",
+          "traitAverage": 5,
+          "promotionRecommendation": "EP",
+          "firstName": "John",
+          "lastName": "Perez",
+          "rank": "LCDR",
+          "designator": "1310",
+          "draftStatus": "Final",
+          "isLocked": true
+        }
+      ]
+    },
+    {
+      "id": "002f927a-ae66-4a71-a6b5-69d5a79ffc46",
+      "history": [
+        {
+          "id": "9c809f2d-7829-4706-a489-31bcc3bbb096",
+          "memberId": "002f927a-ae66-4a71-a6b5-69d5a79ffc46",
+          "periodEndDate": "2023-10-31",
+          "traitAverage": 3.93,
+          "promotionRecommendation": "MP",
+          "firstName": "Kevin",
+          "lastName": "Hill",
+          "rank": "LCDR",
+          "designator": "6130",
+          "draftStatus": "Final",
+          "isLocked": true
+        }
+      ]
+    },
+    {
+      "id": "efc43c93-2129-407c-9b3b-bbd35f6c5808",
+      "history": [
+        {
+          "id": "8a08881f-eeac-4c15-914e-070c4513692c",
+          "memberId": "efc43c93-2129-407c-9b3b-bbd35f6c5808",
+          "periodEndDate": "2023-10-31",
+          "traitAverage": 3.08,
+          "promotionRecommendation": "P",
+          "firstName": "Margaret",
+          "lastName": "Flores",
+          "rank": "LCDR",
+          "designator": "5100",
+          "draftStatus": "Final",
+          "isLocked": true
+        }
+      ]
+    },
+    {
+      "id": "6ce3be78-62d2-44e9-8345-bde334db526d",
+      "history": [
+        {
+          "id": "b93f6035-3976-4e02-a5dd-7f53a2b5c503",
+          "memberId": "6ce3be78-62d2-44e9-8345-bde334db526d",
+          "periodEndDate": "2023-10-31",
+          "traitAverage": 3.03,
+          "promotionRecommendation": "P",
+          "firstName": "John",
+          "lastName": "Lee",
+          "rank": "LCDR",
+          "designator": "4100",
+          "draftStatus": "Final",
+          "isLocked": true
+        }
+      ]
+    },
+    {
+      "id": "9440e3a2-a69d-4bb4-bab6-06f25737b24a",
+      "history": [
+        {
+          "id": "e0c0f849-d60c-48b4-87d3-d2f88a8afaac",
+          "memberId": "9440e3a2-a69d-4bb4-bab6-06f25737b24a",
+          "periodEndDate": "2023-10-31",
+          "traitAverage": 4.03,
+          "promotionRecommendation": "MP",
+          "firstName": "Jessica",
+          "lastName": "Lopez",
+          "rank": "LCDR",
+          "designator": "6290",
+          "draftStatus": "Final",
+          "isLocked": true
+        }
+      ]
+    },
+    {
+      "id": "587ee37e-5657-4c27-988b-a2b2c882eb64",
+      "history": [
+        {
+          "id": "b0d29cf0-9d8b-422a-96a7-bd8347e818a9",
+          "memberId": "587ee37e-5657-4c27-988b-a2b2c882eb64",
+          "periodEndDate": "2023-10-31",
+          "traitAverage": 4.37,
+          "promotionRecommendation": "MP",
+          "firstName": "Jessica",
+          "lastName": "Young",
+          "rank": "LCDR",
+          "designator": "6110",
+          "draftStatus": "Final",
+          "isLocked": true
+        }
+      ]
+    },
+    {
+      "id": "41e4ec40-9d80-475f-b5c9-6b0ab1551a13",
+      "history": [
+        {
+          "id": "1406834b-68e7-4ded-b867-f8ec77927d2e",
+          "memberId": "41e4ec40-9d80-475f-b5c9-6b0ab1551a13",
+          "periodEndDate": "2023-10-31",
+          "traitAverage": 3.67,
+          "promotionRecommendation": "P",
+          "firstName": "Kenneth",
+          "lastName": "Anderson",
+          "rank": "LCDR",
+          "designator": "1310",
+          "draftStatus": "Final",
+          "isLocked": true
+        }
+      ]
+    },
+    {
+      "id": "0ae439fa-92d8-454b-ab09-ded701a639bd",
+      "history": [
+        {
+          "id": "4e642fe6-c1a8-47e2-9f83-fde7350e0053",
+          "memberId": "0ae439fa-92d8-454b-ab09-ded701a639bd",
+          "periodEndDate": "2023-10-31",
+          "traitAverage": 3.1,
+          "promotionRecommendation": "P",
+          "firstName": "Charles",
+          "lastName": "Johnson",
+          "rank": "LCDR",
+          "designator": "6110",
+          "draftStatus": "Final",
+          "isLocked": true
+        }
+      ]
+    },
+    {
+      "id": "3d2431cc-54c5-4f73-b457-af7e07d19503",
+      "history": [
+        {
+          "id": "bb682e5a-db0d-4a50-b85f-2c8e11d86af2",
+          "memberId": "3d2431cc-54c5-4f73-b457-af7e07d19503",
+          "periodEndDate": "2023-10-31",
+          "traitAverage": 4.35,
+          "promotionRecommendation": "MP",
+          "firstName": "Paul",
+          "lastName": "Martinez",
+          "rank": "LCDR",
+          "designator": "6130",
+          "draftStatus": "Final",
+          "isLocked": true
+        }
+      ]
+    },
+    {
+      "id": "f15bb413-6738-44c0-a7f4-575fbad53a34",
+      "history": [
+        {
+          "id": "bb70fa55-d672-414e-8bd4-d571f2366d56",
+          "memberId": "f15bb413-6738-44c0-a7f4-575fbad53a34",
+          "periodEndDate": "2023-10-31",
+          "traitAverage": 4.59,
+          "promotionRecommendation": "EP",
+          "firstName": "Jessica",
+          "lastName": "Hall",
+          "rank": "LCDR",
+          "designator": "1120",
+          "draftStatus": "Final",
+          "isLocked": true
+        }
+      ]
+    },
+    {
+      "id": "3714cf83-279f-412c-997a-3d9b326234da",
+      "history": [
+        {
+          "id": "5f04f234-4b62-48f4-9f71-03eabb097a9b",
+          "memberId": "3714cf83-279f-412c-997a-3d9b326234da",
+          "periodEndDate": "2023-10-31",
+          "traitAverage": 4.02,
+          "promotionRecommendation": "MP",
+          "firstName": "Nancy",
+          "lastName": "Carter",
+          "rank": "LCDR",
+          "designator": "1310",
+          "draftStatus": "Final",
+          "isLocked": true
+        }
+      ]
+    },
+    {
+      "id": "7bcf1bfa-5517-487d-a6e0-ec10da219df4",
+      "history": [
+        {
+          "id": "85e8455d-a895-4744-ba53-ce7c67f8efb0",
+          "memberId": "7bcf1bfa-5517-487d-a6e0-ec10da219df4",
+          "periodEndDate": "2024-01-31",
+          "traitAverage": 4.94,
+          "promotionRecommendation": "EP",
+          "firstName": "Emily",
+          "lastName": "Campbell",
+          "rank": "LT",
+          "designator": "6290",
+          "draftStatus": "Final",
+          "isLocked": true
+        }
+      ]
+    },
+    {
+      "id": "7d6bcaff-99a0-4c00-88a4-5e8d4e01ccfa",
+      "history": [
+        {
+          "id": "c58afbd4-a1a3-4d3d-94e6-a9d6da9ab45f",
+          "memberId": "7d6bcaff-99a0-4c00-88a4-5e8d4e01ccfa",
+          "periodEndDate": "2024-01-31",
+          "traitAverage": 3.27,
+          "promotionRecommendation": "P",
+          "firstName": "Susan",
+          "lastName": "Carter",
+          "rank": "LT",
+          "designator": "1310",
+          "draftStatus": "Final",
+          "isLocked": true
+        }
+      ]
+    },
+    {
+      "id": "ef9c6b1a-2a61-4607-8dfe-aad0ac051b06",
+      "history": [
+        {
+          "id": "789a082f-9b8c-4935-b812-6fd008ed0efe",
+          "memberId": "ef9c6b1a-2a61-4607-8dfe-aad0ac051b06",
+          "periodEndDate": "2024-01-31",
+          "traitAverage": 4.97,
+          "promotionRecommendation": "EP",
+          "firstName": "George",
+          "lastName": "Sanchez",
+          "rank": "LT",
+          "designator": "6230",
+          "draftStatus": "Final",
+          "isLocked": true
+        }
+      ]
+    },
+    {
+      "id": "6093a73d-b2f8-4264-849a-7bbaaa5e1b62",
+      "history": [
+        {
+          "id": "8aecf999-1264-42d5-aa17-2e74c89b90e7",
+          "memberId": "6093a73d-b2f8-4264-849a-7bbaaa5e1b62",
+          "periodEndDate": "2024-01-31",
+          "traitAverage": 3.8,
+          "promotionRecommendation": "P",
+          "firstName": "Dorothy",
+          "lastName": "Clark",
+          "rank": "LT",
+          "designator": "6410",
+          "draftStatus": "Final",
+          "isLocked": true
+        }
+      ]
+    },
+    {
+      "id": "90b4818a-9d13-4e9f-832a-4981a5a572fa",
+      "history": [
+        {
+          "id": "1e34c515-64f2-42dd-8eb3-c4a312b0983f",
+          "memberId": "90b4818a-9d13-4e9f-832a-4981a5a572fa",
+          "periodEndDate": "2024-01-31",
+          "traitAverage": 4.57,
+          "promotionRecommendation": "EP",
+          "firstName": "Donna",
+          "lastName": "Martin",
+          "rank": "LT",
+          "designator": "6180",
+          "draftStatus": "Final",
+          "isLocked": true
+        }
+      ]
+    },
+    {
+      "id": "a3f98619-b1e5-4499-b436-368be76ed565",
+      "history": [
+        {
+          "id": "9495f9c4-71e5-4bae-9f35-6d741be7d8ca",
+          "memberId": "a3f98619-b1e5-4499-b436-368be76ed565",
+          "periodEndDate": "2024-01-31",
+          "traitAverage": 3.69,
+          "promotionRecommendation": "P",
+          "firstName": "Sarah",
+          "lastName": "Hall",
+          "rank": "LT",
+          "designator": "6120",
+          "draftStatus": "Final",
+          "isLocked": true
+        }
+      ]
+    },
+    {
+      "id": "20c69931-d413-4c6d-a74d-d0d1a34bf706",
+      "history": [
+        {
+          "id": "757b0400-90b6-4b06-a7d2-85c372dd4408",
+          "memberId": "20c69931-d413-4c6d-a74d-d0d1a34bf706",
+          "periodEndDate": "2024-01-31",
+          "traitAverage": 4.06,
+          "promotionRecommendation": "MP",
+          "firstName": "George",
+          "lastName": "Walker",
+          "rank": "LT",
+          "designator": "2300",
+          "draftStatus": "Final",
+          "isLocked": true
+        }
+      ]
+    },
+    {
+      "id": "9210e472-af89-44ba-8823-1b987c3de85d",
+      "history": [
+        {
+          "id": "b7c921ce-d5a3-4a60-aae5-336a007f1bd9",
+          "memberId": "9210e472-af89-44ba-8823-1b987c3de85d",
+          "periodEndDate": "2024-01-31",
+          "traitAverage": 4.26,
+          "promotionRecommendation": "MP",
+          "firstName": "Edward",
+          "lastName": "Carter",
+          "rank": "LT",
+          "designator": "6110",
+          "draftStatus": "Final",
+          "isLocked": true
+        }
+      ]
+    },
+    {
+      "id": "af025166-07a2-49cb-9e96-dca4f23e55cf",
+      "history": [
+        {
+          "id": "0e872325-c543-46c0-8ed6-13453451946c",
+          "memberId": "af025166-07a2-49cb-9e96-dca4f23e55cf",
+          "periodEndDate": "2024-01-31",
+          "traitAverage": 3.63,
+          "promotionRecommendation": "P",
+          "firstName": "Deborah",
+          "lastName": "Allen",
+          "rank": "LT",
+          "designator": "6280",
+          "draftStatus": "Final",
+          "isLocked": true
+        }
+      ]
+    },
+    {
+      "id": "fde94dfc-9462-4ccd-9a70-709b8b10d50f",
+      "history": [
+        {
+          "id": "040d3197-87b4-4610-9173-e7dc36ae3f62",
+          "memberId": "fde94dfc-9462-4ccd-9a70-709b8b10d50f",
+          "periodEndDate": "2024-01-31",
+          "traitAverage": 3.47,
+          "promotionRecommendation": "P",
+          "firstName": "Richard",
+          "lastName": "Moore",
+          "rank": "LT",
+          "designator": "1830",
+          "draftStatus": "Final",
+          "isLocked": true
+        }
+      ]
+    },
+    {
+      "id": "0ad250cf-30ea-4173-b7f1-8d1f75468678",
+      "history": [
+        {
+          "id": "9028abfd-f718-44f1-b43d-985daf4d7b62",
+          "memberId": "0ad250cf-30ea-4173-b7f1-8d1f75468678",
+          "periodEndDate": "2023-09-30",
+          "traitAverage": 4.73,
+          "promotionRecommendation": "EP",
+          "firstName": "Jennifer",
+          "lastName": "Thomas",
+          "rank": "CWO5",
+          "designator": "7130",
+          "draftStatus": "Final",
+          "isLocked": true
+        }
+      ]
+    },
+    {
+      "id": "de56e0d9-76ce-4222-bfbf-4c0e2f9e80c5",
+      "history": [
+        {
+          "id": "2fda35ed-2779-4868-8725-2057fa9574cf",
+          "memberId": "de56e0d9-76ce-4222-bfbf-4c0e2f9e80c5",
+          "periodEndDate": "2023-09-30",
+          "traitAverage": 3.62,
+          "promotionRecommendation": "P",
+          "firstName": "Matthew",
+          "lastName": "Rivera",
+          "rank": "CWO5",
+          "designator": "7447",
+          "draftStatus": "Final",
+          "isLocked": true
+        }
+      ]
+    },
+    {
+      "id": "fcd20607-d818-4225-b4a7-d297d71b4aa3",
+      "history": [
+        {
+          "id": "0ac0b1a0-b647-4d8f-9340-acdbecf2355a",
+          "memberId": "fcd20607-d818-4225-b4a7-d297d71b4aa3",
+          "periodEndDate": "2023-09-30",
+          "traitAverage": 3.65,
+          "promotionRecommendation": "P",
+          "firstName": "Edward",
+          "lastName": "Hall",
+          "rank": "CWO4",
+          "designator": "7794",
+          "draftStatus": "Final",
+          "isLocked": true
+        }
+      ]
+    },
+    {
+      "id": "e5138c4f-39f8-412d-be1d-a114a54b0a6c",
+      "history": [
+        {
+          "id": "f905bcae-8846-4105-b320-9eebdbc91ef6",
+          "memberId": "e5138c4f-39f8-412d-be1d-a114a54b0a6c",
+          "periodEndDate": "2023-09-30",
+          "traitAverage": 3.92,
+          "promotionRecommendation": "MP",
+          "firstName": "George",
+          "lastName": "Thomas",
+          "rank": "CWO4",
+          "designator": "7563",
+          "draftStatus": "Final",
+          "isLocked": true
+        }
+      ]
+    },
+    {
+      "id": "dc0c9358-b07c-472a-9c2f-76f39a009745",
+      "history": [
+        {
+          "id": "c33287c5-a785-4da5-8c11-14216343e50b",
+          "memberId": "dc0c9358-b07c-472a-9c2f-76f39a009745",
+          "periodEndDate": "2023-09-30",
+          "traitAverage": 4,
+          "promotionRecommendation": "MP",
+          "firstName": "Kevin",
+          "lastName": "Martin",
+          "rank": "CWO4",
+          "designator": "7491",
+          "draftStatus": "Final",
+          "isLocked": true
+        }
+      ]
+    },
+    {
+      "id": "3aa0ec15-c9ab-46ef-915c-2515febec315",
+      "history": [
+        {
+          "id": "fe775a83-3719-49ba-8f84-6f02be6e2936",
+          "memberId": "3aa0ec15-c9ab-46ef-915c-2515febec315",
+          "periodEndDate": "2023-04-15",
+          "traitAverage": 4.31,
+          "promotionRecommendation": "MP",
+          "firstName": "Matthew",
+          "lastName": "Robinson",
+          "rank": "MC",
+          "designator": "YNCM",
+          "draftStatus": "Final",
+          "isLocked": true
+        }
+      ]
+    },
+    {
+      "id": "c9bc88ef-9223-4134-9b89-91d2b43846ed",
+      "history": [
+        {
+          "id": "6ac90493-63b0-41a1-a6d9-0603558d8a11",
+          "memberId": "c9bc88ef-9223-4134-9b89-91d2b43846ed",
+          "periodEndDate": "2023-04-15",
+          "traitAverage": 3.65,
+          "promotionRecommendation": "P",
+          "firstName": "Jessica",
+          "lastName": "Taylor",
+          "rank": "MC",
+          "designator": "LSCM",
+          "draftStatus": "Final",
+          "isLocked": true
+        }
+      ]
+    },
+    {
+      "id": "c3224859-85d9-4477-8fe7-cd1bb5dfddd3",
+      "history": [
+        {
+          "id": "2053874e-3f26-4f05-95b9-9e14384b94d5",
+          "memberId": "c3224859-85d9-4477-8fe7-cd1bb5dfddd3",
+          "periodEndDate": "2023-04-15",
+          "traitAverage": 3.76,
+          "promotionRecommendation": "P",
+          "firstName": "Donald",
+          "lastName": "Wilson",
+          "rank": "MC",
+          "designator": "FCCM",
+          "draftStatus": "Final",
+          "isLocked": true
+        }
+      ]
+    },
+    {
+      "id": "947614b1-5c9a-4c02-a579-e61decf2ab1f",
+      "history": [
+        {
+          "id": "c9eb7d1f-b3d0-46bb-9adc-5ccea0f7677b",
+          "memberId": "947614b1-5c9a-4c02-a579-e61decf2ab1f",
+          "periodEndDate": "2023-04-15",
+          "traitAverage": 3.99,
+          "promotionRecommendation": "MP",
+          "firstName": "Daniel",
+          "lastName": "Hernandez",
+          "rank": "MC",
+          "designator": "HMCM",
+          "draftStatus": "Final",
+          "isLocked": true
+        }
+      ]
+    },
+    {
+      "id": "92408a40-9f03-4746-80e5-280089bc7333",
+      "history": [
+        {
+          "id": "4548b63c-de26-4b30-a2c2-d7cd113e4f12",
+          "memberId": "92408a40-9f03-4746-80e5-280089bc7333",
+          "periodEndDate": "2023-04-15",
+          "traitAverage": 3.93,
+          "promotionRecommendation": "MP",
+          "firstName": "Andrew",
+          "lastName": "Brown",
+          "rank": "MC",
+          "designator": "CTTCM",
+          "draftStatus": "Final",
+          "isLocked": true
+        }
+      ]
+    },
+    {
+      "id": "41dbadaf-04d2-452b-9cb6-07198e73eac8",
+      "history": [
+        {
+          "id": "fd16a716-9d9d-4161-b9c7-70239155b54c",
+          "memberId": "41dbadaf-04d2-452b-9cb6-07198e73eac8",
+          "periodEndDate": "2023-04-15",
+          "traitAverage": 3.07,
+          "promotionRecommendation": "P",
+          "firstName": "Carol",
+          "lastName": "Thompson",
+          "rank": "MC",
+          "designator": "STGCM",
+          "draftStatus": "Final",
+          "isLocked": true
+        }
+      ]
+    },
+    {
+      "id": "3ffa1fda-ca0c-4164-86e8-8af6f7fbbf96",
+      "history": []
+    },
+    {
+      "id": "52b6850f-d25b-499f-a301-052d79f35240",
+      "history": [
+        {
+          "id": "3da59b5d-c4a7-410c-8289-7ae173cce568",
+          "memberId": "52b6850f-d25b-499f-a301-052d79f35240",
+          "periodEndDate": "2023-04-15",
+          "traitAverage": 3.12,
+          "promotionRecommendation": "P",
+          "firstName": "Deborah",
+          "lastName": "Martin",
+          "rank": "MC",
+          "designator": "PSCM",
+          "draftStatus": "Final",
+          "isLocked": true
+        }
+      ]
+    },
+    {
+      "id": "4ef9067e-2f05-49cc-80c8-f2c5d9ca635c",
+      "history": [
+        {
+          "id": "be0901ee-2c5d-4170-af4f-c73114d03731",
+          "memberId": "4ef9067e-2f05-49cc-80c8-f2c5d9ca635c",
+          "periodEndDate": "2023-04-15",
+          "traitAverage": 3.46,
+          "promotionRecommendation": "P",
+          "firstName": "Dorothy",
+          "lastName": "Flores",
+          "rank": "MC",
+          "designator": "QMCM",
+          "draftStatus": "Final",
+          "isLocked": true
+        }
+      ]
+    },
+    {
+      "id": "afa9926d-dc1a-49fb-9c74-6b108f3ad1c3",
+      "history": [
+        {
+          "id": "0e4db156-7522-469e-9c37-3cc7bf3b8362",
+          "memberId": "afa9926d-dc1a-49fb-9c74-6b108f3ad1c3",
+          "periodEndDate": "2023-04-15",
+          "traitAverage": 3.97,
+          "promotionRecommendation": "MP",
+          "firstName": "Dorothy",
+          "lastName": "Young",
+          "rank": "MC",
+          "designator": "ETCM",
+          "draftStatus": "Final",
+          "isLocked": true
+        }
+      ]
+    },
+    {
+      "id": "90779e02-b56f-4b9b-be28-ca8d2dbb8ef3",
+      "history": [
+        {
+          "id": "bab7f54f-9083-42eb-9a39-c435dc43aeca",
+          "memberId": "90779e02-b56f-4b9b-be28-ca8d2dbb8ef3",
+          "periodEndDate": "2023-09-15",
+          "traitAverage": 3.23,
+          "promotionRecommendation": "P",
+          "firstName": "John",
+          "lastName": "Scott",
+          "rank": "SC",
+          "designator": "PSCS",
+          "draftStatus": "Final",
+          "isLocked": true
+        }
+      ]
+    },
+    {
+      "id": "db5cbfca-c40d-482f-ac74-b589edd67111",
+      "history": [
+        {
+          "id": "b610f0eb-88a1-4fd2-a362-22ae6684bfcd",
+          "memberId": "db5cbfca-c40d-482f-ac74-b589edd67111",
+          "periodEndDate": "2023-09-15",
+          "traitAverage": 3.91,
+          "promotionRecommendation": "MP",
+          "firstName": "Lisa",
+          "lastName": "Baker",
+          "rank": "SC",
+          "designator": "BMCS",
+          "draftStatus": "Final",
+          "isLocked": true
+        }
+      ]
+    },
+    {
+      "id": "8de2f9da-8f18-4475-a9af-4a94eaa058d7",
+      "history": [
+        {
+          "id": "83daba5f-ce64-446d-af08-fe88899fe8a8",
+          "memberId": "8de2f9da-8f18-4475-a9af-4a94eaa058d7",
+          "periodEndDate": "2023-09-15",
+          "traitAverage": 3.47,
+          "promotionRecommendation": "P",
+          "firstName": "Kenneth",
+          "lastName": "Young",
+          "rank": "SC",
+          "designator": "BMCS",
+          "draftStatus": "Final",
+          "isLocked": true
+        }
+      ]
+    },
+    {
+      "id": "5d3408dc-0fb6-4f67-86d5-cdfe96c1450b",
+      "history": [
+        {
+          "id": "581c13e5-6ed2-4a3d-adca-83e25567575f",
+          "memberId": "5d3408dc-0fb6-4f67-86d5-cdfe96c1450b",
+          "periodEndDate": "2023-09-15",
+          "traitAverage": 3.66,
+          "promotionRecommendation": "P",
+          "firstName": "Thomas",
+          "lastName": "White",
+          "rank": "SC",
+          "designator": "LSCS",
+          "draftStatus": "Final",
+          "isLocked": true
+        }
+      ]
+    },
+    {
+      "id": "2eb94695-efc6-415f-8f82-3831751567ff",
+      "history": [
+        {
+          "id": "2c316e2a-43ed-46a7-9cee-bb1143deaa6a",
+          "memberId": "2eb94695-efc6-415f-8f82-3831751567ff",
+          "periodEndDate": "2023-09-15",
+          "traitAverage": 4.53,
+          "promotionRecommendation": "EP",
+          "firstName": "Amanda",
+          "lastName": "Moore",
+          "rank": "SC",
+          "designator": "HMCS",
+          "draftStatus": "Final",
+          "isLocked": true
+        }
+      ]
+    },
+    {
+      "id": "c008df3b-a975-432d-b32f-889980db0cda",
+      "history": [
+        {
+          "id": "a96ca3e4-3a5e-4925-96be-3aaf412c75ef",
+          "memberId": "c008df3b-a975-432d-b32f-889980db0cda",
+          "periodEndDate": "2023-09-15",
+          "traitAverage": 3.48,
+          "promotionRecommendation": "P",
+          "firstName": "Karen",
+          "lastName": "Perez",
+          "rank": "SC",
+          "designator": "LSCS",
+          "draftStatus": "Final",
+          "isLocked": true
+        }
+      ]
+    },
+    {
+      "id": "46e86eb7-bbed-4122-ac66-2ea6245b72aa",
+      "history": [
+        {
+          "id": "99c58a97-af07-4e71-a38a-741cf8e8821b",
+          "memberId": "46e86eb7-bbed-4122-ac66-2ea6245b72aa",
+          "periodEndDate": "2023-09-15",
+          "traitAverage": 4.54,
+          "promotionRecommendation": "EP",
+          "firstName": "Daniel",
+          "lastName": "Scott",
+          "rank": "SC",
+          "designator": "CTTCS",
+          "draftStatus": "Final",
+          "isLocked": true
+        }
+      ]
+    },
+    {
+      "id": "058d07ba-758a-4d1f-8954-c5ce234d385c",
+      "history": []
+    },
+    {
+      "id": "1dcf6126-1273-4734-a4e2-0b07a219b76d",
+      "history": [
+        {
+          "id": "dd690328-02c5-46ba-aa8c-c0009f530ff3",
+          "memberId": "1dcf6126-1273-4734-a4e2-0b07a219b76d",
+          "periodEndDate": "2023-09-15",
+          "traitAverage": 3.35,
+          "promotionRecommendation": "P",
+          "firstName": "Kevin",
+          "lastName": "Green",
+          "rank": "SC",
+          "designator": "PSCS",
+          "draftStatus": "Final",
+          "isLocked": true
+        }
+      ]
+    },
+    {
+      "id": "90935e30-d68c-4076-b632-dd3048ca0855",
+      "history": [
+        {
+          "id": "8c1e5996-c406-4c4a-98bb-20ab0f74e68a",
+          "memberId": "90935e30-d68c-4076-b632-dd3048ca0855",
+          "periodEndDate": "2023-09-15",
+          "traitAverage": 4.22,
+          "promotionRecommendation": "MP",
+          "firstName": "Jessica",
+          "lastName": "Wright",
+          "rank": "SC",
+          "designator": "FCCS",
+          "draftStatus": "Final",
+          "isLocked": true
+        }
+      ]
+    },
+    {
+      "id": "8dc996cd-e69f-41b1-9b33-28db6f971408",
+      "history": [
+        {
+          "id": "91d1f81a-c65c-45dc-bd5d-8449a57c685a",
+          "memberId": "8dc996cd-e69f-41b1-9b33-28db6f971408",
+          "periodEndDate": "2023-09-15",
+          "traitAverage": 4.86,
+          "promotionRecommendation": "EP",
+          "firstName": "John",
+          "lastName": "Smith",
+          "rank": "SC",
+          "designator": "PSCS",
+          "draftStatus": "Final",
+          "isLocked": true
+        }
+      ]
+    },
+    {
+      "id": "10480a9a-65d6-44c7-99f1-19c604021541",
+      "history": [
+        {
+          "id": "0f5bd4e0-8c1f-4a51-a6d4-37d8821c0c1e",
+          "memberId": "10480a9a-65d6-44c7-99f1-19c604021541",
+          "periodEndDate": "2023-09-15",
+          "traitAverage": 4.69,
+          "promotionRecommendation": "EP",
+          "firstName": "Paul",
+          "lastName": "Carter",
+          "rank": "SC",
+          "designator": "STGCS",
+          "draftStatus": "Final",
+          "isLocked": true
+        }
+      ]
+    },
+    {
+      "id": "8b1b0d26-a29e-4f3a-b4d6-74bc7b56c23e",
+      "history": [
+        {
+          "id": "10dc4de7-c45e-43f6-abca-50fb31a46359",
+          "memberId": "8b1b0d26-a29e-4f3a-b4d6-74bc7b56c23e",
+          "periodEndDate": "2023-09-15",
+          "traitAverage": 3.68,
+          "promotionRecommendation": "P",
+          "firstName": "Steven",
+          "lastName": "Lopez",
+          "rank": "SC",
+          "designator": "MACS",
+          "draftStatus": "Final",
+          "isLocked": true
+        }
+      ]
+    },
+    {
+      "id": "38ed4074-d722-4c4c-bbd3-bea4919113b9",
+      "history": []
+    },
+    {
+      "id": "b82d2959-8eda-4593-a7a1-057b26f3f13d",
+      "history": [
+        {
+          "id": "dc74fbe0-d83e-48fb-9c5c-03f5b4b143cf",
+          "memberId": "b82d2959-8eda-4593-a7a1-057b26f3f13d",
+          "periodEndDate": "2023-09-15",
+          "traitAverage": 4,
+          "promotionRecommendation": "MP",
+          "firstName": "Margaret",
+          "lastName": "Carter",
+          "rank": "SC",
+          "designator": "BMCS",
+          "draftStatus": "Final",
+          "isLocked": true
+        }
+      ]
+    },
+    {
+      "id": "7dd02ac6-34d9-4db8-bf94-dc390b098fd7",
+      "history": [
+        {
+          "id": "eb6fd194-6ac9-4be7-b35d-389cb17ca45c",
+          "memberId": "7dd02ac6-34d9-4db8-bf94-dc390b098fd7",
+          "periodEndDate": "2023-09-15",
+          "traitAverage": 3.62,
+          "promotionRecommendation": "P",
+          "firstName": "Emily",
+          "lastName": "Green",
+          "rank": "CPO",
+          "designator": "BMC",
+          "draftStatus": "Final",
+          "isLocked": true
+        }
+      ]
+    },
+    {
+      "id": "7644c39f-b413-4722-b82e-5354155ca751",
+      "history": [
+        {
+          "id": "856cca99-96c2-48c3-bdec-29e7cfcc90c4",
+          "memberId": "7644c39f-b413-4722-b82e-5354155ca751",
+          "periodEndDate": "2023-09-15",
+          "traitAverage": 3.07,
+          "promotionRecommendation": "P",
+          "firstName": "Susan",
+          "lastName": "Thomas",
+          "rank": "CPO",
+          "designator": "BMC",
+          "draftStatus": "Final",
+          "isLocked": true
+        }
+      ]
+    },
+    {
+      "id": "35e60b99-e5cf-4fbf-b331-6c8b8a3f6300",
+      "history": [
+        {
+          "id": "12d0779c-de20-44de-b094-e1037131fe80",
+          "memberId": "35e60b99-e5cf-4fbf-b331-6c8b8a3f6300",
+          "periodEndDate": "2023-09-15",
+          "traitAverage": 4.5,
+          "promotionRecommendation": "MP",
+          "firstName": "John",
+          "lastName": "Lee",
+          "rank": "CPO",
+          "designator": "LSC",
+          "draftStatus": "Final",
+          "isLocked": true
+        }
+      ]
+    },
+    {
+      "id": "22b99712-503a-4bfa-85b4-d7b1c8e3c714",
+      "history": [
+        {
+          "id": "d9da1f78-723e-4871-a2d0-0fddc2ad3ee8",
+          "memberId": "22b99712-503a-4bfa-85b4-d7b1c8e3c714",
+          "periodEndDate": "2023-09-15",
+          "traitAverage": 3.89,
+          "promotionRecommendation": "MP",
+          "firstName": "Christopher",
+          "lastName": "Garcia",
+          "rank": "CPO",
+          "designator": "OSC",
+          "draftStatus": "Final",
+          "isLocked": true
+        }
+      ]
+    },
+    {
+      "id": "a884b3eb-996e-443e-88fd-f3302cc83ffd",
+      "history": [
+        {
+          "id": "428fc9de-8422-43e1-9917-7aae47818af5",
+          "memberId": "a884b3eb-996e-443e-88fd-f3302cc83ffd",
+          "periodEndDate": "2023-09-15",
+          "traitAverage": 4.15,
+          "promotionRecommendation": "MP",
+          "firstName": "Christopher",
+          "lastName": "Lewis",
+          "rank": "CPO",
+          "designator": "ETC",
+          "draftStatus": "Final",
+          "isLocked": true
+        }
+      ]
+    },
+    {
+      "id": "c47e75da-0443-4841-848d-45bf0b9f9beb",
+      "history": []
+    },
+    {
+      "id": "1b7c5dbe-a8fd-41d4-91ba-8f3fe5245733",
+      "history": [
+        {
+          "id": "51528654-771c-4819-8b1d-21d50a611597",
+          "memberId": "1b7c5dbe-a8fd-41d4-91ba-8f3fe5245733",
+          "periodEndDate": "2023-09-15",
+          "traitAverage": 4.84,
+          "promotionRecommendation": "EP",
+          "firstName": "Elizabeth",
+          "lastName": "Sanchez",
+          "rank": "CPO",
+          "designator": "PSC",
+          "draftStatus": "Final",
+          "isLocked": true
+        }
+      ]
+    },
+    {
+      "id": "17c791f5-cb4e-4d02-85a5-5ba4e30b355a",
+      "history": [
+        {
+          "id": "06333951-254e-47e9-90cc-c0463464c2bd",
+          "memberId": "17c791f5-cb4e-4d02-85a5-5ba4e30b355a",
+          "periodEndDate": "2023-09-15",
+          "traitAverage": 3.25,
+          "promotionRecommendation": "P",
+          "firstName": "Charles",
+          "lastName": "Wilson",
+          "rank": "CPO",
+          "designator": "ETC",
+          "draftStatus": "Final",
+          "isLocked": true
+        }
+      ]
+    },
+    {
+      "id": "36959436-2b67-46ee-aa7d-3e56b1d26d1d",
+      "history": []
+    },
+    {
+      "id": "5d87bf15-f67e-4bb7-845a-05aba3e08a55",
+      "history": []
+    },
+    {
+      "id": "9e025e7a-c108-430d-809b-fabcb6d62062",
+      "history": [
+        {
+          "id": "c830b7a5-e1b3-427c-9ef0-224e874cdd2d",
+          "memberId": "9e025e7a-c108-430d-809b-fabcb6d62062",
+          "periodEndDate": "2023-09-15",
+          "traitAverage": 3.13,
+          "promotionRecommendation": "P",
+          "firstName": "Patricia",
+          "lastName": "White",
+          "rank": "CPO",
+          "designator": "QMC",
+          "draftStatus": "Final",
+          "isLocked": true
+        }
+      ]
+    },
+    {
+      "id": "abc430a5-aa2f-4ee8-b484-3439c6118dbf",
+      "history": [
+        {
+          "id": "402f425f-30ff-4ab8-b8ee-ee4b196a9af4",
+          "memberId": "abc430a5-aa2f-4ee8-b484-3439c6118dbf",
+          "periodEndDate": "2023-09-15",
+          "traitAverage": 3.36,
+          "promotionRecommendation": "P",
+          "firstName": "Christopher",
+          "lastName": "Johnson",
+          "rank": "CPO",
+          "designator": "OSC",
+          "draftStatus": "Final",
+          "isLocked": true
+        }
+      ]
+    },
+    {
+      "id": "2b82ef12-7dc1-41ce-8d4d-d9ea62d812d6",
+      "history": []
+    },
+    {
+      "id": "e3e56e92-0c61-447d-bac1-ebd6debd0b5d",
+      "history": [
+        {
+          "id": "040a29fe-82d5-467c-a6d0-01bfd4c3ffbc",
+          "memberId": "e3e56e92-0c61-447d-bac1-ebd6debd0b5d",
+          "periodEndDate": "2023-09-15",
+          "traitAverage": 4.36,
+          "promotionRecommendation": "MP",
+          "firstName": "Sarah",
+          "lastName": "Hall",
+          "rank": "CPO",
+          "designator": "ITC",
+          "draftStatus": "Final",
+          "isLocked": true
+        }
+      ]
+    },
+    {
+      "id": "2a02e89e-fe2e-41ac-ac05-f773101d7a9f",
+      "history": [
+        {
+          "id": "6d606f85-e6b0-4128-9619-5285f4a13407",
+          "memberId": "2a02e89e-fe2e-41ac-ac05-f773101d7a9f",
+          "periodEndDate": "2023-09-15",
+          "traitAverage": 3.34,
+          "promotionRecommendation": "P",
+          "firstName": "Daniel",
+          "lastName": "Scott",
+          "rank": "CPO",
+          "designator": "PSC",
+          "draftStatus": "Final",
+          "isLocked": true
+        }
+      ]
+    },
+    {
+      "id": "62a5f4f1-dcc6-43fe-a0c3-ae89dc69427e",
+      "history": [
+        {
+          "id": "1e432500-7a74-4a04-92ca-858aba1823cd",
+          "memberId": "62a5f4f1-dcc6-43fe-a0c3-ae89dc69427e",
+          "periodEndDate": "2023-09-15",
+          "traitAverage": 3.48,
+          "promotionRecommendation": "P",
+          "firstName": "Charles",
+          "lastName": "Campbell",
+          "rank": "CPO",
+          "designator": "YNC",
+          "draftStatus": "Final",
+          "isLocked": true
+        }
+      ]
+    },
+    {
+      "id": "686f4240-ed82-463b-8ec8-a7c02bdccc4b",
+      "history": [
+        {
+          "id": "42b6f160-b678-4812-9182-3cc8febbe27c",
+          "memberId": "686f4240-ed82-463b-8ec8-a7c02bdccc4b",
+          "periodEndDate": "2023-09-15",
+          "traitAverage": 3.15,
+          "promotionRecommendation": "P",
+          "firstName": "Michelle",
+          "lastName": "Moore",
+          "rank": "CPO",
+          "designator": "PSC",
+          "draftStatus": "Final",
+          "isLocked": true
+        }
+      ]
+    },
+    {
+      "id": "efbcc177-815e-4fe6-8d18-f36847c5beb2",
+      "history": [
+        {
+          "id": "63fe0b65-3363-4102-9ae4-b227a3215b11",
+          "memberId": "efbcc177-815e-4fe6-8d18-f36847c5beb2",
+          "periodEndDate": "2023-09-15",
+          "traitAverage": 3.11,
+          "promotionRecommendation": "P",
+          "firstName": "Michael",
+          "lastName": "Smith",
+          "rank": "CPO",
+          "designator": "CSC",
+          "draftStatus": "Final",
+          "isLocked": true
+        }
+      ]
+    },
+    {
+      "id": "434399fb-342c-421e-8af0-dfb58c21a391",
+      "history": [
+        {
+          "id": "fc2a4891-7a0d-453c-b8bf-bb0c70b22337",
+          "memberId": "434399fb-342c-421e-8af0-dfb58c21a391",
+          "periodEndDate": "2023-09-15",
+          "traitAverage": 3.17,
+          "promotionRecommendation": "P",
+          "firstName": "Karen",
+          "lastName": "Thomas",
+          "rank": "CPO",
+          "designator": "CSC",
+          "draftStatus": "Final",
+          "isLocked": true
+        }
+      ]
+    },
+    {
+      "id": "548fd804-1eb4-47ab-806c-44ee51ac8106",
+      "history": [
+        {
+          "id": "46d9f5a6-51e6-436c-9bf8-4cb0da1f8693",
+          "memberId": "548fd804-1eb4-47ab-806c-44ee51ac8106",
+          "periodEndDate": "2023-09-15",
+          "traitAverage": 4.94,
+          "promotionRecommendation": "EP",
+          "firstName": "Richard",
+          "lastName": "Hill",
+          "rank": "CPO",
+          "designator": "BMC",
+          "draftStatus": "Final",
+          "isLocked": true
+        }
+      ]
+    },
+    {
+      "id": "27397abb-952f-439a-bf13-c7df245c27f2",
+      "history": [
+        {
+          "id": "315dfa20-2688-47b9-bf18-7c35d9c8eb35",
+          "memberId": "27397abb-952f-439a-bf13-c7df245c27f2",
+          "periodEndDate": "2023-11-15",
+          "traitAverage": 4.48,
+          "promotionRecommendation": "MP",
+          "firstName": "Donna",
+          "lastName": "King",
+          "rank": "PO1",
+          "designator": "CTT1",
+          "draftStatus": "Final",
+          "isLocked": true
+        }
+      ]
+    },
+    {
+      "id": "dd5efdea-885c-4e2a-8fdc-ea693db3d8a2",
+      "history": [
+        {
+          "id": "dfef18d0-5585-45c5-80bf-988b9865996c",
+          "memberId": "dd5efdea-885c-4e2a-8fdc-ea693db3d8a2",
+          "periodEndDate": "2023-11-15",
+          "traitAverage": 3.05,
+          "promotionRecommendation": "P",
+          "firstName": "Karen",
+          "lastName": "Nguyen",
+          "rank": "PO1",
+          "designator": "STG1",
+          "draftStatus": "Final",
+          "isLocked": true
+        }
+      ]
+    },
+    {
+      "id": "b4dfd46b-1870-4e28-948d-7f6cbcd6cdc3",
+      "history": [
+        {
+          "id": "9c929d04-82a2-45f8-8efd-def95750aee7",
+          "memberId": "b4dfd46b-1870-4e28-948d-7f6cbcd6cdc3",
+          "periodEndDate": "2023-11-15",
+          "traitAverage": 4.97,
+          "promotionRecommendation": "EP",
+          "firstName": "Patricia",
+          "lastName": "Moore",
+          "rank": "PO1",
+          "designator": "STG1",
+          "draftStatus": "Final",
+          "isLocked": true
+        }
+      ]
+    },
+    {
+      "id": "ca03237e-1a4f-47ca-af78-390434a97844",
+      "history": [
+        {
+          "id": "af6888f5-4755-407a-8878-301600ec517d",
+          "memberId": "ca03237e-1a4f-47ca-af78-390434a97844",
+          "periodEndDate": "2023-11-15",
+          "traitAverage": 3.33,
+          "promotionRecommendation": "P",
+          "firstName": "Michael",
+          "lastName": "Lee",
+          "rank": "PO1",
+          "designator": "BM1",
+          "draftStatus": "Final",
+          "isLocked": true
+        }
+      ]
+    },
+    {
+      "id": "68972753-0273-4df0-929a-464edc9dee34",
+      "history": [
+        {
+          "id": "51b3133e-ee1c-43b2-af03-9276f4e0c5b6",
+          "memberId": "68972753-0273-4df0-929a-464edc9dee34",
+          "periodEndDate": "2023-11-15",
+          "traitAverage": 4.04,
+          "promotionRecommendation": "MP",
+          "firstName": "David",
+          "lastName": "Walker",
+          "rank": "PO1",
+          "designator": "QM1",
+          "draftStatus": "Final",
+          "isLocked": true
+        }
+      ]
+    },
+    {
+      "id": "53790527-e5c6-4dfd-aea3-d5647ff789b0",
+      "history": [
+        {
+          "id": "db7e17a9-de89-4524-a044-d47f4f2a8b20",
+          "memberId": "53790527-e5c6-4dfd-aea3-d5647ff789b0",
+          "periodEndDate": "2023-11-15",
+          "traitAverage": 4.98,
+          "promotionRecommendation": "EP",
+          "firstName": "Karen",
+          "lastName": "Garcia",
+          "rank": "PO1",
+          "designator": "STG1",
+          "draftStatus": "Final",
+          "isLocked": true
+        }
+      ]
+    },
+    {
+      "id": "a4d9ba62-826b-490a-b96b-6004d7cc0f03",
+      "history": [
+        {
+          "id": "f5c11feb-aa78-4cb6-b5f0-98630d589b05",
+          "memberId": "a4d9ba62-826b-490a-b96b-6004d7cc0f03",
+          "periodEndDate": "2023-11-15",
+          "traitAverage": 3.56,
+          "promotionRecommendation": "P",
+          "firstName": "Donna",
+          "lastName": "Scott",
+          "rank": "PO1",
+          "designator": "PS1",
+          "draftStatus": "Final",
+          "isLocked": true
+        }
+      ]
+    },
+    {
+      "id": "c4c1752e-a547-46a7-a268-5f11f91b2a56",
+      "history": [
+        {
+          "id": "996e8c86-8ff7-40d9-aab3-a39aaa22b652",
+          "memberId": "c4c1752e-a547-46a7-a268-5f11f91b2a56",
+          "periodEndDate": "2023-11-15",
+          "traitAverage": 4.87,
+          "promotionRecommendation": "EP",
+          "firstName": "Daniel",
+          "lastName": "Campbell",
+          "rank": "PO1",
+          "designator": "GM1",
+          "draftStatus": "Final",
+          "isLocked": true
+        }
+      ]
+    },
+    {
+      "id": "b3467fe1-ae3f-4025-94d6-26dbbbd52014",
+      "history": [
+        {
+          "id": "83baf545-93f4-4562-8326-17e17c4d4998",
+          "memberId": "b3467fe1-ae3f-4025-94d6-26dbbbd52014",
+          "periodEndDate": "2023-11-15",
+          "traitAverage": 4.78,
+          "promotionRecommendation": "EP",
+          "firstName": "Jessica",
+          "lastName": "Miller",
+          "rank": "PO1",
+          "designator": "QM1",
+          "draftStatus": "Final",
+          "isLocked": true
+        }
+      ]
+    },
+    {
+      "id": "c97397db-2216-46ed-8ceb-e3475a2547f4",
+      "history": [
+        {
+          "id": "c7964729-39d0-438c-b050-1869b881782b",
+          "memberId": "c97397db-2216-46ed-8ceb-e3475a2547f4",
+          "periodEndDate": "2023-11-15",
+          "traitAverage": 3.41,
+          "promotionRecommendation": "P",
+          "firstName": "Daniel",
+          "lastName": "Lewis",
+          "rank": "PO1",
+          "designator": "IT1",
+          "draftStatus": "Final",
+          "isLocked": true
+        }
+      ]
+    },
+    {
+      "id": "f0622b7e-0d44-46b9-8afa-60fb9ab6e1d9",
+      "history": [
+        {
+          "id": "7a02598a-f617-4e8d-ac12-8edf8bd90b7f",
+          "memberId": "f0622b7e-0d44-46b9-8afa-60fb9ab6e1d9",
+          "periodEndDate": "2023-11-15",
+          "traitAverage": 4.68,
+          "promotionRecommendation": "EP",
+          "firstName": "John",
+          "lastName": "Williams",
+          "rank": "PO1",
+          "designator": "HM1",
+          "draftStatus": "Final",
+          "isLocked": true
+        }
+      ]
+    },
+    {
+      "id": "d5a34953-4d6b-4353-9ab5-01dfcaa85942",
+      "history": [
+        {
+          "id": "a9c06e8a-e7fd-4234-976a-be698c78958a",
+          "memberId": "d5a34953-4d6b-4353-9ab5-01dfcaa85942",
+          "periodEndDate": "2023-11-15",
+          "traitAverage": 4.59,
+          "promotionRecommendation": "EP",
+          "firstName": "Patricia",
+          "lastName": "Garcia",
+          "rank": "PO1",
+          "designator": "ET1",
+          "draftStatus": "Final",
+          "isLocked": true
+        }
+      ]
+    },
+    {
+      "id": "5841e3a3-eaf6-41d4-b378-33706a003617",
+      "history": [
+        {
+          "id": "78124207-f08b-45d6-9a1d-68238f7a4c9e",
+          "memberId": "5841e3a3-eaf6-41d4-b378-33706a003617",
+          "periodEndDate": "2023-11-15",
+          "traitAverage": 4.18,
+          "promotionRecommendation": "MP",
+          "firstName": "George",
+          "lastName": "Green",
+          "rank": "PO1",
+          "designator": "PS1",
+          "draftStatus": "Final",
+          "isLocked": true
+        }
+      ]
+    },
+    {
+      "id": "54b7b846-3746-407a-a6ad-39828acf1e59",
+      "history": [
+        {
+          "id": "791ef530-38b5-4e63-bd84-58fb9dba2b22",
+          "memberId": "54b7b846-3746-407a-a6ad-39828acf1e59",
+          "periodEndDate": "2023-11-15",
+          "traitAverage": 3.7,
+          "promotionRecommendation": "P",
+          "firstName": "Barbara",
+          "lastName": "Williams",
+          "rank": "PO1",
+          "designator": "YN1",
+          "draftStatus": "Final",
+          "isLocked": true
+        }
+      ]
+    },
+    {
+      "id": "ac953d04-b937-4d64-a588-2d502169dfab",
+      "history": [
+        {
+          "id": "a3e3858c-c720-4443-be50-735c7dd25db6",
+          "memberId": "ac953d04-b937-4d64-a588-2d502169dfab",
+          "periodEndDate": "2023-11-15",
+          "traitAverage": 3.71,
+          "promotionRecommendation": "P",
+          "firstName": "Joshua",
+          "lastName": "Anderson",
+          "rank": "PO1",
+          "designator": "FC1",
+          "draftStatus": "Final",
+          "isLocked": true
+        }
+      ]
+    },
+    {
+      "id": "c0615469-ec39-4c7a-9670-2916bbecdddf",
+      "history": []
+    },
+    {
+      "id": "1de761cb-d1d7-484d-8c9c-a21b63d7e276",
+      "history": [
+        {
+          "id": "c64cb4cf-1a17-4f28-8761-cf6fa5744547",
+          "memberId": "1de761cb-d1d7-484d-8c9c-a21b63d7e276",
+          "periodEndDate": "2023-11-15",
+          "traitAverage": 4.82,
+          "promotionRecommendation": "EP",
+          "firstName": "Daniel",
+          "lastName": "Wilson",
+          "rank": "PO1",
+          "designator": "CTT1",
+          "draftStatus": "Final",
+          "isLocked": true
+        }
+      ]
+    },
+    {
+      "id": "50507838-5d10-408d-99c6-2a57735bd937",
+      "history": [
+        {
+          "id": "da4d0134-776a-4ac6-977c-cb81904f81e0",
+          "memberId": "50507838-5d10-408d-99c6-2a57735bd937",
+          "periodEndDate": "2023-11-15",
+          "traitAverage": 3.84,
+          "promotionRecommendation": "MP",
+          "firstName": "Charles",
+          "lastName": "Hall",
+          "rank": "PO1",
+          "designator": "STG1",
+          "draftStatus": "Final",
+          "isLocked": true
+        }
+      ]
+    },
+    {
+      "id": "4254f2e6-8421-4548-8df5-e91e9999b401",
+      "history": [
+        {
+          "id": "f9ed7a22-3bf0-44f0-baff-3e4221791b18",
+          "memberId": "4254f2e6-8421-4548-8df5-e91e9999b401",
+          "periodEndDate": "2023-11-15",
+          "traitAverage": 4.13,
+          "promotionRecommendation": "MP",
+          "firstName": "Deborah",
+          "lastName": "Hall",
+          "rank": "PO1",
+          "designator": "OS1",
+          "draftStatus": "Final",
+          "isLocked": true
+        }
+      ]
+    },
+    {
+      "id": "e35ac406-223d-4282-b8ef-a701fd535741",
+      "history": [
+        {
+          "id": "fb984b7d-760f-4fc5-b5da-7e474e290fc5",
+          "memberId": "e35ac406-223d-4282-b8ef-a701fd535741",
+          "periodEndDate": "2023-11-15",
+          "traitAverage": 4.63,
+          "promotionRecommendation": "EP",
+          "firstName": "Joseph",
+          "lastName": "Roberts",
+          "rank": "PO1",
+          "designator": "YN1",
+          "draftStatus": "Final",
+          "isLocked": true
+        }
+      ]
+    },
+    {
+      "id": "90a04af5-4923-4e4d-9867-902edbb43e0e",
+      "history": []
+    },
+    {
+      "id": "0b2aaaee-47eb-495b-a7d6-9e5130a26276",
+      "history": []
+    },
+    {
+      "id": "9f44bf42-3e92-4be6-9272-65f4daaa168c",
+      "history": []
+    },
+    {
+      "id": "605fd1f1-e63b-44ce-8532-6c511fee7dc1",
+      "history": []
+    },
+    {
+      "id": "7ad6b720-b761-41a4-a043-6692dacf1705",
+      "history": []
+    },
+    {
+      "id": "002ccab0-3bc7-453b-ba15-6187042fe66a",
+      "history": []
+    },
+    {
+      "id": "b7b99720-9916-47f4-8ab7-c0f54178dbae",
+      "history": []
+    }
+  ],
+  "summaryGroups": [
+    {
+      "id": "442f03d2-a0f5-4f2e-9ec2-3088bdb9f8ed",
+      "name": "O-3 OFFICER Active",
+      "paygrade": "O-3",
+      "competitiveGroupKey": "O-3 COMP",
+      "periodEndDate": "2025-01-31",
+      "status": "Draft",
+      "reports": [
+        {
+          "id": "32ea6805-3f66-46a7-9030-d650e59a0b22",
+          "memberId": "7bcf1bfa-5517-487d-a6e0-ec10da219df4",
+          "periodEndDate": "2025-01-31",
+          "traitAverage": 4.42,
+          "promotionRecommendation": "MP",
+          "firstName": "Emily",
+          "lastName": "Campbell",
+          "rank": "LT",
+          "designator": "6290",
+          "draftStatus": "Draft",
+          "isLocked": false
+        },
+        {
+          "id": "6a68d757-6231-4480-87b1-cf5da33475b6",
+          "memberId": "7d6bcaff-99a0-4c00-88a4-5e8d4e01ccfa",
+          "periodEndDate": "2025-01-31",
+          "traitAverage": 3.41,
+          "promotionRecommendation": "P",
+          "firstName": "Susan",
+          "lastName": "Carter",
+          "rank": "LT",
+          "designator": "1310",
+          "draftStatus": "Draft",
+          "isLocked": false
+        },
+        {
+          "id": "6ef985b9-5cdd-4c93-a9fa-de7398a03f99",
+          "memberId": "ef9c6b1a-2a61-4607-8dfe-aad0ac051b06",
+          "periodEndDate": "2025-01-31",
+          "traitAverage": 3.64,
+          "promotionRecommendation": "P",
+          "firstName": "George",
+          "lastName": "Sanchez",
+          "rank": "LT",
+          "designator": "6230",
+          "draftStatus": "Draft",
+          "isLocked": false
+        },
+        {
+          "id": "2c96fc43-94bf-419e-944c-ce0e39007d76",
+          "memberId": "6093a73d-b2f8-4264-849a-7bbaaa5e1b62",
+          "periodEndDate": "2025-01-31",
+          "traitAverage": 3.53,
+          "promotionRecommendation": "P",
+          "firstName": "Dorothy",
+          "lastName": "Clark",
+          "rank": "LT",
+          "designator": "6410",
+          "draftStatus": "Draft",
+          "isLocked": false
+        },
+        {
+          "id": "6d79b896-6d05-435a-8b63-bd47dfa4cba1",
+          "memberId": "90b4818a-9d13-4e9f-832a-4981a5a572fa",
+          "periodEndDate": "2025-01-31",
+          "traitAverage": 4.22,
+          "promotionRecommendation": "MP",
+          "firstName": "Donna",
+          "lastName": "Martin",
+          "rank": "LT",
+          "designator": "6180",
+          "draftStatus": "Draft",
+          "isLocked": false
+        },
+        {
+          "id": "bd1d2f3f-a013-4f32-bf19-e5bf226a59d9",
+          "memberId": "a3f98619-b1e5-4499-b436-368be76ed565",
+          "periodEndDate": "2025-01-31",
+          "traitAverage": 4.08,
+          "promotionRecommendation": "MP",
+          "firstName": "Sarah",
+          "lastName": "Hall",
+          "rank": "LT",
+          "designator": "6120",
+          "draftStatus": "Draft",
+          "isLocked": false
+        },
+        {
+          "id": "f1d392d1-74c5-4329-8c69-ad70c506634b",
+          "memberId": "20c69931-d413-4c6d-a74d-d0d1a34bf706",
+          "periodEndDate": "2025-01-31",
+          "traitAverage": 3.15,
+          "promotionRecommendation": "P",
+          "firstName": "George",
+          "lastName": "Walker",
+          "rank": "LT",
+          "designator": "2300",
+          "draftStatus": "Draft",
+          "isLocked": false
+        },
+        {
+          "id": "6e1b3795-0873-4168-b983-544f652f2e3e",
+          "memberId": "9210e472-af89-44ba-8823-1b987c3de85d",
+          "periodEndDate": "2025-01-31",
+          "traitAverage": 4.98,
+          "promotionRecommendation": "EP",
+          "firstName": "Edward",
+          "lastName": "Carter",
+          "rank": "LT",
+          "designator": "6110",
+          "draftStatus": "Draft",
+          "isLocked": false
+        },
+        {
+          "id": "a9ac0d01-9a47-4004-9adb-150888a0dd9e",
+          "memberId": "af025166-07a2-49cb-9e96-dca4f23e55cf",
+          "periodEndDate": "2025-01-31",
+          "traitAverage": 4.29,
+          "promotionRecommendation": "MP",
+          "firstName": "Deborah",
+          "lastName": "Allen",
+          "rank": "LT",
+          "designator": "6280",
+          "draftStatus": "Draft",
+          "isLocked": false
+        },
+        {
+          "id": "9642174e-17ab-432c-93e7-73e4b5be1e74",
+          "memberId": "fde94dfc-9462-4ccd-9a70-709b8b10d50f",
+          "periodEndDate": "2025-01-31",
+          "traitAverage": 3.04,
+          "promotionRecommendation": "P",
+          "firstName": "Richard",
+          "lastName": "Moore",
+          "rank": "LT",
+          "designator": "1830",
+          "draftStatus": "Draft",
+          "isLocked": false
+        }
+      ],
+      "designator": "",
+      "promotionStatus": "REGULAR"
+    },
+    {
+      "id": "4a7a97b3-5d5d-4823-bc00-bd760fec1b43",
+      "name": "E-7 OFFICER Active",
+      "paygrade": "E-7",
+      "competitiveGroupKey": "E-7 COMP",
+      "periodEndDate": "2024-09-15",
+      "status": "Draft",
+      "reports": [
+        {
+          "id": "afc55217-4eab-4845-bd2e-9c05d4f5f40d",
+          "memberId": "7dd02ac6-34d9-4db8-bf94-dc390b098fd7",
+          "periodEndDate": "2024-09-15",
+          "traitAverage": 4.28,
+          "promotionRecommendation": "MP",
+          "firstName": "Emily",
+          "lastName": "Green",
+          "rank": "CPO",
+          "designator": "BMC",
+          "draftStatus": "Draft",
+          "isLocked": false
+        },
+        {
+          "id": "bbc62f58-8d07-4a15-8389-59118664751b",
+          "memberId": "7644c39f-b413-4722-b82e-5354155ca751",
+          "periodEndDate": "2024-09-15",
+          "traitAverage": 3.18,
+          "promotionRecommendation": "P",
+          "firstName": "Susan",
+          "lastName": "Thomas",
+          "rank": "CPO",
+          "designator": "BMC",
+          "draftStatus": "Draft",
+          "isLocked": false
+        },
+        {
+          "id": "c37a6e1e-b455-4801-a3de-1a0651934278",
+          "memberId": "35e60b99-e5cf-4fbf-b331-6c8b8a3f6300",
+          "periodEndDate": "2024-09-15",
+          "traitAverage": 3.13,
+          "promotionRecommendation": "P",
+          "firstName": "John",
+          "lastName": "Lee",
+          "rank": "CPO",
+          "designator": "LSC",
+          "draftStatus": "Draft",
+          "isLocked": false
+        },
+        {
+          "id": "9d4e26c3-3d84-400a-af93-b02d61baff20",
+          "memberId": "22b99712-503a-4bfa-85b4-d7b1c8e3c714",
+          "periodEndDate": "2024-09-15",
+          "traitAverage": 3.11,
+          "promotionRecommendation": "P",
+          "firstName": "Christopher",
+          "lastName": "Garcia",
+          "rank": "CPO",
+          "designator": "OSC",
+          "draftStatus": "Draft",
+          "isLocked": false
+        },
+        {
+          "id": "874cd15c-f7d0-4a33-8065-7266fe9e2ae5",
+          "memberId": "a884b3eb-996e-443e-88fd-f3302cc83ffd",
+          "periodEndDate": "2024-09-15",
+          "traitAverage": 3.69,
+          "promotionRecommendation": "P",
+          "firstName": "Christopher",
+          "lastName": "Lewis",
+          "rank": "CPO",
+          "designator": "ETC",
+          "draftStatus": "Draft",
+          "isLocked": false
+        },
+        {
+          "id": "fe3b9ca1-ea8b-411d-8a9c-719762c2ca0c",
+          "memberId": "c47e75da-0443-4841-848d-45bf0b9f9beb",
+          "periodEndDate": "2024-09-15",
+          "traitAverage": 3.5,
+          "promotionRecommendation": "P",
+          "firstName": "Barbara",
+          "lastName": "Flores",
+          "rank": "CPO",
+          "designator": "ITC",
+          "draftStatus": "Draft",
+          "isLocked": false
+        },
+        {
+          "id": "b34b883a-fd68-49c8-b654-4bde76462c25",
+          "memberId": "1b7c5dbe-a8fd-41d4-91ba-8f3fe5245733",
+          "periodEndDate": "2024-09-15",
+          "traitAverage": 3.58,
+          "promotionRecommendation": "P",
+          "firstName": "Elizabeth",
+          "lastName": "Sanchez",
+          "rank": "CPO",
+          "designator": "PSC",
+          "draftStatus": "Draft",
+          "isLocked": false
+        },
+        {
+          "id": "8ab54a3c-a261-4a73-9a8c-45e99a27a764",
+          "memberId": "17c791f5-cb4e-4d02-85a5-5ba4e30b355a",
+          "periodEndDate": "2024-09-15",
+          "traitAverage": 3.78,
+          "promotionRecommendation": "P",
+          "firstName": "Charles",
+          "lastName": "Wilson",
+          "rank": "CPO",
+          "designator": "ETC",
+          "draftStatus": "Draft",
+          "isLocked": false
+        },
+        {
+          "id": "0dfdbc81-f386-442b-8a93-8fcaae9a6a56",
+          "memberId": "36959436-2b67-46ee-aa7d-3e56b1d26d1d",
+          "periodEndDate": "2024-09-15",
+          "traitAverage": 4.08,
+          "promotionRecommendation": "MP",
+          "firstName": "Charles",
+          "lastName": "Nelson",
+          "rank": "CPO",
+          "designator": "YNC",
+          "draftStatus": "Draft",
+          "isLocked": false
+        },
+        {
+          "id": "a7ff4d99-5c60-401f-8131-bdf7b73127c8",
+          "memberId": "5d87bf15-f67e-4bb7-845a-05aba3e08a55",
+          "periodEndDate": "2024-09-15",
+          "traitAverage": 4.63,
+          "promotionRecommendation": "EP",
+          "firstName": "Edward",
+          "lastName": "Robinson",
+          "rank": "CPO",
+          "designator": "YNC",
+          "draftStatus": "Draft",
+          "isLocked": false
+        },
+        {
+          "id": "ce056f50-2e43-4047-859e-2cb8bc7b0f4f",
+          "memberId": "9e025e7a-c108-430d-809b-fabcb6d62062",
+          "periodEndDate": "2024-09-15",
+          "traitAverage": 3.17,
+          "promotionRecommendation": "P",
+          "firstName": "Patricia",
+          "lastName": "White",
+          "rank": "CPO",
+          "designator": "QMC",
+          "draftStatus": "Draft",
+          "isLocked": false
+        },
+        {
+          "id": "45eb21e9-c4fa-46a4-8326-00e0ddc0d563",
+          "memberId": "abc430a5-aa2f-4ee8-b484-3439c6118dbf",
+          "periodEndDate": "2024-09-15",
+          "traitAverage": 3.67,
+          "promotionRecommendation": "P",
+          "firstName": "Christopher",
+          "lastName": "Johnson",
+          "rank": "CPO",
+          "designator": "OSC",
+          "draftStatus": "Draft",
+          "isLocked": false
+        },
+        {
+          "id": "c48e4073-3a4e-4fcf-9f4f-f0048dc41189",
+          "memberId": "2b82ef12-7dc1-41ce-8d4d-d9ea62d812d6",
+          "periodEndDate": "2024-09-15",
+          "traitAverage": 3.47,
+          "promotionRecommendation": "P",
+          "firstName": "Dorothy",
+          "lastName": "Davis",
+          "rank": "CPO",
+          "designator": "YNC",
+          "draftStatus": "Draft",
+          "isLocked": false
+        },
+        {
+          "id": "a4be2e5b-9cae-4fe9-8ed6-dfeb2373267f",
+          "memberId": "e3e56e92-0c61-447d-bac1-ebd6debd0b5d",
+          "periodEndDate": "2024-09-15",
+          "traitAverage": 4.62,
+          "promotionRecommendation": "EP",
+          "firstName": "Sarah",
+          "lastName": "Hall",
+          "rank": "CPO",
+          "designator": "ITC",
+          "draftStatus": "Draft",
+          "isLocked": false
+        },
+        {
+          "id": "003d9585-2be4-40ed-9940-4b35b342c2db",
+          "memberId": "2a02e89e-fe2e-41ac-ac05-f773101d7a9f",
+          "periodEndDate": "2024-09-15",
+          "traitAverage": 4.34,
+          "promotionRecommendation": "MP",
+          "firstName": "Daniel",
+          "lastName": "Scott",
+          "rank": "CPO",
+          "designator": "PSC",
+          "draftStatus": "Draft",
+          "isLocked": false
+        },
+        {
+          "id": "1b9bb556-6ed7-42b8-805c-b79e7b7a6da0",
+          "memberId": "62a5f4f1-dcc6-43fe-a0c3-ae89dc69427e",
+          "periodEndDate": "2024-09-15",
+          "traitAverage": 3.51,
+          "promotionRecommendation": "P",
+          "firstName": "Charles",
+          "lastName": "Campbell",
+          "rank": "CPO",
+          "designator": "YNC",
+          "draftStatus": "Draft",
+          "isLocked": false
+        },
+        {
+          "id": "a27fa48a-acd7-4ef4-be1d-ba609cf64af0",
+          "memberId": "686f4240-ed82-463b-8ec8-a7c02bdccc4b",
+          "periodEndDate": "2024-09-15",
+          "traitAverage": 3.79,
+          "promotionRecommendation": "P",
+          "firstName": "Michelle",
+          "lastName": "Moore",
+          "rank": "CPO",
+          "designator": "PSC",
+          "draftStatus": "Draft",
+          "isLocked": false
+        },
+        {
+          "id": "b2c11a15-387e-4793-804d-c0bcab5593e0",
+          "memberId": "efbcc177-815e-4fe6-8d18-f36847c5beb2",
+          "periodEndDate": "2024-09-15",
+          "traitAverage": 3.26,
+          "promotionRecommendation": "P",
+          "firstName": "Michael",
+          "lastName": "Smith",
+          "rank": "CPO",
+          "designator": "CSC",
+          "draftStatus": "Draft",
+          "isLocked": false
+        },
+        {
+          "id": "7c5c2dd8-d715-4777-b4f8-16bc3cc06167",
+          "memberId": "434399fb-342c-421e-8af0-dfb58c21a391",
+          "periodEndDate": "2024-09-15",
+          "traitAverage": 4.19,
+          "promotionRecommendation": "MP",
+          "firstName": "Karen",
+          "lastName": "Thomas",
+          "rank": "CPO",
+          "designator": "CSC",
+          "draftStatus": "Draft",
+          "isLocked": false
+        },
+        {
+          "id": "e43cccb5-7c79-4861-8da7-f971c3de9f03",
+          "memberId": "548fd804-1eb4-47ab-806c-44ee51ac8106",
+          "periodEndDate": "2024-09-15",
+          "traitAverage": 4.68,
+          "promotionRecommendation": "EP",
+          "firstName": "Richard",
+          "lastName": "Hill",
+          "rank": "CPO",
+          "designator": "BMC",
+          "draftStatus": "Draft",
+          "isLocked": false
+        }
+      ],
+      "designator": "",
+      "promotionStatus": "REGULAR"
+    },
+    {
+      "id": "c546b7c2-ffd1-4bfe-a4dd-d897dc9cda3a",
+      "name": "CAPT Archive 2023",
+      "paygrade": "CAPT",
+      "competitiveGroupKey": "CAPT COMP",
+      "periodEndDate": "2023-07-31",
+      "status": "Final",
+      "reports": [
+        {
+          "id": "6899f87f-054d-4ff1-acac-34a0086a5490",
+          "memberId": "5d9923d3-23f6-432d-8ac5-2fbc21e8a105",
+          "periodEndDate": "2023-07-31",
+          "traitAverage": 3.81,
+          "promotionRecommendation": "MP",
+          "firstName": "Joseph",
+          "lastName": "Harris",
+          "rank": "CAPT",
+          "designator": "1120",
+          "draftStatus": "Final",
+          "isLocked": true
+        },
+        {
+          "id": "1b1423bd-9ba3-459a-9ff8-09f34e44c813",
+          "memberId": "8a99e3d9-d3f6-4ae4-bb28-63865da614f0",
+          "periodEndDate": "2023-07-31",
+          "traitAverage": 4.53,
+          "promotionRecommendation": "EP",
+          "firstName": "Carol",
+          "lastName": "Sanchez",
+          "rank": "CAPT",
+          "designator": "1110",
+          "draftStatus": "Final",
+          "isLocked": true
+        },
+        {
+          "id": "20329bbe-d5c0-43e4-a440-74b0b9dad0c7",
+          "memberId": "0ea2b346-af63-4ca9-8859-5f8c20666e7a",
+          "periodEndDate": "2023-07-31",
+          "traitAverage": 3.16,
+          "promotionRecommendation": "P",
+          "firstName": "Donald",
+          "lastName": "Wright",
+          "rank": "CAPT",
+          "designator": "5100",
+          "draftStatus": "Final",
+          "isLocked": true
+        },
+        {
+          "id": "115aeadb-98f1-4b26-91fb-c8d8e1f87da5",
+          "memberId": "01744b09-4350-4844-8633-36072e146af9",
+          "periodEndDate": "2023-07-31",
+          "traitAverage": 4.71,
+          "promotionRecommendation": "EP",
+          "firstName": "Kenneth",
+          "lastName": "Martinez",
+          "rank": "CAPT",
+          "designator": "6180",
+          "draftStatus": "Final",
+          "isLocked": true
+        },
+        {
+          "id": "40e33030-44bd-4d55-a8d7-50481136a99e",
+          "memberId": "86a215da-c5ae-4dfb-9e7c-abae84c96be0",
+          "periodEndDate": "2023-07-31",
+          "traitAverage": 4.09,
+          "promotionRecommendation": "MP",
+          "firstName": "Joshua",
+          "lastName": "Baker",
+          "rank": "CAPT",
+          "designator": "1110",
+          "draftStatus": "Final",
+          "isLocked": true
+        },
+        {
+          "id": "23da801c-10fd-421d-ab0d-ada947130061",
+          "memberId": "27e78909-955a-48f3-95fb-678de3ba9f7e",
+          "periodEndDate": "2023-07-31",
+          "traitAverage": 4.09,
+          "promotionRecommendation": "MP",
+          "firstName": "Elizabeth",
+          "lastName": "Miller",
+          "rank": "CAPT",
+          "designator": "6230",
+          "draftStatus": "Final",
+          "isLocked": true
+        },
+        {
+          "id": "1fe81b33-681d-4fec-952e-6a74946538e0",
+          "memberId": "7166add0-6b5e-43c4-9b10-f8b26278d5d9",
+          "periodEndDate": "2023-07-31",
+          "traitAverage": 3.61,
+          "promotionRecommendation": "P",
+          "firstName": "James",
+          "lastName": "Roberts",
+          "rank": "CAPT",
+          "designator": "4100",
+          "draftStatus": "Final",
+          "isLocked": true
+        },
+        {
+          "id": "22270ec7-c9c5-49e7-a6b5-b4746f56694c",
+          "memberId": "f1103e7b-1d8b-4128-8f78-5c16ee334670",
+          "periodEndDate": "2023-07-31",
+          "traitAverage": 4.99,
+          "promotionRecommendation": "EP",
+          "firstName": "Donald",
+          "lastName": "King",
+          "rank": "CAPT",
+          "designator": "2300",
+          "draftStatus": "Final",
+          "isLocked": true
+        },
+        {
+          "id": "c83b5d1e-96a3-42ce-9c54-5a2565764294",
+          "memberId": "389f6d89-f5d3-431e-a72d-15f89f84db2d",
+          "periodEndDate": "2023-07-31",
+          "traitAverage": 3.24,
+          "promotionRecommendation": "P",
+          "firstName": "Donna",
+          "lastName": "Johnson",
+          "rank": "CAPT",
+          "designator": "6130",
+          "draftStatus": "Final",
+          "isLocked": true
+        },
+        {
+          "id": "e017f3a3-ed2e-4edf-829b-501f124210c4",
+          "memberId": "b270a236-bdc7-46cf-96cf-28ca88210c08",
+          "periodEndDate": "2023-07-31",
+          "traitAverage": 3.36,
+          "promotionRecommendation": "P",
+          "firstName": "Charles",
+          "lastName": "Clark",
+          "rank": "CAPT",
+          "designator": "1320",
+          "draftStatus": "Final",
+          "isLocked": true
+        },
+        {
+          "id": "4c950806-d77a-46f7-8444-cb2cb0c8aec0",
+          "memberId": "78373fc2-b3d5-4cb8-88db-de3117bac290",
+          "periodEndDate": "2023-07-31",
+          "traitAverage": 3.93,
+          "promotionRecommendation": "MP",
+          "firstName": "Kimberly",
+          "lastName": "Green",
+          "rank": "CAPT",
+          "designator": "5100",
+          "draftStatus": "Final",
+          "isLocked": true
+        },
+        {
+          "id": "333ab594-4696-48a1-8a36-e8772009215d",
+          "memberId": "01eb3d8d-774d-4da8-b67a-31f34ed601b0",
+          "periodEndDate": "2023-07-31",
+          "traitAverage": 4.81,
+          "promotionRecommendation": "EP",
+          "firstName": "Amanda",
+          "lastName": "Hill",
+          "rank": "CAPT",
+          "designator": "2100",
+          "draftStatus": "Final",
+          "isLocked": true
+        },
+        {
+          "id": "72541aef-4721-4568-9bee-3158d72c6c26",
+          "memberId": "9a5ffeaf-c296-4815-83ba-1798a487169e",
+          "periodEndDate": "2023-07-31",
+          "traitAverage": 3.39,
+          "promotionRecommendation": "P",
+          "firstName": "Robert",
+          "lastName": "Jackson",
+          "rank": "CAPT",
+          "designator": "6280",
+          "draftStatus": "Final",
+          "isLocked": true
+        },
+        {
+          "id": "8c2aa31d-bcdd-4b82-b381-342421e214de",
+          "memberId": "16c05f11-5802-4a24-89cd-a4d0fcc260c4",
+          "periodEndDate": "2023-07-31",
+          "traitAverage": 4.48,
+          "promotionRecommendation": "MP",
+          "firstName": "Kevin",
+          "lastName": "Johnson",
+          "rank": "CAPT",
+          "designator": "6180",
+          "draftStatus": "Final",
+          "isLocked": true
+        },
+        {
+          "id": "e1083d3c-3d43-41e9-b0d1-5f567bf069e1",
+          "memberId": "b0c2514a-a81a-4f49-be90-7ae6b75ad8de",
+          "periodEndDate": "2023-07-31",
+          "traitAverage": 4.18,
+          "promotionRecommendation": "MP",
+          "firstName": "Barbara",
+          "lastName": "Robinson",
+          "rank": "CAPT",
+          "designator": "1320",
+          "draftStatus": "Final",
+          "isLocked": true
+        }
+      ],
+      "designator": "",
+      "promotionStatus": "REGULAR"
+    },
+    {
+      "id": "707ed5ab-e7fd-4a37-8f1d-e01ad4145404",
+      "name": "CDR Archive 2023",
+      "paygrade": "CDR",
+      "competitiveGroupKey": "CDR COMP",
+      "periodEndDate": "2023-04-30",
+      "status": "Final",
+      "reports": [
+        {
+          "id": "f94a7ba0-9400-418f-9c04-7f7bab3b8f4d",
+          "memberId": "9c7b0d10-d8cc-4cda-bc21-18703b440ca6",
+          "periodEndDate": "2023-04-30",
+          "traitAverage": 4.16,
+          "promotionRecommendation": "MP",
+          "firstName": "Paul",
+          "lastName": "Nelson",
+          "rank": "CDR",
+          "designator": "3100",
+          "draftStatus": "Final",
+          "isLocked": true
+        },
+        {
+          "id": "6071b932-61e9-4e86-9355-f32bb238d943",
+          "memberId": "a69452ea-9cc2-4624-9445-ce4d81217f8f",
+          "periodEndDate": "2023-04-30",
+          "traitAverage": 3.9,
+          "promotionRecommendation": "MP",
+          "firstName": "Mary",
+          "lastName": "Carter",
+          "rank": "CDR",
+          "designator": "2100",
+          "draftStatus": "Final",
+          "isLocked": true
+        },
+        {
+          "id": "e5110422-d32f-4ff7-a799-3ba9a6d1d903",
+          "memberId": "289ae54f-c137-42c3-9944-9d09e0818317",
+          "periodEndDate": "2023-04-30",
+          "traitAverage": 3.2,
+          "promotionRecommendation": "P",
+          "firstName": "Amanda",
+          "lastName": "Baker",
+          "rank": "CDR",
+          "designator": "1820",
+          "draftStatus": "Final",
+          "isLocked": true
+        },
+        {
+          "id": "bf30aade-647f-4bfc-9108-e8f1836b5875",
+          "memberId": "f8ae8ccc-88d5-4d23-91e0-3c00470f805f",
+          "periodEndDate": "2023-04-30",
+          "traitAverage": 3.4,
+          "promotionRecommendation": "P",
+          "firstName": "Jessica",
+          "lastName": "Garcia",
+          "rank": "CDR",
+          "designator": "2200",
+          "draftStatus": "Final",
+          "isLocked": true
+        },
+        {
+          "id": "2b9d73f9-eac7-4b22-9d81-6a753cca875b",
+          "memberId": "7160abcc-b758-42b5-93cf-9c59328ec08f",
+          "periodEndDate": "2023-04-30",
+          "traitAverage": 3.51,
+          "promotionRecommendation": "P",
+          "firstName": "Mary",
+          "lastName": "Wright",
+          "rank": "CDR",
+          "designator": "1830",
+          "draftStatus": "Final",
+          "isLocked": true
+        },
+        {
+          "id": "423c9608-db86-454b-a674-ed43a77729ad",
+          "memberId": "7e6d9d58-580c-488d-abff-2868082e0c57",
+          "periodEndDate": "2023-04-30",
+          "traitAverage": 4.15,
+          "promotionRecommendation": "MP",
+          "firstName": "Michelle",
+          "lastName": "Lewis",
+          "rank": "CDR",
+          "designator": "4100",
+          "draftStatus": "Final",
+          "isLocked": true
+        },
+        {
+          "id": "998cd957-137e-431b-96c4-bcc26c4455c4",
+          "memberId": "9bc99063-21d1-464b-a4d5-e798fe86e51d",
+          "periodEndDate": "2023-04-30",
+          "traitAverage": 3.86,
+          "promotionRecommendation": "MP",
+          "firstName": "Charles",
+          "lastName": "Williams",
+          "rank": "CDR",
+          "designator": "6230",
+          "draftStatus": "Final",
+          "isLocked": true
+        },
+        {
+          "id": "dd3075c5-5936-43c6-9940-8a039dbd89e3",
+          "memberId": "8cf137cf-4fd5-412e-825b-fbf129439801",
+          "periodEndDate": "2023-04-30",
+          "traitAverage": 4.76,
+          "promotionRecommendation": "EP",
+          "firstName": "George",
+          "lastName": "Wilson",
+          "rank": "CDR",
+          "designator": "6120",
+          "draftStatus": "Final",
+          "isLocked": true
+        },
+        {
+          "id": "fb8d4697-9a37-4dcc-9fb5-424fe6bb8fee",
+          "memberId": "6c68e5a3-b9ff-4810-bbb4-da9f376be90b",
+          "periodEndDate": "2023-04-30",
+          "traitAverage": 4.77,
+          "promotionRecommendation": "EP",
+          "firstName": "Kimberly",
+          "lastName": "Taylor",
+          "rank": "CDR",
+          "designator": "1120",
+          "draftStatus": "Final",
+          "isLocked": true
+        },
+        {
+          "id": "05534ded-69d7-41d8-a4da-88453ef50855",
+          "memberId": "8579b754-ee39-427e-a124-21b5d39d7422",
+          "periodEndDate": "2023-04-30",
+          "traitAverage": 4.75,
+          "promotionRecommendation": "EP",
+          "firstName": "Joseph",
+          "lastName": "Sanchez",
+          "rank": "CDR",
+          "designator": "6410",
+          "draftStatus": "Final",
+          "isLocked": true
+        },
+        {
+          "id": "df4c5742-d719-49d0-8794-3ba17d9bc2a6",
+          "memberId": "d5711b64-499a-40de-ab81-faa1ffb8722d",
+          "periodEndDate": "2023-04-30",
+          "traitAverage": 4.57,
+          "promotionRecommendation": "EP",
+          "firstName": "Sarah",
+          "lastName": "Williams",
+          "rank": "CDR",
+          "designator": "2200",
+          "draftStatus": "Final",
+          "isLocked": true
+        },
+        {
+          "id": "5b89a638-bf5b-4295-8b6d-9655351be514",
+          "memberId": "1e1f7805-d9d5-46e0-8204-2effcf3bc109",
+          "periodEndDate": "2023-04-30",
+          "traitAverage": 3.35,
+          "promotionRecommendation": "P",
+          "firstName": "Christopher",
+          "lastName": "Adams",
+          "rank": "CDR",
+          "designator": "6180",
+          "draftStatus": "Final",
+          "isLocked": true
+        },
+        {
+          "id": "876e95be-9ddf-455b-b339-a96aa0653af3",
+          "memberId": "984bd9f6-e0a8-4609-9b44-ccacd8dcf3b2",
+          "periodEndDate": "2023-04-30",
+          "traitAverage": 4.11,
+          "promotionRecommendation": "MP",
+          "firstName": "Sarah",
+          "lastName": "Garcia",
+          "rank": "CDR",
+          "designator": "5100",
+          "draftStatus": "Final",
+          "isLocked": true
+        },
+        {
+          "id": "e321655a-1237-4bfa-847e-33dc767a1849",
+          "memberId": "840fdb2b-0bfb-44af-b3ab-8d121bbe8aa5",
+          "periodEndDate": "2023-04-30",
+          "traitAverage": 3.73,
+          "promotionRecommendation": "P",
+          "firstName": "Karen",
+          "lastName": "Rivera",
+          "rank": "CDR",
+          "designator": "6290",
+          "draftStatus": "Final",
+          "isLocked": true
+        },
+        {
+          "id": "de8cd30c-cbf0-42c0-9971-a3b984caa6cb",
+          "memberId": "6bf40465-3832-4006-befc-59148e2606da",
+          "periodEndDate": "2023-04-30",
+          "traitAverage": 3.22,
+          "promotionRecommendation": "P",
+          "firstName": "Michelle",
+          "lastName": "Jackson",
+          "rank": "CDR",
+          "designator": "6260",
+          "draftStatus": "Final",
+          "isLocked": true
+        },
+        {
+          "id": "86dd3669-b261-4237-86e3-f15a9ec8e75d",
+          "memberId": "c6c71834-0508-4686-930c-7544980a15fc",
+          "periodEndDate": "2023-04-30",
+          "traitAverage": 3.19,
+          "promotionRecommendation": "P",
+          "firstName": "William",
+          "lastName": "Jackson",
+          "rank": "CDR",
+          "designator": "6130",
+          "draftStatus": "Final",
+          "isLocked": true
+        },
+        {
+          "id": "6109cc04-742c-481e-93c7-2cf71e8b406a",
+          "memberId": "cb17ab86-d133-42c4-b884-347b94570a23",
+          "periodEndDate": "2023-04-30",
+          "traitAverage": 3.49,
+          "promotionRecommendation": "P",
+          "firstName": "Joseph",
+          "lastName": "Green",
+          "rank": "CDR",
+          "designator": "6130",
+          "draftStatus": "Final",
+          "isLocked": true
+        },
+        {
+          "id": "133413a4-3f93-4db2-8d24-38748eba8383",
+          "memberId": "c0a01bf8-60ab-443c-8866-35d215cde9ae",
+          "periodEndDate": "2023-04-30",
+          "traitAverage": 4.67,
+          "promotionRecommendation": "EP",
+          "firstName": "Steven",
+          "lastName": "Garcia",
+          "rank": "CDR",
+          "designator": "1320",
+          "draftStatus": "Final",
+          "isLocked": true
+        },
+        {
+          "id": "9010a655-4383-4af5-bb7d-ce184ec09960",
+          "memberId": "de740d3b-4a72-4eb2-b793-647697c5a7f9",
+          "periodEndDate": "2023-04-30",
+          "traitAverage": 3.89,
+          "promotionRecommendation": "MP",
+          "firstName": "James",
+          "lastName": "Young",
+          "rank": "CDR",
+          "designator": "6330",
+          "draftStatus": "Final",
+          "isLocked": true
+        },
+        {
+          "id": "83989069-d249-46b3-852f-86bfe73b97c5",
+          "memberId": "4b32ed6c-66f5-4eb6-ac4f-312e3d36001a",
+          "periodEndDate": "2023-04-30",
+          "traitAverage": 4.6,
+          "promotionRecommendation": "EP",
+          "firstName": "Edward",
+          "lastName": "Robinson",
+          "rank": "CDR",
+          "designator": "6230",
+          "draftStatus": "Final",
+          "isLocked": true
+        }
+      ],
+      "designator": "",
+      "promotionStatus": "REGULAR"
+    },
+    {
+      "id": "e762da32-f143-41c8-90c8-2a334b23b9f8",
+      "name": "LCDR Archive 2023",
+      "paygrade": "LCDR",
+      "competitiveGroupKey": "LCDR COMP",
+      "periodEndDate": "2023-10-31",
+      "status": "Final",
+      "reports": [
+        {
+          "id": "69ef6d7c-8334-4a40-9787-cd2154774f5c",
+          "memberId": "1ca8a432-1223-4e96-a09a-81d03a007693",
+          "periodEndDate": "2023-10-31",
+          "traitAverage": 4.63,
+          "promotionRecommendation": "EP",
+          "firstName": "William",
+          "lastName": "Garcia",
+          "rank": "LCDR",
+          "designator": "1110",
+          "draftStatus": "Final",
+          "isLocked": true
+        },
+        {
+          "id": "ca5d09b8-8aab-49df-9ecc-aede5f4f6044",
+          "memberId": "c490519b-81aa-4e79-8262-31a327a99f6a",
+          "periodEndDate": "2023-10-31",
+          "traitAverage": 3.07,
+          "promotionRecommendation": "P",
+          "firstName": "Paul",
+          "lastName": "Hall",
+          "rank": "LCDR",
+          "designator": "1820",
+          "draftStatus": "Final",
+          "isLocked": true
+        },
+        {
+          "id": "4cb4b910-7164-4554-8008-12275697baeb",
+          "memberId": "a22bec26-2475-4587-b42a-34ca3a442815",
+          "periodEndDate": "2023-10-31",
+          "traitAverage": 4.97,
+          "promotionRecommendation": "EP",
+          "firstName": "Steven",
+          "lastName": "Robinson",
+          "rank": "LCDR",
+          "designator": "6130",
+          "draftStatus": "Final",
+          "isLocked": true
+        },
+        {
+          "id": "23ffc139-eead-424f-8209-b7090c5e7b9d",
+          "memberId": "6ede344a-9d23-4297-9149-9ecbcff01ea1",
+          "periodEndDate": "2023-10-31",
+          "traitAverage": 3.6,
+          "promotionRecommendation": "P",
+          "firstName": "Donald",
+          "lastName": "Garcia",
+          "rank": "LCDR",
+          "designator": "6120",
+          "draftStatus": "Final",
+          "isLocked": true
+        },
+        {
+          "id": "e7dfba9b-3754-4143-bc8d-ab982bdff19c",
+          "memberId": "dcf5a6b2-0ebb-4907-bb41-1b17a70a72cc",
+          "periodEndDate": "2023-10-31",
+          "traitAverage": 4.31,
+          "promotionRecommendation": "MP",
+          "firstName": "Elizabeth",
+          "lastName": "Moore",
+          "rank": "LCDR",
+          "designator": "2900",
+          "draftStatus": "Final",
+          "isLocked": true
+        },
+        {
+          "id": "ca50037d-8b46-4176-b196-bd03757f4ad8",
+          "memberId": "be1ebf40-f3b4-4ab8-b22c-5ee27335d50a",
+          "periodEndDate": "2023-10-31",
+          "traitAverage": 3.54,
+          "promotionRecommendation": "P",
+          "firstName": "Mary",
+          "lastName": "Clark",
+          "rank": "LCDR",
+          "designator": "1820",
+          "draftStatus": "Final",
+          "isLocked": true
+        },
+        {
+          "id": "3f381a7e-a34d-41d9-9668-0e0c4bb4a6c5",
+          "memberId": "6a36e6be-8bb3-443e-bec2-24430d8bb628",
+          "periodEndDate": "2023-10-31",
+          "traitAverage": 4.55,
+          "promotionRecommendation": "EP",
+          "firstName": "Andrew",
+          "lastName": "Williams",
+          "rank": "LCDR",
+          "designator": "1820",
+          "draftStatus": "Final",
+          "isLocked": true
+        },
+        {
+          "id": "96c2af0c-bccf-4bed-8fce-804be17de9c5",
+          "memberId": "c9e08377-3f08-4a01-b368-417cd7c2a779",
+          "periodEndDate": "2023-10-31",
+          "traitAverage": 3.02,
+          "promotionRecommendation": "P",
+          "firstName": "Sandra",
+          "lastName": "Baker",
+          "rank": "LCDR",
+          "designator": "5100",
+          "draftStatus": "Final",
+          "isLocked": true
+        },
+        {
+          "id": "96a18a49-22a8-4ad6-b06c-681e0fa84994",
+          "memberId": "58e0b400-8dc8-4b0c-b631-091f48bce759",
+          "periodEndDate": "2023-10-31",
+          "traitAverage": 4.65,
+          "promotionRecommendation": "EP",
+          "firstName": "Mary",
+          "lastName": "Walker",
+          "rank": "LCDR",
+          "designator": "6120",
+          "draftStatus": "Final",
+          "isLocked": true
+        },
+        {
+          "id": "ca1e32d8-4f50-4bcb-9e98-7c4180cd3234",
+          "memberId": "86d5cded-e223-4722-9f9d-238e6c0e53c6",
+          "periodEndDate": "2023-10-31",
+          "traitAverage": 4.36,
+          "promotionRecommendation": "MP",
+          "firstName": "Steven",
+          "lastName": "Martinez",
+          "rank": "LCDR",
+          "designator": "1110",
+          "draftStatus": "Final",
+          "isLocked": true
+        },
+        {
+          "id": "936531f3-9b68-4b14-b388-a118ab48bde7",
+          "memberId": "a6d25bf1-c443-4ca8-83c5-9fa79e0e519b",
+          "periodEndDate": "2023-10-31",
+          "traitAverage": 3.95,
+          "promotionRecommendation": "MP",
+          "firstName": "George",
+          "lastName": "Miller",
+          "rank": "LCDR",
+          "designator": "6120",
+          "draftStatus": "Final",
+          "isLocked": true
+        },
+        {
+          "id": "08aa48ab-9e89-47f2-b15e-730ba1c20c6a",
+          "memberId": "04f16e04-e173-40bf-a70b-d1b3b63af3bb",
+          "periodEndDate": "2023-10-31",
+          "traitAverage": 4.99,
+          "promotionRecommendation": "EP",
+          "firstName": "Patricia",
+          "lastName": "Jackson",
+          "rank": "LCDR",
+          "designator": "1830",
+          "draftStatus": "Final",
+          "isLocked": true
+        },
+        {
+          "id": "bb758383-4591-4430-9a16-3140a7cce46e",
+          "memberId": "bc20df64-a659-4902-9320-205c768e76b2",
+          "periodEndDate": "2023-10-31",
+          "traitAverage": 4.55,
+          "promotionRecommendation": "EP",
+          "firstName": "Susan",
+          "lastName": "Taylor",
+          "rank": "LCDR",
+          "designator": "6180",
+          "draftStatus": "Final",
+          "isLocked": true
+        },
+        {
+          "id": "da5fb26f-afbd-43c9-8eed-fe218445a5e1",
+          "memberId": "239516b6-bc20-46e4-9959-9ef227a1b4e3",
+          "periodEndDate": "2023-10-31",
+          "traitAverage": 4.34,
+          "promotionRecommendation": "MP",
+          "firstName": "Lisa",
+          "lastName": "Martinez",
+          "rank": "LCDR",
+          "designator": "2300",
+          "draftStatus": "Final",
+          "isLocked": true
+        },
+        {
+          "id": "4004fc37-7d7c-4ebb-9b0a-f0f67a7a65e6",
+          "memberId": "c6b6fcdd-768f-4870-a4d4-e22655d07899",
+          "periodEndDate": "2023-10-31",
+          "traitAverage": 3.28,
+          "promotionRecommendation": "P",
+          "firstName": "Ashley",
+          "lastName": "Green",
+          "rank": "LCDR",
+          "designator": "5100",
+          "draftStatus": "Final",
+          "isLocked": true
+        },
+        {
+          "id": "387a4bc9-0055-4915-ac8e-60b479e83f2a",
+          "memberId": "80c31581-b53e-4d84-9435-ea60f3a74584",
+          "periodEndDate": "2023-10-31",
+          "traitAverage": 4.64,
+          "promotionRecommendation": "EP",
+          "firstName": "Carol",
+          "lastName": "Sanchez",
+          "rank": "LCDR",
+          "designator": "6330",
+          "draftStatus": "Final",
+          "isLocked": true
+        },
+        {
+          "id": "62e7b563-b3c8-416e-bd31-103980109d32",
+          "memberId": "798a2c06-891d-4e11-9527-636b2538146b",
+          "periodEndDate": "2023-10-31",
+          "traitAverage": 4.89,
+          "promotionRecommendation": "EP",
+          "firstName": "John",
+          "lastName": "Hall",
+          "rank": "LCDR",
+          "designator": "3100",
+          "draftStatus": "Final",
+          "isLocked": true
+        },
+        {
+          "id": "18882b32-6f81-4e7c-865e-0a433e8c0252",
+          "memberId": "f64c26b1-d172-4bc9-acad-481f42cb560e",
+          "periodEndDate": "2023-10-31",
+          "traitAverage": 5,
+          "promotionRecommendation": "EP",
+          "firstName": "John",
+          "lastName": "Perez",
+          "rank": "LCDR",
+          "designator": "1310",
+          "draftStatus": "Final",
+          "isLocked": true
+        },
+        {
+          "id": "9c809f2d-7829-4706-a489-31bcc3bbb096",
+          "memberId": "002f927a-ae66-4a71-a6b5-69d5a79ffc46",
+          "periodEndDate": "2023-10-31",
+          "traitAverage": 3.93,
+          "promotionRecommendation": "MP",
+          "firstName": "Kevin",
+          "lastName": "Hill",
+          "rank": "LCDR",
+          "designator": "6130",
+          "draftStatus": "Final",
+          "isLocked": true
+        },
+        {
+          "id": "8a08881f-eeac-4c15-914e-070c4513692c",
+          "memberId": "efc43c93-2129-407c-9b3b-bbd35f6c5808",
+          "periodEndDate": "2023-10-31",
+          "traitAverage": 3.08,
+          "promotionRecommendation": "P",
+          "firstName": "Margaret",
+          "lastName": "Flores",
+          "rank": "LCDR",
+          "designator": "5100",
+          "draftStatus": "Final",
+          "isLocked": true
+        },
+        {
+          "id": "b93f6035-3976-4e02-a5dd-7f53a2b5c503",
+          "memberId": "6ce3be78-62d2-44e9-8345-bde334db526d",
+          "periodEndDate": "2023-10-31",
+          "traitAverage": 3.03,
+          "promotionRecommendation": "P",
+          "firstName": "John",
+          "lastName": "Lee",
+          "rank": "LCDR",
+          "designator": "4100",
+          "draftStatus": "Final",
+          "isLocked": true
+        },
+        {
+          "id": "e0c0f849-d60c-48b4-87d3-d2f88a8afaac",
+          "memberId": "9440e3a2-a69d-4bb4-bab6-06f25737b24a",
+          "periodEndDate": "2023-10-31",
+          "traitAverage": 4.03,
+          "promotionRecommendation": "MP",
+          "firstName": "Jessica",
+          "lastName": "Lopez",
+          "rank": "LCDR",
+          "designator": "6290",
+          "draftStatus": "Final",
+          "isLocked": true
+        },
+        {
+          "id": "b0d29cf0-9d8b-422a-96a7-bd8347e818a9",
+          "memberId": "587ee37e-5657-4c27-988b-a2b2c882eb64",
+          "periodEndDate": "2023-10-31",
+          "traitAverage": 4.37,
+          "promotionRecommendation": "MP",
+          "firstName": "Jessica",
+          "lastName": "Young",
+          "rank": "LCDR",
+          "designator": "6110",
+          "draftStatus": "Final",
+          "isLocked": true
+        },
+        {
+          "id": "1406834b-68e7-4ded-b867-f8ec77927d2e",
+          "memberId": "41e4ec40-9d80-475f-b5c9-6b0ab1551a13",
+          "periodEndDate": "2023-10-31",
+          "traitAverage": 3.67,
+          "promotionRecommendation": "P",
+          "firstName": "Kenneth",
+          "lastName": "Anderson",
+          "rank": "LCDR",
+          "designator": "1310",
+          "draftStatus": "Final",
+          "isLocked": true
+        },
+        {
+          "id": "4e642fe6-c1a8-47e2-9f83-fde7350e0053",
+          "memberId": "0ae439fa-92d8-454b-ab09-ded701a639bd",
+          "periodEndDate": "2023-10-31",
+          "traitAverage": 3.1,
+          "promotionRecommendation": "P",
+          "firstName": "Charles",
+          "lastName": "Johnson",
+          "rank": "LCDR",
+          "designator": "6110",
+          "draftStatus": "Final",
+          "isLocked": true
+        },
+        {
+          "id": "bb682e5a-db0d-4a50-b85f-2c8e11d86af2",
+          "memberId": "3d2431cc-54c5-4f73-b457-af7e07d19503",
+          "periodEndDate": "2023-10-31",
+          "traitAverage": 4.35,
+          "promotionRecommendation": "MP",
+          "firstName": "Paul",
+          "lastName": "Martinez",
+          "rank": "LCDR",
+          "designator": "6130",
+          "draftStatus": "Final",
+          "isLocked": true
+        },
+        {
+          "id": "bb70fa55-d672-414e-8bd4-d571f2366d56",
+          "memberId": "f15bb413-6738-44c0-a7f4-575fbad53a34",
+          "periodEndDate": "2023-10-31",
+          "traitAverage": 4.59,
+          "promotionRecommendation": "EP",
+          "firstName": "Jessica",
+          "lastName": "Hall",
+          "rank": "LCDR",
+          "designator": "1120",
+          "draftStatus": "Final",
+          "isLocked": true
+        },
+        {
+          "id": "5f04f234-4b62-48f4-9f71-03eabb097a9b",
+          "memberId": "3714cf83-279f-412c-997a-3d9b326234da",
+          "periodEndDate": "2023-10-31",
+          "traitAverage": 4.02,
+          "promotionRecommendation": "MP",
+          "firstName": "Nancy",
+          "lastName": "Carter",
+          "rank": "LCDR",
+          "designator": "1310",
+          "draftStatus": "Final",
+          "isLocked": true
+        }
+      ],
+      "designator": "",
+      "promotionStatus": "REGULAR"
+    },
+    {
+      "id": "a58d214f-bb00-4479-817b-fc2a407492d6",
+      "name": "LT Archive 2024",
+      "paygrade": "LT",
+      "competitiveGroupKey": "LT COMP",
+      "periodEndDate": "2024-01-31",
+      "status": "Final",
+      "reports": [
+        {
+          "id": "85e8455d-a895-4744-ba53-ce7c67f8efb0",
+          "memberId": "7bcf1bfa-5517-487d-a6e0-ec10da219df4",
+          "periodEndDate": "2024-01-31",
+          "traitAverage": 4.94,
+          "promotionRecommendation": "EP",
+          "firstName": "Emily",
+          "lastName": "Campbell",
+          "rank": "LT",
+          "designator": "6290",
+          "draftStatus": "Final",
+          "isLocked": true
+        },
+        {
+          "id": "c58afbd4-a1a3-4d3d-94e6-a9d6da9ab45f",
+          "memberId": "7d6bcaff-99a0-4c00-88a4-5e8d4e01ccfa",
+          "periodEndDate": "2024-01-31",
+          "traitAverage": 3.27,
+          "promotionRecommendation": "P",
+          "firstName": "Susan",
+          "lastName": "Carter",
+          "rank": "LT",
+          "designator": "1310",
+          "draftStatus": "Final",
+          "isLocked": true
+        },
+        {
+          "id": "789a082f-9b8c-4935-b812-6fd008ed0efe",
+          "memberId": "ef9c6b1a-2a61-4607-8dfe-aad0ac051b06",
+          "periodEndDate": "2024-01-31",
+          "traitAverage": 4.97,
+          "promotionRecommendation": "EP",
+          "firstName": "George",
+          "lastName": "Sanchez",
+          "rank": "LT",
+          "designator": "6230",
+          "draftStatus": "Final",
+          "isLocked": true
+        },
+        {
+          "id": "8aecf999-1264-42d5-aa17-2e74c89b90e7",
+          "memberId": "6093a73d-b2f8-4264-849a-7bbaaa5e1b62",
+          "periodEndDate": "2024-01-31",
+          "traitAverage": 3.8,
+          "promotionRecommendation": "P",
+          "firstName": "Dorothy",
+          "lastName": "Clark",
+          "rank": "LT",
+          "designator": "6410",
+          "draftStatus": "Final",
+          "isLocked": true
+        },
+        {
+          "id": "1e34c515-64f2-42dd-8eb3-c4a312b0983f",
+          "memberId": "90b4818a-9d13-4e9f-832a-4981a5a572fa",
+          "periodEndDate": "2024-01-31",
+          "traitAverage": 4.57,
+          "promotionRecommendation": "EP",
+          "firstName": "Donna",
+          "lastName": "Martin",
+          "rank": "LT",
+          "designator": "6180",
+          "draftStatus": "Final",
+          "isLocked": true
+        },
+        {
+          "id": "9495f9c4-71e5-4bae-9f35-6d741be7d8ca",
+          "memberId": "a3f98619-b1e5-4499-b436-368be76ed565",
+          "periodEndDate": "2024-01-31",
+          "traitAverage": 3.69,
+          "promotionRecommendation": "P",
+          "firstName": "Sarah",
+          "lastName": "Hall",
+          "rank": "LT",
+          "designator": "6120",
+          "draftStatus": "Final",
+          "isLocked": true
+        },
+        {
+          "id": "757b0400-90b6-4b06-a7d2-85c372dd4408",
+          "memberId": "20c69931-d413-4c6d-a74d-d0d1a34bf706",
+          "periodEndDate": "2024-01-31",
+          "traitAverage": 4.06,
+          "promotionRecommendation": "MP",
+          "firstName": "George",
+          "lastName": "Walker",
+          "rank": "LT",
+          "designator": "2300",
+          "draftStatus": "Final",
+          "isLocked": true
+        },
+        {
+          "id": "b7c921ce-d5a3-4a60-aae5-336a007f1bd9",
+          "memberId": "9210e472-af89-44ba-8823-1b987c3de85d",
+          "periodEndDate": "2024-01-31",
+          "traitAverage": 4.26,
+          "promotionRecommendation": "MP",
+          "firstName": "Edward",
+          "lastName": "Carter",
+          "rank": "LT",
+          "designator": "6110",
+          "draftStatus": "Final",
+          "isLocked": true
+        },
+        {
+          "id": "0e872325-c543-46c0-8ed6-13453451946c",
+          "memberId": "af025166-07a2-49cb-9e96-dca4f23e55cf",
+          "periodEndDate": "2024-01-31",
+          "traitAverage": 3.63,
+          "promotionRecommendation": "P",
+          "firstName": "Deborah",
+          "lastName": "Allen",
+          "rank": "LT",
+          "designator": "6280",
+          "draftStatus": "Final",
+          "isLocked": true
+        },
+        {
+          "id": "040d3197-87b4-4610-9173-e7dc36ae3f62",
+          "memberId": "fde94dfc-9462-4ccd-9a70-709b8b10d50f",
+          "periodEndDate": "2024-01-31",
+          "traitAverage": 3.47,
+          "promotionRecommendation": "P",
+          "firstName": "Richard",
+          "lastName": "Moore",
+          "rank": "LT",
+          "designator": "1830",
+          "draftStatus": "Final",
+          "isLocked": true
+        }
+      ],
+      "designator": "",
+      "promotionStatus": "REGULAR"
+    },
+    {
+      "id": "a94eca55-b7c9-4cd8-9979-09c3d87d9206",
+      "name": "CWO5 Archive 2023",
+      "paygrade": "CWO5",
+      "competitiveGroupKey": "CWO5 COMP",
+      "periodEndDate": "2023-09-30",
+      "status": "Final",
+      "reports": [
+        {
+          "id": "9028abfd-f718-44f1-b43d-985daf4d7b62",
+          "memberId": "0ad250cf-30ea-4173-b7f1-8d1f75468678",
+          "periodEndDate": "2023-09-30",
+          "traitAverage": 4.73,
+          "promotionRecommendation": "EP",
+          "firstName": "Jennifer",
+          "lastName": "Thomas",
+          "rank": "CWO5",
+          "designator": "7130",
+          "draftStatus": "Final",
+          "isLocked": true
+        },
+        {
+          "id": "2fda35ed-2779-4868-8725-2057fa9574cf",
+          "memberId": "de56e0d9-76ce-4222-bfbf-4c0e2f9e80c5",
+          "periodEndDate": "2023-09-30",
+          "traitAverage": 3.62,
+          "promotionRecommendation": "P",
+          "firstName": "Matthew",
+          "lastName": "Rivera",
+          "rank": "CWO5",
+          "designator": "7447",
+          "draftStatus": "Final",
+          "isLocked": true
+        }
+      ],
+      "designator": "",
+      "promotionStatus": "REGULAR"
+    },
+    {
+      "id": "843f6106-74a5-4cad-b0b5-428cc3fdc36a",
+      "name": "CWO4 Archive 2023",
+      "paygrade": "CWO4",
+      "competitiveGroupKey": "CWO4 COMP",
+      "periodEndDate": "2023-09-30",
+      "status": "Final",
+      "reports": [
+        {
+          "id": "0ac0b1a0-b647-4d8f-9340-acdbecf2355a",
+          "memberId": "fcd20607-d818-4225-b4a7-d297d71b4aa3",
+          "periodEndDate": "2023-09-30",
+          "traitAverage": 3.65,
+          "promotionRecommendation": "P",
+          "firstName": "Edward",
+          "lastName": "Hall",
+          "rank": "CWO4",
+          "designator": "7794",
+          "draftStatus": "Final",
+          "isLocked": true
+        },
+        {
+          "id": "f905bcae-8846-4105-b320-9eebdbc91ef6",
+          "memberId": "e5138c4f-39f8-412d-be1d-a114a54b0a6c",
+          "periodEndDate": "2023-09-30",
+          "traitAverage": 3.92,
+          "promotionRecommendation": "MP",
+          "firstName": "George",
+          "lastName": "Thomas",
+          "rank": "CWO4",
+          "designator": "7563",
+          "draftStatus": "Final",
+          "isLocked": true
+        },
+        {
+          "id": "c33287c5-a785-4da5-8c11-14216343e50b",
+          "memberId": "dc0c9358-b07c-472a-9c2f-76f39a009745",
+          "periodEndDate": "2023-09-30",
+          "traitAverage": 4,
+          "promotionRecommendation": "MP",
+          "firstName": "Kevin",
+          "lastName": "Martin",
+          "rank": "CWO4",
+          "designator": "7491",
+          "draftStatus": "Final",
+          "isLocked": true
+        }
+      ],
+      "designator": "",
+      "promotionStatus": "REGULAR"
+    },
+    {
+      "id": "be2a0345-8745-4d2d-b59c-7367961bb19b",
+      "name": "MC Archive 2023",
+      "paygrade": "MC",
+      "competitiveGroupKey": "MC COMP",
+      "periodEndDate": "2023-04-15",
+      "status": "Final",
+      "reports": [
+        {
+          "id": "fe775a83-3719-49ba-8f84-6f02be6e2936",
+          "memberId": "3aa0ec15-c9ab-46ef-915c-2515febec315",
+          "periodEndDate": "2023-04-15",
+          "traitAverage": 4.31,
+          "promotionRecommendation": "MP",
+          "firstName": "Matthew",
+          "lastName": "Robinson",
+          "rank": "MC",
+          "designator": "YNCM",
+          "draftStatus": "Final",
+          "isLocked": true
+        },
+        {
+          "id": "6ac90493-63b0-41a1-a6d9-0603558d8a11",
+          "memberId": "c9bc88ef-9223-4134-9b89-91d2b43846ed",
+          "periodEndDate": "2023-04-15",
+          "traitAverage": 3.65,
+          "promotionRecommendation": "P",
+          "firstName": "Jessica",
+          "lastName": "Taylor",
+          "rank": "MC",
+          "designator": "LSCM",
+          "draftStatus": "Final",
+          "isLocked": true
+        },
+        {
+          "id": "2053874e-3f26-4f05-95b9-9e14384b94d5",
+          "memberId": "c3224859-85d9-4477-8fe7-cd1bb5dfddd3",
+          "periodEndDate": "2023-04-15",
+          "traitAverage": 3.76,
+          "promotionRecommendation": "P",
+          "firstName": "Donald",
+          "lastName": "Wilson",
+          "rank": "MC",
+          "designator": "FCCM",
+          "draftStatus": "Final",
+          "isLocked": true
+        },
+        {
+          "id": "c9eb7d1f-b3d0-46bb-9adc-5ccea0f7677b",
+          "memberId": "947614b1-5c9a-4c02-a579-e61decf2ab1f",
+          "periodEndDate": "2023-04-15",
+          "traitAverage": 3.99,
+          "promotionRecommendation": "MP",
+          "firstName": "Daniel",
+          "lastName": "Hernandez",
+          "rank": "MC",
+          "designator": "HMCM",
+          "draftStatus": "Final",
+          "isLocked": true
+        },
+        {
+          "id": "4548b63c-de26-4b30-a2c2-d7cd113e4f12",
+          "memberId": "92408a40-9f03-4746-80e5-280089bc7333",
+          "periodEndDate": "2023-04-15",
+          "traitAverage": 3.93,
+          "promotionRecommendation": "MP",
+          "firstName": "Andrew",
+          "lastName": "Brown",
+          "rank": "MC",
+          "designator": "CTTCM",
+          "draftStatus": "Final",
+          "isLocked": true
+        },
+        {
+          "id": "fd16a716-9d9d-4161-b9c7-70239155b54c",
+          "memberId": "41dbadaf-04d2-452b-9cb6-07198e73eac8",
+          "periodEndDate": "2023-04-15",
+          "traitAverage": 3.07,
+          "promotionRecommendation": "P",
+          "firstName": "Carol",
+          "lastName": "Thompson",
+          "rank": "MC",
+          "designator": "STGCM",
+          "draftStatus": "Final",
+          "isLocked": true
+        },
+        {
+          "id": "3da59b5d-c4a7-410c-8289-7ae173cce568",
+          "memberId": "52b6850f-d25b-499f-a301-052d79f35240",
+          "periodEndDate": "2023-04-15",
+          "traitAverage": 3.12,
+          "promotionRecommendation": "P",
+          "firstName": "Deborah",
+          "lastName": "Martin",
+          "rank": "MC",
+          "designator": "PSCM",
+          "draftStatus": "Final",
+          "isLocked": true
+        },
+        {
+          "id": "be0901ee-2c5d-4170-af4f-c73114d03731",
+          "memberId": "4ef9067e-2f05-49cc-80c8-f2c5d9ca635c",
+          "periodEndDate": "2023-04-15",
+          "traitAverage": 3.46,
+          "promotionRecommendation": "P",
+          "firstName": "Dorothy",
+          "lastName": "Flores",
+          "rank": "MC",
+          "designator": "QMCM",
+          "draftStatus": "Final",
+          "isLocked": true
+        },
+        {
+          "id": "0e4db156-7522-469e-9c37-3cc7bf3b8362",
+          "memberId": "afa9926d-dc1a-49fb-9c74-6b108f3ad1c3",
+          "periodEndDate": "2023-04-15",
+          "traitAverage": 3.97,
+          "promotionRecommendation": "MP",
+          "firstName": "Dorothy",
+          "lastName": "Young",
+          "rank": "MC",
+          "designator": "ETCM",
+          "draftStatus": "Final",
+          "isLocked": true
+        }
+      ],
+      "designator": "",
+      "promotionStatus": "REGULAR"
+    },
+    {
+      "id": "9c9c0570-6d04-458d-bc87-730a35dfa133",
+      "name": "SC Archive 2023",
+      "paygrade": "SC",
+      "competitiveGroupKey": "SC COMP",
+      "periodEndDate": "2023-09-15",
+      "status": "Final",
+      "reports": [
+        {
+          "id": "bab7f54f-9083-42eb-9a39-c435dc43aeca",
+          "memberId": "90779e02-b56f-4b9b-be28-ca8d2dbb8ef3",
+          "periodEndDate": "2023-09-15",
+          "traitAverage": 3.23,
+          "promotionRecommendation": "P",
+          "firstName": "John",
+          "lastName": "Scott",
+          "rank": "SC",
+          "designator": "PSCS",
+          "draftStatus": "Final",
+          "isLocked": true
+        },
+        {
+          "id": "b610f0eb-88a1-4fd2-a362-22ae6684bfcd",
+          "memberId": "db5cbfca-c40d-482f-ac74-b589edd67111",
+          "periodEndDate": "2023-09-15",
+          "traitAverage": 3.91,
+          "promotionRecommendation": "MP",
+          "firstName": "Lisa",
+          "lastName": "Baker",
+          "rank": "SC",
+          "designator": "BMCS",
+          "draftStatus": "Final",
+          "isLocked": true
+        },
+        {
+          "id": "83daba5f-ce64-446d-af08-fe88899fe8a8",
+          "memberId": "8de2f9da-8f18-4475-a9af-4a94eaa058d7",
+          "periodEndDate": "2023-09-15",
+          "traitAverage": 3.47,
+          "promotionRecommendation": "P",
+          "firstName": "Kenneth",
+          "lastName": "Young",
+          "rank": "SC",
+          "designator": "BMCS",
+          "draftStatus": "Final",
+          "isLocked": true
+        },
+        {
+          "id": "581c13e5-6ed2-4a3d-adca-83e25567575f",
+          "memberId": "5d3408dc-0fb6-4f67-86d5-cdfe96c1450b",
+          "periodEndDate": "2023-09-15",
+          "traitAverage": 3.66,
+          "promotionRecommendation": "P",
+          "firstName": "Thomas",
+          "lastName": "White",
+          "rank": "SC",
+          "designator": "LSCS",
+          "draftStatus": "Final",
+          "isLocked": true
+        },
+        {
+          "id": "2c316e2a-43ed-46a7-9cee-bb1143deaa6a",
+          "memberId": "2eb94695-efc6-415f-8f82-3831751567ff",
+          "periodEndDate": "2023-09-15",
+          "traitAverage": 4.53,
+          "promotionRecommendation": "EP",
+          "firstName": "Amanda",
+          "lastName": "Moore",
+          "rank": "SC",
+          "designator": "HMCS",
+          "draftStatus": "Final",
+          "isLocked": true
+        },
+        {
+          "id": "a96ca3e4-3a5e-4925-96be-3aaf412c75ef",
+          "memberId": "c008df3b-a975-432d-b32f-889980db0cda",
+          "periodEndDate": "2023-09-15",
+          "traitAverage": 3.48,
+          "promotionRecommendation": "P",
+          "firstName": "Karen",
+          "lastName": "Perez",
+          "rank": "SC",
+          "designator": "LSCS",
+          "draftStatus": "Final",
+          "isLocked": true
+        },
+        {
+          "id": "99c58a97-af07-4e71-a38a-741cf8e8821b",
+          "memberId": "46e86eb7-bbed-4122-ac66-2ea6245b72aa",
+          "periodEndDate": "2023-09-15",
+          "traitAverage": 4.54,
+          "promotionRecommendation": "EP",
+          "firstName": "Daniel",
+          "lastName": "Scott",
+          "rank": "SC",
+          "designator": "CTTCS",
+          "draftStatus": "Final",
+          "isLocked": true
+        },
+        {
+          "id": "dd690328-02c5-46ba-aa8c-c0009f530ff3",
+          "memberId": "1dcf6126-1273-4734-a4e2-0b07a219b76d",
+          "periodEndDate": "2023-09-15",
+          "traitAverage": 3.35,
+          "promotionRecommendation": "P",
+          "firstName": "Kevin",
+          "lastName": "Green",
+          "rank": "SC",
+          "designator": "PSCS",
+          "draftStatus": "Final",
+          "isLocked": true
+        },
+        {
+          "id": "8c1e5996-c406-4c4a-98bb-20ab0f74e68a",
+          "memberId": "90935e30-d68c-4076-b632-dd3048ca0855",
+          "periodEndDate": "2023-09-15",
+          "traitAverage": 4.22,
+          "promotionRecommendation": "MP",
+          "firstName": "Jessica",
+          "lastName": "Wright",
+          "rank": "SC",
+          "designator": "FCCS",
+          "draftStatus": "Final",
+          "isLocked": true
+        },
+        {
+          "id": "91d1f81a-c65c-45dc-bd5d-8449a57c685a",
+          "memberId": "8dc996cd-e69f-41b1-9b33-28db6f971408",
+          "periodEndDate": "2023-09-15",
+          "traitAverage": 4.86,
+          "promotionRecommendation": "EP",
+          "firstName": "John",
+          "lastName": "Smith",
+          "rank": "SC",
+          "designator": "PSCS",
+          "draftStatus": "Final",
+          "isLocked": true
+        },
+        {
+          "id": "0f5bd4e0-8c1f-4a51-a6d4-37d8821c0c1e",
+          "memberId": "10480a9a-65d6-44c7-99f1-19c604021541",
+          "periodEndDate": "2023-09-15",
+          "traitAverage": 4.69,
+          "promotionRecommendation": "EP",
+          "firstName": "Paul",
+          "lastName": "Carter",
+          "rank": "SC",
+          "designator": "STGCS",
+          "draftStatus": "Final",
+          "isLocked": true
+        },
+        {
+          "id": "10dc4de7-c45e-43f6-abca-50fb31a46359",
+          "memberId": "8b1b0d26-a29e-4f3a-b4d6-74bc7b56c23e",
+          "periodEndDate": "2023-09-15",
+          "traitAverage": 3.68,
+          "promotionRecommendation": "P",
+          "firstName": "Steven",
+          "lastName": "Lopez",
+          "rank": "SC",
+          "designator": "MACS",
+          "draftStatus": "Final",
+          "isLocked": true
+        },
+        {
+          "id": "dc74fbe0-d83e-48fb-9c5c-03f5b4b143cf",
+          "memberId": "b82d2959-8eda-4593-a7a1-057b26f3f13d",
+          "periodEndDate": "2023-09-15",
+          "traitAverage": 4,
+          "promotionRecommendation": "MP",
+          "firstName": "Margaret",
+          "lastName": "Carter",
+          "rank": "SC",
+          "designator": "BMCS",
+          "draftStatus": "Final",
+          "isLocked": true
+        }
+      ],
+      "designator": "",
+      "promotionStatus": "REGULAR"
+    },
+    {
+      "id": "1c6243e1-9c9b-446b-b927-de69978c1cfb",
+      "name": "CPO Archive 2023",
+      "paygrade": "CPO",
+      "competitiveGroupKey": "CPO COMP",
+      "periodEndDate": "2023-09-15",
+      "status": "Final",
+      "reports": [
+        {
+          "id": "eb6fd194-6ac9-4be7-b35d-389cb17ca45c",
+          "memberId": "7dd02ac6-34d9-4db8-bf94-dc390b098fd7",
+          "periodEndDate": "2023-09-15",
+          "traitAverage": 3.62,
+          "promotionRecommendation": "P",
+          "firstName": "Emily",
+          "lastName": "Green",
+          "rank": "CPO",
+          "designator": "BMC",
+          "draftStatus": "Final",
+          "isLocked": true
+        },
+        {
+          "id": "856cca99-96c2-48c3-bdec-29e7cfcc90c4",
+          "memberId": "7644c39f-b413-4722-b82e-5354155ca751",
+          "periodEndDate": "2023-09-15",
+          "traitAverage": 3.07,
+          "promotionRecommendation": "P",
+          "firstName": "Susan",
+          "lastName": "Thomas",
+          "rank": "CPO",
+          "designator": "BMC",
+          "draftStatus": "Final",
+          "isLocked": true
+        },
+        {
+          "id": "12d0779c-de20-44de-b094-e1037131fe80",
+          "memberId": "35e60b99-e5cf-4fbf-b331-6c8b8a3f6300",
+          "periodEndDate": "2023-09-15",
+          "traitAverage": 4.5,
+          "promotionRecommendation": "MP",
+          "firstName": "John",
+          "lastName": "Lee",
+          "rank": "CPO",
+          "designator": "LSC",
+          "draftStatus": "Final",
+          "isLocked": true
+        },
+        {
+          "id": "d9da1f78-723e-4871-a2d0-0fddc2ad3ee8",
+          "memberId": "22b99712-503a-4bfa-85b4-d7b1c8e3c714",
+          "periodEndDate": "2023-09-15",
+          "traitAverage": 3.89,
+          "promotionRecommendation": "MP",
+          "firstName": "Christopher",
+          "lastName": "Garcia",
+          "rank": "CPO",
+          "designator": "OSC",
+          "draftStatus": "Final",
+          "isLocked": true
+        },
+        {
+          "id": "428fc9de-8422-43e1-9917-7aae47818af5",
+          "memberId": "a884b3eb-996e-443e-88fd-f3302cc83ffd",
+          "periodEndDate": "2023-09-15",
+          "traitAverage": 4.15,
+          "promotionRecommendation": "MP",
+          "firstName": "Christopher",
+          "lastName": "Lewis",
+          "rank": "CPO",
+          "designator": "ETC",
+          "draftStatus": "Final",
+          "isLocked": true
+        },
+        {
+          "id": "51528654-771c-4819-8b1d-21d50a611597",
+          "memberId": "1b7c5dbe-a8fd-41d4-91ba-8f3fe5245733",
+          "periodEndDate": "2023-09-15",
+          "traitAverage": 4.84,
+          "promotionRecommendation": "EP",
+          "firstName": "Elizabeth",
+          "lastName": "Sanchez",
+          "rank": "CPO",
+          "designator": "PSC",
+          "draftStatus": "Final",
+          "isLocked": true
+        },
+        {
+          "id": "06333951-254e-47e9-90cc-c0463464c2bd",
+          "memberId": "17c791f5-cb4e-4d02-85a5-5ba4e30b355a",
+          "periodEndDate": "2023-09-15",
+          "traitAverage": 3.25,
+          "promotionRecommendation": "P",
+          "firstName": "Charles",
+          "lastName": "Wilson",
+          "rank": "CPO",
+          "designator": "ETC",
+          "draftStatus": "Final",
+          "isLocked": true
+        },
+        {
+          "id": "c830b7a5-e1b3-427c-9ef0-224e874cdd2d",
+          "memberId": "9e025e7a-c108-430d-809b-fabcb6d62062",
+          "periodEndDate": "2023-09-15",
+          "traitAverage": 3.13,
+          "promotionRecommendation": "P",
+          "firstName": "Patricia",
+          "lastName": "White",
+          "rank": "CPO",
+          "designator": "QMC",
+          "draftStatus": "Final",
+          "isLocked": true
+        },
+        {
+          "id": "402f425f-30ff-4ab8-b8ee-ee4b196a9af4",
+          "memberId": "abc430a5-aa2f-4ee8-b484-3439c6118dbf",
+          "periodEndDate": "2023-09-15",
+          "traitAverage": 3.36,
+          "promotionRecommendation": "P",
+          "firstName": "Christopher",
+          "lastName": "Johnson",
+          "rank": "CPO",
+          "designator": "OSC",
+          "draftStatus": "Final",
+          "isLocked": true
+        },
+        {
+          "id": "040a29fe-82d5-467c-a6d0-01bfd4c3ffbc",
+          "memberId": "e3e56e92-0c61-447d-bac1-ebd6debd0b5d",
+          "periodEndDate": "2023-09-15",
+          "traitAverage": 4.36,
+          "promotionRecommendation": "MP",
+          "firstName": "Sarah",
+          "lastName": "Hall",
+          "rank": "CPO",
+          "designator": "ITC",
+          "draftStatus": "Final",
+          "isLocked": true
+        },
+        {
+          "id": "6d606f85-e6b0-4128-9619-5285f4a13407",
+          "memberId": "2a02e89e-fe2e-41ac-ac05-f773101d7a9f",
+          "periodEndDate": "2023-09-15",
+          "traitAverage": 3.34,
+          "promotionRecommendation": "P",
+          "firstName": "Daniel",
+          "lastName": "Scott",
+          "rank": "CPO",
+          "designator": "PSC",
+          "draftStatus": "Final",
+          "isLocked": true
+        },
+        {
+          "id": "1e432500-7a74-4a04-92ca-858aba1823cd",
+          "memberId": "62a5f4f1-dcc6-43fe-a0c3-ae89dc69427e",
+          "periodEndDate": "2023-09-15",
+          "traitAverage": 3.48,
+          "promotionRecommendation": "P",
+          "firstName": "Charles",
+          "lastName": "Campbell",
+          "rank": "CPO",
+          "designator": "YNC",
+          "draftStatus": "Final",
+          "isLocked": true
+        },
+        {
+          "id": "42b6f160-b678-4812-9182-3cc8febbe27c",
+          "memberId": "686f4240-ed82-463b-8ec8-a7c02bdccc4b",
+          "periodEndDate": "2023-09-15",
+          "traitAverage": 3.15,
+          "promotionRecommendation": "P",
+          "firstName": "Michelle",
+          "lastName": "Moore",
+          "rank": "CPO",
+          "designator": "PSC",
+          "draftStatus": "Final",
+          "isLocked": true
+        },
+        {
+          "id": "63fe0b65-3363-4102-9ae4-b227a3215b11",
+          "memberId": "efbcc177-815e-4fe6-8d18-f36847c5beb2",
+          "periodEndDate": "2023-09-15",
+          "traitAverage": 3.11,
+          "promotionRecommendation": "P",
+          "firstName": "Michael",
+          "lastName": "Smith",
+          "rank": "CPO",
+          "designator": "CSC",
+          "draftStatus": "Final",
+          "isLocked": true
+        },
+        {
+          "id": "fc2a4891-7a0d-453c-b8bf-bb0c70b22337",
+          "memberId": "434399fb-342c-421e-8af0-dfb58c21a391",
+          "periodEndDate": "2023-09-15",
+          "traitAverage": 3.17,
+          "promotionRecommendation": "P",
+          "firstName": "Karen",
+          "lastName": "Thomas",
+          "rank": "CPO",
+          "designator": "CSC",
+          "draftStatus": "Final",
+          "isLocked": true
+        },
+        {
+          "id": "46d9f5a6-51e6-436c-9bf8-4cb0da1f8693",
+          "memberId": "548fd804-1eb4-47ab-806c-44ee51ac8106",
+          "periodEndDate": "2023-09-15",
+          "traitAverage": 4.94,
+          "promotionRecommendation": "EP",
+          "firstName": "Richard",
+          "lastName": "Hill",
+          "rank": "CPO",
+          "designator": "BMC",
+          "draftStatus": "Final",
+          "isLocked": true
+        }
+      ],
+      "designator": "",
+      "promotionStatus": "REGULAR"
+    },
+    {
+      "id": "f3d9c9f5-252b-459a-8596-e3a1b3051453",
+      "name": "PO1 Archive 2023",
+      "paygrade": "PO1",
+      "competitiveGroupKey": "PO1 COMP",
+      "periodEndDate": "2023-11-15",
+      "status": "Final",
+      "reports": [
+        {
+          "id": "315dfa20-2688-47b9-bf18-7c35d9c8eb35",
+          "memberId": "27397abb-952f-439a-bf13-c7df245c27f2",
+          "periodEndDate": "2023-11-15",
+          "traitAverage": 4.48,
+          "promotionRecommendation": "MP",
+          "firstName": "Donna",
+          "lastName": "King",
+          "rank": "PO1",
+          "designator": "CTT1",
+          "draftStatus": "Final",
+          "isLocked": true
+        },
+        {
+          "id": "dfef18d0-5585-45c5-80bf-988b9865996c",
+          "memberId": "dd5efdea-885c-4e2a-8fdc-ea693db3d8a2",
+          "periodEndDate": "2023-11-15",
+          "traitAverage": 3.05,
+          "promotionRecommendation": "P",
+          "firstName": "Karen",
+          "lastName": "Nguyen",
+          "rank": "PO1",
+          "designator": "STG1",
+          "draftStatus": "Final",
+          "isLocked": true
+        },
+        {
+          "id": "9c929d04-82a2-45f8-8efd-def95750aee7",
+          "memberId": "b4dfd46b-1870-4e28-948d-7f6cbcd6cdc3",
+          "periodEndDate": "2023-11-15",
+          "traitAverage": 4.97,
+          "promotionRecommendation": "EP",
+          "firstName": "Patricia",
+          "lastName": "Moore",
+          "rank": "PO1",
+          "designator": "STG1",
+          "draftStatus": "Final",
+          "isLocked": true
+        },
+        {
+          "id": "af6888f5-4755-407a-8878-301600ec517d",
+          "memberId": "ca03237e-1a4f-47ca-af78-390434a97844",
+          "periodEndDate": "2023-11-15",
+          "traitAverage": 3.33,
+          "promotionRecommendation": "P",
+          "firstName": "Michael",
+          "lastName": "Lee",
+          "rank": "PO1",
+          "designator": "BM1",
+          "draftStatus": "Final",
+          "isLocked": true
+        },
+        {
+          "id": "51b3133e-ee1c-43b2-af03-9276f4e0c5b6",
+          "memberId": "68972753-0273-4df0-929a-464edc9dee34",
+          "periodEndDate": "2023-11-15",
+          "traitAverage": 4.04,
+          "promotionRecommendation": "MP",
+          "firstName": "David",
+          "lastName": "Walker",
+          "rank": "PO1",
+          "designator": "QM1",
+          "draftStatus": "Final",
+          "isLocked": true
+        },
+        {
+          "id": "db7e17a9-de89-4524-a044-d47f4f2a8b20",
+          "memberId": "53790527-e5c6-4dfd-aea3-d5647ff789b0",
+          "periodEndDate": "2023-11-15",
+          "traitAverage": 4.98,
+          "promotionRecommendation": "EP",
+          "firstName": "Karen",
+          "lastName": "Garcia",
+          "rank": "PO1",
+          "designator": "STG1",
+          "draftStatus": "Final",
+          "isLocked": true
+        },
+        {
+          "id": "f5c11feb-aa78-4cb6-b5f0-98630d589b05",
+          "memberId": "a4d9ba62-826b-490a-b96b-6004d7cc0f03",
+          "periodEndDate": "2023-11-15",
+          "traitAverage": 3.56,
+          "promotionRecommendation": "P",
+          "firstName": "Donna",
+          "lastName": "Scott",
+          "rank": "PO1",
+          "designator": "PS1",
+          "draftStatus": "Final",
+          "isLocked": true
+        },
+        {
+          "id": "996e8c86-8ff7-40d9-aab3-a39aaa22b652",
+          "memberId": "c4c1752e-a547-46a7-a268-5f11f91b2a56",
+          "periodEndDate": "2023-11-15",
+          "traitAverage": 4.87,
+          "promotionRecommendation": "EP",
+          "firstName": "Daniel",
+          "lastName": "Campbell",
+          "rank": "PO1",
+          "designator": "GM1",
+          "draftStatus": "Final",
+          "isLocked": true
+        },
+        {
+          "id": "83baf545-93f4-4562-8326-17e17c4d4998",
+          "memberId": "b3467fe1-ae3f-4025-94d6-26dbbbd52014",
+          "periodEndDate": "2023-11-15",
+          "traitAverage": 4.78,
+          "promotionRecommendation": "EP",
+          "firstName": "Jessica",
+          "lastName": "Miller",
+          "rank": "PO1",
+          "designator": "QM1",
+          "draftStatus": "Final",
+          "isLocked": true
+        },
+        {
+          "id": "c7964729-39d0-438c-b050-1869b881782b",
+          "memberId": "c97397db-2216-46ed-8ceb-e3475a2547f4",
+          "periodEndDate": "2023-11-15",
+          "traitAverage": 3.41,
+          "promotionRecommendation": "P",
+          "firstName": "Daniel",
+          "lastName": "Lewis",
+          "rank": "PO1",
+          "designator": "IT1",
+          "draftStatus": "Final",
+          "isLocked": true
+        },
+        {
+          "id": "7a02598a-f617-4e8d-ac12-8edf8bd90b7f",
+          "memberId": "f0622b7e-0d44-46b9-8afa-60fb9ab6e1d9",
+          "periodEndDate": "2023-11-15",
+          "traitAverage": 4.68,
+          "promotionRecommendation": "EP",
+          "firstName": "John",
+          "lastName": "Williams",
+          "rank": "PO1",
+          "designator": "HM1",
+          "draftStatus": "Final",
+          "isLocked": true
+        },
+        {
+          "id": "a9c06e8a-e7fd-4234-976a-be698c78958a",
+          "memberId": "d5a34953-4d6b-4353-9ab5-01dfcaa85942",
+          "periodEndDate": "2023-11-15",
+          "traitAverage": 4.59,
+          "promotionRecommendation": "EP",
+          "firstName": "Patricia",
+          "lastName": "Garcia",
+          "rank": "PO1",
+          "designator": "ET1",
+          "draftStatus": "Final",
+          "isLocked": true
+        },
+        {
+          "id": "78124207-f08b-45d6-9a1d-68238f7a4c9e",
+          "memberId": "5841e3a3-eaf6-41d4-b378-33706a003617",
+          "periodEndDate": "2023-11-15",
+          "traitAverage": 4.18,
+          "promotionRecommendation": "MP",
+          "firstName": "George",
+          "lastName": "Green",
+          "rank": "PO1",
+          "designator": "PS1",
+          "draftStatus": "Final",
+          "isLocked": true
+        },
+        {
+          "id": "791ef530-38b5-4e63-bd84-58fb9dba2b22",
+          "memberId": "54b7b846-3746-407a-a6ad-39828acf1e59",
+          "periodEndDate": "2023-11-15",
+          "traitAverage": 3.7,
+          "promotionRecommendation": "P",
+          "firstName": "Barbara",
+          "lastName": "Williams",
+          "rank": "PO1",
+          "designator": "YN1",
+          "draftStatus": "Final",
+          "isLocked": true
+        },
+        {
+          "id": "a3e3858c-c720-4443-be50-735c7dd25db6",
+          "memberId": "ac953d04-b937-4d64-a588-2d502169dfab",
+          "periodEndDate": "2023-11-15",
+          "traitAverage": 3.71,
+          "promotionRecommendation": "P",
+          "firstName": "Joshua",
+          "lastName": "Anderson",
+          "rank": "PO1",
+          "designator": "FC1",
+          "draftStatus": "Final",
+          "isLocked": true
+        },
+        {
+          "id": "c64cb4cf-1a17-4f28-8761-cf6fa5744547",
+          "memberId": "1de761cb-d1d7-484d-8c9c-a21b63d7e276",
+          "periodEndDate": "2023-11-15",
+          "traitAverage": 4.82,
+          "promotionRecommendation": "EP",
+          "firstName": "Daniel",
+          "lastName": "Wilson",
+          "rank": "PO1",
+          "designator": "CTT1",
+          "draftStatus": "Final",
+          "isLocked": true
+        },
+        {
+          "id": "da4d0134-776a-4ac6-977c-cb81904f81e0",
+          "memberId": "50507838-5d10-408d-99c6-2a57735bd937",
+          "periodEndDate": "2023-11-15",
+          "traitAverage": 3.84,
+          "promotionRecommendation": "MP",
+          "firstName": "Charles",
+          "lastName": "Hall",
+          "rank": "PO1",
+          "designator": "STG1",
+          "draftStatus": "Final",
+          "isLocked": true
+        },
+        {
+          "id": "f9ed7a22-3bf0-44f0-baff-3e4221791b18",
+          "memberId": "4254f2e6-8421-4548-8df5-e91e9999b401",
+          "periodEndDate": "2023-11-15",
+          "traitAverage": 4.13,
+          "promotionRecommendation": "MP",
+          "firstName": "Deborah",
+          "lastName": "Hall",
+          "rank": "PO1",
+          "designator": "OS1",
+          "draftStatus": "Final",
+          "isLocked": true
+        },
+        {
+          "id": "fb984b7d-760f-4fc5-b5da-7e474e290fc5",
+          "memberId": "e35ac406-223d-4282-b8ef-a701fd535741",
+          "periodEndDate": "2023-11-15",
+          "traitAverage": 4.63,
+          "promotionRecommendation": "EP",
+          "firstName": "Joseph",
+          "lastName": "Roberts",
+          "rank": "PO1",
+          "designator": "YN1",
+          "draftStatus": "Final",
+          "isLocked": true
+        }
+      ],
+      "designator": "",
+      "promotionStatus": "REGULAR"
+    }
+  ],
+  "rsConfig": {
+    "name": "RADM K. Kennedy",
+    "rank": "O-8",
+    "title": "Commander",
+    "changeOfCommandDate": "2022-06-01",
+    "targetRsca": 4.2,
+    "totalReports": 400
+  },
+  "version": "2.0",
+  "timestamp": "2026-01-10T23:59:04.794Z"
+}
