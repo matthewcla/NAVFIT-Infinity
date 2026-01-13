@@ -59,8 +59,17 @@ export const SummaryGroupGenerator = {
         const candidatesByGroup = new Map<string, RosterMember[]>();
 
         periodicCandidates.forEach(m => {
-            const isOfficer = m.rank.startsWith('O') || m.rank.startsWith('W');
-            const designatorKey = isOfficer ? m.designator : 'Enlisted';
+            // Use payGrade to reliably identify officers (e.g. O-1 to O-10, W-1 to W-5)
+            // m.rank might be "LT" or "ENS" which doesn't start with O/W.
+            const isOfficer = m.payGrade ? (m.payGrade.startsWith('O') || m.payGrade.startsWith('W')) : (m.rank.startsWith('O') || m.rank.startsWith('W'));
+
+            let designatorKey = 'Enlisted';
+            if (isOfficer) {
+                // Group by Competitive Category Code (e.g. "URL", "RL", "STAFF") rather than specific designator (e.g. 1110, 1310)
+                // This ensures all URL officers end up in the same summary group.
+                const cat = getCompetitiveCategory(m.designator);
+                designatorKey = cat.code;
+            }
 
             // Normalize Promotion Status
             // Roster typically has "Frocked", "Selected", "Regular". Convert to strict Upper Case.
@@ -70,7 +79,9 @@ export const SummaryGroupGenerator = {
                 status = 'REGULAR';
             }
 
-            const key = `${m.rank}|${designatorKey}|${status}`;
+            // Use payGrade for grouping if available to ensure consistent naming (e.g. "E-6" instead of "Petty Officer First Class")
+            const rankKey = m.payGrade || m.rank;
+            const key = `${rankKey}|${designatorKey}|${status}`;
 
             if (!candidatesByGroup.has(key)) candidatesByGroup.set(key, []);
             candidatesByGroup.get(key)!.push(m);
@@ -92,7 +103,9 @@ export const SummaryGroupGenerator = {
                 // Format: "O-3 URL Active" or "E-6 Active" using getCategoryLabel or component
                 let competitiveGroupKey = rank;
                 if (designatorContext !== 'Enlisted') {
-                    const cat = getCompetitiveCategory(designatorContext);
+                    // designatorContext corresponds to the CompetitiveCategoryType (e.g. "URL"), not the raw designator.
+                    // To get the nice label ("Unrestricted Line" -> "URL Active"), we need to use a real designator from the members.
+                    const cat = getCompetitiveCategory(members[0].designator);
                     const label = getCategoryLabel(cat);
                     competitiveGroupKey = `${rank} ${label}`;
                 } else {
@@ -131,13 +144,13 @@ export const SummaryGroupGenerator = {
         });
 
         detachers.forEach(m => {
-            const isOfficer = m.rank.startsWith('O') || m.rank.startsWith('W');
+            const isOfficer = m.payGrade ? (m.payGrade.startsWith('O') || m.payGrade.startsWith('W')) : (m.rank.startsWith('O') || m.rank.startsWith('W'));
 
             let competitiveGroupKey = m.rank;
             if (isOfficer) {
-                const cat = getCompetitiveCategory(m.designator);
-                const label = getCategoryLabel(cat);
-                competitiveGroupKey = `${m.rank} ${label}`;
+                // const cat = getCompetitiveCategory(m.designator);
+                // const label = getCategoryLabel(cat);
+                competitiveGroupKey = `${m.rank}`;
             } else {
                 // Enlisted: use component field (default: 'Active')
                 const enlistedSuffix = m.component || 'Active';
