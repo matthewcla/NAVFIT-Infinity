@@ -24,7 +24,7 @@ const getCompetitiveGroup = (member: RosterMember): CompGroupKey => {
 
     // Robust Fallback: Rank Title might be missing. Use PayGrade as fallback.
     // User requested "URL O-1", "E-6". Prefer PayGrade (Code) over Rank (Title) for the Group Label.
-    let displayRank = payGrade || rank;
+    let displayRank: string = payGrade || rank;
 
     // SANITIZE: Ensure displayRank is clean (e.g., "E-6", "O-3") to avoid "E-6 OFFICER Active" garbage
     if (displayRank) {
