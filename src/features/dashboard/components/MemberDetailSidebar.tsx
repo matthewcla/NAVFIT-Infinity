@@ -83,8 +83,9 @@ export function MemberDetailSidebar({
         ['E-1', 'E-2', 'E-3', 'E-4', 'E-5', 'E-6', 'E-7', 'E-8', 'E-9'].includes(rosterMember.payGrade || '');
 
     // Fallback if needed
-    // Fallback if needed
-    const displayRank = rosterMember.rank;
+    const displayRank = (isEnlisted && rosterMember.designator && rosterMember.designator !== '0000')
+        ? rosterMember.designator
+        : rosterMember.rank;
     const displaySubtext = isEnlisted
         ? `| ${rosterMember.component || 'Active'}`
         : (rosterMember.designator || '');

@@ -90,7 +90,8 @@ export const SummaryGroupGenerator = {
         Array.from(candidatesByGroup.entries()).forEach(([key, members]) => {
             if (members.length === 0) return;
 
-            const [rank, designatorContext, status] = key.split('|');
+            const [rawRank, designatorContext, status] = key.split('|');
+            const rank = rawRank.replace(/\s+OFFICER/i, '').trim();
             const cycleMonth = PERIODIC_CYCLES[mapRankToKey(rank) || ''];
 
             if (cycleMonth !== undefined) {

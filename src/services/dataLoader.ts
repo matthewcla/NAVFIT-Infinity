@@ -1,4 +1,5 @@
 import type { Member, SummaryGroup, Report } from '@/types/index';
+import { getCompetitiveCategory, getCategoryLabel } from '../features/strategy/logic/competitiveGroupUtils';
 
 // Interfaces matching public/member_details.json
 export interface RawMemberDetail {
@@ -156,12 +157,53 @@ export async function fetchInitialData(userId: string = 'user_1'): Promise<{ mem
                 traitGrades: rawReport.traitGrades || {},
                 draftStatus: (rawReport.draftStatus as any) || 'Draft',
                 memberRank: member?.rank || rawReport.memberRank || rawReport.rank || '',
-                memberName: member?.name || rawReport.memberName || (rawReport.firstName && rawReport.lastName ? `${rawReport.lastName}, ${rawReport.firstName}` : '') || ''
+                memberName: member?.name || rawReport.memberName || (rawReport.firstName && rawReport.lastName ? `${rawReport.lastName}, ${rawReport.firstName}` : '') || '',
+                // Ensure designator is available on report if not present
+                designator: rawReport.designator || member?.designator
             };
         });
 
+        // RECOVERY: If group name is generic (e.g., "O-3 Active") but should have specific category (e.g., "O-3 LDO Active")
+        // we reconstruct it from the first member's designator.
+        let groupName = rawGroup.name;
+        let compKey = rawGroup.competitiveGroupKey;
+
+        if (reports.length > 0) {
+            const firstDesignator = reports[0].designator;
+            const rank = rawGroup.paygrade || reports[0].memberRank;
+
+            // Only attempt fix for Officers (O/W) if name doesn't seem to contain category
+            // Simple check: if name is just "RANK Active" or "RANK" but designator suggests specific category
+            const isOfficer = rank && (rank.startsWith('O') || rank.startsWith('W'));
+
+            if (isOfficer && firstDesignator) {
+                const cat = getCompetitiveCategory(firstDesignator);
+                const nicelabel = getCategoryLabel(cat);
+
+                // If we found a valid category label (e.g. "LDO Active", "URL Active")
+                if (nicelabel) {
+                    // Reconstruct likely correct base name
+                    const expectedBase = `${rank} ${nicelabel}`;
+
+                    // If current name is just "RANK Active" but we expect "RANK LDO Active"
+                    // we update it.
+                    // This fixes "O-3 Active" -> "O-3 LDO Active"
+                    // Also handles "O-3 OFFICER Active" cleanup if it persists
+
+                    const status = rawGroup.promotionStatus || 'REGULAR';
+                    const suffix = status !== 'REGULAR' ? ` (${status})` : '';
+
+                    // We overwrite the name to be correct
+                    groupName = `${expectedBase}${suffix}`;
+                    compKey = expectedBase;
+                }
+            }
+        }
+
         return {
             ...rawGroup,
+            name: groupName,
+            competitiveGroupKey: compKey, // Ensure key matches name structure
             promotionStatus: rawGroup.promotionStatus || 'REGULAR',
             reports: reports,
             status: (rawGroup.status as any) || 'Draft'
