@@ -142,6 +142,7 @@ export const useNavfitStore = create<NavfitStore>((set) => ({
         const user = MOCK_USERS.find(u => u.id === userId);
         if (user) {
             set({ currentUser: user, isAuthenticated: true });
+            useNavfitStore.getState().loadData(userId);
         }
     },
     logout: () => {
