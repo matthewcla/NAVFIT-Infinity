@@ -16,42 +16,77 @@ interface CompGroupKey {
     promotionStatus: 'REGULAR' | 'FROCKED' | 'SELECTED' | 'SPOT';
     label: string;
     categoryCode: string; // Add category code for grouping ID
+    component?: string; // Add component for Enlisted separation
 }
 
 const getCompetitiveGroup = (member: RosterMember): CompGroupKey => {
-    const { rank, payGrade, designator, promotionStatus = 'REGULAR' } = member;
+    const { rank, payGrade, designator, promotionStatus = 'REGULAR', component } = member;
 
     // Robust Fallback: Rank Title might be missing. Use PayGrade as fallback.
     // User requested "URL O-1", "E-6". Prefer PayGrade (Code) over Rank (Title) for the Group Label.
-    const displayRank = payGrade || rank;
+    let displayRank: string = payGrade || rank;
+
+    // SANITIZE: Ensure displayRank is clean (e.g., "E-6", "O-3") to avoid "E-6 OFFICER Active" garbage
+    if (displayRank) {
+        const match = displayRank.match(/^([A-Z]+-\d+)/);
+        if (match) {
+            displayRank = match[1];
+        } else {
+            // If no pattern match, just take first token to be safe
+            displayRank = displayRank.split(' ')[0];
+        }
+    }
 
     // Robust Logic: Is Officer?
     // Check PAYGRADE (e.g. O-1, W-2). Rank (Title) is unreliable for this check.
-    const isOfficer = payGrade ? (payGrade.startsWith('O') || payGrade.startsWith('W')) : false;
+    // Using cleaned displayRank which should be "O-1" etc.
+    const isOfficer = displayRank ? (displayRank.startsWith('O') || displayRank.startsWith('W')) : false;
 
     let categoryLabel = '';
     let categoryCode = '';
+    let enlistedComponent = '';
 
     if (isOfficer && designator) {
         const cat = getCompetitiveCategory(designator);
         categoryLabel = getCategoryLabel(cat);
         categoryCode = cat.code;
+    } else if (!isOfficer) {
+        // Enlisted: Determine Component Grouping
+        // Active/FTS/AGR -> Active Group
+        // Reserve/SELRES -> Reserve Group
+        if (component === 'Reserve') {
+            enlistedComponent = 'RES';
+            categoryCode = 'RESERVE';
+        } else {
+            // Default to Active if undefined or Active/FTS
+            enlistedComponent = ''; // Standard Active Enlisted doesn't have a label suffix usually, just "E-6"
+            categoryCode = 'ACTIVE';
+        }
     }
 
     // Label Construction
     // Officers: "URL O-3" or "STAFF O-3"
-    // Enlisted: "E-6" (No designator)
+    // Enlisted: "E-6" (No designator) or "E-6 RES"
     // CWO: "W-2" (Avoid "CWO W-2")
     const finalCategoryLabel = categoryLabel === 'CWO' ? '' : categoryLabel;
-    const labelBase = isOfficer && finalCategoryLabel ? `${finalCategoryLabel} ${displayRank}` : displayRank;
+
+    let labelBase = displayRank;
+    if (isOfficer && finalCategoryLabel) {
+        labelBase = `${finalCategoryLabel} ${displayRank}`; // Category First for Officers: "URL O-3"
+    } else if (!isOfficer && enlistedComponent) {
+        labelBase = `${displayRank} ${enlistedComponent}`; // "E-6 RES"
+    }
+    // If just "E-6" active, labelBase is "E-6"
+
     const label = `${labelBase} ${promotionStatus !== 'REGULAR' ? promotionStatus : ''}`.trim();
 
     return {
-        paygrade: payGrade || rank, // Prefer code
+        paygrade: displayRank, // Prefer clean code
         designator: designator,
         promotionStatus: promotionStatus,
         label: label,
-        categoryCode: categoryCode
+        categoryCode: categoryCode,
+        component: enlistedComponent // For ID generation
     };
 };
 
@@ -113,6 +148,7 @@ export const generateSummaryGroups = (
     const ensureGroup = (key: CompGroupKey, endDate: string): SummaryGroup => {
         // Unique ID must include all segmentation factors
         // Use categoryCode instead of raw designator to group "1110" and "1310" together under "URL"
+        // For Enlisted, categoryCode distinguishes Active/Reserve
         const idParts = [
             key.paygrade,
             key.categoryCode || key.designator || 'NODESIG', // Fallback for Enlisted or missing

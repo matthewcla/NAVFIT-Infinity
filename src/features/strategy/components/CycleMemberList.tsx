@@ -223,7 +223,7 @@ export function CycleMemberList({
                                     groupId={activeGroupId}
                                     index={(previewRankMap.get(member.reportId) || idx + 1) - 1}
                                     name={member.name}
-                                    designator={isEnlisted ? member.rank : member.designator}
+                                    designator={isEnlisted ? (member.designator && member.designator !== '0000' ? member.designator : member.rank) : member.designator}
                                     reportsRemaining={member.reportsRemaining}
                                     promRec={member.promRec}
                                     mta={member.mta}

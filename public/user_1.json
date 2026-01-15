@@ -5188,7 +5188,7 @@
   "summaryGroups": [
     {
       "id": "ae3b453e-e997-4ee3-a8dd-ea20e93da690",
-      "name": "E-4 OFFICER Active",
+      "name": "E-4 Active",
       "paygrade": "E-4",
       "competitiveGroupKey": "E-4 COMP",
       "periodEndDate": "2024-06-15",
@@ -6110,7 +6110,7 @@
     },
     {
       "id": "898e3002-4547-46e0-ba1d-ec73396a00cd",
-      "name": "O-3 OFFICER Active",
+      "name": "O-3 Active",
       "paygrade": "O-3",
       "competitiveGroupKey": "O-3 COMP",
       "periodEndDate": "2025-01-31",
@@ -6226,7 +6226,7 @@
     },
     {
       "id": "3825146f-1eb6-4e0d-961b-996a6ca4496d",
-      "name": "E-7 OFFICER Active",
+      "name": "E-7 Active",
       "paygrade": "E-7",
       "competitiveGroupKey": "E-7 COMP",
       "periodEndDate": "2024-09-15",

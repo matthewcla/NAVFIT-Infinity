@@ -52,7 +52,8 @@ const formatISODate = (year: number, monthIndex: number, day: number): string =>
 
 const getCompetitiveGroup = (member: RosterMember): CompGroupKey => {
     const { rank, payGrade, designator, promotionStatus = 'REGULAR' } = member;
-    const displayRank = payGrade || rank;
+    // Sanitize displayRank to remove 'OFFICER' garbage if present
+    const displayRank = (payGrade || rank).replace(/\s+OFFICER/i, '').trim();
     const isOfficer = payGrade ? (payGrade.startsWith('O') || payGrade.startsWith('W')) : false;
 
     let categoryCode = '';
