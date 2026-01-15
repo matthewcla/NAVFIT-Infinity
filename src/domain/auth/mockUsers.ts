@@ -13,7 +13,7 @@ export const MOCK_USERS: User[] = [
     {
         id: 'user_2',
         name: 'K. Kennedy',
-        rank: 'RADM',
+        rank: 'RDML',
         title: 'Commander',
         command: 'Navy Personnel Command',
         initials: 'KK',

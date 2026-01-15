@@ -1,3 +1,6 @@
+/**
+ * @vitest-environment jsdom
+ */
 import { render, screen, fireEvent, waitFor, cleanup } from '@testing-library/react';
 import { UserProfileMenu } from './UserProfileMenu';
 import { useNavfitStore } from '@/store/useNavfitStore';
@@ -48,7 +51,7 @@ describe('UserProfileMenu', () => {
         });
 
         // Check for other users
-        expect(screen.getByText('RADM K. Kennedy')).toBeTruthy();
+        expect(screen.getByText('RDML K. Kennedy')).toBeTruthy();
 
         // Check for Actions
         expect(screen.getByText('Settings')).toBeTruthy();
@@ -64,10 +67,10 @@ describe('UserProfileMenu', () => {
 
         // Click on second user
         await waitFor(() => {
-            expect(screen.getByText('RADM K. Kennedy')).toBeTruthy();
+            expect(screen.getByText('RDML K. Kennedy')).toBeTruthy();
         });
 
-        const secondUserText = screen.getByText('RADM K. Kennedy');
+        const secondUserText = screen.getByText('RDML K. Kennedy');
         const secondUserBtn = secondUserText.closest('button');
 
         // Ensure button is found
@@ -82,9 +85,9 @@ describe('UserProfileMenu', () => {
 
         // And UI updates
         // Note: The menu might close or the main button might update.
-        // The main button should now show RADM K. Kennedy.
+        // The main button should now show RDML K. Kennedy.
         // We use getAllByText because it might be in the menu (if still open/animating) AND the main button.
-        expect(screen.getAllByText('RADM K. Kennedy').length).toBeGreaterThan(0);
+        expect(screen.getAllByText('RDML K. Kennedy').length).toBeGreaterThan(0);
     });
 
     test('logging out clears user', async () => {
