@@ -14,7 +14,7 @@ import { validateReportState, checkQuota, createSummaryGroupContext } from '@/fe
 import type { SummaryGroup, Report } from '@/types';
 import { assignRecommendationsByRank } from '@/features/strategy/logic/recommendation';
 import { fetchInitialData } from '@/services/dataLoader';
-import { planAllSummaryGroups } from '@/features/strategy/logic/planSummaryGroups';
+import { planAllSummaryGroups, getCompetitiveGroup } from '@/features/strategy/logic/planSummaryGroups';
 import type { User } from '@/domain/auth/types';
 import { MOCK_USERS } from '@/domain/auth/mockUsers';
 
@@ -48,6 +48,11 @@ interface NavfitStore {
     roster: RosterMember[];
     setRoster: (roster: RosterMember[]) => void;
     reorderMember: (memberId: string, newIndex: number) => void; // Legacy roster reorder? Or keep for completeness
+
+    // Competitive Group Ranking State (The Master Plan)
+    competitiveGroupRankings: Record<string, string[]>; // Key -> Member IDs in rank order
+    setCompetitiveGroupRanking: (key: string, memberIds: string[]) => void;
+    reorderCompetitiveGroupMember: (key: string, activeId: string, overId: string) => void;
 
     // Summary Group / Ranking Mode Actions
     reorderMembers: (groupId: string, draggedId: string, targetIdOrOrder: string | string[]) => void;
@@ -133,7 +138,7 @@ interface NavfitStore {
     loadState: (state: { roster: RosterMember[]; summaryGroups: SummaryGroup[]; rsConfig: ReportingSeniorConfig }) => void;
 }
 
-export const useNavfitStore = create<NavfitStore>((set) => ({
+export const useNavfitStore = create<NavfitStore>((set, get) => ({
     // Auth State
     currentUser: MOCK_USERS[0], // Default to first user (M. Clark)
     isAuthenticated: true,
@@ -159,64 +164,6 @@ export const useNavfitStore = create<NavfitStore>((set) => ({
             const effectiveUserId = userId || useNavfitStore.getState().currentUser?.id;
             const { members, summaryGroups } = await fetchInitialData(effectiveUserId);
 
-            // Map Domain Members to UI RosterMembers if needed
-            // The RosterMember interface (from '@/types/roster') and Domain Member (from '@/types/index') are very similar but we should ensure compatibility.
-            // RosterMember expects: id, firstName, lastName, rank, payGrade, designator, dateReported, prd, lastTrait, status
-            // fetchInitialData returns Member[] which has name, but not split firstName/lastName?
-            // Wait, fetchInitialData implementation maps: name: `${detail.lastName}, ${detail.firstName}`
-            // But RosterMember in the store interface expects `firstName`, `lastName`.
-            // Let's check `fetchInitialData`. It returns Member[].
-            // RosterMember interface:
-            // export interface RosterMember { id, firstName, lastName, ... }
-            // Let's adapt the data from fetchInitialData to match RosterMember.
-
-            // However, looking at fetchInitialData, it returns objects that conform to Member interface.
-            // Member interface in src/types/index.ts has `name` (combined).
-            // RosterMember in src/types/roster.ts has firstName, lastName.
-
-            // We should inspect the data coming from fetchInitialData.
-            // Actually, fetchInitialData maps from raw member details which HAVE firstName and lastName.
-            // But it returns Member[].
-
-            // If the store expects RosterMember[], we might need to adjust fetchInitialData or map here.
-            // Since I cannot change fetchInitialData easily without potentially breaking other things (though it was just created),
-            // I will map it here. Ideally fetchInitialData should probably return what we need or we update the store type.
-            // Let's assume we map here for safety.
-
-            // Wait, looking at current `initializeRoster` (which I removed), it was mapping from raw JSON.
-            // fetchInitialData does the mapping.
-
-            // Let's look at `members` returned by `fetchInitialData`.
-            // It maps: name: "Last, First".
-            // It does NOT seem to preserve firstName/lastName in the return object explicitly unless Member has them.
-            // src/types/index.ts Member interface:
-            // export interface Member { id, name, rank, payGrade?, designator?, rating?, milestone?, prd?, status, gainDate?, ... }
-            // It does not have firstName, lastName.
-
-            // But RosterMember does.
-            // I should probably update RosterMember or NavfitStore to use Member, OR parse the name back.
-            // Or better, let's look at what `fetchInitialData` used. It used `detail.firstName`.
-            // I'll update the mapping here to be safe, assuming `fetchInitialData` is the source of truth for "loading data".
-            // BUT `fetchInitialData` returns `Member[]`.
-            // `useNavfitStore` state `roster` is `RosterMember[]`.
-
-            // If I change `roster` type to `Member[]`, it might break components expecting `firstName`.
-            // Let's map it. `Member` objects from `fetchInitialData` don't carry `firstName`.
-            // This is a slight mismatch introduced by the new service.
-            // I'll assume for now I can parse the name or that the UI can handle `name`.
-            // Actually, looking at `fetchInitialData` code in memory:
-            /*
-            return {
-                id: detail.id,
-                name: `${detail.lastName}, ${detail.firstName}`,
-                ...
-            };
-            */
-            // It drops firstName/lastName.
-            // To fix this cleanly, I should probably have `fetchInitialData` return objects that satisfy `RosterMember` (or a superset).
-            // But I am in the step of refactoring the store.
-            // I will split the name string here to populate firstName/lastName for RosterMember compatibility.
-
             const roster: RosterMember[] = members.map(m => {
                 const parts = m.name.split(', ');
                 const lastName = parts[0] || '';
@@ -227,8 +174,8 @@ export const useNavfitStore = create<NavfitStore>((set) => ({
                     lastName,
                     rank: m.rank,
                     payGrade: m.payGrade as PayGrade,
-                    designator: m.designator || '', // Enlisted now have designator populated from my previous step
-                    dateReported: (m as any).dateReported || new Date().toISOString().split('T')[0], // Cast as any if strictly typed Member doesn't have it (but I saw it in fetchInitialData source)
+                    designator: m.designator || '',
+                    dateReported: (m as any).dateReported || new Date().toISOString().split('T')[0],
                     prd: m.prd || '',
                     eda: (m as any).eda,
                     edd: (m as any).edd,
@@ -241,24 +188,43 @@ export const useNavfitStore = create<NavfitStore>((set) => ({
             });
 
             // Auto-generate planned summary groups
-            // Note: In generated data, rsConfig is usually loaded from the file.
-            // We should ideally load RS config from the file if fetchInitialData returns it (it does not currently in the interface, but the raw data has it).
-            // For now, we use the static default or what is in store.
-            // Ideally fetchInitialData should return rsConfig too.
-            // But since I can't change fetchInitialData signature easily without refactoring widely (already done in previous step but kept signature simple),
-            // I will assume rsConfig is updated via separate mechanism or defaulting.
-            // Actually, my data generation script writes rsConfig to the JSON.
-            // I should update fetchInitialData to return it.
-            // For this specific step, I will stick to what's there to avoid scope creep, assuming RS Config is managed or default is acceptable.
-
             const rsConfig = useNavfitStore.getState().rsConfig;
             const plannedResults = planAllSummaryGroups(roster, rsConfig, summaryGroups);
             const plannedGroups = plannedResults.map(r => r.group);
             const allGroups = [...summaryGroups, ...plannedGroups];
 
+            // Initialize Competitive Group Rankings
+            // Sort by Last Trait Descending initially
+            const rankings: Record<string, string[]> = {};
+
+            // Group members by Competitive Group Key
+            roster.forEach(m => {
+                const key = getCompetitiveGroup(m).label;
+                if (!rankings[key]) rankings[key] = [];
+                rankings[key].push(m.id);
+            });
+
+            // Sort each group
+            Object.keys(rankings).forEach(key => {
+                rankings[key].sort((idA, idB) => {
+                    const memberA = roster.find(m => m.id === idA);
+                    const memberB = roster.find(m => m.id === idB);
+                    const traitA = memberA?.lastTrait || 0;
+                    const traitB = memberB?.lastTrait || 0;
+                    // Sort Descending (Higher Trait first)
+                    if (traitB !== traitA) return traitB - traitA;
+                    // Tie-break with name
+                    const nameA = memberA ? `${memberA.lastName}, ${memberA.firstName}` : '';
+                    const nameB = memberB ? `${memberB.lastName}, ${memberB.firstName}` : '';
+                    return nameA.localeCompare(nameB);
+                });
+            });
+
+
             set({
                 roster,
                 summaryGroups: allGroups,
+                competitiveGroupRankings: rankings,
                 isLoading: false,
                 // Reset dependent state
                 selectedCycleId: null,
@@ -267,7 +233,7 @@ export const useNavfitStore = create<NavfitStore>((set) => ({
                 selectedMemberId: null,
                 isContextPanelOpen: false,
                 projections: {},
-                activeTab: 'strategy' // Reset to default tab? Or keep?
+                activeTab: 'strategy'
             });
         } catch (err: any) {
             console.error("Failed to load data:", err);
@@ -295,6 +261,71 @@ export const useNavfitStore = create<NavfitStore>((set) => ({
     // Data
     roster: [], // Initialized empty
     setRoster: (roster) => set({ roster }),
+
+    // Competitive Group Rankings
+    competitiveGroupRankings: {},
+    setCompetitiveGroupRanking: (key, memberIds) => set((state) => ({
+        competitiveGroupRankings: {
+            ...state.competitiveGroupRankings,
+            [key]: memberIds
+        }
+    })),
+    reorderCompetitiveGroupMember: (key, activeId, overId) => set((state) => {
+        const currentList = state.competitiveGroupRankings[key] || [];
+        const oldIndex = currentList.indexOf(activeId);
+        const newIndex = currentList.indexOf(overId);
+
+        if (oldIndex === -1 || newIndex === -1) return {};
+
+        const newList = [...currentList];
+        const [movedItem] = newList.splice(oldIndex, 1);
+        newList.splice(newIndex, 0, movedItem);
+
+        // SYNC TO SUMMARY GROUPS (Planned/Draft)
+        // Update all relevant summary groups to reflect this new order
+        const updatedSummaryGroups = state.summaryGroups.map(group => {
+            if (group.competitiveGroupKey === key && (group.status === 'Planned' || group.status === 'Draft')) {
+                // Clone reports array to ensure immutability at array level
+                const reports = [...group.reports];
+
+                // 1. Sort Reports by New Master Rank
+                reports.sort((a, b) => {
+                    const idxA = newList.indexOf(a.memberId);
+                    const idxB = newList.indexOf(b.memberId);
+                    // Members in master list come first
+                    if (idxA !== -1 && idxB !== -1) return idxA - idxB;
+                    if (idxA !== -1) return -1;
+                    if (idxB !== -1) return 1;
+                    return 0;
+                });
+
+                // 2. Redistribute MTAs to enforce monotonicity (Assign by Rank)
+                // We preserve the set of MTA values in the group (keeping RSCA constant)
+                // but assign the highest values to the highest ranks.
+                const mtas = reports.map(r => r.traitAverage).sort((a, b) => b - a); // Descending
+
+                // Map reports to new objects if we are changing them
+                const updatedReports = reports.map((r, i) => {
+                    if (!r.isLocked && r.traitAverage !== mtas[i]) {
+                        return { ...r, traitAverage: mtas[i] };
+                    }
+                    return r;
+                });
+
+                return { ...group, reports: updatedReports };
+            }
+            return group;
+        });
+
+        return {
+            competitiveGroupRankings: {
+                ...state.competitiveGroupRankings,
+                [key]: newList
+            },
+            summaryGroups: updatedSummaryGroups
+        };
+    }),
+
 
     summaryGroups: [],
     setSummaryGroups: (groups) => set({ summaryGroups: groups }),
@@ -346,12 +377,6 @@ export const useNavfitStore = create<NavfitStore>((set) => ({
         const preGroup = preState.summaryGroups.find(g => g.id === groupId);
         const preReport = preGroup?.reports.find(r => r.id === reportId);
         const preRank = preGroup?.reports.findIndex(r => r.id === reportId);
-        console.log('[LOCK DEBUG] ENTRY', {
-            groupId, reportId, targetValue,
-            currentMta: preReport?.traitAverage,
-            currentLock: preReport?.isLocked,
-            currentRank: preRank !== undefined ? preRank + 1 : 'NOT FOUND'
-        });
 
         set((state) => ({
             summaryGroups: state.summaryGroups.map((group) => {
@@ -376,49 +401,17 @@ export const useNavfitStore = create<NavfitStore>((set) => ({
             })
         }));
 
-        // DEBUG: After first set()
-        const midState = useNavfitStore.getState();
-        const midGroup = midState.summaryGroups.find(g => g.id === groupId);
-        const midReport = midGroup?.reports.find(r => r.id === reportId);
-        const midRank = midGroup?.reports.findIndex(r => r.id === reportId);
-        console.log('[LOCK DEBUG] AFTER SET (pre-sort)', {
-            newMta: midReport?.traitAverage,
-            newLock: midReport?.isLocked,
-            newRank: midRank !== undefined ? midRank + 1 : 'NOT FOUND',
-            allReports: midGroup?.reports.map(r => ({ id: r.id, mta: r.traitAverage, locked: r.isLocked }))
-        });
-
         // Trigger Redistribution for Anchor Update
         const state = useNavfitStore.getState(); // Get fresh state
         const group = state.summaryGroups.find(g => g.id === groupId);
         if (group) {
             const report = group.reports.find(r => r.id === reportId);
-            // Log the NEW state (which is in `report` because we got fresh state)
             useAuditStore.getState().addLog('ANCHOR_SELECTION_CHANGE', {
                 groupId,
                 memberId: reportId,
                 isLocked: report?.isLocked,
                 value: report?.traitAverage
             });
-
-            const anchors: Record<string, number> = {};
-            group.reports.forEach(r => {
-                if (r.isLocked) anchors[r.id] = r.traitAverage;
-            });
-
-            // FIX: REMOVED MTA-based re-sorting. Lock/unlock should preserve the user's
-            // manually-set rank order (from drag-and-drop). Automatic reordering by MTA
-            // was destroying the manual order every time a lock was toggled.
-            // The report order now remains unchanged - only the isLocked flag is toggled.
-
-            console.log('[LOCK DEBUG] PRESERVING ORDER - no re-sort on lock toggle');
-
-            console.log('[LOCK DEBUG] SKIPPING setAnchors - lock/unlock should not trigger redistribution', { anchors });
-
-            // FIX: Removed setAnchors call. Lock/unlock is purely a state change.
-            // Redistribution should NOT be triggered because it recalculates all non-anchor MTAs,
-            // which would overwrite committed optimization values.
-            // useRedistributionStore.getState().setAnchors(groupId, anchors);
         }
     },
     setGroupLockState: (groupId, isLocked, valueMap) => {
@@ -451,21 +444,6 @@ export const useNavfitStore = create<NavfitStore>((set) => ({
                 groupId,
                 message: isLocked ? "Locked All Reports" : "Unlocked All Reports"
             });
-
-            const anchors: Record<string, number> = {};
-            if (isLocked) {
-                group.reports.forEach(r => {
-                    anchors[r.id] = r.traitAverage;
-                });
-            }
-
-            // FIX: REMOVED MTA-based re-sorting. Lock/unlock all should preserve the user's
-            // manually-set rank order (from drag-and-drop). Automatic reordering by MTA
-            // was destroying the manual order.
-            console.log('[LOCK DEBUG] PRESERVING ORDER - no re-sort on lock all toggle');
-            // FIX: Removed setAnchors call. Lock/unlock is purely a state change.
-            // Redistribution should NOT be triggered because it recalculates all non-anchor MTAs.
-            // useRedistributionStore.getState().setAnchors(groupId, anchors);
         }
     },
     reorderMember: (memberId, newIndex) => set((state) => {
@@ -490,9 +468,6 @@ export const useNavfitStore = create<NavfitStore>((set) => ({
             const { top, bottom } = defaultAnchorIndices(N);
             const anchorIndices = new Set([...top, ...bottom]);
 
-            // Requirement says "provide default anchor selection".
-            // We strictly set the calculated indices as anchors and unlock others to ensure a clean default state.
-
             const updatedReports = group.reports.map((r, i) => ({
                 ...r,
                 isLocked: anchorIndices.has(i)
@@ -501,11 +476,7 @@ export const useNavfitStore = create<NavfitStore>((set) => ({
             const newSummaryGroups = [...state.summaryGroups];
             newSummaryGroups[groupIndex] = { ...group, reports: updatedReports };
 
-            // Trigger Engine
-            // We need to convert to domain members and call requestRedistribution
-            // We can do this outside the set in a useEffect, but here we can just do it after state update or immediately.
-            // But `set` callback returns partial state. We need to trigger side effect.
-            // Side effect:
+            // Trigger Engine side effect
             setTimeout(() => {
                 const updatedGroup = useNavfitStore.getState().summaryGroups[groupIndex];
                 if (!updatedGroup) return;
@@ -544,24 +515,21 @@ export const useNavfitStore = create<NavfitStore>((set) => ({
         const currentReports = [...group.reports];
 
         let updatedReportList: typeof currentReports = [];
+        let newOrderIds: string[] = [];
 
         if (Array.isArray(targetIdOrOrder)) {
             // Bulk Reorder based on ID list
-            const newOrderIds = targetIdOrOrder;
-            // Map current reports to the new order
+            newOrderIds = targetIdOrOrder;
             updatedReportList = newOrderIds
                 .map(id => currentReports.find(r => r.id === id))
                 .filter((r): r is typeof currentReports[0] => !!r);
 
-            // Append any missing reports (robustness)
             const missingReports = currentReports.filter(r => !newOrderIds.includes(r.id));
             updatedReportList = [...updatedReportList, ...missingReports];
 
         } else {
             // Legacy Single-Item Move
             const targetId = targetIdOrOrder;
-
-            // 1. Identification
             const draggedIndex = currentReports.findIndex(r => r.id === draggedId);
             const targetIndex = currentReports.findIndex(r => r.id === targetId);
 
@@ -569,29 +537,24 @@ export const useNavfitStore = create<NavfitStore>((set) => ({
                 return {};
             }
 
-            // 2. Atomic Move (Remove and Insert)
             const [draggedItem] = currentReports.splice(draggedIndex, 1);
             currentReports.splice(targetIndex, 0, draggedItem);
             updatedReportList = currentReports;
+            newOrderIds = updatedReportList.map(r => r.id);
 
-            // 2b. Auto-Calculate MTA for the moved item (Interpolation)
-            // Note: We use targetIndex because draggedItem is now at targetIndex
+            // Interpolation Logic...
             const prevReport = updatedReportList[targetIndex - 1];
             const nextReport = updatedReportList[targetIndex + 1];
-
             let newMta = draggedItem.traitAverage;
 
             if (prevReport && nextReport) {
                 newMta = (prevReport.traitAverage + nextReport.traitAverage) / 2;
             } else if (prevReport) {
-                // Moved to bottom (or end)
                 newMta = Math.max(2.0, prevReport.traitAverage - 0.1);
             } else if (nextReport) {
-                // Moved to top
                 newMta = Math.min(5.0, nextReport.traitAverage + 0.1);
             }
 
-            // Simple Collision Avoidance (Nudge if identical)
             if (prevReport && newMta >= prevReport.traitAverage) {
                 newMta = prevReport.traitAverage - 0.01;
             }
@@ -605,22 +568,48 @@ export const useNavfitStore = create<NavfitStore>((set) => ({
             };
         }
 
-        // 3. Auto-Assign Recommendations based on Rank and Policy
         const finalReports = assignRecommendationsByRank(updatedReportList, group);
-
-        // 4. Update State
         const newSummaryGroups = [...state.summaryGroups];
         newSummaryGroups[groupIndex] = {
             ...group,
             reports: finalReports
         };
 
-        // 5. Trigger Redistribution Engine
-        // Convert to Domain Members
+        // SYNC TO COMPETITIVE GROUP PLAN (MASTER RANK)
+        // We need to update the Master List based on this specific Summary Group change.
+        // Logic: Extract the relative order of members in this Summary Group, and impose that relative order on the Master List.
+        const compGroupKey = group.competitiveGroupKey;
+        const masterList = state.competitiveGroupRankings[compGroupKey];
+
+        let newMasterList = masterList ? [...masterList] : [];
+        if (masterList && masterList.length > 0) {
+            // Extract Member IDs from the finalized report list (which is in the new correct order)
+            const newMemberOrder = finalReports.map(r => r.memberId);
+            const membersInGroup = new Set(newMemberOrder);
+
+            // 1. Identify indices of these members in the Master List
+            const relevantIndices = masterList
+                .map((id, index) => membersInGroup.has(id) ? index : -1)
+                .filter(idx => idx !== -1);
+
+            // 2. We simply overwrite the slots identified by relevantIndices with the newMemberOrder in sequence.
+
+            if (relevantIndices.length > 0) {
+                 const validNewOrder = newMemberOrder.filter(id => masterList.includes(id));
+
+                 if (validNewOrder.length === relevantIndices.length) {
+                     validNewOrder.forEach((memberId, i) => {
+                        newMasterList[relevantIndices[i]] = memberId;
+                     });
+                 }
+            }
+        }
+
+        // Trigger Redistribution Engine
         const domainMembers: DomainMember[] = finalReports.map((r, i) => ({
             id: r.id,
             rank: i + 1,
-            mta: r.traitAverage, // Send current MTA as baseline
+            mta: r.traitAverage,
             isAnchor: !!r.isLocked,
             anchorValue: r.traitAverage,
             name: r.memberName
@@ -632,13 +621,15 @@ export const useNavfitStore = create<NavfitStore>((set) => ({
             targetIdOrOrder
         });
 
-        // Do NOT call setRankOrder to avoid cycle (setRankOrder calls reorderMembers)
-        // Call requestRedistribution directly
         useRedistributionStore.getState().requestRedistribution(groupId, domainMembers, DEFAULT_CONSTRAINTS, state.rsConfig.targetRsca);
 
         return {
             summaryGroups: newSummaryGroups,
-            // Projections will be updated by the store subscription/callback
+            // Update Master List
+            competitiveGroupRankings: {
+                ...state.competitiveGroupRankings,
+                [compGroupKey]: newMasterList
+            }
         };
     }),
 
@@ -722,18 +713,10 @@ export const useNavfitStore = create<NavfitStore>((set) => ({
         };
 
         // 2. Validate Domain Policy (Traits, NOB, SP, O1/O2)
-        // Find previous report for SP logic (simplified: looking in roster or ignoring for now if complexity too high)
-        // Ideally we check history in roster.
         const rosterMember = state.roster.find(m => m.id === updatedReport.memberId);
-        // Sort history by date desc, find one before this report's period
-        // For now, passing undefined to validateReportState unless we strictly need SP withdrawal check to work.
-        // Prompt requires it.
         let previousReport: Report | undefined;
         if (rosterMember && rosterMember.history) {
-            // Basic sort
             const sorted = [...rosterMember.history].sort((a, b) => new Date(b.periodEndDate).getTime() - new Date(a.periodEndDate).getTime());
-            // The report being edited might be in history or not? If it's a draft, maybe not fully in history array or is the latest.
-            // We look for the first one strictly before this report's end date.
             const currentEndDate = new Date(updatedReport.periodEndDate);
             previousReport = sorted.find(r => new Date(r.periodEndDate) < currentEndDate);
         }
@@ -741,20 +724,12 @@ export const useNavfitStore = create<NavfitStore>((set) => ({
         const violations = validateReportState(updatedReport, group, previousReport);
 
         // 3. Validate Quotas (Group Level)
-        // If recommendation changed to EP or MP, we need to check limits.
         if (updates.promotionRecommendation) {
             const tempReports = [...reports];
             tempReports[reportIndex] = updatedReport;
-
             const epCount = tempReports.filter(r => r.promotionRecommendation === 'EP').length;
             const mpCount = tempReports.filter(r => r.promotionRecommendation === 'MP').length;
-
-            // Generate Context for Validation
             const context = createSummaryGroupContext(group, updatedReport);
-
-            // Ensure size matches report array
-            // Note: If we just added a report, group.reports might be outdated if we don't use tempReports,
-            // but updateReport assumes report exists.
             const quotaResult = checkQuota(context, epCount, mpCount);
 
             if (!quotaResult.isValid && quotaResult.message) {
@@ -784,29 +759,20 @@ export const useNavfitStore = create<NavfitStore>((set) => ({
         if (groupIndex === -1) return {};
 
         const group = state.summaryGroups[groupIndex];
-
-        // 1. Update Group with new Reports (Optimized)
         const newSummaryGroups = [...state.summaryGroups];
         newSummaryGroups[groupIndex] = {
             ...group,
             reports
         };
 
-        // 2. Clear Projections for these members
-        // We want to remove the projection key so the UI falls back to the report's traitAverage (which is now updated)
         const newProjections = { ...state.projections };
         reports.forEach(r => {
             delete newProjections[r.id];
         });
 
-        // 3. Clear any preview projections as well (though usually handled by component state)
-        // If we had store-based preview, we'd clear it here.
-
         return {
             summaryGroups: newSummaryGroups,
             projections: newProjections,
-            // Also update loaded state references if needed? 
-            // In CycleContextPanel, we use latestGroup from summaryGroups, so this is sufficient.
         };
     }),
 
@@ -818,20 +784,17 @@ export const useNavfitStore = create<NavfitStore>((set) => ({
     // Context Rail State (Selection)
     selectedReportId: null,
     selectReport: (id) => set(() => {
-        // If selecting a report (id is not null), clear member selection and open rail
         if (id) {
             return {
                 selectedReportId: id,
                 selectedMemberId: null
             };
         }
-        // If clearing, just clear it (optionally keep rail open or closed? request just says "selectReport should open context rail")
         return { selectedReportId: null };
     }),
 
     selectedMemberId: null,
     selectMember: (id) => set(() => {
-        // If selecting a member, clear report selection and open rail
         if (id) {
             return {
                 selectedMemberId: id,
@@ -861,8 +824,8 @@ export const useNavfitStore = create<NavfitStore>((set) => ({
         selectedCycleId: cycleId,
         activeCompetitiveGroup: competitiveGroupKey,
         isContextPanelOpen: true,
-        // Also sync legacy selection if needed, or keep distinct?
-        // User request didn't specify syncing with selectedCompetitiveGroupKey, but activeCompetitiveGroup seems to serve that purpose.
+        // When drilling down, switch to workspace view
+        strategyViewMode: 'workspace'
     }),
     clearSelection: () => set({
         selectedCycleId: null,

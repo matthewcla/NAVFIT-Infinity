@@ -20,7 +20,8 @@ export function CommandStrategyCenter() {
         cycleSort,
         cycleListPhase,
         setCycleListPhase,
-        addSummaryGroup
+        addSummaryGroup,
+        strategyViewMode // Use this to conditional render sidebar
     } = useNavfitStore();
 
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -105,73 +106,77 @@ export function CommandStrategyCenter() {
 
     return (
         <div className="flex flex-col h-full bg-slate-50 overflow-hidden">
-            {/* Command Strategy Center Header */}
-            <div className={`border-b px-6 py-4 flex items-center justify-between shrink-0 transition-colors duration-300 ${cycleListPhase === 'Archive' ? 'bg-indigo-50 border-indigo-200' : 'bg-white border-slate-200'}`}>
-                <div className="flex items-center gap-3">
-                    <div className="relative text-indigo-900 w-8 h-8 flex items-center justify-center">
-                        <Anchor className="absolute w-7 h-7 stroke-[2.5]" />
+            {/* Command Strategy Center Header - Only show if NOT in workspace mode (StrategyWorkspace handles header there) */}
+            {strategyViewMode !== 'workspace' && (
+                <div className={`border-b px-6 py-4 flex items-center justify-between shrink-0 transition-colors duration-300 ${cycleListPhase === 'Archive' ? 'bg-indigo-50 border-indigo-200' : 'bg-white border-slate-200'}`}>
+                    <div className="flex items-center gap-3">
+                        <div className="relative text-indigo-900 w-8 h-8 flex items-center justify-center">
+                            <Anchor className="absolute w-7 h-7 stroke-[2.5]" />
 
+                        </div>
+                        <h1 className="text-xl font-normal text-slate-900">
+                            <span className="font-bold">NAVFIT</span> Infinity
+                        </h1>
+                        <p className={`text-sm transition-colors ${cycleListPhase === 'Archive' ? 'text-indigo-600/70' : 'text-slate-500'}`}>
+                            {cycleListPhase === 'Archive' ? 'View historical and finalized fitness report cycles.' : 'Select a Summary Group to view strategy.'}
+                        </p>
                     </div>
-                    <h1 className="text-xl font-normal text-slate-900">
-                        <span className="font-bold">NAVFIT</span> Infinity
-                    </h1>
-                    <p className={`text-sm transition-colors ${cycleListPhase === 'Archive' ? 'text-indigo-600/70' : 'text-slate-500'}`}>
-                        {cycleListPhase === 'Archive' ? 'View historical and finalized fitness report cycles.' : 'Select a Summary Group to view strategy.'}
-                    </p>
-                </div>
 
-                {/* Sync Status */}
-                <div className="flex items-center space-x-4">
-                    <div className="flex items-center space-x-2 text-green-600 bg-green-50 px-3 py-1 rounded-full border border-green-100">
-                        <CheckCircle2 size={14} />
-                        <span className="font-medium text-xs">CNPC Sync: Active</span>
-                    </div>
-                    <div className="flex items-center space-x-2 text-slate-500 hover:text-blue-600 cursor-pointer transition-colors">
-                        <RefreshCw size={14} />
-                        <span className="text-xs">Last synced: 10:42 AM</span>
+                    {/* Sync Status */}
+                    <div className="flex items-center space-x-4">
+                        <div className="flex items-center space-x-2 text-green-600 bg-green-50 px-3 py-1 rounded-full border border-green-100">
+                            <CheckCircle2 size={14} />
+                            <span className="font-medium text-xs">CNPC Sync: Active</span>
+                        </div>
+                        <div className="flex items-center space-x-2 text-slate-500 hover:text-blue-600 cursor-pointer transition-colors">
+                            <RefreshCw size={14} />
+                            <span className="text-xs">Last synced: 10:42 AM</span>
+                        </div>
                     </div>
                 </div>
-            </div>
+            )}
 
             {/* Main Content Area - Split Panel */}
             <div className="flex-1 flex overflow-hidden">
 
-                {/* Left Panel: Active Cycles Stream */}
-                <div className="w-sidebar-standard bg-slate-50 border-r border-slate-200 flex flex-col shrink-0 z-infinity-sidebar relative">
+                {/* Left Panel: Active Cycles Stream - Conditional Render based on View Mode */}
+                {strategyViewMode !== 'workspace' && (
+                    <div className="w-sidebar-standard bg-slate-50 border-r border-slate-200 flex flex-col shrink-0 z-infinity-sidebar relative">
 
-                    {/* Panel Header - Restored */}
-                    <div className="px-6 py-4 border-b border-slate-200 bg-white/50 backdrop-blur-sm sticky top-0 z-10 space-y-4">
+                        {/* Panel Header - Restored */}
+                        <div className="px-6 py-4 border-b border-slate-200 bg-white/50 backdrop-blur-sm sticky top-0 z-10 space-y-4">
 
-                        {/* Phase Toggles */}
-                        <div className="flex p-1 bg-slate-100 rounded-lg">
-                            {['Active', 'Planned', 'Archive'].map((phase) => (
-                                <button
-                                    key={phase}
-                                    onClick={() => setCycleListPhase(phase as 'Active' | 'Planned' | 'Archive')}
-                                    className={`flex-1 px-3 py-1.5 text-xs font-semibold rounded-md transition-all ${cycleListPhase === phase
-                                        ? 'bg-white text-slate-900 shadow-sm'
-                                        : 'text-slate-500 hover:text-slate-700'
-                                        }`}
-                                >
-                                    {phase}
-                                </button>
-                            ))}
+                            {/* Phase Toggles */}
+                            <div className="flex p-1 bg-slate-100 rounded-lg">
+                                {['Active', 'Planned', 'Archive'].map((phase) => (
+                                    <button
+                                        key={phase}
+                                        onClick={() => setCycleListPhase(phase as 'Active' | 'Planned' | 'Archive')}
+                                        className={`flex-1 px-3 py-1.5 text-xs font-semibold rounded-md transition-all ${cycleListPhase === phase
+                                            ? 'bg-white text-slate-900 shadow-sm'
+                                            : 'text-slate-500 hover:text-slate-700'
+                                            }`}
+                                    >
+                                        {phase}
+                                    </button>
+                                ))}
+                            </div>
+
+                            {/* Filters & Sort Row - Moved to ActiveCyclesList */}
                         </div>
 
-                        {/* Filters & Sort Row - Moved to ActiveCyclesList */}
-                    </div>
+                        {/* Scrollable Stream & FAB managed intrinsically */}
+                        <div className="flex-1 overflow-hidden">
+                            <ActiveCyclesList
+                                groups={Array.from(groupedCycles.values()).flat()}
+                                onSelect={handleGroupSelect}
+                                selectedGroupId={selectedCycleId}
+                                onAddClick={() => setIsModalOpen(true)}
+                            />
+                        </div>
 
-                    {/* Scrollable Stream & FAB managed intrinsically */}
-                    <div className="flex-1 overflow-hidden">
-                        <ActiveCyclesList
-                            groups={Array.from(groupedCycles.values()).flat()}
-                            onSelect={handleGroupSelect}
-                            selectedGroupId={selectedCycleId}
-                            onAddClick={() => setIsModalOpen(true)}
-                        />
                     </div>
-
-                </div>
+                )}
 
                 {/* Right Panel: Context & Details */}
                 <div className="flex-1 overflow-hidden relative bg-slate-50/50">

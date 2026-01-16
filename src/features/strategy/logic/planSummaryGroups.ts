@@ -50,7 +50,7 @@ const formatISODate = (year: number, monthIndex: number, day: number): string =>
     return `${year}-${mm}-${dd}`;
 };
 
-const getCompetitiveGroup = (member: RosterMember): CompGroupKey => {
+export const getCompetitiveGroup = (member: RosterMember): CompGroupKey => {
     const { rank, payGrade, designator, promotionStatus = 'REGULAR' } = member;
     // Sanitize displayRank to remove 'OFFICER' garbage if present
     const displayRank = (payGrade || rank).replace(/\s+OFFICER/i, '').trim();
@@ -412,6 +412,28 @@ export function planDetachmentOfReportingSeniorGroups(
     return results;
 }
 
+// ============================================================================
+// Sorting Helper
+// ============================================================================
+
+const sortReportsByMasterRank = (reports: Report[], masterRankList: string[] | undefined) => {
+    if (!masterRankList || masterRankList.length === 0) return;
+    reports.sort((a, b) => {
+        const indexA = masterRankList.indexOf(a.memberId);
+        const indexB = masterRankList.indexOf(b.memberId);
+
+        // Members in the master list come first, sorted by their order
+        if (indexA !== -1 && indexB !== -1) return indexA - indexB;
+
+        // Members not in the master list come after
+        if (indexA !== -1) return -1;
+        if (indexB !== -1) return 1;
+
+        // Tie-breaker for members not in master list (e.g. by name)
+        return a.memberName.localeCompare(b.memberName);
+    });
+};
+
 /**
  * Main orchestrator - plans all summary groups.
  * Automatically checks for existing groups to avoid duplicates.
@@ -419,13 +441,28 @@ export function planDetachmentOfReportingSeniorGroups(
 export function planAllSummaryGroups(
     roster: RosterMember[],
     rsConfig: ReportingSeniorConfig,
-    existingGroups: SummaryGroup[]
+    existingGroups: SummaryGroup[],
+    masterRankMap?: Record<string, string[]>
 ): PlannedGroupResult[] {
     const periodicGroups = planPeriodicGroups(roster, rsConfig, existingGroups);
     const doiGroups = planDetachmentOfIndividualGroups(roster, rsConfig, existingGroups);
     const dorsGroups = planDetachmentOfReportingSeniorGroups(roster, rsConfig, existingGroups);
 
     const allResults = [...periodicGroups, ...doiGroups, ...dorsGroups];
+
+    // Apply Master Rank Sort to all generated groups
+    if (masterRankMap) {
+        allResults.forEach(res => {
+            const key = res.group.competitiveGroupKey; // e.g., "O-3 URL Active"
+            const masterList = masterRankMap[key];
+            if (masterList) {
+                sortReportsByMasterRank(res.group.reports, masterList);
+
+                // Optional: Re-distribute planned MTAs based on this new rank order
+                // For now, we trust the sort. The "Plan" visualization uses the list order.
+            }
+        });
+    }
 
     // Sort by periodEndDate
     allResults.sort((a, b) => a.group.periodEndDate.localeCompare(b.group.periodEndDate));
