@@ -42,10 +42,7 @@ function App() {
   const renderContent = () => {
     switch (activeTab) {
       case 'strategy':
-        if (strategyViewMode === 'workspace' && selectedCycleId) {
-          return <StrategyWorkspace />;
-        }
-        return <CommandStrategyCenter />;
+        return <StrategyWorkspace />;
       case 'profiles':
         return <SailorProfiles />;
       case 'schedule':

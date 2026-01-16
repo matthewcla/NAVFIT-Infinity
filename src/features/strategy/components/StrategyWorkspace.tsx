@@ -1,8 +1,7 @@
-
 import { useNavfitStore } from '@/store/useNavfitStore';
 import { CommandStrategyCenter } from './CommandStrategyCenter';
 import { CompetitiveGroupPlanner } from './CompetitiveGroupPlanner';
-import { ArrowLeft, LayoutDashboard, Briefcase, Filter, ChevronRight, Home, Users } from 'lucide-react';
+import { ArrowLeft, Briefcase, ChevronRight, Users } from 'lucide-react';
 import { useSummaryGroups } from '@/features/strategy/hooks/useSummaryGroups';
 import { useMemo } from 'react';
 
