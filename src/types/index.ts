@@ -15,14 +15,18 @@ export interface Member {
     rating?: string; // Enlisted
     milestone?: string; // DIVO, DH, LPO, etc.
     prd?: string; // Projected Rotation Date YYYY-MM-DD
+    eda?: string; // Estimated Date of Arrival
+    edd?: string; // Estimated Date of Departure
     status: 'Onboard' | 'Gain' | 'Loss';
     gainDate?: string;
+    dateReported?: string;
     lastTrait?: number | null;
     target?: number | null;
     lastExam?: number;
     history?: Report[];
     promotionStatus?: 'REGULAR' | 'FROCKED' | 'SELECTED' | 'SPOT';
     nextPlan?: number | string | null; // Planned next report MTA
+    timeInGrade?: number; // Years in current paygrade
 }
 
 export interface Report {
@@ -173,4 +177,3 @@ export interface ReportingSenior {
     ssn?: string;
     designator?: string;
 }
-

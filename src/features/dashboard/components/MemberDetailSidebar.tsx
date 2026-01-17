@@ -83,10 +83,12 @@ export function MemberDetailSidebar({
         ['E-1', 'E-2', 'E-3', 'E-4', 'E-5', 'E-6', 'E-7', 'E-8', 'E-9'].includes(rosterMember.payGrade || '');
 
     // Fallback if needed
-    const displayRank = isEnlisted ? rosterMember.rank : rosterMember.rank; // Title for Officer, Rating/Rank for Enlisted?
+    const displayRank = (isEnlisted && rosterMember.designator && rosterMember.designator !== '0000')
+        ? rosterMember.designator
+        : rosterMember.rank;
     const displaySubtext = isEnlisted
-        ? (rosterMember.rank || rosterMember.payGrade)
-        : (rosterMember.designator || rosterMember.rank);
+        ? `| ${rosterMember.component || 'Active'}`
+        : (rosterMember.designator || '');
 
     // Find latest report if we have a groupId, or fallback to passed report
     let currentReport = _passedCurrentReport;
@@ -262,6 +264,31 @@ export function MemberDetailSidebar({
     }, [isDraggingSlider, simulatedRec]);
 
 
+    const isDirty = Math.abs(simulatedMta - initialMta) > 0.001 || simulatedRec !== initialRec;
+
+    // --- Right-Click Auto-Close ---
+    useEffect(() => {
+        const handleContextMenu = () => {
+            // Check for unsaved changes before just closing?
+            // The existing onClose usually handles it via parental passing or we call checkUnsavedChanges(onClose)
+            // But we can't easily wrap the passed onClose in checkUnsavedChanges inside the event listener 
+            // without explicitly calling the local wrapper.
+
+            // NOTE: The user requested "automatically closes". 
+            // If we want to support the "Unsaved Changes" modal, we should call checkUnsavedChanges(onClose).
+            // However, checkUnsavedChanges expects a function () => void.
+            checkUnsavedChanges(onClose);
+        };
+
+        window.addEventListener('contextmenu', handleContextMenu);
+
+        return () => {
+            window.removeEventListener('contextmenu', handleContextMenu);
+        };
+    }, [onClose, isDirty, simulatedMta, simulatedRec]); // Depend on state needed for checkUnsavedChanges
+
+
+
     // --- Rank Change Logic ---
     const handleMtaChange = (newValue: number, isIntermediate = false) => {
         if (isLocked || simulatedRec === 'NOB') return;
@@ -384,8 +411,6 @@ export function MemberDetailSidebar({
             default: return cn(base, selected, "bg-white border-slate-200 text-slate-500");
         }
     };
-
-    const isDirty = Math.abs(simulatedMta - initialMta) > 0.001 || simulatedRec !== initialRec;
 
     const handleApply = () => {
         onUpdateMTA(memberId, simulatedMta);

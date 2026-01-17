@@ -565,7 +565,7 @@ export function CycleContextPanel({ group }: CycleContextPanelProps) {
                 </div>
 
                 {/* 3. Member List (Scrollable Main) */}
-                <div className={`flex-1 overflow-y-auto relative ${proposedReports ? 'ring-4 ring-emerald-500/20' : ''}`}>
+                <div className={`flex-1 flex flex-col overflow-hidden relative ${proposedReports ? 'ring-4 ring-emerald-500/20' : ''}`}>
                     {/* Blocking Overlay during Review - intercepts all clicks */}
                     {proposedReports && (
                         <div className="absolute inset-0 z-50 bg-emerald-50/20 cursor-not-allowed" aria-hidden="true" />

@@ -7,6 +7,7 @@ import {
     Menu
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { UserProfileMenu } from './UserProfileMenu';
 
 
 // Define the tab type locally or import from a shared type file if needed
@@ -116,17 +117,7 @@ export function Sidebar({ activeTab, onTabChange, collapsed, onToggleCollapse }:
 
 
             {/* User Profile */}
-            <div className={cn("p-4 border-t border-slate-800 flex items-center transition-all duration-300", collapsed ? "justify-center space-x-0" : "space-x-3")}>
-                <div className="w-10 h-10 rounded-full bg-blue-600 flex-shrink-0 flex items-center justify-center text-white font-bold border-2 border-slate-700">
-                    CO
-                </div>
-                {!collapsed && (
-                    <div className="overflow-hidden whitespace-nowrap">
-                        <div className="text-sm font-bold text-white">CAPT J. Doe</div>
-                        <div className="text-xs text-slate-400">Commanding Officer</div>
-                    </div>
-                )}
-            </div>
+            <UserProfileMenu collapsed={collapsed} />
         </div>
     );
 }

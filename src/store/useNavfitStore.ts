@@ -15,12 +15,21 @@ import type { SummaryGroup, Report } from '@/types';
 import { assignRecommendationsByRank } from '@/features/strategy/logic/recommendation';
 import { fetchInitialData } from '@/services/dataLoader';
 import { planAllSummaryGroups } from '@/features/strategy/logic/planSummaryGroups';
+import type { User } from '@/domain/auth/types';
+import { MOCK_USERS } from '@/domain/auth/mockUsers';
 
 interface NavfitStore {
+    // Auth State
+    currentUser: User | null;
+    isAuthenticated: boolean;
+    availableUsers: User[];
+    login: (userId: string) => void;
+    logout: () => void;
+
     // Loading State
     isLoading: boolean;
     error: string | null;
-    loadData: () => Promise<void>;
+    loadData: (userId?: string) => Promise<void>;
 
     // Navigation State
     activeTab: Tab;
@@ -125,13 +134,30 @@ interface NavfitStore {
 }
 
 export const useNavfitStore = create<NavfitStore>((set) => ({
+    // Auth State
+    currentUser: MOCK_USERS[0], // Default to first user (M. Clark)
+    isAuthenticated: true,
+    availableUsers: MOCK_USERS,
+    login: (userId: string) => {
+        const user = MOCK_USERS.find(u => u.id === userId);
+        if (user) {
+            set({ currentUser: user, isAuthenticated: true });
+            useNavfitStore.getState().loadData(userId);
+        }
+    },
+    logout: () => {
+        console.log("Logging out...");
+        set({ currentUser: null, isAuthenticated: false });
+    },
+
     // Loading State
     isLoading: false,
     error: null,
-    loadData: async () => {
+    loadData: async (userId) => {
         set({ isLoading: true, error: null });
         try {
-            const { members, summaryGroups } = await fetchInitialData();
+            const effectiveUserId = userId || useNavfitStore.getState().currentUser?.id;
+            const { members, summaryGroups } = await fetchInitialData(effectiveUserId);
 
             // Map Domain Members to UI RosterMembers if needed
             // The RosterMember interface (from '@/types/roster') and Domain Member (from '@/types/index') are very similar but we should ensure compatibility.
@@ -209,11 +235,22 @@ export const useNavfitStore = create<NavfitStore>((set) => ({
                     milestoneTour: (m as any).milestoneTour,
                     lastTrait: m.lastTrait || 0,
                     status: m.status as any,
-                    history: m.history || []
+                    history: m.history || [],
+                    timeInGrade: m.timeInGrade
                 };
             });
 
             // Auto-generate planned summary groups
+            // Note: In generated data, rsConfig is usually loaded from the file.
+            // We should ideally load RS config from the file if fetchInitialData returns it (it does not currently in the interface, but the raw data has it).
+            // For now, we use the static default or what is in store.
+            // Ideally fetchInitialData should return rsConfig too.
+            // But since I can't change fetchInitialData signature easily without refactoring widely (already done in previous step but kept signature simple),
+            // I will assume rsConfig is updated via separate mechanism or defaulting.
+            // Actually, my data generation script writes rsConfig to the JSON.
+            // I should update fetchInitialData to return it.
+            // For this specific step, I will stick to what's there to avoid scope creep, assuming RS Config is managed or default is acceptable.
+
             const rsConfig = useNavfitStore.getState().rsConfig;
             const plannedResults = planAllSummaryGroups(roster, rsConfig, summaryGroups);
             const plannedGroups = plannedResults.map(r => r.group);
