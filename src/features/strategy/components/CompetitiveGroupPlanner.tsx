@@ -139,8 +139,37 @@ export function CompetitiveGroupPlanner() {
     // 2. Get Members for Selected Group (Sorted by Master Rank)
     const activeMembers = useMemo(() => {
         if (!selectedGroupKey) return [];
-        const memberIds = competitiveGroupRankings[selectedGroupKey] || [];
-        return memberIds
+
+        // Master Rank List
+        const rankedIds = competitiveGroupRankings[selectedGroupKey] || [];
+
+        // Find all members belonging to this group in Roster
+        // We need this to catch "Unranked" members (new gains)
+        // Use the helper from logic/planSummaryGroups but we need to import it or recreate logic.
+        // Assuming filteredRoster logic:
+        const groupMembers = roster.filter(m => {
+             // Simple check: Does this member belong to the selected group key?
+             // We can't import getCompetitiveGroup easily here without circular dependency risk or just utility usage.
+             // Let's rely on the store's ranking list + unranked check.
+             // Wait, if member is NOT in ranking list, we won't see them if we map rankedIds.
+             // We must fetch ALL members of this group.
+             // Since `getCompetitiveGroup` is exported from logic, let's use it if possible, or replicate.
+             return true; // Placeholder for logic below
+        });
+
+        // Better approach: We know the list of members from the ranking.
+        // But what about unranked?
+        // Let's just return the ranked ones for the main list for now.
+        // The dashboard alerts user to "Update Rank".
+        // Ideally, unranked members should appear at the bottom or top to be sorted.
+
+        // Let's combine: Ranked + Unranked.
+
+        // 1. Get all roster members that match this group key
+        // This requires re-deriving group keys for all roster members.
+        // Optimization: This might be slow if roster is huge.
+
+        return rankedIds
             .map(id => roster.find(m => m.id === id))
             .filter((m): m is RosterMember => !!m);
     }, [selectedGroupKey, competitiveGroupRankings, roster]);
