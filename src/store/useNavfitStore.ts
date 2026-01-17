@@ -120,8 +120,8 @@ interface NavfitStore {
     setCycleSort: (sort: 'DueDate' | 'Status' | 'CompGroup') => void;
 
     // Drill-Down Navigation State
-    strategyViewMode: 'landing' | 'workspace';
-    setStrategyViewMode: (mode: 'landing' | 'workspace') => void;
+    strategyViewMode: 'landing' | 'workspace' | 'cycles' | 'planner';
+    setStrategyViewMode: (mode: 'landing' | 'workspace' | 'cycles' | 'planner') => void;
 
     // History View State
     cycleListPhase: 'Active' | 'Archive' | 'Planned';

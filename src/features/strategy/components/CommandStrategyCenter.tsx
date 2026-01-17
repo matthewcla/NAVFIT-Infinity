@@ -107,7 +107,13 @@ export function CommandStrategyCenter() {
     return (
         <div className="flex flex-col h-full bg-slate-50 overflow-hidden">
             {/* Command Strategy Center Header - Only show if NOT in workspace mode (StrategyWorkspace handles header there) */}
-            {strategyViewMode !== 'workspace' && (
+            {/* Note: StrategyWorkspace now handles header for both cycles and planner modes. We hide local header if wrapped. */}
+            {/* Actually, if strategyViewMode is 'cycles' (list view), we might want the local header? */}
+            {/* StrategyWorkspace renders a Tab bar. This local header has "NAVFIT Infinity" title. */}
+            {/* If we are inside StrategyWorkspace, we probably don't need the Title bar again? */}
+            {/* Let's hide it if managed by StrategyWorkspace (which sets mode to cycles/planner/workspace) */}
+
+            {strategyViewMode === 'landing' && (
                 <div className={`border-b px-6 py-4 flex items-center justify-between shrink-0 transition-colors duration-300 ${cycleListPhase === 'Archive' ? 'bg-indigo-50 border-indigo-200' : 'bg-white border-slate-200'}`}>
                     <div className="flex items-center gap-3">
                         <div className="relative text-indigo-900 w-8 h-8 flex items-center justify-center">
@@ -140,7 +146,9 @@ export function CommandStrategyCenter() {
             <div className="flex-1 flex overflow-hidden">
 
                 {/* Left Panel: Active Cycles Stream - Conditional Render based on View Mode */}
-                {strategyViewMode !== 'workspace' && (
+                {/* Show sidebar if in 'cycles' mode (List View) or 'landing' (Legacy) */}
+                {/* Hide sidebar if in 'workspace' mode (Drill Down) */}
+                {(strategyViewMode === 'cycles' || strategyViewMode === 'landing') && (
                     <div className="w-sidebar-standard bg-slate-50 border-r border-slate-200 flex flex-col shrink-0 z-infinity-sidebar relative">
 
                         {/* Panel Header - Restored */}
