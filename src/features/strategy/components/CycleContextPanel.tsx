@@ -603,7 +603,7 @@ export function CycleContextPanel({ group }: CycleContextPanelProps) {
                                 {/* Main Chart Canvas */}
                                 <div className="flex-1 w-full h-full relative z-10 pt-4"> {/* Slight pt for breathing room */}
                                     <RscaScattergram
-                                        members={rankedMembers}
+                                        members={rankedMembers.filter(m => m.promRec !== 'NOB')}
                                         rsca={projectedRsca}
                                     />
                                 </div>

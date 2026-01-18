@@ -124,10 +124,7 @@ export function RscaScattergram({ members, rsca }: RscaScattergramProps) {
     };
 
     return (
-        <div className="h-full w-full bg-white relative pt-6 pl-2 pr-2">
-            <div className="absolute top-3 left-4 text-[10px] font-bold text-slate-400 uppercase tracking-wider z-10">
-                MTA Distribution
-            </div>
+        <div className="h-full w-full bg-white relative pt-2 pl-2 pr-2">
 
             <div className="w-full h-full" onMouseLeave={handleBarMouseLeave}>
                 <ResponsiveContainer width="100%" height="100%">
