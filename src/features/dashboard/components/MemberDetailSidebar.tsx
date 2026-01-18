@@ -66,7 +66,7 @@ export function MemberDetailSidebar({
     groupContext,
     groupId
 }: MemberDetailSidebarProps) {
-    const { roster, toggleReportLock, summaryGroups, setEditingReport, selectReport } = useNavfitStore();
+    const { roster, toggleReportLock, summaryGroups } = useNavfitStore();
 
     // Source of Truth: Fetch directly from store if possible
     const rosterMember = roster.find(m => m.id === memberId) || _passedRosterMember;
@@ -605,18 +605,7 @@ export function MemberDetailSidebar({
                     </div>
 
                     <div className="flex items-center gap-3">
-                        <button
-                            className="text-xs font-semibold text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 px-3 py-1.5 rounded-md transition-colors border border-transparent hover:border-indigo-100"
-                            title="Edit Full Report"
-                            onClick={() => {
-                                if (currentReport?.id) {
-                                    selectReport(currentReport.id);
-                                    setEditingReport(true);
-                                }
-                            }}
-                        >
-                            Edit Full Report
-                        </button>
+                        {/* Edit Full Report button removed */}
 
                         {!isLocked && isDirty && (
                             <button

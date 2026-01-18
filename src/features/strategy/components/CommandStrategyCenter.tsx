@@ -20,7 +20,8 @@ export function CommandStrategyCenter() {
         cycleFilter,
         cycleSort,
         cycleListPhase,
-        addSummaryGroup
+        addSummaryGroup,
+        selectMember
     } = useNavfitStore();
 
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -137,19 +138,32 @@ export function CommandStrategyCenter() {
             <div className="flex-1 flex overflow-hidden">
 
                 {/* Left Panel: Active Cycles Stream - Collapses when member detail sidebar is open */}
-                <div className={`bg-slate-50 border-r border-slate-200 flex flex-col shrink-0 z-infinity-sidebar relative transition-all duration-300 ease-in-out overflow-hidden ${selectedMemberId ? 'w-0 opacity-0' : 'w-sidebar-standard opacity-100'}`}>
+                <div
+                    className={`border-r border-slate-200 flex flex-col shrink-0 z-infinity-sidebar relative transition-all duration-300 ease-in-out overflow-hidden ${selectedMemberId
+                        ? 'w-6 bg-slate-100 hover:bg-slate-200 cursor-pointer border-r-4 border-r-transparent hover:border-r-indigo-400'
+                        : 'w-sidebar-standard bg-slate-50 opacity-100'
+                        }`}
+                    onClick={() => {
+                        if (selectedMemberId) selectMember(null);
+                    }}
+                    title={selectedMemberId ? "Click to Expand list" : undefined}
+                >
 
-
-
-                    {/* Scrollable Stream & FAB managed intrinsically */}
-                    <div className="flex-1 overflow-hidden">
-                        <ActiveCyclesList
-                            groups={Array.from(groupedCycles.values()).flat()}
-                            onSelect={handleGroupSelect}
-                            selectedGroupId={selectedCycleId}
-                            onAddClick={() => setIsModalOpen(true)}
-                        />
-                    </div>
+                    {selectedMemberId ? (
+                        <div className="h-full flex flex-col items-center pt-8 gap-4 opacity-0 hover:opacity-100 transition-opacity duration-200 delay-100">
+                            <div className="w-1 h-12 bg-slate-300 rounded-full" />
+                        </div>
+                    ) : (
+                        /* Scrollable Stream & FAB managed intrinsically */
+                        <div className="flex-1 overflow-hidden animate-in fade-in duration-300">
+                            <ActiveCyclesList
+                                groups={Array.from(groupedCycles.values()).flat()}
+                                onSelect={handleGroupSelect}
+                                selectedGroupId={selectedCycleId}
+                                onAddClick={() => setIsModalOpen(true)}
+                            />
+                        </div>
+                    )}
 
                 </div>
 

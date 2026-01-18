@@ -68,7 +68,7 @@ export function CycleMemberList({
     hasProposedReports = false
 }: CycleMemberListProps) {
 
-    const { toggleReportLock, setGroupLockState } = useNavfitStore();
+    const { toggleReportLock, setGroupLockState, selectReport, setEditingReport } = useNavfitStore();
 
     // @dnd-kit Sensors
     const sensors = useSensors(
@@ -191,8 +191,8 @@ export function CycleMemberList({
                 <table className="w-full text-left border-collapse">
                     <thead className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
                         <tr>
-                            <th className="sticky top-0 z-20 bg-white w-12 px-0 py-3 border-b border-slate-200 text-center shadow-sm"></th> {/* Drag Handle */}
-                            <th className="sticky top-0 z-20 bg-white w-12 px-0 py-3 border-b border-slate-200 text-center relative group/header shadow-sm">
+                            <th className="sticky top-0 z-20 bg-white w-20 px-0 py-3 border-b border-slate-200 text-center shadow-sm"></th> {/* Drag Handle */}
+                            <th className="sticky top-0 z-20 bg-white w-20 px-0 py-3 border-b border-slate-200 text-center relative group/header shadow-sm">
                                 <button
                                     onClick={handleToggleAllLocks}
                                     className={`flex items-center justify-center p-1 rounded transition-colors mx-auto ${areAllLocked
@@ -204,17 +204,21 @@ export function CycleMemberList({
                                     {areAllLocked ? <Lock className="w-3.5 h-3.5" /> : <Unlock className="w-3.5 h-3.5" />}
                                 </button>
                             </th>
-                            <th className="sticky top-0 z-20 bg-white w-12 px-0 py-3 border-b border-slate-200 text-center shadow-sm">#</th>
-                            <th className="sticky top-0 z-20 bg-white px-4 py-3 border-b border-slate-200 text-left w-[25%] shadow-sm">Name</th>
-                            <th className="sticky top-0 z-20 bg-white px-4 py-3 border-b border-slate-200 text-center w-24 shadow-sm">
+                            <th className="sticky top-0 z-20 bg-white w-20 px-0 py-3 border-b border-slate-200 text-center shadow-sm">#</th>
+                            <th className="sticky top-0 z-20 bg-white px-4 py-3 border-b border-slate-200 text-left whitespace-nowrap w-auto min-w-[200px] shadow-sm">Name</th>
+                            <th className="sticky top-0 z-20 bg-white px-4 py-3 border-b border-slate-200 text-center w-[9%] shadow-sm">
                                 {isEnlisted ? 'Rate/Rank' : 'Desig'}
                             </th>
-                            <th className="sticky top-0 z-20 bg-white px-4 py-3 border-b border-slate-200 text-center w-16 shadow-sm" title="Projected reports remaining until PRD"># Rpts</th>
-                            <th className="sticky top-0 z-20 bg-white px-4 py-3 border-b border-slate-200 text-center w-16 shadow-sm">Rec</th>
-                            <th className="sticky top-0 z-20 bg-white px-4 py-3 border-b border-slate-200 text-center w-20 shadow-sm">MTA</th>
-                            <th className="sticky top-0 z-20 bg-white px-4 py-3 border-b border-slate-200 text-center w-20 shadow-sm">Delta</th>
-                            <th className="sticky top-0 z-20 bg-white px-4 py-3 border-b border-slate-200 text-center w-20 shadow-sm">Margin</th>
-                            <th className="sticky top-0 z-20 bg-white px-4 py-3 border-b border-slate-200 text-center w-20 shadow-sm" title="Projected End of Tour MTA">Proj. EOT</th>
+                            <th className="sticky top-0 z-20 bg-white px-4 py-3 border-b border-slate-200 text-center w-[9%] shadow-sm" title="Projected reports remaining until PRD"># Rpts</th>
+                            <th className="sticky top-0 z-20 bg-white px-4 py-3 border-b border-slate-200 text-center w-[9%] shadow-sm">Rec</th>
+                            <th className="sticky top-0 z-20 bg-white px-4 py-3 border-b border-slate-200 text-center w-[9%] shadow-sm">MTA</th>
+                            <th className="sticky top-0 z-20 bg-white px-4 py-3 border-b border-slate-200 text-center w-[9%] shadow-sm">Delta</th>
+                            <th className="sticky top-0 z-20 bg-white px-4 py-3 border-b border-slate-200 text-center w-[9%] shadow-sm">Margin</th>
+                            <th className="sticky top-0 z-20 bg-white px-4 py-3 border-b border-slate-200 text-center w-[9%] shadow-sm" title="Projected End of Tour MTA">Proj. EOT</th>
+
+                            {/* Document / Edit Column */}
+                            <th className="sticky top-0 z-20 bg-white w-8 px-0 py-3 border-b border-slate-200 text-center shadow-sm"></th>
+
                             <th className="sticky top-0 z-20 bg-white w-12 px-0 py-3 border-b border-slate-200 text-center shadow-sm"></th> {/* Trash Button */}
                         </tr>
                     </thead>
@@ -241,6 +245,10 @@ export function CycleMemberList({
                                     isLocked={member.report.isLocked || false}
                                     onToggleLock={handleRowToggleLock}
                                     disabled={hasProposedReports}
+                                    onEditReport={() => {
+                                        selectReport(member.reportId);
+                                        setEditingReport(true);
+                                    }}
                                 />
                             ))}
                         </tbody>
