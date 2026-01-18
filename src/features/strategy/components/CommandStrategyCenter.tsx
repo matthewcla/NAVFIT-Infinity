@@ -7,7 +7,7 @@ import { ActiveCyclesList } from './ActiveCyclesList';
 
 import { useNavfitStore } from '@/store/useNavfitStore';
 import { useSummaryGroups } from '@/features/strategy/hooks/useSummaryGroups';
-import { Filter, Anchor, CheckCircle2, RefreshCw } from 'lucide-react';
+import { Filter, CheckCircle2, RefreshCw } from 'lucide-react';
 import { AddSummaryGroupModal } from '@/features/dashboard/components/AddSummaryGroupModal';
 import { ReportEditorModal } from './ReportEditorModal';
 
@@ -109,15 +109,12 @@ export function CommandStrategyCenter() {
             {/* Command Strategy Center Header */}
             <div className={`border-b px-6 py-4 flex items-center justify-between shrink-0 transition-colors duration-300 ${cycleListPhase === 'Archive' ? 'bg-indigo-50 border-indigo-200' : 'bg-white border-slate-200'}`}>
                 <div className="flex items-center gap-3">
-                    <div className="relative text-indigo-900 w-8 h-8 flex items-center justify-center">
-                        <Anchor className="absolute w-7 h-7 stroke-[2.5]" />
 
-                    </div>
-                    <h1 className="text-xl font-normal text-slate-900">
-                        <span className="font-bold">NAVFIT</span> Infinity
-                    </h1>
                     <p className={`text-sm transition-colors ${cycleListPhase === 'Archive' ? 'text-indigo-600/70' : 'text-slate-500'}`}>
-                        {cycleListPhase === 'Archive' ? 'View historical and finalized fitness report cycles.' : 'Select a Summary Group to view strategy.'}
+                        {cycleListPhase === 'Archive' ? 'View historical and finalized fitness report cycles.' :
+                            selectedMemberId ? 'Press ESC to close the Infinity Quick Editor.' :
+                                selectedCycleId ? 'Select a report to open the Infinity Quick Editor' :
+                                    'Select a Summary Group to view strategy.'}
                     </p>
                 </div>
 

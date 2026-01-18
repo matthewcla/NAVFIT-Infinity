@@ -4,7 +4,7 @@ import {
     Calendar,
     Shield,
     Users,
-    Menu
+    Anchor
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { UserProfileMenu } from './UserProfileMenu';
@@ -26,7 +26,7 @@ const SidebarItem = ({ icon: Icon, label, active, onClick, collapsed }: SidebarI
         onClick={onClick}
         className={cn(
             "flex items-center space-x-3 px-4 py-3 rounded-lg cursor-pointer transition-all duration-200 group relative",
-            active ? "bg-blue-800 text-yellow-400" : "text-blue-100 hover:bg-blue-800",
+            active ? "bg-slate-800 text-yellow-400 border-l-4 border-yellow-400 shadow-sm" : "text-slate-400 hover:bg-slate-800 hover:text-yellow-200",
             collapsed ? "justify-center px-2" : ""
         )}
         title={collapsed ? label : undefined}
@@ -63,20 +63,29 @@ export function Sidebar({ activeTab, onTabChange, collapsed, onToggleCollapse }:
                 }
             }}
         >
-            {/* Header Area (Gmail Style) */}
-            <div className="h-20 flex items-center px-6 space-x-4 border-b border-slate-800">
-                {/* Hamburger Menu - Always visible, fixed position logic handled by container layout */}
+            {/* Header Area */}
+            <div className="h-20 flex items-center px-4 space-x-3 border-b border-slate-800 transition-all duration-300">
+                {/* Anchor Icon - Functions as collapse toggle */}
                 <button
                     onClick={onToggleCollapse}
-                    className="text-blue-100 hover:text-white hover:bg-slate-800 p-2 rounded-full transition-colors focus:outline-none"
+                    className="text-yellow-400 hover:text-yellow-300 hover:bg-slate-800 p-2 rounded-lg transition-all duration-300 focus:outline-none shadow-[0_0_15px_rgba(250,204,21,0.1)] hover:shadow-[0_0_20px_rgba(250,204,21,0.3)]"
                     title={collapsed ? "Expand Sidebar" : "Collapse Sidebar"}
                 >
-                    <Menu size={24} />
+                    <Anchor size={28} className="transition-transform duration-300 transform group-hover:scale-110" />
                 </button>
 
-                {/* Logo - Visible only when expanded */}
-                {/* Logo - Removed for cleaner look */}
-
+                {/* Title */}
+                <div className={cn(
+                    "flex flex-col transition-all duration-300 overflow-hidden whitespace-nowrap",
+                    collapsed ? "w-0 opacity-0" : "w-auto opacity-100"
+                )}>
+                    <span className="text-xl font-bold tracking-tight text-slate-100 leading-none">
+                        NAVFIT <span className="text-yellow-400 font-extrabold">Infinity</span>
+                    </span>
+                    <span className="text-[0.6rem] text-slate-400 uppercase tracking-[0.2em] font-medium ml-0.5">
+                        Command Advantage
+                    </span>
+                </div>
             </div>
 
             {/* Navigation */}
@@ -113,8 +122,6 @@ export function Sidebar({ activeTab, onTabChange, collapsed, onToggleCollapse }:
                 />
 
             </div>
-
-
 
             {/* User Profile */}
             <UserProfileMenu collapsed={collapsed} />
