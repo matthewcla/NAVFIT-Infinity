@@ -37,6 +37,8 @@ export interface RankedMember {
 interface CycleMemberListProps {
     isEnlisted: boolean;
     rankedMembers: RankedMember[];
+    previewMtaRankMap?: Map<string, number>; // Real-time rank preview based on MTA
+    previewPromRecMap?: Map<string, string>; // Real-time promotion recommendation preview
     activeGroupId: string;
     selectedMemberId: string | null;
     onSelectMember: (id: string | null) => void;
@@ -53,6 +55,8 @@ interface CycleMemberListProps {
 export function CycleMemberList({
     isEnlisted,
     rankedMembers,
+    previewMtaRankMap,
+    previewPromRecMap,
     activeGroupId,
     selectedMemberId,
     onSelectMember,
@@ -140,12 +144,12 @@ export function CycleMemberList({
         onReorderMembers(activeGroupId, active.id as string, newOrderIds);
     }, [rankedMembers, activeGroupId, onReorderMembers, hasProposedReports, selectMember]);
 
-    // Compute preview ranks during drag
+    // Compute preview ranks during drag, or use MTA-based ranks during slider preview
     const previewRankMap = useMemo(() => {
         const rankMap = new Map<string, number>();
 
         if (activeId && overId && activeId !== overId) {
-            // Compute the preview order
+            // Drag preview takes priority - compute based on drag position
             const oldIndex = rankedMembers.findIndex(m => m.reportId === activeId);
             const newIndex = rankedMembers.findIndex(m => m.reportId === overId);
 
@@ -161,12 +165,17 @@ export function CycleMemberList({
             }
         }
 
-        // No drag preview - use current order
+        // When not dragging: use MTA-based rank preview if available (for slider updates)
+        if (previewMtaRankMap && previewMtaRankMap.size > 0) {
+            return previewMtaRankMap;
+        }
+
+        // Fallback: use current storage order
         rankedMembers.forEach((member, idx) => {
             rankMap.set(member.reportId, idx + 1);
         });
         return rankMap;
-    }, [rankedMembers, activeId, overId]);
+    }, [rankedMembers, activeId, overId, previewMtaRankMap]);
 
     // Get sortable IDs - exclude locked items from sortable context
     const sortableIds = rankedMembers
@@ -225,7 +234,7 @@ export function CycleMemberList({
                                     name={member.name}
                                     designator={isEnlisted ? (member.designator && member.designator !== '0000' ? member.designator : member.rank) : member.designator}
                                     reportsRemaining={member.reportsRemaining}
-                                    promRec={member.promRec}
+                                    promRec={previewPromRecMap?.get(member.reportId) || member.promRec}
                                     mta={member.mta}
                                     delta={member.delta}
                                     rscaMargin={member.rscaMargin}

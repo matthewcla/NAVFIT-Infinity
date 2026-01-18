@@ -407,8 +407,13 @@ export function CycleContextPanel({ group }: CycleContextPanelProps) {
                     report
                 };
             });
-        // NOTE: Do NOT sort rankedMembers here - preserve the report order from the store,
-        // which represents the user's manually-set rank order (via drag-and-drop)
+
+        // Conditional Sorting Logic:
+        // - If hasManualOrder is false/undefined (initial load): sort by MTA descending
+        // - If hasManualOrder is true (user has manually reordered): preserve storage order
+        if (!activeGroup.hasManualOrder) {
+            rankedMembers.sort((a, b) => b.mta - a.mta);
+        }
 
         // DEBUG: Log rankedMembers computation
         console.log('[UI DEBUG] rankedMembers computed', {
@@ -422,10 +427,38 @@ export function CycleContextPanel({ group }: CycleContextPanelProps) {
             }))
         });
 
-        // Calculate Distribution
+        // Compute preview MTA-sorted position for real-time rank updates
+        // This allows the member list to show updated ranks as the slider moves
+        const previewMtaSortedMembers = [...rankedMembers].sort((a, b) => b.mta - a.mta);
+        const previewMtaRankMap = new Map<string, number>();
+        previewMtaSortedMembers.forEach((m, idx) => {
+            previewMtaRankMap.set(m.reportId, idx + 1);
+        });
+
+        // Compute preview promotion recommendations based on MTA-sorted rank order
+        // This ensures promotion recs update in real-time as the slider moves
+        const previewPromRecMap = new Map<string, string>();
+        if (previewMtaSortedMembers.length > 0) {
+            // Create temporary reports with MTA-sorted order and current preview MTAs
+            const tempReports = previewMtaSortedMembers.map(m => ({
+                ...m.report,
+                traitAverage: m.mta // Use the preview MTA value
+            }));
+
+            // Run assignment algorithm on the preview-sorted reports
+            const previewAssignedReports = assignRecommendationsByRank(tempReports, activeGroup);
+
+            // Map reportId to preview promotion recommendation
+            previewAssignedReports.forEach(r => {
+                previewPromRecMap.set(r.id, r.promotionRecommendation || 'P');
+            });
+        }
+
+        // Calculate Distribution (use preview recs if available for accurate display)
         const distribution: { [key: string]: number; SP: number; PR: number; P: number; MP: number; EP: number; } = { SP: 0, PR: 0, P: 0, MP: 0, EP: 0 };
         effectiveReports.forEach(r => {
-            const rec = r.promotionRecommendation;
+            // Use preview rec if available, otherwise use stored rec
+            const rec = previewPromRecMap.get(r.id) || r.promotionRecommendation;
             if (rec === 'SP') distribution.SP++;
             else if (rec === 'Prog') distribution.PR++;
             else if (rec === 'P') distribution.P++;
@@ -445,6 +478,9 @@ export function CycleContextPanel({ group }: CycleContextPanelProps) {
             gap,
             mainDraftStatus,
             rankedMembers,
+            previewMtaSortedMembers,
+            previewMtaRankMap,
+            previewPromRecMap,
             distribution,
             domainContext,
             eotRsca: globalEotRsca,
@@ -464,7 +500,7 @@ export function CycleContextPanel({ group }: CycleContextPanelProps) {
         );
     }
 
-    const { currentRsca, projectedRsca, mainDraftStatus, rankedMembers, distribution, eotRsca, totalReports, effectiveSize, domainContext, isEnlisted } = contextData;
+    const { currentRsca, projectedRsca, mainDraftStatus, rankedMembers, previewMtaSortedMembers, previewMtaRankMap, previewPromRecMap, distribution, eotRsca, totalReports, effectiveSize, domainContext, isEnlisted } = contextData;
 
     // Helper for Badge
     const getPromotionStatusBadge = (s?: string) => {
@@ -518,11 +554,16 @@ export function CycleContextPanel({ group }: CycleContextPanelProps) {
 
                             <div className="flex flex-col items-end gap-1.5 pl-4">
                                 {/* Submit Control - Morphing Style */}
+                                {/* Only enable if all reports are locked */}
                                 <button
                                     onClick={() => setIsSubmitModalOpen(true)}
-                                    disabled={!latestResult[activeGroup.id] || activeGroup.status === 'Submitted'}
+                                    disabled={
+                                        !latestResult[activeGroup.id] ||
+                                        activeGroup.status === 'Submitted' ||
+                                        !activeGroup.reports.every(r => r.isLocked)
+                                    }
                                     className="group relative flex items-center justify-center h-11 bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-200 disabled:text-slate-400 text-white rounded-full shadow-sm transition-all duration-300 ease-in-out w-11 hover:w-36 overflow-hidden"
-                                    title="Submit Strategy to Review"
+                                    title={activeGroup.reports.every(r => r.isLocked) ? "Submit Strategy to Review" : "Lock all reports before submitting"}
                                 >
                                     <div className="absolute left-0 w-11 h-11 flex items-center justify-center shrink-0">
                                         <Send className="w-5 h-5" />
@@ -574,6 +615,8 @@ export function CycleContextPanel({ group }: CycleContextPanelProps) {
                     <CycleMemberList
                         isEnlisted={isEnlisted}
                         rankedMembers={rankedMembers as RankedMember[]}
+                        previewMtaRankMap={previewMtaRankMap}
+                        previewPromRecMap={previewPromRecMap}
                         activeGroupId={activeGroup.id}
                         selectedMemberId={selectedMemberId}
                         onSelectMember={(id) => {
@@ -623,23 +666,24 @@ export function CycleContextPanel({ group }: CycleContextPanelProps) {
                         groupId={activeGroup.id}
                         onPreviewMTA={handlePreviewMTA}
 
-                        // Pass Rank Context
+                        // Pass Rank Context - use MTA-sorted order for accurate slider markers
                         rankContext={(() => {
-                            const index = rankedMembers.findIndex(m => m.id === selectedMemberId);
+                            // Use MTA-sorted order to show actual rank positions based on current MTA values
+                            const index = previewMtaSortedMembers.findIndex(m => m.id === selectedMemberId);
                             if (index === -1) return undefined;
 
-                            // "Next Rank" (Ahead/Better) - Lower indices
+                            // "Next Rank" (Ahead/Better) - Lower indices (higher MTA)
                             // Get up to 5 members before current index (reversed to be closest first)
                             const nextStart = Math.max(0, index - 5);
-                            const nextRanks = rankedMembers.slice(nextStart, index).reverse().map((m, i) => ({
+                            const nextRanks = previewMtaSortedMembers.slice(nextStart, index).reverse().map((m, i) => ({
                                 mta: m.mta,
                                 rank: index - i // index is current rank-1. So neighbor is rank (index-i)
                             }));
 
-                            // "Prev Rank" (Behind/Worse) - Higher indices
+                            // "Prev Rank" (Behind/Worse) - Higher indices (lower MTA)
                             // Get up to 5 members after current index
-                            const prevEnd = Math.min(rankedMembers.length, index + 6);
-                            const prevRanks = rankedMembers.slice(index + 1, prevEnd).map((m, i) => ({
+                            const prevEnd = Math.min(previewMtaSortedMembers.length, index + 6);
+                            const prevRanks = previewMtaSortedMembers.slice(index + 1, prevEnd).map((m, i) => ({
                                 mta: m.mta,
                                 rank: index + 2 + i // index+1 is next rank (#index+2)
                             }));

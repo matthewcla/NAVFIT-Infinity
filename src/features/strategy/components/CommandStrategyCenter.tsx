@@ -19,7 +19,6 @@ export function CommandStrategyCenter() {
         cycleFilter,
         cycleSort,
         cycleListPhase,
-        setCycleListPhase,
         addSummaryGroup
     } = useNavfitStore();
 
@@ -139,27 +138,7 @@ export function CommandStrategyCenter() {
                 {/* Left Panel: Active Cycles Stream */}
                 <div className="w-sidebar-standard bg-slate-50 border-r border-slate-200 flex flex-col shrink-0 z-infinity-sidebar relative">
 
-                    {/* Panel Header - Restored */}
-                    <div className="px-6 py-4 border-b border-slate-200 bg-white/50 backdrop-blur-sm sticky top-0 z-10 space-y-4">
 
-                        {/* Phase Toggles */}
-                        <div className="flex p-1 bg-slate-100 rounded-lg">
-                            {['Active', 'Planned', 'Archive'].map((phase) => (
-                                <button
-                                    key={phase}
-                                    onClick={() => setCycleListPhase(phase as 'Active' | 'Planned' | 'Archive')}
-                                    className={`flex-1 px-3 py-1.5 text-xs font-semibold rounded-md transition-all ${cycleListPhase === phase
-                                        ? 'bg-white text-slate-900 shadow-sm'
-                                        : 'text-slate-500 hover:text-slate-700'
-                                        }`}
-                                >
-                                    {phase}
-                                </button>
-                            ))}
-                        </div>
-
-                        {/* Filters & Sort Row - Moved to ActiveCyclesList */}
-                    </div>
 
                     {/* Scrollable Stream & FAB managed intrinsically */}
                     <div className="flex-1 overflow-hidden">

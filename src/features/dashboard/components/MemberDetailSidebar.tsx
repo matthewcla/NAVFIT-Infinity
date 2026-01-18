@@ -293,9 +293,9 @@ export function MemberDetailSidebar({
     const handleMtaChange = (newValue: number, isIntermediate = false) => {
         if (isLocked || simulatedRec === 'NOB') return;
 
-        // Real-time preview: ALWAYS propagate to parent for RSCA HUD update during drag
-        // This must happen before any early returns to ensure HUD stays synchronized
-        if (isIntermediate && onPreviewMTA) {
+        // Real-time preview: ALWAYS propagate to parent for rank/rec preview updates
+        // This must happen for ALL changes (slider, +/-, input) to keep UI synchronized
+        if (onPreviewMTA) {
             onPreviewMTA(memberId, newValue);
         }
 

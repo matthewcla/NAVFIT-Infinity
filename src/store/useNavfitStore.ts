@@ -612,7 +612,8 @@ export const useNavfitStore = create<NavfitStore>((set) => ({
         const newSummaryGroups = [...state.summaryGroups];
         newSummaryGroups[groupIndex] = {
             ...group,
-            reports: finalReports
+            reports: finalReports,
+            hasManualOrder: true // Mark that user has manually reordered this group
         };
 
         // 5. Trigger Redistribution Engine

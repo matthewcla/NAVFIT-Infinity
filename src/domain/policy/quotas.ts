@@ -116,9 +116,13 @@ export function computeMpMax(groupSize: number, context: SummaryGroupContext, ep
 
     const baseMp = row.mp_groups[mpKey];
 
-    // "No Limit" case
+    // "No Limit" case for E1-E4, W1-W2, LDO O1-O2
+    // Although Table 1-2 says "No Limit", we still apply the combined EP+MP 60% limit
+    // to ensure some members receive P recommendations (BUPERS requirement).
+    // Without this cap, all non-EP members would get MP, leaving zero P's.
     if (baseMp === null) {
-      return groupSize - epUsed;
+      const combinedLimit = Math.ceil(groupSize * 0.60);
+      return Math.max(0, combinedLimit - epUsed);
     }
 
     // Standard calculation for N<=30 (including size 2 logic via table values):
