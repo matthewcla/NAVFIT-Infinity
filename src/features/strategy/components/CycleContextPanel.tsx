@@ -87,6 +87,13 @@ export function CycleContextPanel({ group }: CycleContextPanelProps) {
     const [isOptimizing, setIsOptimizing] = useState(false);
     const [proposedReports, setProposedReports] = useState<Report[] | null>(null);
 
+    // Sidebar Initial Section State
+    const [initialSidebarSection, setInitialSidebarSection] = useState<'mta' | 'rec' | 'remarks'>('remarks');
+
+    const handleSetInitialSection = (context: 'mta' | 'rec' | 'remarks') => {
+        setInitialSidebarSection(context);
+    };
+
     // Watch for Optimization Result - PARANOID/HARDENED VERSION
     useEffect(() => {
         if (!isOptimizing || !activeGroup || !latestResult[activeGroup.id]) return;
@@ -631,8 +638,13 @@ export function CycleContextPanel({ group }: CycleContextPanelProps) {
                         previewPromRecMap={previewPromRecMap}
                         activeGroupId={activeGroup.id}
                         selectedMemberId={selectedMemberId}
-                        onSelectMember={(id) => {
+                        onSelectMember={(id, context) => {
                             if (!proposedReports) selectMember(id);
+                            // We need to pass context to parent or handle it here. 
+                            // CycleContextPanel doesn't receive the context prop to pass up currently?
+                            // Wait, selectMember is from store. It just sets ID.
+                            // We need to set the Initial Context state in CycleContextPanel.
+                            if (context) handleSetInitialSection(context);
                         }}
                         onReorderMembers={(g, d, t) => {
                             if (!proposedReports) handleReorderMembers(g, d, t);
@@ -723,6 +735,9 @@ export function CycleContextPanel({ group }: CycleContextPanelProps) {
                                 updateReport(activeGroup.id, report.id, { promotionRecommendation: rec });
                             }
                         }}
+                        onUpdateReport={(mid, rid, updates) => {
+                            updateReport(activeGroup.id, rid, updates);
+                        }}
                         currentRsca={activeGroup.rsca}
                         onNavigatePrev={() => {
                             const idx = rankedMembers.findIndex(m => m.id === selectedMemberId);
@@ -732,6 +747,7 @@ export function CycleContextPanel({ group }: CycleContextPanelProps) {
                             const idx = rankedMembers.findIndex(m => m.id === selectedMemberId);
                             if (idx < rankedMembers.length - 1) selectMember(rankedMembers[idx + 1].id);
                         }}
+                        initialSection={initialSidebarSection}
 
                     />
                 )

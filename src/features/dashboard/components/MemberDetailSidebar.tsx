@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import {
     ChevronLeft,
     ChevronRight,
+    ChevronDown,
     Lock,
     Unlock,
     TrendingUp,
@@ -30,6 +31,7 @@ interface MemberDetailSidebarProps {
     onUpdateMTA: (memberId: string, newMta: number) => void;
     onPreviewMTA?: (memberId: string, newMta: number) => void; // Real-time preview callback
     onUpdatePromRec: (memberId: string, rec: 'EP' | 'MP' | 'P' | 'Prog' | 'SP' | 'NOB') => void;
+    onUpdateReport?: (memberId: string, reportId: string, updates: Partial<Report>) => void;
     onNavigateNext: () => void;
     onNavigatePrev: () => void;
     rosterMember?: RosterMember;
@@ -49,6 +51,7 @@ interface MemberDetailSidebarProps {
     };
     groupContext?: SummaryGroupContext;
     groupId?: string; // Added for store actions
+    initialSection?: 'mta' | 'rec' | 'remarks';
 }
 
 export function MemberDetailSidebar({
@@ -57,6 +60,7 @@ export function MemberDetailSidebar({
     onUpdateMTA,
     onPreviewMTA,
     onUpdatePromRec,
+    onUpdateReport,
     onNavigateNext,
     onNavigatePrev,
     rosterMember: _passedRosterMember,
@@ -65,7 +69,8 @@ export function MemberDetailSidebar({
     rankContext,
     quotaContext,
     groupContext,
-    groupId
+    groupId,
+    initialSection = 'remarks'
 }: MemberDetailSidebarProps) {
     const { roster, toggleReportLock, summaryGroups } = useNavfitStore();
 
@@ -117,6 +122,28 @@ export function MemberDetailSidebar({
     const [showUnsavedModal, setShowUnsavedModal] = useState(false);
     const [pendingAction, setPendingAction] = useState<(() => void) | null>(null);
 
+    // Local string state for input field to allow typing "3." without auto-formatting
+    const [mtaInputValue, setMtaInputValue] = useState((currentReport?.traitAverage || 3.00).toFixed(2));
+    const [isEditingMta, setIsEditingMta] = useState(false);
+
+    // --- Section Toggle Logic ---
+    const [sections, setSections] = useState<{
+        rec: boolean;
+        mta: boolean;
+        remarks: boolean;
+    }>({
+        rec: initialSection === 'rec',
+        mta: initialSection === 'mta',
+        remarks: initialSection === 'remarks' // Default Open if not specified
+    });
+
+    const toggleSection = (section: keyof typeof sections) => {
+        setSections(prev => ({
+            ...prev,
+            [section]: !prev[section]
+        }));
+    };
+
     // Reset state when member changes
     useEffect(() => {
         setTimeout(() => {
@@ -132,12 +159,15 @@ export function MemberDetailSidebar({
             setFuture([]);
             setShowUnsavedModal(false);
             setPendingAction(null);
-        }, 0);
-    }, [memberId, currentReport]);
 
-    // Local string state for input field to allow typing "3." without auto-formatting
-    const [mtaInputValue, setMtaInputValue] = useState((currentReport?.traitAverage || 3.00).toFixed(2));
-    const [isEditingMta, setIsEditingMta] = useState(false);
+            // Reset Sections based on initialSection prop or default
+            setSections({
+                rec: initialSection === 'rec',
+                mta: initialSection === 'mta',
+                remarks: initialSection === 'remarks'
+            });
+        }, 0);
+    }, [memberId, currentReport, initialSection]);
 
     // Sync input with simulatedMta when not editing (e.g. slider usage)
     useEffect(() => {
@@ -167,55 +197,36 @@ export function MemberDetailSidebar({
         if (!previousState || typeof previousState.mta !== 'number') {
             console.error('Invalid history state encountered:', previousState);
             // Recover by clearing history or ignoring
-            setHistory(prev => prev.slice(0, -1));
+            setHistory([]);
             return;
         }
 
-        // Push current to future
-        setFuture(prev => [{ mta: simulatedMta, rec: simulatedRec }, ...prev]);
+        const newFuture = [...future, { mta: simulatedMta, rec: simulatedRec }];
+        if (newFuture.length > 5) newFuture.shift();
+        setFuture(newFuture);
 
-        // Restore previous
+        const newHistory = history.slice(0, -1);
+        setHistory(newHistory);
+
         setSimulatedMta(previousState.mta);
-        if (previousState.rec) {
-            setSimulatedRec(previousState.rec as 'EP' | 'MP' | 'P' | 'Prog' | 'SP' | 'NOB');
-        }
-        setMtaInputValue(previousState.mta.toFixed(2)); // Sync input
-
-        // Pop from history
-        setHistory(prev => prev.slice(0, -1));
+        setSimulatedRec(previousState.rec as any); // Cast back to enum
     };
 
     const handleRedo = () => {
         if (future.length === 0) return;
-        const nextState = future[0];
+        const nextState = future[future.length - 1];
 
-        // Robust check
-        if (!nextState || typeof nextState.mta !== 'number') {
-            console.error('Invalid future state encountered:', nextState);
-            setFuture(prev => prev.slice(1));
-            return;
-        }
+        const newHistory = [...history, { mta: simulatedMta, rec: simulatedRec }];
+        if (newHistory.length > 5) newHistory.shift();
+        setHistory(newHistory);
 
-        // Push current to history
-        setHistory(prev => {
-            const newHistory = [...prev, { mta: simulatedMta, rec: simulatedRec }];
-            if (newHistory.length > 5) newHistory.shift();
-            return newHistory;
-        });
+        const newFuture = future.slice(0, -1);
+        setFuture(newFuture);
 
-        // Restore next
         setSimulatedMta(nextState.mta);
-        if (nextState.rec) {
-            setSimulatedRec(nextState.rec as 'EP' | 'MP' | 'P' | 'Prog' | 'SP' | 'NOB');
-        }
-        setMtaInputValue(nextState.mta.toFixed(2));
-
-        // Pop from future
-        setFuture(prev => prev.slice(1));
+        setSimulatedRec(nextState.rec as any);
     };
 
-    // --- Slider & Input Interaction Refs ---
-    // --- Input Interaction Refs ---
     const mtaFocusRef = useRef<number | null>(null);
 
 
@@ -433,19 +444,6 @@ export function MemberDetailSidebar({
         // We already have the current value, so just sync input
         if (Math.abs(val - simulatedMta) > 0.001) {
             setMtaInputValue(formatted);
-            handleMtaChange(parseFloat(formatted), false); // Commit not needed here as we did manual history above, but keep false for consistency? logic check
-            // Actually, handleMtaChange(..., false) calls commitToHistory(), which uses current state.
-            // But we just manually pushed the OLD state. calling handleMtaChange(..., false) would push the NEW state as "old"?
-            // No, commitToHistory pushes CURRENT state (simulatedMta).
-            // But wait, simulatedMta has been updating LIVE via handleMtaLocalChange (isIntermediate=true).
-            // So simulatedMta is ALREADY `val`.
-            // So commitToHistory() would push `val`.
-            // We want to push `mtaFocusRef.current`.
-            // So we should NOT call handleMtaChange(..., false). We should call it with TRUE to avoid double commit, verify collision?
-            // Actually, we just need to ensuer final value is set. handleMtaChange logic:
-            // if (!isIntermediate) commitToHistory().
-
-            // WE handled history manually. So pass true.
             handleMtaChange(parseFloat(formatted), true);
         } else {
             setMtaInputValue(formatted);
@@ -460,9 +458,6 @@ export function MemberDetailSidebar({
 
     const handleMtaLocalChange = (strVal: string) => {
         setMtaInputValue(strVal);
-        const floatVal = parseFloat(strVal);
-        if (!isNaN(floatVal)) {
-        }
     };
 
     // --- Sliding Window Logic (Zoomed Slider) ---
@@ -509,6 +504,27 @@ export function MemberDetailSidebar({
     };
 
 
+    const renderSectionHeader = (title: string, section: keyof typeof sections, icon: React.ReactNode, summary?: React.ReactNode) => (
+        <button
+            onClick={() => toggleSection(section)}
+            className="w-full flex items-center justify-between p-4 bg-white hover:bg-slate-50 transition-colors"
+        >
+            <div className="flex items-center gap-3">
+                <div className="text-slate-400">
+                    {icon}
+                </div>
+                <div className="text-left">
+                    <span className="block text-sm font-bold text-slate-700">{title}</span>
+                    {!sections[section] && summary && (
+                        <div className="text-xs text-slate-400 mt-0.5 font-medium">{summary}</div>
+                    )}
+                </div>
+            </div>
+            <div className={cn("text-slate-300 transition-transform duration-200", sections[section] ? "rotate-180" : "")}>
+                <ChevronDown className="w-5 h-5" />
+            </div>
+        </button>
+    );
 
     return (
         <div className="flex flex-col h-full bg-slate-50/80 border-l border-slate-200 shadow-2xl w-sidebar-standard shrink-0 animate-in slide-in-from-right duration-300">
@@ -580,347 +596,394 @@ export function MemberDetailSidebar({
             </div>
 
             {/* --- Scrollable Content --- */}
-            <div className="flex-1 overflow-y-auto px-5 py-6 space-y-6">
+            <div className="flex-1 overflow-y-auto custom-scrollbar p-5 space-y-4">
 
-                {/* --- Card 1: Promotion Recommendation --- */}
-                <div className="bg-white rounded-2xl p-5 shadow-[0_2px_8px_-2px_rgba(0,0,0,0.05)] border border-slate-100/50">
-                    <div className="flex items-center justify-between mb-4">
-                        <div className="flex items-center gap-2 text-xs font-bold uppercase text-slate-400 tracking-wider">
-                            <TrendingUp className="w-4 h-4 text-slate-300" />
-                            <span>Recommendation</span>
-                        </div>
-                    </div>
+                {/* --- 1. Promotion Recommendation --- */}
+                <div className="bg-white rounded-xl shadow-[0_2px_8px_-2px_rgba(0,0,0,0.05)] border border-slate-100/50 overflow-hidden">
+                    {renderSectionHeader("Recommendation", "rec", <TrendingUp className="w-4 h-4" />,
+                        <span className={cn("uppercase tracking-wider font-bold", simulatedRec === 'EP' ? "text-emerald-600" : (simulatedRec === 'MP' ? "text-yellow-600" : "text-slate-500"))}>
+                            Selected: {simulatedRec}
+                        </span>
+                    )}
 
-                    <div className="grid grid-cols-3 gap-2">
-                        {(['EP', 'MP', 'P', 'Prog', 'SP', 'NOB'] as const).map((rec) => {
-                            const { blocked, reason } = getBlockingStatus(rec);
-                            const isSelected = simulatedRec === rec;
-
-                            return (
-                                <div key={rec} className="relative group/tooltip">
-                                    <button
-                                        onClick={() => handleRecChange(rec)}
-                                        disabled={isLocked || blocked}
-                                        className={cn(
-                                            "w-full py-3 px-1 rounded-xl text-sm font-bold transition-all duration-200 flex flex-col items-center gap-1 border-2",
-                                            getRecStyle(rec, isSelected, isLocked, blocked),
-                                            isSelected ? "z-10" : "hover:scale-[1.02] hover:z-10"
-                                        )}
-                                    >
-                                        <span>{rec === 'Prog' ? 'PR' : rec}</span>
-                                    </button>
-
-                                    {blocked && (
-                                        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-max max-w-[200px] z-50 hidden group-hover/tooltip:block animate-in fade-in slide-in-from-bottom-1">
-                                            <div className="bg-slate-800 text-white text-[10px] rounded-lg px-3 py-2 shadow-xl relative backdrop-blur-md">
-                                                <div className="flex items-start gap-2">
-                                                    <AlertCircle className="w-3.5 h-3.5 text-red-400 shrink-0 mt-0.5" />
-                                                    <span className="font-medium leading-normal">{reason}</span>
-                                                </div>
-                                                <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-3 h-3 bg-slate-800 rotate-45" />
-                                            </div>
-                                        </div>
-                                    )}
-                                </div>
-                            );
-                        })}
-                    </div>
-                </div>
-
-                {/* --- Unified Card: Performance & Trajectory --- */}
-                <div className="bg-white rounded-2xl shadow-[0_2px_8px_-2px_rgba(0,0,0,0.05)] border border-slate-100/50 relative overflow-hidden group/card">
-
-                    {/* Background decoration */}
-                    <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-50/30 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none" />
-
-                    {/* Header */}
-                    <div className="relative z-10 p-5 pb-0 flex items-center justify-between">
-                        <div className="flex items-center gap-2 text-xs font-bold uppercase text-slate-400 tracking-wider">
-                            <Sparkles className="w-4 h-4 text-slate-300" />
-                            <span>Performance & Trajectory</span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                            <button onClick={handleUndo} disabled={history.length === 0} className="w-7 h-7 rounded-full flex items-center justify-center hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors disabled:opacity-20"><RotateCcw className="w-3.5 h-3.5" /></button>
-                            <button onClick={handleRedo} disabled={future.length === 0} className="w-7 h-7 rounded-full flex items-center justify-center hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors disabled:opacity-20"><RotateCw className="w-3.5 h-3.5" /></button>
-                        </div>
-                    </div>
-
-                    {/* --- Trajectory Chart (Top) --- */}
-                    <div className="relative z-0 mt-8 h-48 w-full">
-                        {/* Container for Chart */}
-                        <div className="absolute inset-x-0 bottom-0 top-0 flex items-end px-4">
-                            <svg className="w-full h-full overflow-visible" viewBox="0 0 100 100" preserveAspectRatio="none">
-                                {/* Optional: Add a subtle path line here if desired, otherwise just points */}
-                            </svg>
-                            {/* HTML Overlay for Points */}
-                            <div className="absolute inset-0 pointer-events-none">
-                                {(() => {
-                                    // Helper to format date "DD MMM YY"
-                                    const formatDate = (dateStr?: string) => {
-                                        if (!dateStr) return '';
-                                        const d = new Date(dateStr);
-                                        if (isNaN(d.getTime())) return '';
-                                        const day = d.getDate().toString().padStart(2, '0');
-                                        const mon = d.toLocaleString('en-US', { month: 'short' }).toUpperCase();
-                                        const yr = d.getFullYear().toString().slice(-2);
-                                        return `${day} ${mon} ${yr}`;
-                                    };
-
-                                    const pastPoints = (rosterMember.history || []).map(h => ({
-                                        type: 'Past',
-                                        val: h.traitAverage,
-                                        rsca: h.rscaAtTime,
-                                        label: h.promotionRecommendation,
-                                        date: h.periodEndDate,
-                                        groupSize: undefined,
-                                        isVoid: false
-                                    }));
-
-                                    const currentPoint = {
-                                        type: 'Current',
-                                        val: simulatedMta,
-                                        rsca: currentRsca,
-                                        label: simulatedRec,
-                                        date: currentReport?.periodEndDate,
-                                        groupSize: quotaContext?.totalReports, // Only for current
-                                        isVoid: false
-                                    };
-
-                                    let plannedCount = currentReport?.reportsRemaining || 0;
-                                    if (!plannedCount && rosterMember.prd && currentReport?.periodEndDate) {
-                                        const prdYear = new Date(rosterMember.prd).getFullYear();
-                                        const reportYear = new Date(currentReport.periodEndDate).getFullYear();
-                                        if (!isNaN(prdYear) && !isNaN(reportYear)) plannedCount = Math.max(0, prdYear - reportYear);
-                                    }
-
-                                    const plannedPoints = Array.from({ length: plannedCount || 0 }).map((_, i) => ({
-                                        type: (i === (plannedCount || 0) - 1) ? 'Transfer' : 'Planned',
-                                        val: simulatedMta, // In real app this might be projected
-                                        rsca: currentRsca,
-                                        label: (i === (plannedCount || 0) - 1) ? 'PRD' : 'Plan',
-                                        date: undefined,
-                                        groupSize: undefined,
-                                        isVoid: true
-                                    }));
-
-                                    const allPoints = [...pastPoints.slice(-3), currentPoint, ...plannedPoints];
-
-                                    const allMtas = allPoints.map(p => p.val);
-                                    const allRscas = allPoints.map(p => p.rsca).filter((r): r is number => r !== undefined);
-                                    const allValues = [...allMtas, ...allRscas];
-                                    const minVal = allValues.length ? Math.min(...allValues) : 3.0;
-                                    const maxVal = allValues.length ? Math.max(...allValues) : 5.0;
-                                    let range = maxVal - minVal; if (range < 0.2) range = 0.2;
-                                    const margin = range * 0.40; // More headroom for labels
-                                    const domainMin = Math.max(0, minVal - margin);
-                                    const domainMax = Math.min(5.0, maxVal + margin);
-                                    const domainRange = domainMax - domainMin || 1;
-                                    const getY = (val: number) => 100 - ((val - domainMin) / domainRange * 100);
-
-                                    // Distribute X evenly
-                                    const maxIdx = Math.max(1, allPoints.length - 1);
-                                    const getX = (i: number) => 10 + (i / maxIdx) * 80;
-
-                                    return allPoints.map((p, i) => {
-                                        const x = getX(i);
-                                        const y = getY(p.val);
-                                        const isTransfer = p.type === 'Transfer';
-                                        const isCurrent = p.type === 'Current';
-
-                                        // Calculate Delta from previous point if available
-                                        const prevPoint = i > 0 ? allPoints[i - 1] : null;
-                                        let deltaLabel = null;
-                                        if (prevPoint) {
-                                            const diff = p.val - prevPoint.val;
-                                            const sign = diff > 0 ? '+' : '';
-                                            const colorClass = diff > 0 ? 'text-emerald-600' : (diff < 0 ? 'text-red-500' : 'text-slate-400');
-                                            deltaLabel = (
-                                                <span className={cn("text-[10px] font-bold bg-white/80 px-1 rounded backdrop-blur-sm", colorClass)}>
-                                                    {sign}{diff.toFixed(2)}
-                                                </span>
-                                            );
-                                        }
-
-                                        return (
-                                            <div key={i} className="absolute flex flex-col items-center justify-center group/point transition-all duration-300 ease-out z-10" style={{ left: `${x}%`, top: `${y}%`, transform: 'translate(-50%, -50%)' }}>
-
-                                                {/* Date Label (Top) */}
-                                                {p.date && (
-                                                    <div className="absolute bottom-full mb-3 text-[10px] font-semibold text-slate-400 whitespace-nowrap tracking-tight uppercase">
-                                                        {formatDate(p.date)}
-                                                    </div>
-                                                )}
-
-                                                {/* Connecting Line Label (Delta) - Positioned halfway to left? No, simpler to just float left of point */}
-                                                {deltaLabel && (
-                                                    <div className="absolute right-full mr-3 -mt-4 pointer-events-none opacity-80">
-                                                        {deltaLabel}
-                                                    </div>
-                                                )}
-
-                                                <div className={cn(
-                                                    "rounded-full border-2 shadow-sm flex items-center justify-center transition-all bg-white z-20 relative",
-                                                    isTransfer ? "border-red-500 bg-red-50 w-8 h-8" : "border-indigo-400 bg-indigo-50 w-8 h-8 text-indigo-700 font-bold text-[10px]",
-                                                    isCurrent ? "w-14 h-14 border-[4px] ring-4 ring-indigo-500/10 border-indigo-600 bg-white opacity-100 scale-105 shadow-xl" : "opacity-80"
-                                                )}>
-                                                    {/* Group Size Center Label */}
-                                                    {p.groupSize ? <span>{p.groupSize}</span> : (p.type === 'Past' ? <span className="opacity-30 text-[9px]">-</span> : null)}
-                                                </div>
-
-                                                {/* MTA Label */}
-                                                {isCurrent ? (
-                                                    // Hero Input Overlay for Current
-                                                    <div className="absolute top-full mt-3 pointer-events-auto">
-                                                        <div className="relative group/input flex flex-col items-center">
-                                                            <input
-                                                                type="text"
-                                                                value={mtaInputValue}
-                                                                onChange={(e) => handleMtaLocalChange(e.target.value)}
-                                                                onFocus={() => {
-                                                                    setIsEditingMta(true);
-                                                                    mtaFocusRef.current = simulatedMta;
-                                                                }}
-                                                                onBlur={handleMtaBlur}
-                                                                onKeyDown={handleMtaKeyDown}
-                                                                disabled={isLocked || simulatedRec === 'NOB'}
-                                                                className="w-24 text-center text-3xl font-black text-slate-800 bg-transparent border-none focus:outline-none focus:ring-0 p-0 disabled:opacity-40 tracking-tight transition-colors hover:text-indigo-900 placeholder:text-slate-200"
-                                                            />
-                                                            <div className="absolute -right-4 top-1/2 -translate-y-1/2 opacity-0 group-hover/input:opacity-100 text-slate-300">
-                                                                <TrendingUp className="w-3 h-3" />
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                ) : (
-                                                    // Static Label for others
-                                                    <div className="absolute top-full mt-2 text-[10px] font-bold text-slate-500 bg-white/80 px-1.5 py-0.5 rounded shadow-sm border border-slate-100">
-                                                        {p.val.toFixed(2)}
-                                                    </div>
-                                                )}
-                                            </div>
-                                        );
-                                    });
-                                })()}
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Divider that feels like a 'Ground' for the chart */}
-                    <div className="h-px w-full bg-gradient-to-r from-transparent via-slate-200 to-transparent my-2" />
-
-                    {/* --- Control Deck (Bottom) --- */}
-                    <div className="p-5 pt-2 flex flex-col items-center gap-6 relative z-10">
-                        {/* Slider Control Area - Hero Input Removed */}
-
-                        <div className="w-full flex items-center gap-4">
-                            <button
-                                onClick={() => handleMtaChange(Math.max(3.00, simulatedMta - 0.01))}
-                                disabled={isLocked || simulatedMta <= 3.00 || simulatedRec === 'NOB'}
-                                className="w-8 h-8 rounded-full bg-slate-50 border border-slate-200 text-slate-400 flex items-center justify-center hover:border-indigo-300 hover:text-indigo-600 hover:bg-white shadow-sm active:scale-95 transition-all disabled:opacity-30 disabled:scale-100"
-                            >
-                                <Minus className="w-4 h-4" />
-                            </button>
-
-                            <div
-                                className="relative flex-1 h-12 flex items-center touch-none select-none cursor-pointer"
-                                ref={sliderRef}
-                                onPointerDown={handlePointerDown}
-                                onPointerMove={handlePointerMove}
-                                onPointerUp={handlePointerUp}
-                            >
-                                {/* Track Background */}
-                                <div className="absolute left-0 right-0 h-3 bg-slate-100 rounded-full overflow-hidden shadow-inner">
-                                    <div
-                                        className={cn("h-full transition-all duration-75 ease-out", isLocked || simulatedRec === 'NOB' ? "bg-slate-300" : "bg-gradient-to-r from-indigo-400 via-indigo-500 to-indigo-600")}
-                                        style={{ width: `${getViewPercent(simulatedMta)}%` }}
-                                    />
-                                </div>
-
-                                {/* Markers / Milestones - Only show if in view */}
-                                {[3.0, 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 3.7, 3.8, 3.9, 4.0, 4.1, 4.2, 4.3, 4.4, 4.5, 4.6, 4.7, 4.8, 4.9, 5.0].map(val => {
-                                    // Filter out markers far outside the window to avoid DOM clutter, keeping a small buffer
-                                    if (val < windowStart - 0.1 || val > windowStart + windowSize + 0.1) return null;
-
-                                    const isMajor = Math.abs(val % 0.5) < 0.001;
-                                    const isLabel = Math.abs(val % 0.5) < 0.001; // Label every 0.5
+                    {sections.rec && (
+                        <div className="p-5 pt-0 border-t border-slate-50 animate-in slide-in-from-top-2 fade-in duration-200">
+                            <div className="grid grid-cols-3 gap-2 mt-4">
+                                {(['EP', 'MP', 'P', 'Prog', 'SP', 'NOB'] as const).map((rec) => {
+                                    const { blocked, reason } = getBlockingStatus(rec);
+                                    const isSelected = simulatedRec === rec;
 
                                     return (
-                                        <div key={val} className="absolute inset-0 pointer-events-none z-0">
-                                            <div
-                                                className={cn("absolute top-1/2 -translate-y-1/2 w-px bg-slate-300/50 transition-all duration-300 ease-out", isMajor ? "h-3 bg-slate-400/50" : "h-1.5")}
-                                                style={{ left: `${getViewPercent(val)}%` }}
-                                            />
-                                            {/* Labels */}
-                                            {isLabel && (
-                                                <div
-                                                    className="absolute top-[34px] -translate-x-1/2 text-[10px] font-bold text-slate-300 transition-all duration-300 ease-out"
-                                                    style={{ left: `${getViewPercent(val)}%` }}
-                                                >
-                                                    {val.toFixed(1)}
+                                        <div key={rec} className="relative group/tooltip">
+                                            <button
+                                                onClick={() => handleRecChange(rec)}
+                                                disabled={isLocked || blocked}
+                                                className={cn(
+                                                    "w-full py-3 px-1 rounded-xl text-sm font-bold transition-all duration-200 flex flex-col items-center gap-1 border-2",
+                                                    getRecStyle(rec, isSelected, isLocked, blocked),
+                                                    isSelected ? "z-10" : "hover:scale-[1.02] hover:z-10"
+                                                )}
+                                            >
+                                                <span>{rec === 'Prog' ? 'PR' : rec}</span>
+                                            </button>
+
+                                            {blocked && (
+                                                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-max max-w-[200px] z-50 hidden group-hover/tooltip:block animate-in fade-in slide-in-from-bottom-1">
+                                                    <div className="bg-slate-800 text-white text-[10px] rounded-lg px-3 py-2 shadow-xl relative backdrop-blur-md">
+                                                        <div className="flex items-start gap-2">
+                                                            <AlertCircle className="w-3.5 h-3.5 text-red-400 shrink-0 mt-0.5" />
+                                                            <span className="font-medium leading-normal">{reason}</span>
+                                                        </div>
+                                                        <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-3 h-3 bg-slate-800 rotate-45" />
+                                                    </div>
                                                 </div>
                                             )}
                                         </div>
-                                    )
+                                    );
                                 })}
+                            </div>
+                        </div>
+                    )}
+                </div>
 
-                                {/* Rank Markers (Refined) */}
-                                {(() => {
-                                    if (!rankContext?.nextRanks && !rankContext?.prevRanks) return null;
-                                    const next = rankContext?.nextRanks || [];
-                                    const prev = rankContext?.prevRanks || [];
-                                    const allMarkers = [
-                                        ...next.map(r => ({ ...r, type: 'next' as const })),
-                                        ...prev.map(r => ({ ...r, type: 'prev' as const }))
-                                    ].sort((a, b) => a.rank - b.rank);
+                {/* --- 2. Performance & Trajectory --- */}
+                <div className="bg-white rounded-xl shadow-[0_2px_8px_-2px_rgba(0,0,0,0.05)] border border-slate-100/50 overflow-hidden relative group/card">
+                    {/* Background decoration - only visible when expanded? keep consistent */}
+                    {sections.mta && (
+                        <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-50/30 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none" />
+                    )}
 
-                                    return allMarkers.map((marker) => {
-                                        if (marker.mta < windowStart - 0.1 || marker.mta > windowStart + windowSize + 0.1) return null;
-                                        const isNext = marker.type === 'next';
-                                        const pct = getViewPercent(marker.mta);
-                                        return (
-                                            <div
-                                                key={`${marker.type}-${marker.rank}`}
-                                                className="absolute top-1/2 -translate-y-1/2 z-10 pointer-events-none transition-all duration-300 ease-out"
-                                                style={{ left: `${pct}%` }}
-                                            >
-                                                {/* Flag / Diamond Marker */}
-                                                <div className={cn(
-                                                    "w-3 h-3 rotate-45 border-2 -translate-x-1/2 bg-white shadow-sm transition-transform",
-                                                    isNext ? "border-emerald-500" : "border-rose-400"
-                                                )} />
+                    {renderSectionHeader("Performance & Trajectory", "mta", <Sparkles className="w-4 h-4" />,
+                        `MTA: ${simulatedMta.toFixed(2)}`
+                    )}
 
-                                                {/* Tooltip Label */}
-                                                <div className={cn(
-                                                    "absolute bottom-4 left-1/2 -translate-x-1/2 text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded shadow-sm border whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity delay-75",
-                                                    isNext ? "bg-emerald-50 text-emerald-700 border-emerald-100" : "bg-rose-50 text-rose-700 border-rose-100"
-                                                )}>
-                                                    #{marker.rank}
-                                                </div>
-                                            </div>
-                                        );
-                                    });
-                                })()}
-
-                                {/* Thumb */}
-                                <div
-                                    className={cn(
-                                        "absolute top-1/2 -translate-y-1/2 w-7 h-7 bg-white rounded-full shadow-[0_2px_8px_rgba(0,0,0,0.15)] ring-4 ring-white transition-all duration-75 pointer-events-none z-30 flex items-center justify-center",
-                                        isLocked || simulatedRec === 'NOB' ? "grayscale opacity-50" : "scale-100"
-                                    )}
-                                    style={{ left: `${getViewPercent(simulatedMta)}%`, transform: 'translate(-50%, -50%)' }}
-                                >
-                                    <div className="w-2.5 h-2.5 bg-indigo-500 rounded-full" />
+                    {sections.mta && (
+                        <div className="relative animate-in slide-in-from-top-2 fade-in duration-200 border-t border-slate-50">
+                            {/* Undo/Redo Header */}
+                            <div className="flex justify-end px-4 py-2 relative z-10">
+                                <div className="flex items-center gap-1">
+                                    <button onClick={handleUndo} disabled={history.length === 0} className="w-7 h-7 rounded-full flex items-center justify-center hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors disabled:opacity-20"><RotateCcw className="w-3.5 h-3.5" /></button>
+                                    <button onClick={handleRedo} disabled={future.length === 0} className="w-7 h-7 rounded-full flex items-center justify-center hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors disabled:opacity-20"><RotateCw className="w-3.5 h-3.5" /></button>
                                 </div>
                             </div>
 
-                            <button
-                                onClick={() => handleMtaChange(Math.min(5.00, simulatedMta + 0.01))}
-                                disabled={isLocked || simulatedMta >= 5.00 || simulatedRec === 'NOB'}
-                                className="w-8 h-8 rounded-full bg-slate-50 border border-slate-200 text-slate-400 flex items-center justify-center hover:border-indigo-300 hover:text-indigo-600 hover:bg-white shadow-sm active:scale-95 transition-all disabled:opacity-30 disabled:scale-100"
-                            >
-                                <Plus className="w-4 h-4" />
-                            </button>
+                            {/* --- Trajectory Chart (Top) --- */}
+                            <div className="relative z-0 h-48 w-full mt-2">
+                                {/* Container for Chart */}
+                                <div className="absolute inset-x-0 bottom-0 top-0 flex items-end px-4">
+                                    <svg className="w-full h-full overflow-visible" viewBox="0 0 100 100" preserveAspectRatio="none">
+                                        {/* Optional: Add a subtle path line here if desired, otherwise just points */}
+                                    </svg>
+                                    {/* HTML Overlay for Points */}
+                                    <div className="absolute inset-0 pointer-events-none">
+                                        {(() => {
+                                            // Helper to format date "DD MMM YY"
+                                            const formatDate = (dateStr?: string) => {
+                                                if (!dateStr) return '';
+                                                const d = new Date(dateStr);
+                                                if (isNaN(d.getTime())) return '';
+                                                const day = d.getDate().toString().padStart(2, '0');
+                                                const mon = d.toLocaleString('en-US', { month: 'short' }).toUpperCase();
+                                                const yr = d.getFullYear().toString().slice(-2);
+                                                return `${day} ${mon} ${yr}`;
+                                            };
+
+                                            const pastPoints = (rosterMember.history || []).map(h => ({
+                                                type: 'Past',
+                                                val: h.traitAverage,
+                                                rsca: h.rscaAtTime,
+                                                label: h.promotionRecommendation,
+                                                date: h.periodEndDate,
+                                                groupSize: undefined,
+                                                isVoid: false
+                                            }));
+
+                                            const currentPoint = {
+                                                type: 'Current',
+                                                val: simulatedMta,
+                                                rsca: currentRsca,
+                                                label: simulatedRec,
+                                                date: currentReport?.periodEndDate,
+                                                groupSize: quotaContext?.totalReports, // Only for current
+                                                isVoid: false
+                                            };
+
+                                            let plannedCount = currentReport?.reportsRemaining || 0;
+                                            if (!plannedCount && rosterMember.prd && currentReport?.periodEndDate) {
+                                                const prdYear = new Date(rosterMember.prd).getFullYear();
+                                                const reportYear = new Date(currentReport.periodEndDate).getFullYear();
+                                                if (!isNaN(prdYear) && !isNaN(reportYear)) plannedCount = Math.max(0, prdYear - reportYear);
+                                            }
+
+                                            const plannedPoints = Array.from({ length: plannedCount || 0 }).map((_, i) => ({
+                                                type: (i === (plannedCount || 0) - 1) ? 'Transfer' : 'Planned',
+                                                val: simulatedMta, // In real app this might be projected
+                                                rsca: currentRsca,
+                                                label: (i === (plannedCount || 0) - 1) ? 'PRD' : 'Plan',
+                                                date: undefined,
+                                                groupSize: undefined,
+                                                isVoid: true
+                                            }));
+
+                                            const allPoints = [...pastPoints.slice(-3), currentPoint, ...plannedPoints];
+
+                                            const allMtas = allPoints.map(p => p.val);
+                                            const allRscas = allPoints.map(p => p.rsca).filter((r): r is number => r !== undefined);
+                                            const allValues = [...allMtas, ...allRscas];
+                                            const minVal = allValues.length ? Math.min(...allValues) : 3.0;
+                                            const maxVal = allValues.length ? Math.max(...allValues) : 5.0;
+                                            let range = maxVal - minVal; if (range < 0.2) range = 0.2;
+                                            const margin = range * 0.40; // More headroom for labels
+                                            const domainMin = Math.max(0, minVal - margin);
+                                            const domainMax = Math.min(5.0, maxVal + margin);
+                                            const domainRange = domainMax - domainMin || 1;
+                                            const getY = (val: number) => 100 - ((val - domainMin) / domainRange * 100);
+
+                                            const maxIdx = Math.max(1, allPoints.length - 1);
+                                            const getX = (i: number) => 10 + (i / maxIdx) * 80;
+
+                                            return allPoints.map((p, i) => {
+                                                const x = getX(i);
+                                                const y = getY(p.val);
+                                                const isTransfer = p.type === 'Transfer';
+                                                const isCurrent = p.type === 'Current';
+
+                                                // Calculate Delta from previous point if available
+                                                const prevPoint = i > 0 ? allPoints[i - 1] : null;
+                                                let deltaLabel = null;
+                                                if (prevPoint) {
+                                                    const diff = p.val - prevPoint.val;
+                                                    const sign = diff > 0 ? '+' : '';
+                                                    const colorClass = diff > 0 ? 'text-emerald-600' : (diff < 0 ? 'text-red-500' : 'text-slate-400');
+                                                    deltaLabel = (
+                                                        <span className={cn("text-[10px] font-bold bg-white/80 px-1 rounded backdrop-blur-sm", colorClass)}>
+                                                            {sign}{diff.toFixed(2)}
+                                                        </span>
+                                                    );
+                                                }
+
+                                                return (
+                                                    <div key={i} className="absolute flex flex-col items-center justify-center group/point transition-all duration-300 ease-out z-10" style={{ left: `${x}%`, top: `${y}%`, transform: 'translate(-50%, -50%)' }}>
+
+                                                        {/* Date Label (Top) */}
+                                                        {p.date && (
+                                                            <div className="absolute bottom-full mb-3 text-[10px] font-semibold text-slate-400 whitespace-nowrap tracking-tight uppercase">
+                                                                {formatDate(p.date)}
+                                                            </div>
+                                                        )}
+
+                                                        {/* Connecting Line Label (Delta) - Positioned halfway to left? No, simpler to just float left of point */}
+                                                        {deltaLabel && (
+                                                            <div className="absolute right-full mr-3 -mt-4 pointer-events-none opacity-80">
+                                                                {deltaLabel}
+                                                            </div>
+                                                        )}
+
+                                                        <div className={cn(
+                                                            "rounded-full border-2 shadow-sm flex items-center justify-center transition-all bg-white z-20 relative",
+                                                            isTransfer ? "border-red-500 bg-red-50 w-8 h-8" : "border-indigo-400 bg-indigo-50 w-8 h-8 text-indigo-700 font-bold text-[10px]",
+                                                            isCurrent ? "w-14 h-14 border-[4px] ring-4 ring-indigo-500/10 border-indigo-600 bg-white opacity-100 scale-105 shadow-xl" : "opacity-80"
+                                                        )}>
+                                                            {/* Group Size Center Label */}
+                                                            {p.groupSize ? <span>{p.groupSize}</span> : (p.type === 'Past' ? <span className="opacity-30 text-[9px]">-</span> : null)}
+                                                        </div>
+
+                                                        {/* MTA Label */}
+                                                        {isCurrent ? (
+                                                            // Hero Input Overlay for Current
+                                                            <div className="absolute top-full mt-3 pointer-events-auto">
+                                                                <div className="relative group/input flex flex-col items-center">
+                                                                    <input
+                                                                        type="text"
+                                                                        value={mtaInputValue}
+                                                                        onChange={(e) => handleMtaLocalChange(e.target.value)}
+                                                                        onFocus={() => {
+                                                                            setIsEditingMta(true);
+                                                                            mtaFocusRef.current = simulatedMta;
+                                                                        }}
+                                                                        onBlur={handleMtaBlur}
+                                                                        onKeyDown={handleMtaKeyDown}
+                                                                        disabled={isLocked || simulatedRec === 'NOB'}
+                                                                        className="w-24 text-center text-3xl font-black text-slate-800 bg-transparent border-none focus:outline-none focus:ring-0 p-0 disabled:opacity-40 tracking-tight transition-colors hover:text-indigo-900 placeholder:text-slate-200"
+                                                                    />
+                                                                    <div className="absolute -right-4 top-1/2 -translate-y-1/2 opacity-0 group-hover/input:opacity-100 text-slate-300">
+                                                                        <TrendingUp className="w-3 h-3" />
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        ) : (
+                                                            // Static Label for others
+                                                            <div className="absolute top-full mt-2 text-[10px] font-bold text-slate-500 bg-white/80 px-1.5 py-0.5 rounded shadow-sm border border-slate-100">
+                                                                {p.val.toFixed(2)}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                );
+                                            });
+                                        })()}
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Divider that feels like a 'Ground' for the chart */}
+                            <div className="h-px w-full bg-gradient-to-r from-transparent via-slate-200 to-transparent my-2" />
+
+                            {/* --- Control Deck (Bottom) --- */}
+                            <div className="p-5 pt-2 flex flex-col items-center gap-6 relative z-10">
+                                {/* Slider Control Area - Hero Input Removed */}
+
+                                <div className="w-full flex items-center gap-4">
+                                    <button
+                                        onClick={() => handleMtaChange(Math.max(3.00, simulatedMta - 0.01))}
+                                        disabled={isLocked || simulatedMta <= 3.00 || simulatedRec === 'NOB'}
+                                        className="w-8 h-8 rounded-full bg-slate-50 border border-slate-200 text-slate-400 flex items-center justify-center hover:border-indigo-300 hover:text-indigo-600 hover:bg-white shadow-sm active:scale-95 transition-all disabled:opacity-30 disabled:scale-100"
+                                    >
+                                        <Minus className="w-4 h-4" />
+                                    </button>
+
+                                    <div
+                                        className="relative flex-1 h-12 flex items-center touch-none select-none cursor-pointer"
+                                        ref={sliderRef}
+                                        onPointerDown={handlePointerDown}
+                                        onPointerMove={handlePointerMove}
+                                        onPointerUp={handlePointerUp}
+                                    >
+                                        {/* Track Background */}
+                                        <div className="absolute left-0 right-0 h-3 bg-slate-100 rounded-full overflow-hidden shadow-inner">
+                                            <div
+                                                className={cn("h-full transition-all duration-75 ease-out", isLocked || simulatedRec === 'NOB' ? "bg-slate-300" : "bg-gradient-to-r from-indigo-400 via-indigo-500 to-indigo-600")}
+                                                style={{ width: `${getViewPercent(simulatedMta)}%` }}
+                                            />
+                                        </div>
+
+                                        {/* Markers / Milestones - Only show if in view */}
+                                        {[3.0, 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 3.7, 3.8, 3.9, 4.0, 4.1, 4.2, 4.3, 4.4, 4.5, 4.6, 4.7, 4.8, 4.9, 5.0].map(val => {
+                                            // Filter out markers far outside the window to avoid DOM clutter, keeping a small buffer
+                                            if (val < windowStart - 0.1 || val > windowStart + windowSize + 0.1) return null;
+
+                                            const isMajor = Math.abs(val % 0.5) < 0.001;
+                                            const isLabel = Math.abs(val % 0.5) < 0.001; // Label every 0.5
+
+                                            return (
+                                                <div key={val} className="absolute inset-0 pointer-events-none z-0">
+                                                    <div
+                                                        className={cn("absolute top-1/2 -translate-y-1/2 w-px bg-slate-300/50 transition-all duration-300 ease-out", isMajor ? "h-3 bg-slate-400/50" : "h-1.5")}
+                                                        style={{ left: `${getViewPercent(val)}%` }}
+                                                    />
+                                                    {/* Labels */}
+                                                    {isLabel && (
+                                                        <div
+                                                            className="absolute top-[34px] -translate-x-1/2 text-[10px] font-bold text-slate-300 transition-all duration-300 ease-out"
+                                                            style={{ left: `${getViewPercent(val)}%` }}
+                                                        >
+                                                            {val.toFixed(1)}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            )
+                                        })}
+
+                                        {/* Rank Markers (Refined) */}
+                                        {(() => {
+                                            if (!rankContext?.nextRanks && !rankContext?.prevRanks) return null;
+                                            const next = rankContext?.nextRanks || [];
+                                            const prev = rankContext?.prevRanks || [];
+                                            const allMarkers = [
+                                                ...next.map(r => ({ ...r, type: 'next' as const })),
+                                                ...prev.map(r => ({ ...r, type: 'prev' as const }))
+                                            ].sort((a, b) => a.rank - b.rank);
+
+                                            return allMarkers.map((marker) => {
+                                                if (marker.mta < windowStart - 0.1 || marker.mta > windowStart + windowSize + 0.1) return null;
+                                                const isNext = marker.type === 'next';
+                                                const pct = getViewPercent(marker.mta);
+                                                return (
+                                                    <div
+                                                        key={`${marker.type}-${marker.rank}`}
+                                                        className="absolute top-1/2 -translate-y-1/2 z-10 pointer-events-none transition-all duration-300 ease-out"
+                                                        style={{ left: `${pct}%` }}
+                                                    >
+                                                        {/* Flag / Diamond Marker */}
+                                                        <div className={cn(
+                                                            "w-3 h-3 rotate-45 border-2 -translate-x-1/2 bg-white shadow-sm transition-transform",
+                                                            isNext ? "border-emerald-500" : "border-rose-400"
+                                                        )} />
+
+                                                        {/* Tooltip Label */}
+                                                        <div className={cn(
+                                                            "absolute bottom-4 left-1/2 -translate-x-1/2 text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded shadow-sm border whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity delay-75",
+                                                            isNext ? "bg-emerald-50 text-emerald-700 border-emerald-100" : "bg-rose-50 text-rose-700 border-rose-100"
+                                                        )}>
+                                                            #{marker.rank}
+                                                        </div>
+                                                    </div>
+                                                );
+                                            });
+                                        })()}
+
+                                        {/* Thumb */}
+                                        <div
+                                            className={cn(
+                                                "absolute top-1/2 -translate-y-1/2 w-7 h-7 bg-white rounded-full shadow-[0_2px_8px_rgba(0,0,0,0.15)] ring-4 ring-white transition-all duration-75 pointer-events-none z-30 flex items-center justify-center",
+                                                isLocked || simulatedRec === 'NOB' ? "grayscale opacity-50" : "scale-100"
+                                            )}
+                                            style={{ left: `${getViewPercent(simulatedMta)}%`, transform: 'translate(-50%, -50%)' }}
+                                        >
+                                            <div className="w-2.5 h-2.5 bg-indigo-500 rounded-full" />
+                                        </div>
+                                    </div>
+
+                                    <button
+                                        onClick={() => handleMtaChange(Math.min(5.00, simulatedMta + 0.01))}
+                                        disabled={isLocked || simulatedMta >= 5.00 || simulatedRec === 'NOB'}
+                                        className="w-8 h-8 rounded-full bg-slate-50 border border-slate-200 text-slate-400 flex items-center justify-center hover:border-indigo-300 hover:text-indigo-600 hover:bg-white shadow-sm active:scale-95 transition-all disabled:opacity-30 disabled:scale-100"
+                                    >
+                                        <Plus className="w-4 h-4" />
+                                    </button>
+                                </div>
+                            </div>
                         </div>
-                    </div>
+                    )}
+                </div>
+
+                {/* --- 3. Milestones & Remarks --- */}
+                <div className="bg-white rounded-xl shadow-[0_2px_8px_-2px_rgba(0,0,0,0.05)] border border-slate-100/50 overflow-hidden">
+                    {renderSectionHeader("Milestones & Remarks", "remarks", <div className="w-4 h-4 border-2 border-slate-300 rounded-sm flex items-center justify-center"><div className="w-2 h-0.5 bg-slate-300" /></div>,
+                        "Add comments..."
+                    )}
+
+                    {sections.remarks && (
+                        <div className="p-5 pt-0 border-t border-slate-50 space-y-4 animate-in slide-in-from-top-2 fade-in duration-200 mt-2">
+                            <div className="space-y-2">
+                                <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Remarks / Comments</label>
+                                <textarea
+                                    className="w-full text-sm text-slate-700 bg-slate-50 border border-slate-200 rounded-lg p-3 min-h-[100px] focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all resize-none placeholder:text-slate-400"
+                                    placeholder="Enter report comments here..."
+                                    defaultValue={currentReport?.comments || ''}
+                                    onChange={(e) => {
+                                        if (onUpdateReport && currentReport) {
+                                            onUpdateReport(memberId, currentReport.id, { comments: e.target.value });
+                                        }
+                                    }}
+                                />
+                            </div>
+
+                            <div className="space-y-2">
+                                <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Milestone / Occasion</label>
+                                <input
+                                    type="text"
+                                    className="w-full text-sm text-slate-700 bg-slate-50 border border-slate-200 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all placeholder:text-slate-400"
+                                    placeholder="e.g. Transfer, Periodic..."
+                                    defaultValue={currentReport?.occasion || ''}
+                                    onChange={(e) => {
+                                        if (onUpdateReport && currentReport) {
+                                            onUpdateReport(memberId, currentReport.id, { occasion: e.target.value });
+                                        }
+                                    }}
+                                />
+                            </div>
+                        </div>
+                    )}
                 </div>
 
                 <div className="mb-20"></div>

@@ -20,7 +20,7 @@ interface SortableMemberRowProps {
     rscaMargin: number;
     eotMta?: number;
     isSelected: boolean;
-    onClick: () => void;
+    onClick: (context?: 'mta' | 'rec') => void;
     isLocked: boolean;
     onToggleLock: (groupId: string, reportId: string) => void;
     disabled?: boolean; // When true, sorting is disabled (e.g., during optimization review)
@@ -82,7 +82,7 @@ export function SortableMemberRow({
             id={`member-row-${memberId}`}
             ref={setNodeRef}
             style={style}
-            onClick={onClick}
+            onClick={() => onClick()}
             className={cn(
                 "cursor-pointer transition-colors hover:bg-slate-50 relative group scroll-mt-14",
                 isSelected && 'bg-indigo-50/50',
@@ -140,10 +140,24 @@ export function SortableMemberRow({
             <td className="px-4 py-3 text-sm text-slate-700 font-mono text-center w-[9%]">
                 {reportsRemaining !== undefined ? reportsRemaining : '-'}
             </td>
-            <td className="px-4 py-3 text-sm text-center w-[9%]">
+            <td
+                className="px-4 py-3 text-sm text-center w-[9%] cursor-pointer hover:bg-slate-100/50 transition-colors rounded"
+                onClick={(e) => {
+                    e.stopPropagation();
+                    onClick('rec');
+                }}
+            >
                 <PromotionBadge recommendation={promRec} size="sm" className="rounded-sm px-1.5" />
             </td>
-            <td className="px-4 py-3 text-sm font-mono text-slate-700 text-center w-[9%]">{promRec === 'NOB' ? '-' : mta.toFixed(2)}</td>
+            <td
+                className="px-4 py-3 text-sm font-mono text-slate-700 text-center w-[9%] cursor-pointer hover:bg-slate-100/50 transition-colors rounded"
+                onClick={(e) => {
+                    e.stopPropagation();
+                    onClick('mta');
+                }}
+            >
+                {promRec === 'NOB' ? '-' : mta.toFixed(2)}
+            </td>
             <td className="px-4 py-3 text-sm font-mono text-slate-400 text-center w-[9%]">
                 {delta === 0 ? '-' : (delta > 0 ? `+${delta.toFixed(2)}` : delta.toFixed(2))}
             </td>

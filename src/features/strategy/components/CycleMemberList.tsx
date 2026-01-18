@@ -41,7 +41,7 @@ interface CycleMemberListProps {
     previewPromRecMap?: Map<string, string>; // Real-time promotion recommendation preview
     activeGroupId: string;
     selectedMemberId: string | null;
-    onSelectMember: (id: string | null) => void;
+    onSelectMember: (id: string | null, context?: 'mta' | 'rec') => void;
     onReorderMembers: (groupId: string, reportId: string, newOrderIds: string[]) => void;
 
     // Optimization Controls
@@ -251,7 +251,7 @@ export function CycleMemberList({
                                     rscaMargin={member.rscaMargin}
                                     eotMta={member.eotMta || 0}
                                     isSelected={selectedMemberId === member.id}
-                                    onClick={() => onSelectMember(selectedMemberId === member.id ? null : member.id)}
+                                    onClick={(context) => onSelectMember(selectedMemberId === member.id && !context ? null : member.id, context)}
                                     isLocked={member.report.isLocked || false}
                                     onToggleLock={handleRowToggleLock}
                                     disabled={hasProposedReports}
