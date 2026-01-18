@@ -84,9 +84,13 @@ describe('Quota Calculations', () => {
 
   describe('computeMpMax', () => {
     describe('N <= 30 (Table 1-2)', () => {
-      it('handles "No Limit" columns (E1-E4)', () => {
-        expect(computeMpMax(10, mockContext(Paygrade.E4), 2)).toBe(8);
-        expect(computeMpMax(10, mockContext(Paygrade.E4), 0)).toBe(10);
+      it('handles "No Limit" columns (E1-E4) with 60% combined cap', () => {
+        // E1-E4 have "No Limit" in Table 1-2, but we now cap at 60% combined EP+MP
+        // Size 10: combined limit = ceil(10 * 0.60) = 6
+        // If EP used = 2, MP Max = 6 - 2 = 4
+        expect(computeMpMax(10, mockContext(Paygrade.E4), 2)).toBe(4);
+        // If EP used = 0, MP Max = 6 - 0 = 6
+        expect(computeMpMax(10, mockContext(Paygrade.E4), 0)).toBe(6);
       });
 
       it('calculates base + unused EP rollover', () => {

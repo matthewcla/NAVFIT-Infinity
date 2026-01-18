@@ -1,6 +1,6 @@
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { GripVertical, Lock, Unlock, Trash2 } from 'lucide-react';
+import { GripVertical, Lock, Unlock, Trash2, FileText } from 'lucide-react';
 import { useNavfitStore } from '@/store/useNavfitStore';
 import { PromotionBadge } from './PromotionBadge';
 import { cn } from '@/lib/utils';
@@ -20,14 +20,16 @@ interface SortableMemberRowProps {
     rscaMargin: number;
     eotMta?: number;
     isSelected: boolean;
-    onClick: () => void;
+    onClick: (context?: 'mta' | 'rec') => void;
     isLocked: boolean;
     onToggleLock: (groupId: string, reportId: string) => void;
     disabled?: boolean; // When true, sorting is disabled (e.g., during optimization review)
+    onEditReport?: () => void;
 }
 
 export function SortableMemberRow({
     id,
+    memberId,
     reportId,
     groupId,
     index,
@@ -44,6 +46,7 @@ export function SortableMemberRow({
     isLocked,
     onToggleLock,
     disabled = false,
+    onEditReport,
 }: SortableMemberRowProps) {
     const { deleteReport } = useNavfitStore();
 
@@ -76,17 +79,18 @@ export function SortableMemberRow({
 
     return (
         <tr
+            id={`member-row-${memberId}`}
             ref={setNodeRef}
             style={style}
-            onClick={onClick}
+            onClick={() => onClick()}
             className={cn(
-                "cursor-pointer transition-colors hover:bg-slate-50 relative group",
+                "cursor-pointer transition-colors hover:bg-slate-50 relative group scroll-mt-14",
                 isSelected && 'bg-indigo-50/50',
                 isDragging && 'bg-indigo-50 shadow-lg ring-1 ring-indigo-200 opacity-95'
             )}
         >
             {/* 1. Drag Handle Column */}
-            <td className="w-12 px-0 py-3 text-center align-middle touch-none relative">
+            <td className="w-20 px-0 py-3 text-center align-middle touch-none relative">
                 {isLocked ? (
                     <div className="flex items-center justify-center p-1 text-slate-300">
                         <Lock className="w-3.5 h-3.5" />
@@ -107,7 +111,7 @@ export function SortableMemberRow({
             </td>
 
             {/* 2. Lock Toggle Column */}
-            <td className="w-12 px-0 py-3 text-center align-middle">
+            <td className="w-20 px-0 py-3 text-center align-middle">
                 <button
                     onClick={(e) => {
                         e.stopPropagation();
@@ -126,27 +130,58 @@ export function SortableMemberRow({
             </td>
 
             {/* 3. Rank Index */}
-            <td className="px-4 py-3 text-center text-sm text-slate-500 font-medium relative w-12">
+            <td className="px-4 py-3 text-center text-sm text-slate-500 font-medium relative w-20">
                 {index + 1}
             </td>
 
-            <td className="px-4 py-3 text-sm font-semibold text-slate-700 text-left w-[30%]">{name}</td>
-            <td className="px-4 py-3 text-sm text-slate-500 text-center w-24">{designator}</td>
-            <td className="px-4 py-3 text-sm text-slate-700 font-mono text-center w-16">
+            {/* Name Column - set to auto width to hug content, but with min width */}
+            <td className="px-4 py-3 text-sm font-semibold text-slate-700 text-left whitespace-nowrap w-auto min-w-[200px]">{name}</td>
+            <td className="px-4 py-3 text-sm text-slate-500 text-center w-[9%]">{designator}</td>
+            <td className="px-4 py-3 text-sm text-slate-700 font-mono text-center w-[9%]">
                 {reportsRemaining !== undefined ? reportsRemaining : '-'}
             </td>
-            <td className="px-4 py-3 text-sm text-center w-16">
+            <td
+                className="px-4 py-3 text-sm text-center w-[9%] cursor-pointer hover:bg-slate-100/50 transition-colors rounded"
+                onClick={(e) => {
+                    e.stopPropagation();
+                    onClick('rec');
+                }}
+            >
                 <PromotionBadge recommendation={promRec} size="sm" className="rounded-sm px-1.5" />
             </td>
-            <td className="px-4 py-3 text-sm font-mono text-slate-700 text-center w-20">{promRec === 'NOB' ? '-' : mta.toFixed(2)}</td>
-            <td className="px-4 py-3 text-sm font-mono text-slate-400 text-center w-20">
+            <td
+                className="px-4 py-3 text-sm font-mono text-slate-700 text-center w-[9%] cursor-pointer hover:bg-slate-100/50 transition-colors rounded"
+                onClick={(e) => {
+                    e.stopPropagation();
+                    onClick('mta');
+                }}
+            >
+                {promRec === 'NOB' ? '-' : mta.toFixed(2)}
+            </td>
+            <td className="px-4 py-3 text-sm font-mono text-slate-400 text-center w-[9%]">
                 {delta === 0 ? '-' : (delta > 0 ? `+${delta.toFixed(2)}` : delta.toFixed(2))}
             </td>
-            <td className={`px-4 py-3 text-sm font-mono text-center font-medium w-20 ${rscaMargin >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>
+            <td className={`px-4 py-3 text-sm font-mono text-center font-medium w-[9%] ${rscaMargin >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>
                 {rscaMargin > 0 ? '+' : ''}{rscaMargin.toFixed(2)}
             </td>
-            <td className="px-4 py-3 text-sm font-mono text-slate-400 text-center w-20">
+            <td className="px-4 py-3 text-sm font-mono text-slate-400 text-center w-[9%]">
                 {eotMta ? eotMta.toFixed(2) : '-'}
+            </td>
+
+
+
+            {/* Document / Edit Button */}
+            <td className="w-8 px-0 py-3 text-center align-middle">
+                <button
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        if (onEditReport) onEditReport();
+                    }}
+                    className="flex items-center justify-center p-1.5 rounded transition-colors mx-auto text-slate-300 hover:text-blue-600 hover:bg-blue-50 opacity-0 group-hover:opacity-100 focus:opacity-100"
+                    title="Edit Report"
+                >
+                    <FileText className="w-4 h-4" />
+                </button>
             </td>
 
             {/* Trash Button */}

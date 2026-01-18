@@ -22,9 +22,9 @@ export function ActiveCyclesList({ groups, onSelect, selectedGroupId, onAddClick
         draggingItemType,
         cycleSort,
         summaryGroups,
-        cycleFilter,
-        setCycleFilter,
-        setCycleSort
+        setCycleSort,
+        cycleListPhase,
+        setCycleListPhase
     } = useNavfitStore();
 
     // Search State
@@ -176,7 +176,7 @@ export function ActiveCyclesList({ groups, onSelect, selectedGroupId, onAddClick
 
             {/* Header / Controls */}
             <div className="px-6 pb-2 pt-2 bg-slate-50 border-b border-slate-100 flex flex-col gap-3 sticky top-0 z-20">
-                {/* Search Bar */}
+                {/* 1. Search Bar (Top) */}
                 <div className="relative">
                     <input
                         type="text"
@@ -185,49 +185,42 @@ export function ActiveCyclesList({ groups, onSelect, selectedGroupId, onAddClick
                         onChange={(e) => setSearchTerm(e.target.value)}
                         className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm text-slate-700 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all font-medium shadow-sm"
                     />
-                    {/* Optional: Add search icon inside input? */}
                 </div>
 
-                {/* Filter & Sort Controls Row */}
-                <div className="flex items-center justify-between">
-                    {/* Filter Buttons */}
-                    <div className="flex items-center gap-1 bg-slate-200/50 p-0.5 rounded-lg">
-                        {['All', 'Officer', 'Enlisted'].map((filter) => (
-                            <button
-                                key={filter}
-                                onClick={() => setCycleFilter(filter as 'All' | 'Officer' | 'Enlisted')}
-                                className={`px-2.5 py-1 rounded-md text-[10px] uppercase tracking-wider font-bold transition-all ${cycleFilter === filter
-                                    ? 'bg-white text-indigo-600 shadow-sm'
-                                    : 'text-slate-500 hover:text-slate-700 hover:bg-slate-200/50'
-                                    }`}
-                            >
-                                {filter}
-                            </button>
-                        ))}
-                    </div>
+                {/* 2. Phase Toggles (Middle - Swapped In) */}
+                <div className="flex p-1 bg-slate-100 rounded-lg">
+                    {['Active', 'Planned', 'Archive'].map((phase) => (
+                        <button
+                            key={phase}
+                            onClick={() => setCycleListPhase(phase as 'Active' | 'Planned' | 'Archive')}
+                            className={`flex-1 px-3 py-1.5 text-xs font-semibold rounded-md transition-all ${cycleListPhase === phase
+                                ? 'bg-white text-slate-900 shadow-sm'
+                                : 'text-slate-500 hover:text-slate-700'
+                                }`}
+                        >
+                            {phase}
+                        </button>
+                    ))}
+                </div>
 
-                    {/* Sort & Sort Label */}
+                {/* 3. Controls Row: Sort | Expand */}
+                <div className="flex items-center justify-between pt-1">
+                    {/* Sort Toggle (Left Edge) */}
                     <div className="flex items-center gap-2">
-                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                            Sort By
+                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest hidden sm:inline-block">
+                            Sort
                         </span>
                         <button
                             onClick={() => setCycleSort(cycleSort === 'DueDate' ? 'Status' : 'DueDate')}
                             className="px-2 py-1 bg-white border border-slate-200 rounded text-[10px] font-bold text-slate-600 uppercase tracking-wider hover:border-slate-300 hover:text-slate-800 transition-colors shadow-sm"
                         >
-                            {cycleSort === 'DueDate' ? 'Due Date' : 'Status'}
+                            {cycleSort === 'DueDate' ? 'Due' : 'Status'}
                         </button>
                     </div>
-                </div>
 
-                {/* Expand/Collapse Controls - Integrated lightly */}
-                <div className="flex justify-between items-center pt-1">
-                    <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                        {filteredGroups.length} Cycles Found
-                    </div>
+                    {/* Expand/Collapse (Right Edge) */}
                     <div className="flex gap-2 text-[10px] font-medium text-slate-500">
                         <button onClick={handleExpandAll} className="hover:text-indigo-600 transition-colors">Expand</button>
-                        <span className="text-slate-300">|</span>
                         <button onClick={handleCollapseAll} className="hover:text-indigo-600 transition-colors">Collapse</button>
                     </div>
                 </div>

@@ -102,6 +102,7 @@ export interface SummaryGroup {
     reports: Report[];
     periodEndDate: string;
     status?: 'Pending' | 'Accepted' | 'Rejected' | 'Planned' | 'Draft' | 'Submitted' | 'Review' | 'Final';
+    hasManualOrder?: boolean; // True if user has manually reordered members via drag-and-drop
 
     // Metrics
     rsca?: number; // Current RSCA including this group
