@@ -20,11 +20,12 @@ export default defineConfig({
       output: {
         manualChunks: (id) => {
           if (id.includes('node_modules')) {
-            if (id.includes('react') || id.includes('react-dom')) {
-              return 'react-vendor';
-            }
+            // IMPORTANT: Check lucide-react BEFORE generic 'react' to prevent false match
             if (id.includes('lucide-react') || id.includes('clsx') || id.includes('tailwind-merge')) {
               return 'ui-vendor';
+            }
+            if (id.includes('react') || id.includes('react-dom')) {
+              return 'react-vendor';
             }
             if (id.includes('@dnd-kit')) {
               return 'dnd-vendor';
