@@ -1,110 +1,190 @@
-import { useMemo } from 'react';
-
+import { useMemo, useState, useCallback } from 'react';
+import { createPortal } from 'react-dom';
+import {
+    BarChart,
+    Bar,
+    XAxis,
+    YAxis,
+    CartesianGrid,
+    ReferenceLine,
+    ResponsiveContainer,
+    Cell
+} from 'recharts';
 
 interface RscaScattergramProps {
     members: Array<{ mta: number; id: string; name: string }>;
     rsca: number;
-    height?: number;
+}
+
+interface TooltipData {
+    mta: string;
+    count: number;
+    users: string[];
 }
 
 export function RscaScattergram({ members, rsca }: RscaScattergramProps) {
-    // Canvas dimensions (internal SVG coordinates)
-    const padding = { top: 45, right: 10, bottom: 15, left: 30 };
-    const width = 300;
-    const height = 100; // Aspect ratio controlled by parent, but viewBox is fixed
+    const [tooltipData, setTooltipData] = useState<TooltipData | null>(null);
+    const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
 
-    // Data Processing
-    const points = useMemo(() => {
-        if (!members.length) return [];
+    const data = useMemo(() => {
+        if (members.length === 0) {
+            return [];
+        }
 
-        // Y-Axis: MTA (Range usually 2.0 - 5.0)
-        // Let's dynamic range it with some buffer, or fixed 2.0-5.0 for consistency
-        const maxMta = 5.0; // Math.max(...members.map(m => m.mta), 5.0);
-        const minMta = 2.0; // Math.min(...members.map(m => m.mta), 2.0);
+        // Calculate min and max MTA from actual member data
+        const mtaValues = members.map(m => m.mta);
+        const rawMin = Math.min(...mtaValues);
+        const rawMax = Math.max(...mtaValues);
 
-        // X-Axis: Scatter (Random or Distributed)
-        // To make it look like a distribution, we can map X to index 
-        // OR map X to RSCA delta? 
-        // User asked: "depicts how MTAs are dispersed about the RSCA"
-        // Standard scatter: Y = MTA, X = Random/Jitter just to show density
+        // Round down min to nearest 0.1 and subtract 0.1 for padding
+        // Round up max to nearest 0.1 and add 0.1 for padding
+        const minMta = Math.floor((rawMin - 0.1) * 10) / 10;
+        const maxMta = Math.ceil((rawMax + 0.1) * 10) / 10;
 
-        return members.map((m, i) => {
-            // Y Coordinate
-            const normalizedY = (m.mta - minMta) / (maxMta - minMta);
-            const y = height - padding.bottom - (normalizedY * (height - padding.top - padding.bottom));
+        // Initialize bins from minMta to maxMta in 0.1 increments
+        const bins: Record<string, { mta: string; count: number; users: string[] }> = {};
 
-            // X Coordinate - Apply pseudo-random jitter based on ID/Index to keep it deterministic
-            // Spread across width
-            const pseudoRandom = ((i * 1337) % 7919) / 7919;
-            const x = padding.left + (pseudoRandom * (width - padding.left - padding.right));
+        // Populate bins for the dynamic range
+        for (let i = Math.round(minMta * 10); i <= Math.round(maxMta * 10); i++) {
+            const val = (i / 10).toFixed(1);
+            bins[val] = { mta: val, count: 0, users: [] };
+        }
 
-            return { x, y, ...m };
+        // Fill bins with member data
+        members.forEach(m => {
+            // Round to nearest 0.1
+            const binKey = m.mta.toFixed(1);
+
+            if (bins[binKey]) {
+                bins[binKey].count++;
+                bins[binKey].users.push(m.name);
+            }
         });
+
+        return Object.values(bins);
     }, [members]);
 
-    // RSCA Line Y-Coordinate
-    const rscaY = useMemo(() => {
-        const minMta = 2.0;
-        const maxMta = 5.0;
-        const normalized = (rsca - minMta) / (maxMta - minMta);
-        return height - padding.bottom - (normalized * (height - padding.top - padding.bottom));
-    }, [rsca]);
+    // Calculate strict Reference Line position matching the bin keys
+    const rscaRef = rsca.toFixed(1);
+
+    // Handle bar mouse events for portal tooltip
+    const handleBarMouseMove = useCallback((entry: TooltipData, event: React.MouseEvent) => {
+        setTooltipData(entry);
+        setTooltipPosition({ x: event.clientX + 10, y: event.clientY - 10 });
+    }, []);
+
+    const handleBarMouseLeave = useCallback(() => {
+        setTooltipData(null);
+    }, []);
+
+    // Portal Tooltip Component
+    const PortalTooltip = () => {
+        if (!tooltipData) return null;
+
+        return createPortal(
+            <div
+                className="fixed bg-white p-3 border border-slate-200 shadow-xl rounded-lg text-xs min-w-[150px] pointer-events-none"
+                style={{
+                    left: tooltipPosition.x,
+                    top: tooltipPosition.y,
+                    zIndex: 99999
+                }}
+            >
+                <div className="flex justify-between items-center mb-2 border-b border-slate-100 pb-1">
+                    <span className="font-bold text-slate-700">MTA: {tooltipData.mta}</span>
+                    <span className="bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded font-mono font-medium">
+                        {tooltipData.count}
+                    </span>
+                </div>
+
+                {tooltipData.users.length > 0 ? (
+                    <div className="flex flex-col gap-0.5">
+                        <span className="text-[10px] uppercase text-slate-400 font-bold tracking-wider mb-0.5">Members</span>
+                        <ul className="max-h-[120px] overflow-y-auto custom-scrollbar">
+                            {tooltipData.users.slice(0, 10).map((u: string, i: number) => (
+                                <li key={i} className="text-slate-600 truncate py-0.5">{u}</li>
+                            ))}
+                            {tooltipData.users.length > 10 && (
+                                <li className="text-slate-400 italic text-[10px] mt-1">
+                                    +{tooltipData.users.length - 10} others
+                                </li>
+                            )}
+                        </ul>
+                    </div>
+                ) : (
+                    <span className="text-slate-400 italic">No reports</span>
+                )}
+            </div>,
+            document.body
+        );
+    };
 
     return (
-        <div className="h-full w-full bg-white border border-slate-200 rounded-xl overflow-hidden relative">
-            <svg
-                viewBox={`0 0 ${width} ${height}`}
-                preserveAspectRatio="none"
-                className="w-full h-full"
-            >
-                {/* Background Grid Lines (Optional) */}
-                {[2.0, 3.0, 4.0, 5.0].map(val => {
-                    const norm = (val - 2.0) / 3.0;
-                    const y = height - padding.bottom - (norm * (height - padding.top - padding.bottom));
-                    return (
-                        <line
-                            key={val}
-                            x1={padding.left}
-                            y1={y}
-                            x2={width - padding.right}
-                            y2={y}
-                            stroke="#e2e8f0"
-                            strokeWidth="1"
-                        />
-                    );
-                })}
-
-                {/* RSCA Reference Line */}
-                <line
-                    x1={padding.left}
-                    y1={rscaY}
-                    x2={width - padding.right}
-                    y2={rscaY}
-                    stroke="#6366f1"
-                    strokeWidth="1.5"
-                    strokeDasharray="4 2"
-                />
-
-                {/* Points */}
-                {points.map((p) => (
-                    <circle
-                        key={p.id}
-                        cx={p.x}
-                        cy={p.y}
-                        r="2.5"
-                        className="fill-slate-600/60 hover:fill-indigo-600 transition-colors"
-                    />
-                ))}
-
-                {/* Axis Labels (Minimal) */}
-                <text x={5} y={height - padding.bottom} className="text-[8px] fill-slate-400">2.0</text>
-                <text x={5} y={padding.top} className="text-[8px] fill-slate-400">5.0</text>
-            </svg>
-
-            {/* Overlay Label */}
-            <div className="absolute top-1 left-0 right-0 text-center text-[10px] uppercase font-bold text-slate-400 tracking-wider">
+        <div className="h-full w-full bg-white relative pt-6 pl-2 pr-2">
+            <div className="absolute top-3 left-4 text-[10px] font-bold text-slate-400 uppercase tracking-wider z-10">
                 MTA Distribution
             </div>
+
+            <div className="w-full h-full" onMouseLeave={handleBarMouseLeave}>
+                <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={data} margin={{ top: 10, right: 10, left: -25, bottom: 0 }} barGap={0} barCategoryGap={1}>
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                        <XAxis
+                            dataKey="mta"
+                            tick={{ fontSize: 9, fill: '#94a3b8' }}
+                            axisLine={false}
+                            tickLine={false}
+                            interval={4} // Show every 0.5 (approx every 5th tick of 0.1 bins)
+                            minTickGap={10}
+                        />
+                        <YAxis
+                            tick={{ fontSize: 9, fill: '#94a3b8' }}
+                            axisLine={false}
+                            tickLine={false}
+                            allowDecimals={false}
+                        />
+                        <Bar
+                            dataKey="count"
+                            fill="#cbd5e1"
+                            radius={[2, 2, 0, 0]}
+                            maxBarSize={40}
+                            onMouseMove={(data, _index, event) => handleBarMouseMove(data as unknown as TooltipData, event as unknown as React.MouseEvent)}
+                            onMouseLeave={handleBarMouseLeave}
+                        >
+                            {
+                                data.map((entry, index) => (
+                                    <Cell
+                                        key={`cell-${index}`}
+                                        fill={entry.mta === rscaRef ? '#818cf8' : '#cbd5e1'}
+                                        className="transition-all duration-300 hover:opacity-80 cursor-pointer"
+                                    />
+                                ))
+                            }
+                        </Bar>
+                        <ReferenceLine
+                            x={rscaRef}
+                            stroke="#6366f1"
+                            strokeDasharray="3 3"
+                            strokeWidth={1.5}
+                        >
+                            <text
+                                x={0}
+                                y={0}
+                                dy={-10}
+                                dx={2}
+                                fill="#6366f1"
+                                fontSize={10}
+                                fontWeight="bold"
+                                textAnchor="start"
+                            >
+                                RSCA
+                            </text>
+                        </ReferenceLine>
+                    </BarChart>
+                </ResponsiveContainer>
+            </div>
+
+            <PortalTooltip />
         </div>
     );
 }

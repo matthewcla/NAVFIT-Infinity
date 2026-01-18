@@ -588,7 +588,7 @@ export function CycleContextPanel({ group }: CycleContextPanelProps) {
                             </div>
 
                             {/* 2B. Scattergram (Middle) */}
-                            <div className="flex-1 min-w-0 rounded-xl border border-slate-200 shadow-sm overflow-hidden bg-white">
+                            <div className="flex-1 min-w-0 rounded-xl border border-slate-200 shadow-sm overflow-visible bg-white relative z-30">
                                 <RscaScattergram
                                     members={rankedMembers}
                                     rsca={projectedRsca}
