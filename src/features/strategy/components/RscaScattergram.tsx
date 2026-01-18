@@ -84,8 +84,12 @@ export function RscaScattergram({ members, rsca, onClickMember }: RscaScattergra
         const maxMta = Math.max(...mtas, rsca + 0.2);
 
         // Pad to nearest 0.1
-        const viewMin = Math.floor(minMta * 10) / 10 - 0.1;
-        const viewMax = Math.ceil(maxMta * 10) / 10 + 0.1;
+        let viewMin = Math.floor(minMta * 10) / 10 - 0.1;
+        let viewMax = Math.ceil(maxMta * 10) / 10 + 0.1;
+
+        // Clamp to valid 1.0 - 5.0 range
+        viewMin = Math.max(1.0, viewMin);
+        viewMax = Math.min(5.0, viewMax);
 
         return { min: viewMin, max: viewMax };
     }, [members, rsca]);
@@ -216,13 +220,13 @@ export function RscaScattergram({ members, rsca, onClickMember }: RscaScattergra
     };
 
     return (
-        <div ref={containerRef} className="w-full h-full relative custom-scrollbar flex items-center justify-center overflow-x-auto overflow-y-hidden">
+        <div ref={containerRef} className="w-full h-full relative custom-scrollbar flex items-end justify-center overflow-x-auto overflow-y-hidden">
             {/* Center content if small, scroll if large */}
             <svg
                 width={Math.max(geometry.width, 300)} // Min width
                 height="100%"
                 viewBox={`0 0 ${geometry.width} ${geometry.height}`}
-                preserveAspectRatio="xMidYMid meet" // Align Center - Vertically and Horizontally
+                preserveAspectRatio="xMidYMax meet" // Align bottom, center horizontally
                 className="overflow-visible flex-shrink-0"
             >
                 {/* --- Grid & Axis --- */}
