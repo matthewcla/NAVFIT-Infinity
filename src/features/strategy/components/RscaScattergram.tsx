@@ -1,5 +1,6 @@
 import { useMemo, useState, useCallback } from 'react';
 import { createPortal } from 'react-dom';
+import { useScaleFactor } from '@/context/ScaleContext';
 import {
     BarChart,
     Bar,
@@ -79,6 +80,7 @@ export function RscaScattergram({ members, rsca }: RscaScattergramProps) {
 
     // Portal Tooltip Component
     const PortalTooltip = () => {
+        const { scale } = useScaleFactor();
         if (!tooltipData) return null;
 
         return createPortal(
@@ -87,7 +89,9 @@ export function RscaScattergram({ members, rsca }: RscaScattergramProps) {
                 style={{
                     left: tooltipPosition.x,
                     top: tooltipPosition.y,
-                    zIndex: 99999
+                    zIndex: 99999,
+                    transform: `scale(${scale})`,
+                    transformOrigin: 'top left'
                 }}
             >
                 <div className="flex justify-between items-center mb-2 border-b border-slate-100 pb-1">

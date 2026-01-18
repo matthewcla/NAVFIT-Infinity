@@ -1,6 +1,7 @@
 
 import { createPortal } from 'react-dom';
 import { AlertTriangle, X, Check } from 'lucide-react';
+import { useScaleFactor } from '@/context/ScaleContext';
 
 interface RankChangeModalProps {
     isOpen: boolean;
@@ -21,10 +22,20 @@ export function RankChangeModal({
     newRank,
     memberName
 }: RankChangeModalProps) {
+    const { scale } = useScaleFactor();
+
     if (!isOpen) return null;
 
     return createPortal(
-        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
+        <div
+            className="fixed inset-0 z-[200] flex items-center justify-center p-4"
+            style={{
+                transform: `scale(${scale})`,
+                transformOrigin: 'top left',
+                width: `${100 / scale}%`,
+                height: `${100 / scale}%`
+            }}
+        >
             {/* Backdrop */}
             <div
                 className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-200"
