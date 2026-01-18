@@ -68,7 +68,7 @@ export function CycleMemberList({
     hasProposedReports = false
 }: CycleMemberListProps) {
 
-    const { toggleReportLock, setGroupLockState, selectMember } = useNavfitStore();
+    const { toggleReportLock, setGroupLockState } = useNavfitStore();
 
     // @dnd-kit Sensors
     const sensors = useSensors(
@@ -127,9 +127,6 @@ export function CycleMemberList({
         if (!over || active.id === over.id) return;
         if (hasProposedReports) return; // Block during optimization review
 
-        // Close sidebar on drag
-        selectMember(null);
-
         const oldIndex = rankedMembers.findIndex(m => m.reportId === active.id);
         const newIndex = rankedMembers.findIndex(m => m.reportId === over.id);
 
@@ -142,7 +139,7 @@ export function CycleMemberList({
 
         const newOrderIds = newOrder.map(m => m.reportId);
         onReorderMembers(activeGroupId, active.id as string, newOrderIds);
-    }, [rankedMembers, activeGroupId, onReorderMembers, hasProposedReports, selectMember]);
+    }, [rankedMembers, activeGroupId, onReorderMembers, hasProposedReports]);
 
     // Compute preview ranks during drag, or use MTA-based ranks during slider preview
     const previewRankMap = useMemo(() => {

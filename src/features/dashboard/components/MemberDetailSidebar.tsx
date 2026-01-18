@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
 import {
-    X,
     ChevronLeft,
     ChevronRight,
     Lock,
@@ -265,26 +264,27 @@ export function MemberDetailSidebar({
 
     const isDirty = Math.abs(simulatedMta - initialMta) > 0.001 || simulatedRec !== initialRec;
 
-    // --- Right-Click Auto-Close ---
+    // --- ESC Key Handler: Cancels changes and closes ---
     useEffect(() => {
-        const handleContextMenu = () => {
-            // Check for unsaved changes before just closing?
-            // The existing onClose usually handles it via parental passing or we call checkUnsavedChanges(onClose)
-            // But we can't easily wrap the passed onClose in checkUnsavedChanges inside the event listener 
-            // without explicitly calling the local wrapper.
-
-            // NOTE: The user requested "automatically closes". 
-            // If we want to support the "Unsaved Changes" modal, we should call checkUnsavedChanges(onClose).
-            // However, checkUnsavedChanges expects a function () => void.
-            checkUnsavedChanges(onClose);
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') {
+                // Reset to initial values (discard changes)
+                setSimulatedMta(initialMta);
+                setSimulatedRec(initialRec as 'EP' | 'MP' | 'P' | 'Prog' | 'SP' | 'NOB');
+                setMtaInputValue(initialMta.toFixed(2));
+                setHistory([]);
+                setFuture([]);
+                // Close the pane
+                onClose();
+            }
         };
 
-        window.addEventListener('contextmenu', handleContextMenu);
+        window.addEventListener('keydown', handleKeyDown);
 
         return () => {
-            window.removeEventListener('contextmenu', handleContextMenu);
+            window.removeEventListener('keydown', handleKeyDown);
         };
-    }, [onClose, isDirty, simulatedMta, simulatedRec]); // Depend on state needed for checkUnsavedChanges
+    }, [onClose, initialMta, initialRec]);
 
 
 
@@ -419,8 +419,7 @@ export function MemberDetailSidebar({
         setHistory([]);
         setFuture([]);
 
-        // Close the sidebar after successful apply
-        onClose();
+        // Do NOT close the sidebar - keep it open after applying changes
     };
 
     // Navigation Interception
@@ -520,12 +519,7 @@ export function MemberDetailSidebar({
             <div className="flex-none bg-white z-10 border-b border-slate-200 px-3 py-3">
                 <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-2">
-                        <button
-                            onClick={() => checkUnsavedChanges(onClose)}
-                            className="p-1.5 -ml-1.5 rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
-                        >
-                            <X className="w-5 h-5" />
-                        </button>
+                        {/* X button removed - use ESC to close */}
                     </div>
                 </div>
 
