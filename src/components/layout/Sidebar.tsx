@@ -8,7 +8,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { UserProfileMenu } from './UserProfileMenu';
-
+import { SystemStatus } from './SystemStatus';
 
 // Define the tab type locally or import from a shared type file if needed
 export type Tab = 'strategy' | 'schedule' | 'profiles' | 'admin';
@@ -121,6 +121,11 @@ export function Sidebar({ activeTab, onTabChange, collapsed, onToggleCollapse }:
                     collapsed={collapsed}
                 />
 
+            </div>
+
+            {/* System Status Indicator - Pushed to bottom */}
+            <div className="mt-auto">
+                <SystemStatus collapsed={collapsed} />
             </div>
 
             {/* User Profile */}
