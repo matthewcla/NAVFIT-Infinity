@@ -1,4 +1,4 @@
-import { useCallback, useState, useMemo } from 'react';
+import { useCallback, useState, useMemo, useEffect } from 'react';
 import { Sparkles, Check, X, Lock, Unlock } from 'lucide-react';
 import {
     DndContext,
@@ -178,6 +178,16 @@ export function CycleMemberList({
     const sortableIds = rankedMembers
         .filter(m => !m.report.isLocked)
         .map(m => m.reportId);
+
+    // Auto-scroll to selected member
+    useEffect(() => {
+        if (selectedMemberId) {
+            const element = document.getElementById(`member-row-${selectedMemberId}`);
+            if (element) {
+                element.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
+        }
+    }, [selectedMemberId]);
 
     return (
         <div className="flex-1 overflow-y-auto">

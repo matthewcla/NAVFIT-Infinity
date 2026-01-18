@@ -29,6 +29,7 @@ interface SortableMemberRowProps {
 
 export function SortableMemberRow({
     id,
+    memberId,
     reportId,
     groupId,
     index,
@@ -78,11 +79,12 @@ export function SortableMemberRow({
 
     return (
         <tr
+            id={`member-row-${memberId}`}
             ref={setNodeRef}
             style={style}
             onClick={onClick}
             className={cn(
-                "cursor-pointer transition-colors hover:bg-slate-50 relative group",
+                "cursor-pointer transition-colors hover:bg-slate-50 relative group scroll-mt-14",
                 isSelected && 'bg-indigo-50/50',
                 isDragging && 'bg-indigo-50 shadow-lg ring-1 ring-indigo-200 opacity-95'
             )}
