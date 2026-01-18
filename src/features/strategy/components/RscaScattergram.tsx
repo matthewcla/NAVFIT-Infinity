@@ -1,4 +1,4 @@
-import { useMemo, useState, useRef } from 'react';
+import { useMemo, useState, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { useScaleFactor } from '@/context/ScaleContext';
 import { useNavfitStore } from '@/store/useNavfitStore';
@@ -43,10 +43,10 @@ interface PointData {
 }
 
 // --- Constants ---
-const CHART_PADDING = { top: 50, right: 20, bottom: 30, left: 20 };
-// const DOT_RADIUS = 5; // Replaced by dynamic radius in geometry
+const CHART_PADDING = { top: 50, right: 30, bottom: 30, left: 30 }; // Increased padding for crosshairs
 const DOT_GAP = 4;
 const BIN_WIDTH_PX = 40; // Wider bins for better label spacing
+const HOVER_THRESHOLD_PX = 60; // Max distance to snap to a point
 
 // --- Helper: Colors ---
 const getPromRecColor = (rec?: string, isSelected: boolean = false) => {
@@ -73,7 +73,18 @@ const getPromRecColor = (rec?: string, isSelected: boolean = false) => {
 export function RscaScattergram({ members, rsca, onClickMember }: RscaScattergramProps) {
     const { selectedMemberId, selectMember } = useNavfitStore();
     const containerRef = useRef<HTMLDivElement>(null);
-    const [hoveredMember, setHoveredMember] = useState<{ id: string, name: string, mta: number, x: number, y: number } | null>(null);
+    const svgRef = useRef<SVGSVGElement>(null);
+
+    // Hover state now includes the exact screen coordinates for the tooltip to prevent jitter
+    const [hoveredMember, setHoveredMember] = useState<{
+        id: string,
+        name: string,
+        mta: number,
+        x: number, // SVG-relative X
+        y: number, // SVG-relative Y
+        screenX: number, // Absolute Screen X (for Portal)
+        screenY: number // Absolute Screen Y (for Portal)
+    } | null>(null);
 
     // --- Layout Calculation ---
     // 1. Determine X-Axis Range (Min/Max MTA) around the RSCA/Group
@@ -99,7 +110,6 @@ export function RscaScattergram({ members, rsca, onClickMember }: RscaScattergra
         const binMap = new Map<string, BinData>();
 
         // Initialize all needed bins
-        // We iterate by integer steps to avoid float drift, then divide
         const start = Math.round(range.min * 10);
         const end = Math.round(range.max * 10);
 
@@ -113,12 +123,12 @@ export function RscaScattergram({ members, rsca, onClickMember }: RscaScattergra
         members.forEach(m => {
             const key = m.mta.toFixed(1);
             if (!binMap.has(key)) {
-                // If out of initialized range (shouldn't happen with calc above), add dynamic
+                // If out of initialized range, add dynamic
                 binMap.set(key, { mta: Math.round(m.mta * 10) / 10, items: [] });
             }
             binMap.get(key)!.items.push({
                 ...m,
-                promRec: m.promRec || 'P' // Default to P if missing
+                promRec: m.promRec || 'P'
             });
         });
 
@@ -127,16 +137,12 @@ export function RscaScattergram({ members, rsca, onClickMember }: RscaScattergra
 
     // 3. Compute Geometry
     const geometry = useMemo(() => {
-        // Dynamic Dot Radius: Larger dots for smaller populations to fill negative space
-        // Range: 5px (dense) -> 8px (sparse)
         const density = members.length;
         const baseRadius = density < 10 ? 8 : density < 30 ? 6 : 5;
 
         const numBins = bins.length;
         const totalWidth = numBins * BIN_WIDTH_PX + CHART_PADDING.left + CHART_PADDING.right;
 
-        // Auto-height based on max stack
-        // Reduce min-clamp to 3 to allow tighter wrapping on small-stack groups
         const maxStack = Math.max(...bins.map(b => b.items.length), 3);
         const stackHeight = maxStack * (baseRadius * 2 + DOT_GAP);
         const totalHeight = stackHeight + CHART_PADDING.top + CHART_PADDING.bottom;
@@ -146,9 +152,13 @@ export function RscaScattergram({ members, rsca, onClickMember }: RscaScattergra
         bins.forEach((bin, binIdx) => {
             const x = CHART_PADDING.left + (binIdx * BIN_WIDTH_PX) + (BIN_WIDTH_PX / 2);
 
+            // Sort items by MTA ascending (Lowest -> Highest)
+            // Stacking starts from bottom (y=height), so first item is bottom, last is top.
+            // This ensures Highest MTA is at the visual Top.
+            const sortedItems = [...bin.items].sort((a, b) => a.mta - b.mta);
+
             // Stack from bottom up
-            bin.items.forEach((item, itemIdx) => {
-                // Use totalHeight - bottom_padding as the baseline
+            sortedItems.forEach((item, itemIdx) => {
                 const baseline = totalHeight - CHART_PADDING.bottom;
                 const y = baseline - baseRadius - (itemIdx * (baseRadius * 2 + DOT_GAP));
 
@@ -176,24 +186,100 @@ export function RscaScattergram({ members, rsca, onClickMember }: RscaScattergra
     }, [bins, selectedMemberId, rsca, members.length]);
 
 
-    // --- Interaction ---
-    const handleClick = (memberId: string) => {
-        selectMember(memberId);
-        if (onClickMember) onClickMember(memberId);
+    // --- Interaction: Magnetic Hover ---
+    const handleMouseMove = useCallback((e: React.MouseEvent<SVGSVGElement, MouseEvent>) => {
+        const svg = svgRef.current;
+        if (!geometry.points.length || !svg) return;
+
+        // 1. Map Mouse to SVG Coordinates (User Units)
+        // This handles scaling, viewing transformations, etc.
+        let mouseX = 0;
+        let mouseY = 0;
+
+        try {
+            const pt = svg.createSVGPoint();
+            pt.x = e.clientX;
+            pt.y = e.clientY;
+
+            // Transform screen pixel -> SVG unit
+            const ctm = svg.getScreenCTM();
+            if (ctm) {
+                const inverseCtm = ctm.inverse();
+                const svgP = pt.matrixTransform(inverseCtm);
+                mouseX = svgP.x;
+                mouseY = svgP.y;
+            } else {
+                // Fallback (unlikely to work well with scaling, but safe)
+                const rect = svg.getBoundingClientRect();
+                mouseX = e.clientX - rect.left;
+                mouseY = e.clientY - rect.top;
+            }
+        } catch (err) {
+            console.warn('SVG Matrix Error', err);
+            return;
+        }
+
+        // 2. Find Closest Point in SVG Space
+        let minDistance = Infinity;
+        let closestPoint: PointData | null = null;
+
+        // Optimize: Only check points within reasonable range if list is huge?
+        // For < 500 items, simple iteration is fine.
+        for (const p of geometry.points) {
+            // Calculate distance in SVG Units (consistent)
+            const dx = p.x - mouseX;
+            const dy = p.y - mouseY;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+
+            if (dist < minDistance) {
+                minDistance = dist;
+                closestPoint = p;
+            }
+        }
+
+        // Apply Threshold (in SVG Units)
+        // We might want to scale threshold if the chart is zoomed out?
+        // Ideally threshold is visual pixels, but simplified to Units here.
+        if (closestPoint && minDistance < HOVER_THRESHOLD_PX) {
+
+            // 3. Map Closest Point back to Screen Coordinates for Tooltip
+            try {
+                const pt = svg.createSVGPoint();
+                pt.x = closestPoint.x;
+                pt.y = closestPoint.y;
+                const ctm = svg.getScreenCTM();
+
+                if (ctm) {
+                    const screenP = pt.matrixTransform(ctm);
+                    setHoveredMember({
+                        id: closestPoint.id,
+                        name: closestPoint.member.name,
+                        mta: closestPoint.member.mta,
+                        x: closestPoint.x, // Internal SVG X
+                        y: closestPoint.y, // Internal SVG Y
+                        screenX: screenP.x, // Absolute Screen X
+                        screenY: screenP.y  // Absolute Screen Y
+                    });
+                }
+            } catch (err) {
+                console.warn('SVG Matrix Error', err);
+            }
+        } else {
+            setHoveredMember(null);
+        }
+    }, [geometry.points]);
+
+    const handleMouseLeave = () => {
+        setHoveredMember(null);
     };
 
-    const handleMouseEnter = (p: PointData) => {
-        if (!containerRef.current) return;
-        const rect = containerRef.current.getBoundingClientRect();
-        setHoveredMember({
-            id: p.id,
-            name: p.member.name,
-            mta: p.member.mta,
-            x: rect.left + p.x,
-            y: rect.top + p.y
-        });
+    const handleClick = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        if (hoveredMember) {
+            selectMember(hoveredMember.id);
+            if (onClickMember) onClickMember(hoveredMember.id);
+        }
     };
-
 
     // --- Portal Tooltip ---
     const RscaTooltip = () => {
@@ -202,18 +288,25 @@ export function RscaScattergram({ members, rsca, onClickMember }: RscaScattergra
 
         return createPortal(
             <div
-                className="fixed pointer-events-none z-[99999] bg-slate-900 text-white text-xs px-2 py-1.5 rounded shadow-lg flex flex-col items-center"
+                className="fixed pointer-events-none z-[99999] flex flex-col items-center"
                 style={{
-                    left: hoveredMember.x,
-                    top: hoveredMember.y - 40, // Offset up
-                    transform: `translate(-50%, 0) scale(${scale})`,
+                    left: hoveredMember.screenX,
+                    top: hoveredMember.screenY - 24, // Offset up slightly more
+                    transform: `translate(-50%, -100%) scale(${scale})`, // Translate up 100% to sit above
                     transformOrigin: 'bottom center'
                 }}
             >
-                <div className="font-bold whitespace-nowrap">{hoveredMember.name}</div>
-                <div className="font-mono text-[10px] text-slate-300">MTA: {hoveredMember.mta.toFixed(2)}</div>
-                {/* Little triangle arrow */}
-                <div className="absolute top-full left-1/2 -ml-1 border-4 border-transparent border-t-slate-900"></div>
+                {/* Tooltip Card */}
+                <div className="bg-slate-900/90 backdrop-blur-md border border-slate-700/50 text-white text-xs px-3 py-2 rounded-lg shadow-xl mb-2 flex flex-col items-center min-w-[120px]">
+                    <div className="font-bold whitespace-nowrap text-sm text-slate-100">{hoveredMember.name}</div>
+                    <div className="flex items-center gap-2 mt-1">
+                        <span className="text-[10px] uppercase font-bold tracking-wider text-slate-400">MTA</span>
+                        <span className="font-mono text-xs font-bold text-emerald-400">{hoveredMember.mta.toFixed(2)}</span>
+                    </div>
+                </div>
+
+                {/* Triangle */}
+                <div className="-mt-2 w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-t-[6px] border-t-slate-900/90 backdrop-blur-md"></div>
             </div>,
             document.body
         );
@@ -223,14 +316,18 @@ export function RscaScattergram({ members, rsca, onClickMember }: RscaScattergra
         <div ref={containerRef} className="w-full h-full relative custom-scrollbar flex items-end justify-center overflow-x-auto overflow-y-hidden">
             {/* Center content if small, scroll if large */}
             <svg
+                ref={svgRef}
                 width={Math.max(geometry.width, 300)} // Min width
-                height="100%"
+                height="100%" // Fill height
                 viewBox={`0 0 ${geometry.width} ${geometry.height}`}
                 preserveAspectRatio="xMidYMax meet" // Align bottom, center horizontally
-                className="overflow-visible flex-shrink-0"
+                className="overflow-visible flex-shrink-0 touch-none" // touch-none for better gesture handling if needed
+                onMouseMove={handleMouseMove}
+                onMouseLeave={handleMouseLeave}
+                onClick={handleClick}
+                style={{ cursor: hoveredMember ? 'pointer' : 'default' }}
             >
                 {/* --- Grid & Axis --- */}
-                {/* X-Axis Line */}
                 <line
                     x1={CHART_PADDING.left}
                     y1={geometry.height - CHART_PADDING.bottom}
@@ -243,21 +340,15 @@ export function RscaScattergram({ members, rsca, onClickMember }: RscaScattergra
                 {/* X-Axis Labels (MTA Bins) */}
                 {geometry.bins.map((bin, i) => {
                     const x = CHART_PADDING.left + (i * BIN_WIDTH_PX) + (BIN_WIDTH_PX / 2);
-                    // Label every other bin if too crowded? or every 0.2?
-                    // For now, label all 0.1s but rotate or stagger if needed?
-                    // Or label "integers" and "halves" boldly?
-                    // Let's just do every 0.1 small.
                     const isWhole = bin.mta % 1 === 0;
 
                     return (
                         <g key={`label-${bin.mta}`}>
-                            {/* Tick */}
                             <line
                                 x1={x} y1={geometry.height - CHART_PADDING.bottom}
                                 x2={x} y2={geometry.height - CHART_PADDING.bottom + 4}
                                 stroke="#cbd5e1"
                             />
-                            {/* Text */}
                             <text
                                 x={x}
                                 y={geometry.height - CHART_PADDING.bottom + 14}
@@ -278,6 +369,7 @@ export function RscaScattergram({ members, rsca, onClickMember }: RscaScattergra
                         stroke="#6366f1"
                         strokeWidth={2}
                         strokeDasharray="4 4"
+                        opacity={0.5}
                     />
                     <text
                         x={4} y={CHART_PADDING.top}
@@ -288,50 +380,63 @@ export function RscaScattergram({ members, rsca, onClickMember }: RscaScattergra
                     </text>
                 </g>
 
+                {/* --- Crosshairs (Active State) --- */}
+                {hoveredMember && (
+                    <g className="pointer-events-none transition-opacity duration-200">
+                        {/* Vertical Drop to Axis */}
+                        <line
+                            x1={hoveredMember.x}
+                            y1={hoveredMember.y + geometry.radius + 4}
+                            x2={hoveredMember.x}
+                            y2={geometry.height - CHART_PADDING.bottom}
+                            stroke="#94a3b8"
+                            strokeWidth={1}
+                            strokeDasharray="3 3"
+                            opacity={0.6}
+                        />
+                        {/* Highlight Axis Label Tick (Optional, maybe just the line is enough) */}
+                    </g>
+                )}
+
 
                 {/* --- Data Points (Members) --- */}
                 {geometry.points.map(p => {
                     const isSelected = p.id === selectedMemberId;
+                    const isHovered = hoveredMember?.id === p.id;
 
                     return (
                         <g
                             key={p.id}
                             transform={`translate(${p.x}, ${p.y})`}
-                            className="cursor-pointer group"
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                handleClick(p.id);
-                            }}
-                            onMouseEnter={() => handleMouseEnter(p)}
-                            onMouseLeave={() => setHoveredMember(null)}
+                            className="transition-all duration-300"
                         >
-                            {/* 1. Stable Hit Target (Invisible, larger) */}
-                            {/* This prevents flickering when the visual dot scales or cursor moves slightly */}
-                            <circle
-                                r={geometry.radius + 4}
-                                fill="transparent"
-                                className="z-10"
-                            />
+                            {/* 1. Active Glow (Only when hovered or selected) */}
+                            {(isHovered || isSelected) && (
+                                <circle
+                                    r={geometry.radius + 6}
+                                    fill={p.color}
+                                    opacity={isHovered ? 0.2 : 0.15}
+                                    className="animate-pulse-slow"
+                                />
+                            )}
 
-                            {/* 2. Visual Dot (Animated) */}
+                            {/* 2. Visual Dot */}
                             <circle
-                                r={geometry.radius + (isSelected ? 1 : 0)}
+                                r={geometry.radius + (isHovered || isSelected ? 2 : 0)}
                                 fill={p.color}
                                 stroke={p.stroke}
-                                strokeWidth={isSelected ? 2 : 1}
-                                className={`transition-all duration-300 ease-out origin-center group-hover:scale-150 ${isSelected ? 'shadow-md filter drop-shadow-md scale-110' : ''}`}
-                                style={{ pointerEvents: 'none' }} // Let clicks pass to the group/hit target
+                                strokeWidth={isSelected || isHovered ? 2 : 1}
+                                className={`transition-all duration-200 ease-out ${isHovered || isSelected ? 'drop-shadow-md' : ''}`}
                             />
 
-                            {/* 3. Selection Halo */}
+                            {/* 3. Selection Ring */}
                             {isSelected && (
                                 <circle
-                                    r={geometry.radius + 4}
+                                    r={geometry.radius + 5}
                                     fill="none"
                                     stroke={p.color}
-                                    strokeOpacity={0.4}
-                                    strokeWidth={2}
-                                    style={{ pointerEvents: 'none' }}
+                                    strokeWidth={1.5}
+                                    opacity={0.8}
                                 />
                             )}
                         </g>

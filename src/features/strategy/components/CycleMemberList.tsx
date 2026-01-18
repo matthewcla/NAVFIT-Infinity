@@ -184,7 +184,7 @@ export function CycleMemberList({
         if (selectedMemberId) {
             const element = document.getElementById(`member-row-${selectedMemberId}`);
             if (element) {
-                element.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                element.scrollIntoView({ behavior: 'smooth', block: 'start' });
             }
         }
     }, [selectedMemberId]);
