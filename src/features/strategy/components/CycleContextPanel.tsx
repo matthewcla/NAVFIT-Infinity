@@ -584,7 +584,7 @@ export function CycleContextPanel({ group }: CycleContextPanelProps) {
 
 
                         {/* Row 2: Visual Stack - Scattergram Main + Quota Footer */}
-                        <div className="flex flex-col items-stretch gap-4 w-full h-[350px]">
+                        <div className="flex flex-col items-stretch gap-4 w-full h-[240px]">
 
                             {/* 2A. Main Visualization Area (Chart + Integrated HUD) */}
                             <div className="flex-1 min-w-0 bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden relative flex flex-col">
@@ -600,6 +600,18 @@ export function CycleContextPanel({ group }: CycleContextPanelProps) {
                                     </div>
                                 </div>
 
+                                {/* Integrated Scoreboard Overlay (Top Left) */}
+                                <div className="absolute top-4 left-4 z-20 pointer-events-none">
+                                    <div className="pointer-events-auto bg-white/90 backdrop-blur-md rounded-lg shadow-sm border border-slate-100 px-3 py-1.5 flex items-center">
+                                        <QuotaHeadsUpDisplay
+                                            distribution={distribution}
+                                            totalReports={effectiveSize}
+                                            context={domainContext}
+                                            variant="minimal"
+                                        />
+                                    </div>
+                                </div>
+
                                 {/* Main Chart Canvas */}
                                 <div className="flex-1 w-full h-full relative z-10 pt-4"> {/* Slight pt for breathing room */}
                                     <RscaScattergram
@@ -609,17 +621,7 @@ export function CycleContextPanel({ group }: CycleContextPanelProps) {
                                 </div>
                             </div>
 
-                            {/* 2B. Quota Efficiency Footer */}
-                            <div className="h-20 shrink-0 bg-white/50 rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-                                <div className="h-full bg-white/95 backdrop-blur-sm">
-                                    <QuotaHeadsUpDisplay
-                                        distribution={distribution}
-                                        totalReports={effectiveSize}
-                                        context={domainContext}
-                                        variant="full-width"
-                                    />
-                                </div>
-                            </div>
+
                         </div>
                     </div>
                 </div>
