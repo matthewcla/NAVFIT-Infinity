@@ -553,25 +553,25 @@ export function CycleContextPanel({ group }: CycleContextPanelProps) {
                             </div>
 
                             <div className="flex flex-col items-end gap-1.5 pl-4">
-                                {/* Submit Control - Morphing Style */}
-                                {/* Only enable if all reports are locked */}
-                                <button
-                                    onClick={() => setIsSubmitModalOpen(true)}
-                                    disabled={
-                                        !latestResult[activeGroup.id] ||
-                                        activeGroup.status === 'Submitted' ||
-                                        !activeGroup.reports.every(r => r.isLocked)
-                                    }
-                                    className="group relative flex items-center justify-center h-11 bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-200 disabled:text-slate-400 text-white rounded-full shadow-sm transition-all duration-300 ease-in-out w-11 hover:w-36 overflow-hidden"
-                                    title={activeGroup.reports.every(r => r.isLocked) ? "Submit Strategy to Review" : "Lock all reports before submitting"}
-                                >
-                                    <div className="absolute left-0 w-11 h-11 flex items-center justify-center shrink-0">
-                                        <Send className="w-5 h-5" />
-                                    </div>
-                                    <span className="whitespace-nowrap font-bold text-xs uppercase tracking-wide opacity-0 group-hover:opacity-100 transition-opacity duration-300 pl-10 pr-4 delay-75">
-                                        Submit Group
-                                    </span>
-                                </button>
+                                {/* Submit Control - Only shown when all reports are locked */}
+                                {activeGroup.reports.every(r => r.isLocked) && (
+                                    <button
+                                        onClick={() => setIsSubmitModalOpen(true)}
+                                        disabled={
+                                            !latestResult[activeGroup.id] ||
+                                            activeGroup.status === 'Submitted'
+                                        }
+                                        className="group relative flex items-center justify-center h-11 bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-200 disabled:text-slate-400 text-white rounded-full shadow-sm transition-all duration-300 ease-in-out w-11 hover:w-36 overflow-hidden"
+                                        title="Submit Strategy to Review"
+                                    >
+                                        <div className="absolute left-0 w-11 h-11 flex items-center justify-center shrink-0">
+                                            <Send className="w-5 h-5" />
+                                        </div>
+                                        <span className="whitespace-nowrap font-bold text-xs uppercase tracking-wide opacity-0 group-hover:opacity-100 transition-opacity duration-300 pl-10 pr-4 delay-75">
+                                            Submit Group
+                                        </span>
+                                    </button>
+                                )}
                             </div>
                         </div>
 

@@ -16,6 +16,7 @@ export function CommandStrategyCenter() {
     const {
         selectCycle,
         selectedCycleId,
+        selectedMemberId,
         cycleFilter,
         cycleSort,
         cycleListPhase,
@@ -135,8 +136,8 @@ export function CommandStrategyCenter() {
             {/* Main Content Area - Split Panel */}
             <div className="flex-1 flex overflow-hidden">
 
-                {/* Left Panel: Active Cycles Stream */}
-                <div className="w-sidebar-standard bg-slate-50 border-r border-slate-200 flex flex-col shrink-0 z-infinity-sidebar relative">
+                {/* Left Panel: Active Cycles Stream - Collapses when member detail sidebar is open */}
+                <div className={`bg-slate-50 border-r border-slate-200 flex flex-col shrink-0 z-infinity-sidebar relative transition-all duration-300 ease-in-out overflow-hidden ${selectedMemberId ? 'w-0 opacity-0' : 'w-sidebar-standard opacity-100'}`}>
 
 
 

@@ -1,5 +1,4 @@
 import { useState, useEffect, useRef } from 'react';
-import { createPortal } from 'react-dom';
 import {
     X,
     ChevronLeft,
@@ -514,11 +513,11 @@ export function MemberDetailSidebar({
     // Calculate Slider Positions (Scale 3.00 - 5.00)
     const getPercent = (val: number) => ((Math.max(3.0, Math.min(5.0, val)) - 3.0) / 2.0) * 100;
 
-    return createPortal(
-        <div className="flex flex-col h-full bg-white border-l border-slate-200 shadow-2xl w-[530px] fixed right-0 top-0 bottom-0 !z-[100] animate-in slide-in-from-right duration-300">
+    return (
+        <div className="flex flex-col h-full bg-white border-l border-slate-200 shadow-xl w-sidebar-standard shrink-0 animate-in slide-in-from-right duration-300">
 
             {/* --- Header (Sticky) --- */}
-            <div className="flex-none bg-white z-10 border-b border-slate-200 p-4">
+            <div className="flex-none bg-white z-10 border-b border-slate-200 px-3 py-3">
                 <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-2">
                         <button
@@ -530,7 +529,7 @@ export function MemberDetailSidebar({
                     </div>
                 </div>
 
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-3">
                     <button
                         onClick={() => {
                             if (currentReport && groupId) {
@@ -538,14 +537,14 @@ export function MemberDetailSidebar({
                             }
                         }}
                         className={cn(
-                            "w-12 h-12 rounded-xl flex items-center justify-center border-2 transition-all shadow-sm active:scale-95 shrink-0",
+                            "w-10 h-10 rounded-xl flex items-center justify-center border-2 transition-all shadow-sm active:scale-95 shrink-0",
                             isLocked
                                 ? "bg-red-50 border-red-200 text-red-500 hover:bg-red-100 hover:border-red-300"
                                 : "bg-white border-indigo-100 text-indigo-500 hover:border-indigo-200 hover:shadow-md ring-2 ring-indigo-500/10"
                         )}
                         title={isLocked ? "Unlock Editing" : "Lock Editing"}
                     >
-                        {isLocked ? <Lock className="w-6 h-6" /> : <Unlock className="w-6 h-6" />}
+                        {isLocked ? <Lock className="w-5 h-5" /> : <Unlock className="w-5 h-5" />}
                     </button>
 
                     <div className="flex-1 min-w-0">
@@ -571,17 +570,17 @@ export function MemberDetailSidebar({
                                 <div className="flex items-center gap-1">
                                     <button
                                         onClick={() => checkUnsavedChanges(onNavigatePrev)}
-                                        className="w-11 h-11 flex items-center justify-center rounded-full hover:bg-slate-100 text-slate-500 border border-slate-200 shadow-sm transition-colors active:scale-95"
+                                        className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-slate-100 text-slate-500 border border-slate-200 shadow-sm transition-colors active:scale-95"
                                         title="Previous Member"
                                     >
-                                        <ChevronLeft className="w-6 h-6" />
+                                        <ChevronLeft className="w-5 h-5" />
                                     </button>
                                     <button
                                         onClick={() => checkUnsavedChanges(onNavigateNext)}
-                                        className="w-11 h-11 flex items-center justify-center rounded-full hover:bg-slate-100 text-slate-500 border border-slate-200 shadow-sm transition-colors active:scale-95"
+                                        className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-slate-100 text-slate-500 border border-slate-200 shadow-sm transition-colors active:scale-95"
                                         title="Next Member"
                                     >
-                                        <ChevronRight className="w-6 h-6" />
+                                        <ChevronRight className="w-5 h-5" />
                                     </button>
                                 </div>
                             </div>
@@ -642,7 +641,7 @@ export function MemberDetailSidebar({
             <div className="flex-1 overflow-y-auto">
 
                 {/* --- Section 1: Promotion Recommendation --- */}
-                <div className="p-5 pt-10 border-b border-slate-100 bg-white">
+                <div className="p-4 pt-8 border-b border-slate-100 bg-white">
                     <label className="text-xs font-bold text-slate-700 uppercase tracking-wide block mb-3">Recommendation</label>
                     <div className="flex gap-1 p-0.5 rounded-lg">
                         {(['NOB', 'SP', 'Prog', 'P', 'MP', 'EP'] as const).map((rec) => {
@@ -681,7 +680,7 @@ export function MemberDetailSidebar({
                 </div>
 
                 {/* --- Section 2: Trait Average Tuner --- */}
-                <div className="p-5 pt-10 space-y-4 border-b border-slate-100">
+                <div className="p-4 pt-8 space-y-4 border-b border-slate-100">
                     <div className="flex items-end justify-between">
                         <div className="flex flex-col gap-2">
                             <label className="text-xs font-bold text-slate-700 uppercase tracking-wide">
@@ -1035,5 +1034,5 @@ export function MemberDetailSidebar({
             />
 
         </div >
-        , document.body);
+    );
 }
