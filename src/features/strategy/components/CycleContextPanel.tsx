@@ -735,7 +735,7 @@ export function CycleContextPanel({ group }: CycleContextPanelProps) {
                                 updateReport(activeGroup.id, report.id, { promotionRecommendation: rec });
                             }
                         }}
-                        onUpdateReport={(mid, rid, updates) => {
+                        onUpdateReport={(_mid, rid, updates) => {
                             updateReport(activeGroup.id, rid, updates);
                         }}
                         currentRsca={activeGroup.rsca}
