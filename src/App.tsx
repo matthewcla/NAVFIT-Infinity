@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { AppLayout } from './components/layout/AppLayout';
 import { StrategyWorkspace } from '@/features/strategy/components/StrategyWorkspace';
 import { CommandStrategyCenter } from '@/features/strategy/components/CommandStrategyCenter';
+import { AppScaler } from '@/components/layout/AppScaler';
 
 import { SelectionBoardsManager } from '@/features/boards/components/SelectionBoardsManager';
 import { CommandAdmin } from '@/features/admin/components/CommandAdmin';
@@ -69,15 +70,17 @@ function App() {
   }
 
   return (
-    <AppLayout
-      activeTab={activeTab}
-      onTabChange={setActiveTab}
-      collapsed={sidebarCollapsed}
-      onToggleCollapse={toggleSidebar}
-    >
-      {renderContent()}
-      <DevTools />
-    </AppLayout>
+    <AppScaler>
+      <AppLayout
+        activeTab={activeTab}
+        onTabChange={setActiveTab}
+        collapsed={sidebarCollapsed}
+        onToggleCollapse={toggleSidebar}
+      >
+        {renderContent()}
+        <DevTools />
+      </AppLayout>
+    </AppScaler>
   );
 }
 

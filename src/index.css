@@ -65,6 +65,10 @@
     --ring: 224.3 76.3% 48%;
   }
 
+  html, body, #root {
+    @apply h-full;
+  }
+
   body {
     @apply bg-slate-50 text-slate-900 font-sans antialiased;
   }

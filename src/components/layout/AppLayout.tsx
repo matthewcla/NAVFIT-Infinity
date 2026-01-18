@@ -14,7 +14,7 @@ interface AppLayoutProps {
 
 export function AppLayout({ children, activeTab, onTabChange, collapsed, onToggleCollapse }: AppLayoutProps) {
     return (
-        <div className="h-screen overflow-hidden bg-slate-50 flex font-sans text-slate-900">
+        <div className="h-full overflow-hidden bg-slate-50 flex font-sans text-slate-900">
             <Sidebar
                 activeTab={activeTab}
                 onTabChange={onTabChange}
