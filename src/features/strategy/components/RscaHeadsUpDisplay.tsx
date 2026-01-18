@@ -6,6 +6,7 @@ interface RscaHeadsUpDisplayProps {
     eotRsca?: number; // New EOT Metric
     // rankLabel (unused removed)
     showSuffix?: boolean;
+    variant?: 'standard' | 'integrated';
 }
 
 export function RscaHeadsUpDisplay({
@@ -14,6 +15,7 @@ export function RscaHeadsUpDisplay({
     eotRsca,
     // rankLabel (unused removed)
     // showSuffix (unused)
+    variant = 'standard'
 }: RscaHeadsUpDisplayProps) {
     const delta = projectedRsca - currentRsca;
     const isPositive = delta > 0;
@@ -25,22 +27,6 @@ export function RscaHeadsUpDisplay({
         return 'text-emerald-600';
     };
 
-    // Delta Color Logic - distinct from Health. 
-    // Positive delta (increasing score) is generally "good" for the individual in many contexts, 
-    // but in RSCA management, keeping average low might be the goal? 
-    // Actually, usually higher trait average is "better" for the sailor, but might be "riskier" for the RSCA.
-    // Let's stick to standard: Green = Up/Positive, Red = Down/Negative (or vice versa if directed). 
-    // User asked for "Impact" color coded.
-    // If RSCA goes UP, that inflates the average. 
-    // Standard UI convention: Green = Improvement (Higher Score), Red = Decline. 
-    // However, for "Risk", Higher is bad. 
-    // Let's assume Green = + (Up), Red = - (Down) for now unless Context implies otherwise.
-    // Actually, checking previous code:
-    // isPositive ? 'bg-red-100 text-red-700' (Up is Red?)
-    // Ah, previous code: `isPositive ? ... : ...`
-    // Let's check previous snippet: 
-    // `{isPositive ? <TrendingUp ... /> : ...}` and class was `isPositive ? 'bg-red-100 text-red-700' : 'bg-emerald-100...'`
-    // So YES, going UP is RED (Bad/Risk increase). Going DOWN is GREEN (Good/Risk decrease).
     const deltaColor = isPositive ? 'text-red-600' : 'text-emerald-600';
 
     // EOT Specific Color Logic
@@ -55,9 +41,43 @@ export function RscaHeadsUpDisplay({
     const zoneProjected = getHealthColor(projectedRsca);
     const zoneEot = getEotColor(eotRsca);
 
-    // Background tint based on current health (Unused variable removed)
-    // const bgCurrent = currentRsca > 4.10 ? 'bg-red-50' : currentRsca > 3.80 ? 'bg-amber-50' : 'bg-emerald-50';
+    if (variant === 'integrated') {
+        return (
+            <div className="flex items-center gap-4">
+                {/* Compact View: Projected is King */}
+                <div className="flex flex-col items-end">
+                    <span className="text-[10px] uppercase font-bold text-slate-400 leading-none mb-1">Projected RSCA</span>
+                    <div className="flex items-baseline gap-1 leading-none">
+                        <span className={`text-2xl font-bold ${zoneProjected}`}>{projectedRsca.toFixed(2)}</span>
+                        {Math.abs(delta) >= 0.01 && (
+                            <span className={`text-xs font-bold ${deltaColor}`}>
+                                {isPositive ? '+' : ''}{delta.toFixed(2)}
+                            </span>
+                        )}
+                    </div>
+                </div>
 
+                {/* Divider */}
+                <div className="h-8 w-px bg-slate-200" />
+
+                {/* Secondary Metrics */}
+                <div className="flex gap-4">
+                    <div className="flex flex-col items-start">
+                        <span className="text-[9px] uppercase font-bold text-slate-400 leading-none mb-1">Current</span>
+                        <span className={`text-sm font-bold ${zoneCurrent}`}>{currentRsca.toFixed(2)}</span>
+                    </div>
+                    <div className="flex flex-col items-start">
+                        <span className="text-[9px] uppercase font-bold text-slate-400 leading-none mb-1">EOT</span>
+                        <span className={`text-sm font-bold ${eotRsca ? zoneEot : 'text-slate-300'}`}>
+                            {eotRsca ? eotRsca.toFixed(2) : '--.--'}
+                        </span>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    // Standard Layout (Preserved for backwards compatibility if needed elsewhere, though mainly replaced in this view)
     return (
         <div className="bg-white/95 backdrop-blur-sm p-3 h-full transition-all duration-300 flex items-center relative">
             {/* Title Overlay */}

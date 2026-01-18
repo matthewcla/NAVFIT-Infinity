@@ -10,7 +10,8 @@ import {
     AlertCircle,
     Check,
     RotateCcw,
-    RotateCw
+    RotateCw,
+    Sparkles
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -111,8 +112,6 @@ export function MemberDetailSidebar({
     // History for Undo/Redo
     const [history, setHistory] = useState<{ mta: number; rec: string }[]>([]);
     const [future, setFuture] = useState<{ mta: number; rec: string }[]>([]);
-
-
 
     // Unsaved Changes Modal State
     const [showUnsavedModal, setShowUnsavedModal] = useState(false);
@@ -216,50 +215,8 @@ export function MemberDetailSidebar({
     };
 
     // --- Slider & Input Interaction Refs ---
-    const dragStartMtaRef = useRef<number | null>(null);
+    // --- Input Interaction Refs ---
     const mtaFocusRef = useRef<number | null>(null);
-    const [isDraggingSlider, setIsDraggingSlider] = useState(false);
-
-    // Track latest mta for the effect closure
-    const latestMtaRef = useRef(simulatedMta);
-    useEffect(() => {
-        latestMtaRef.current = simulatedMta;
-    }, [simulatedMta]);
-
-    const handleSliderMouseDown = () => {
-        dragStartMtaRef.current = simulatedMta;
-        setIsDraggingSlider(true);
-    };
-
-    // Global listener for robust drag end detection
-    useEffect(() => {
-        if (!isDraggingSlider) return;
-
-        const handleGlobalDragEnd = () => {
-            const startVal = dragStartMtaRef.current;
-            const currentVal = latestMtaRef.current;
-
-            if (startVal !== null && Math.abs(startVal - currentVal) > 0.001) {
-                setHistory(prev => {
-                    const newHistory = [...prev, { mta: startVal, rec: simulatedRec }];
-                    if (newHistory.length > 5) newHistory.shift();
-                    return newHistory;
-                });
-                setFuture([]);
-            }
-
-            dragStartMtaRef.current = null;
-            setIsDraggingSlider(false);
-        };
-
-        window.addEventListener('mouseup', handleGlobalDragEnd);
-        window.addEventListener('touchend', handleGlobalDragEnd);
-
-        return () => {
-            window.removeEventListener('mouseup', handleGlobalDragEnd);
-            window.removeEventListener('touchend', handleGlobalDragEnd);
-        };
-    }, [isDraggingSlider, simulatedRec]);
 
 
     const isDirty = Math.abs(simulatedMta - initialMta) > 0.001 || simulatedRec !== initialRec;
@@ -505,25 +462,71 @@ export function MemberDetailSidebar({
         setMtaInputValue(strVal);
         const floatVal = parseFloat(strVal);
         if (!isNaN(floatVal)) {
-            handleMtaChange(floatVal, true);
         }
     };
 
-    // Calculate Slider Positions (Scale 3.00 - 5.00)
-    const getPercent = (val: number) => ((Math.max(3.0, Math.min(5.0, val)) - 3.0) / 2.0) * 100;
+    // --- Sliding Window Logic (Zoomed Slider) ---
+    // The visual window is always 1.0 points wide.
+    // It centers on the current MTA, but clamps to [3.0, 4.0] and [4.0, 5.0] at edges.
+    const windowSize = 1.0;
+    const windowStart = Math.min(Math.max(3.0, simulatedMta - 0.5), 4.0);
+    // Helper to map a value to its % position within the VISIBLE window
+    const getViewPercent = (val: number) => {
+        const pct = ((val - windowStart) / windowSize) * 100;
+        return Math.max(0, Math.min(100, pct)); // Clamp visual %
+    };
+
+    const sliderRef = useRef<HTMLDivElement>(null);
+
+    const updateFromPointer = (e: React.PointerEvent<HTMLDivElement>) => {
+        if (!sliderRef.current) return;
+        const rect = sliderRef.current.getBoundingClientRect();
+        const x = Math.max(0, Math.min(rect.width, e.clientX - rect.left));
+        const pct = x / rect.width; // 0..1 within the visual window
+
+        // Value = windowStart + offset
+        const newValue = windowStart + (pct * windowSize);
+        handleMtaChange(newValue, true); // Intermediate update
+    };
+
+    const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+        if (isLocked || simulatedRec === 'NOB') return;
+        e.currentTarget.setPointerCapture(e.pointerId);
+        updateFromPointer(e);
+    };
+
+    const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+        if (isLocked || simulatedRec === 'NOB') return;
+        if (e.currentTarget.hasPointerCapture(e.pointerId)) {
+            updateFromPointer(e);
+        }
+    };
+
+    const handlePointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
+        if (isLocked || simulatedRec === 'NOB') return;
+        e.currentTarget.releasePointerCapture(e.pointerId);
+        commitToHistory(); // Commit final value
+    };
+
+
 
     return (
-        <div className="flex flex-col h-full bg-white border-l border-slate-200 shadow-xl w-sidebar-standard shrink-0 animate-in slide-in-from-right duration-300">
+        <div className="flex flex-col h-full bg-slate-50/80 border-l border-slate-200 shadow-2xl w-sidebar-standard shrink-0 animate-in slide-in-from-right duration-300">
 
             {/* --- Header (Sticky) --- */}
-            <div className="flex-none bg-white z-10 border-b border-slate-200 px-3 py-3">
-                <div className="flex items-center justify-between mb-3">
+            <div className="flex-none bg-white z-10 border-b border-slate-100 px-5 py-4 shadow-[0_4px_12px_-6px_rgba(0,0,0,0.05)]">
+                <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-2">
-                        {/* X button removed - use ESC to close */}
+                        {currentReport?.promotionStatus === 'FROCKED' && (
+                            <span className="px-1.5 py-0.5 text-[10px] font-bold bg-amber-50 text-amber-700 rounded border border-amber-200 tracking-wider">FROCKED</span>
+                        )}
+                        {currentReport?.isAdverse && (
+                            <span className="px-1.5 py-0.5 text-[10px] font-bold bg-red-50 text-red-700 rounded border border-red-200 tracking-wider">ADVERSE</span>
+                        )}
                     </div>
                 </div>
 
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-4">
                     <button
                         onClick={() => {
                             if (currentReport && groupId) {
@@ -531,10 +534,10 @@ export function MemberDetailSidebar({
                             }
                         }}
                         className={cn(
-                            "w-10 h-10 rounded-xl flex items-center justify-center border-2 transition-all shadow-sm active:scale-95 shrink-0",
+                            "w-11 h-11 rounded-full flex items-center justify-center border transition-all shadow-sm active:scale-95 shrink-0",
                             isLocked
-                                ? "bg-red-50 border-red-200 text-red-500 hover:bg-red-100 hover:border-red-300"
-                                : "bg-white border-indigo-100 text-indigo-500 hover:border-indigo-200 hover:shadow-md ring-2 ring-indigo-500/10"
+                                ? "bg-red-50 border-red-100 text-red-500 hover:bg-red-100 hover:border-red-200"
+                                : "bg-white border-slate-200 text-slate-400 hover:border-indigo-200 hover:text-indigo-500 hover:shadow-md"
                         )}
                         title={isLocked ? "Unlock Editing" : "Lock Editing"}
                     >
@@ -542,117 +545,79 @@ export function MemberDetailSidebar({
                     </button>
 
                     <div className="flex-1 min-w-0">
-                        <div className="flex items-start justify-between">
-                            <div className="flex flex-col">
-                                <div className="flex items-center gap-2 mb-0.5">
-                                    {currentReport?.promotionStatus === 'FROCKED' && (
-                                        <span className="px-1.5 py-0.5 text-[10px] font-bold bg-amber-100 text-amber-800 rounded border border-amber-200">FROCKED</span>
-                                    )}
-                                    {currentReport?.isAdverse && (
-                                        <span className="px-1.5 py-0.5 text-[10px] font-bold bg-red-100 text-red-800 rounded border border-red-200">ADVERSE</span>
-                                    )}
-                                    <h2 className="text-lg font-bold text-slate-900 leading-tight truncate">
-                                        {rosterMember.lastName}, {rosterMember.firstName}
-                                    </h2>
-                                </div>
-                                <div className="text-sm font-medium text-slate-500">
-                                    {displayRank} {displaySubtext}
-                                </div>
-                            </div>
-
-                            <div className="flex flex-col items-end gap-1">
-                                <div className="flex items-center gap-1">
-                                    <button
-                                        onClick={() => checkUnsavedChanges(onNavigatePrev)}
-                                        className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-slate-100 text-slate-500 border border-slate-200 shadow-sm transition-colors active:scale-95"
-                                        title="Previous Member"
-                                    >
-                                        <ChevronLeft className="w-5 h-5" />
-                                    </button>
-                                    <button
-                                        onClick={() => checkUnsavedChanges(onNavigateNext)}
-                                        className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-slate-100 text-slate-500 border border-slate-200 shadow-sm transition-colors active:scale-95"
-                                        title="Next Member"
-                                    >
-                                        <ChevronRight className="w-5 h-5" />
-                                    </button>
-                                </div>
+                        <div className="flex flex-col">
+                            <h2 className="text-xl font-black text-slate-800 leading-tight truncate tracking-tight">
+                                {rosterMember.lastName}, {rosterMember.firstName}
+                            </h2>
+                            <div className="flex items-center gap-2 mt-0.5">
+                                <span className="text-sm font-bold text-slate-500 bg-slate-100 px-1.5 rounded">
+                                    {displayRank}
+                                </span>
+                                <span className="text-xs font-semibold text-slate-400 tracking-wide uppercase">
+                                    {displaySubtext.replace('|', '').trim()}
+                                </span>
                             </div>
                         </div>
                     </div>
-                </div>
 
-
-                {/* --- Toolbar --- */}
-                <div className="flex items-center justify-between mt-4 pt-3 border-t border-slate-100">
                     <div className="flex items-center gap-1">
                         <button
-                            onClick={handleUndo}
-                            disabled={history.length === 0}
-                            className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-md transition-colors disabled:opacity-30 disabled:hover:bg-transparent"
-                            title="Undo"
+                            onClick={() => checkUnsavedChanges(onNavigatePrev)}
+                            className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-white bg-slate-50 text-slate-400 hover:text-indigo-600 border border-transparent hover:border-slate-200 hover:shadow-sm transition-all active:scale-95"
+                            title="Previous Member"
                         >
-                            <RotateCcw className="w-4 h-4" />
+                            <ChevronLeft className="w-6 h-6" />
                         </button>
                         <button
-                            onClick={handleRedo}
-                            disabled={future.length === 0}
-                            className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-md transition-colors disabled:opacity-30 disabled:hover:bg-transparent"
-                            title="Redo"
+                            onClick={() => checkUnsavedChanges(onNavigateNext)}
+                            className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-white bg-slate-50 text-slate-400 hover:text-indigo-600 border border-transparent hover:border-slate-200 hover:shadow-sm transition-all active:scale-95"
+                            title="Next Member"
                         >
-                            <RotateCw className="w-4 h-4" />
+                            <ChevronRight className="w-6 h-6" />
                         </button>
-                    </div>
-
-                    <div className="flex items-center gap-3">
-                        {/* Edit Full Report button removed */}
-
-                        {!isLocked && isDirty && (
-                            <button
-                                onClick={handleApply}
-                                className="px-4 py-1.5 bg-indigo-600 text-white text-xs font-bold rounded-md hover:bg-indigo-700 shadow-sm hover:shadow active:transform active:scale-95 transition-all flex items-center gap-1.5"
-                            >
-                                <Check className="w-3.5 h-3.5" />
-                                Apply
-                            </button>
-                        )}
                     </div>
                 </div>
             </div>
 
             {/* --- Scrollable Content --- */}
-            <div className="flex-1 overflow-y-auto">
+            <div className="flex-1 overflow-y-auto px-5 py-6 space-y-6">
 
-                {/* --- Section 1: Promotion Recommendation --- */}
-                <div className="p-4 pt-8 border-b border-slate-100 bg-white">
-                    <label className="text-xs font-bold text-slate-700 uppercase tracking-wide block mb-3">Recommendation</label>
-                    <div className="flex gap-1 p-0.5 rounded-lg">
-                        {(['NOB', 'SP', 'Prog', 'P', 'MP', 'EP'] as const).map((rec) => {
+                {/* --- Card 1: Promotion Recommendation --- */}
+                <div className="bg-white rounded-2xl p-5 shadow-[0_2px_8px_-2px_rgba(0,0,0,0.05)] border border-slate-100/50">
+                    <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center gap-2 text-xs font-bold uppercase text-slate-400 tracking-wider">
+                            <TrendingUp className="w-4 h-4 text-slate-300" />
+                            <span>Recommendation</span>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-3 gap-2">
+                        {(['EP', 'MP', 'P', 'Prog', 'SP', 'NOB'] as const).map((rec) => {
                             const { blocked, reason } = getBlockingStatus(rec);
+                            const isSelected = simulatedRec === rec;
 
                             return (
-                                <div key={rec} className="flex-1 relative group/tooltip">
+                                <div key={rec} className="relative group/tooltip">
                                     <button
                                         onClick={() => handleRecChange(rec)}
                                         disabled={isLocked || blocked}
                                         className={cn(
-                                            "w-full py-1.5 text-xs font-bold rounded-md transition-all",
-                                            getRecStyle(rec, simulatedRec === rec, isLocked, blocked)
+                                            "w-full py-3 px-1 rounded-xl text-sm font-bold transition-all duration-200 flex flex-col items-center gap-1 border-2",
+                                            getRecStyle(rec, isSelected, isLocked, blocked),
+                                            isSelected ? "z-10" : "hover:scale-[1.02] hover:z-10"
                                         )}
                                     >
-                                        {rec === 'Prog' ? 'PR' : rec}
+                                        <span>{rec === 'Prog' ? 'PR' : rec}</span>
                                     </button>
 
-                                    {/* Inline Reason / Tooltip for Blocked Actions */}
                                     {blocked && (
                                         <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-max max-w-[200px] z-50 hidden group-hover/tooltip:block animate-in fade-in slide-in-from-bottom-1">
-                                            <div className="bg-slate-800 text-white text-[10px] rounded px-2 py-1.5 shadow-lg relative">
-                                                <div className="flex items-start gap-1.5">
-                                                    <AlertCircle className="w-3 h-3 text-red-400 shrink-0 mt-0.5" />
-                                                    <span className="font-medium">{reason}</span>
+                                            <div className="bg-slate-800 text-white text-[10px] rounded-lg px-3 py-2 shadow-xl relative backdrop-blur-md">
+                                                <div className="flex items-start gap-2">
+                                                    <AlertCircle className="w-3.5 h-3.5 text-red-400 shrink-0 mt-0.5" />
+                                                    <span className="font-medium leading-normal">{reason}</span>
                                                 </div>
-                                                {/* Arrow */}
-                                                <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-slate-800 rotate-45" />
+                                                <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-3 h-3 bg-slate-800 rotate-45" />
                                             </div>
                                         </div>
                                     )}
@@ -662,352 +627,304 @@ export function MemberDetailSidebar({
                     </div>
                 </div>
 
-                {/* --- Section 2: Trait Average Tuner --- */}
-                <div className="p-4 pt-8 space-y-4 border-b border-slate-100">
-                    <div className="flex items-end justify-between">
-                        <div className="flex flex-col gap-2">
-                            <label className="text-xs font-bold text-slate-700 uppercase tracking-wide">
-                                Trait Average Adjustment
-                            </label>
-                        </div>
+                {/* --- Unified Card: Performance & Trajectory --- */}
+                <div className="bg-white rounded-2xl shadow-[0_2px_8px_-2px_rgba(0,0,0,0.05)] border border-slate-100/50 relative overflow-hidden group/card">
 
-                        <div className="flex flex-col items-end gap-2">
-                            <input
-                                type="text"
-                                value={mtaInputValue}
-                                onChange={(e) => handleMtaLocalChange(e.target.value)}
-                                onFocus={() => {
-                                    setIsEditingMta(true);
-                                    mtaFocusRef.current = simulatedMta; // Capture start value
-                                }}
-                                onBlur={handleMtaBlur}
-                                onKeyDown={handleMtaKeyDown}
-                                disabled={isLocked || simulatedRec === 'NOB'}
-                                className="w-24 text-right text-2xl font-black text-slate-900 bg-transparent border-b-2 border-slate-200 focus:border-indigo-500 focus:outline-none p-0 focus:ring-0 disabled:opacity-50 font-mono"
-                            />
+                    {/* Background decoration */}
+                    <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-50/30 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none" />
+
+                    {/* Header */}
+                    <div className="relative z-10 p-5 pb-0 flex items-center justify-between">
+                        <div className="flex items-center gap-2 text-xs font-bold uppercase text-slate-400 tracking-wider">
+                            <Sparkles className="w-4 h-4 text-slate-300" />
+                            <span>Performance & Trajectory</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                            <button onClick={handleUndo} disabled={history.length === 0} className="w-7 h-7 rounded-full flex items-center justify-center hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors disabled:opacity-20"><RotateCcw className="w-3.5 h-3.5" /></button>
+                            <button onClick={handleRedo} disabled={future.length === 0} className="w-7 h-7 rounded-full flex items-center justify-center hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors disabled:opacity-20"><RotateCw className="w-3.5 h-3.5" /></button>
                         </div>
                     </div>
 
-                    {/* Robust Slider Control */}
-                    <div className="flex items-center gap-3 mt-8">
-                        <button
-                            onClick={() => handleMtaChange(Math.max(3.00, simulatedMta - 0.01))}
-                            disabled={isLocked || simulatedMta <= 3.00 || simulatedRec === 'NOB'}
-                            className="p-1 rounded-md text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 border border-transparent hover:border-indigo-200 transition-all disabled:opacity-30 disabled:pointer-events-none"
-                        >
-                            <Minus className="w-4 h-4" />
-                        </button>
+                    {/* --- Trajectory Chart (Top) --- */}
+                    <div className="relative z-0 mt-8 h-48 w-full">
+                        {/* Container for Chart */}
+                        <div className="absolute inset-x-0 bottom-0 top-0 flex items-end px-4">
+                            <svg className="w-full h-full overflow-visible" viewBox="0 0 100 100" preserveAspectRatio="none">
+                                {/* Optional: Add a subtle path line here if desired, otherwise just points */}
+                            </svg>
+                            {/* HTML Overlay for Points */}
+                            <div className="absolute inset-0 pointer-events-none">
+                                {(() => {
+                                    // Helper to format date "DD MMM YY"
+                                    const formatDate = (dateStr?: string) => {
+                                        if (!dateStr) return '';
+                                        const d = new Date(dateStr);
+                                        if (isNaN(d.getTime())) return '';
+                                        const day = d.getDate().toString().padStart(2, '0');
+                                        const mon = d.toLocaleString('en-US', { month: 'short' }).toUpperCase();
+                                        const yr = d.getFullYear().toString().slice(-2);
+                                        return `${day} ${mon} ${yr}`;
+                                    };
 
-                        <div className="relative flex-1 h-8 flex items-center group touch-none select-none">
-                            <div className="absolute left-0 right-0 h-2 bg-slate-100 rounded-full overflow-hidden border border-slate-200">
-                                <div
-                                    className={cn(
-                                        "h-full transition-all duration-75",
-                                        isLocked || simulatedRec === 'NOB' ? "bg-slate-300" : "bg-indigo-500"
-                                    )}
-                                    style={{ width: `${getPercent(simulatedMta)}%` }}
-                                />
-                            </div>
+                                    const pastPoints = (rosterMember.history || []).map(h => ({
+                                        type: 'Past',
+                                        val: h.traitAverage,
+                                        rsca: h.rscaAtTime,
+                                        label: h.promotionRecommendation,
+                                        date: h.periodEndDate,
+                                        groupSize: undefined,
+                                        isVoid: false
+                                    }));
 
-                            {/* Slider Track Markers... (omitted for brevity, unchanged) */}
-                            {(() => {
-                                // Simplified markers render for clarity in diff, reusing existing logic
-                                const next = rankContext?.nextRanks?.[0]?.mta;
-                                const prev = rankContext?.prevRanks?.[0]?.mta;
+                                    const currentPoint = {
+                                        type: 'Current',
+                                        val: simulatedMta,
+                                        rsca: currentRsca,
+                                        label: simulatedRec,
+                                        date: currentReport?.periodEndDate,
+                                        groupSize: quotaContext?.totalReports, // Only for current
+                                        isVoid: false
+                                    };
 
-                                if (next !== undefined && prev !== undefined) {
-                                    const start = Math.max(3.0, Math.min(next, prev));
-                                    const end = Math.min(5.0, Math.max(next, prev));
-
-                                    if (end < 3.0 || start > 5.0) return null;
-                                    const leftStart = getPercent(start);
-                                    const width = getPercent(end) - leftStart;
-                                    return (
-                                        <div
-                                            className="absolute top-1/2 -translate-y-1/2 h-4 bg-emerald-50/80 border-x border-emerald-100 z-0 pointer-events-none"
-                                            style={{ left: `${leftStart}%`, width: `${width}%` }}
-                                        />
-                                    );
-                                }
-                                return null;
-                            })()}
-
-
-                            {[3.0, 3.5, 4.0, 4.5, 5.0].map(val => (
-                                <div key={val} className="absolute inset-0 pointer-events-none z-0">
-                                    <div
-                                        className="absolute top-1/2 -translate-y-1/2 w-0.5 h-3 bg-slate-200"
-                                        style={{ left: `${getPercent(val)}%` }}
-                                    />
-                                    <div
-                                        className="absolute top-6 -translate-x-1/2 text-xs font-bold text-slate-300"
-                                        style={{ left: `${getPercent(val)}%` }}
-                                    >
-                                        {val.toFixed(1)}
-                                    </div>
-                                </div>
-                            ))}
-
-
-                            {initialMta >= 3.0 && initialMta <= 5.0 && (
-                                <div
-                                    className="absolute top-1/2 -translate-y-1/2 w-1.5 h-4 bg-slate-200/50 rounded-sm pointer-events-none z-0"
-                                    style={{ left: `${getPercent(initialMta)}%` }}
-                                    title={`Initial: ${initialMta.toFixed(2)}`}
-                                />
-                            )}
-
-                            {(() => {
-                                if (!rankContext?.nextRanks && !rankContext?.prevRanks) return null;
-                                const next = rankContext?.nextRanks || [];
-                                const prev = rankContext?.prevRanks || [];
-                                const allMarkers = [
-                                    ...next.map(r => ({ ...r, type: 'next' as const })),
-                                    ...prev.map(r => ({ ...r, type: 'prev' as const }))
-                                ].sort((a, b) => a.rank - b.rank);
-                                const positionedMarkers: (typeof allMarkers[0] & { pct: number; level: number })[] = [];
-                                allMarkers.forEach((marker, i) => {
-                                    const pct = getPercent(marker.mta);
-                                    let level = 0;
-                                    for (let j = 0; j < i; j++) {
-                                        const other = positionedMarkers[j];
-                                        if (Math.abs(pct - other.pct) < 4.0) {
-                                            level = Math.max(level, other.level + 1);
-                                        }
+                                    let plannedCount = currentReport?.reportsRemaining || 0;
+                                    if (!plannedCount && rosterMember.prd && currentReport?.periodEndDate) {
+                                        const prdYear = new Date(rosterMember.prd).getFullYear();
+                                        const reportYear = new Date(currentReport.periodEndDate).getFullYear();
+                                        if (!isNaN(prdYear) && !isNaN(reportYear)) plannedCount = Math.max(0, prdYear - reportYear);
                                     }
-                                    positionedMarkers.push({ ...marker, pct, level });
-                                });
 
-                                return positionedMarkers.map((marker) => {
-                                    if (marker.mta < 3.0 || marker.mta > 5.0) return null;
-                                    const isNext = marker.type === 'next';
-                                    const colorClass = isNext ? "text-emerald-700 border-emerald-100/50" : "text-red-700 border-red-100/50";
-                                    const lineColor = isNext ? "bg-emerald-400/40" : "bg-red-400/40";
-                                    const verticalShift = marker.level * 24;
-                                    return (
-                                        <div
-                                            key={`${marker.type}-${marker.rank}`}
-                                            className="absolute z-10 pointer-events-none flex flex-col items-center gap-1 transition-all duration-300"
-                                            style={{ left: `${marker.pct}%`, transform: 'translateX(-50%)', top: '50%', }}
-                                        >
-                                            <div className={cn("w-0.5 transition-all opacity-70", lineColor)} style={{ height: `${32 + verticalShift}px` }} />
-                                            <span className={cn("text-[10px] font-black uppercase tracking-widest whitespace-nowrap bg-white/80 px-1 rounded backdrop-blur-sm shadow-sm border -mt-1", colorClass)}>
-                                                #{marker.rank}
-                                            </span>
-                                        </div>
-                                    );
-                                });
-                            })()}
+                                    const plannedPoints = Array.from({ length: plannedCount || 0 }).map((_, i) => ({
+                                        type: (i === (plannedCount || 0) - 1) ? 'Transfer' : 'Planned',
+                                        val: simulatedMta, // In real app this might be projected
+                                        rsca: currentRsca,
+                                        label: (i === (plannedCount || 0) - 1) ? 'PRD' : 'Plan',
+                                        date: undefined,
+                                        groupSize: undefined,
+                                        isVoid: true
+                                    }));
 
-                            <input
-                                type="range"
-                                min="3.00"
-                                max="5.00"
-                                step="0.01"
-                                value={simulatedMta}
-                                onMouseDown={handleSliderMouseDown}
-                                onTouchStart={handleSliderMouseDown}
-                                onChange={(e) => handleMtaChange(parseFloat(e.target.value), true)}
-                                disabled={isLocked || simulatedRec === 'NOB'}
-                                className="absolute inset-0 w-full h-full opacity-0 cursor-grab active:cursor-grabbing z-20 disabled:cursor-not-allowed"
-                            />
+                                    const allPoints = [...pastPoints.slice(-3), currentPoint, ...plannedPoints];
+
+                                    const allMtas = allPoints.map(p => p.val);
+                                    const allRscas = allPoints.map(p => p.rsca).filter((r): r is number => r !== undefined);
+                                    const allValues = [...allMtas, ...allRscas];
+                                    const minVal = allValues.length ? Math.min(...allValues) : 3.0;
+                                    const maxVal = allValues.length ? Math.max(...allValues) : 5.0;
+                                    let range = maxVal - minVal; if (range < 0.2) range = 0.2;
+                                    const margin = range * 0.40; // More headroom for labels
+                                    const domainMin = Math.max(0, minVal - margin);
+                                    const domainMax = Math.min(5.0, maxVal + margin);
+                                    const domainRange = domainMax - domainMin || 1;
+                                    const getY = (val: number) => 100 - ((val - domainMin) / domainRange * 100);
+
+                                    // Distribute X evenly
+                                    const maxIdx = Math.max(1, allPoints.length - 1);
+                                    const getX = (i: number) => 10 + (i / maxIdx) * 80;
+
+                                    return allPoints.map((p, i) => {
+                                        const x = getX(i);
+                                        const y = getY(p.val);
+                                        const isTransfer = p.type === 'Transfer';
+                                        const isCurrent = p.type === 'Current';
+
+                                        // Calculate Delta from previous point if available
+                                        const prevPoint = i > 0 ? allPoints[i - 1] : null;
+                                        let deltaLabel = null;
+                                        if (prevPoint) {
+                                            const diff = p.val - prevPoint.val;
+                                            const sign = diff > 0 ? '+' : '';
+                                            const colorClass = diff > 0 ? 'text-emerald-600' : (diff < 0 ? 'text-red-500' : 'text-slate-400');
+                                            deltaLabel = (
+                                                <span className={cn("text-[10px] font-bold bg-white/80 px-1 rounded backdrop-blur-sm", colorClass)}>
+                                                    {sign}{diff.toFixed(2)}
+                                                </span>
+                                            );
+                                        }
+
+                                        return (
+                                            <div key={i} className="absolute flex flex-col items-center justify-center group/point transition-all duration-300 ease-out z-10" style={{ left: `${x}%`, top: `${y}%`, transform: 'translate(-50%, -50%)' }}>
+
+                                                {/* Date Label (Top) */}
+                                                {p.date && (
+                                                    <div className="absolute bottom-full mb-3 text-[10px] font-semibold text-slate-400 whitespace-nowrap tracking-tight uppercase">
+                                                        {formatDate(p.date)}
+                                                    </div>
+                                                )}
+
+                                                {/* Connecting Line Label (Delta) - Positioned halfway to left? No, simpler to just float left of point */}
+                                                {deltaLabel && (
+                                                    <div className="absolute right-full mr-3 -mt-4 pointer-events-none opacity-80">
+                                                        {deltaLabel}
+                                                    </div>
+                                                )}
+
+                                                <div className={cn(
+                                                    "rounded-full border-2 shadow-sm flex items-center justify-center transition-all bg-white z-20 relative",
+                                                    isTransfer ? "border-red-500 bg-red-50 w-8 h-8" : "border-indigo-400 bg-indigo-50 w-8 h-8 text-indigo-700 font-bold text-[10px]",
+                                                    isCurrent ? "w-14 h-14 border-[4px] ring-4 ring-indigo-500/10 border-indigo-600 bg-white opacity-100 scale-105 shadow-xl" : "opacity-80"
+                                                )}>
+                                                    {/* Group Size Center Label */}
+                                                    {p.groupSize ? <span>{p.groupSize}</span> : (p.type === 'Past' ? <span className="opacity-30 text-[9px]">-</span> : null)}
+                                                </div>
+
+                                                {/* MTA Label */}
+                                                {isCurrent ? (
+                                                    // Hero Input Overlay for Current
+                                                    <div className="absolute top-full mt-3 pointer-events-auto">
+                                                        <div className="relative group/input flex flex-col items-center">
+                                                            <input
+                                                                type="text"
+                                                                value={mtaInputValue}
+                                                                onChange={(e) => handleMtaLocalChange(e.target.value)}
+                                                                onFocus={() => {
+                                                                    setIsEditingMta(true);
+                                                                    mtaFocusRef.current = simulatedMta;
+                                                                }}
+                                                                onBlur={handleMtaBlur}
+                                                                onKeyDown={handleMtaKeyDown}
+                                                                disabled={isLocked || simulatedRec === 'NOB'}
+                                                                className="w-24 text-center text-3xl font-black text-slate-800 bg-transparent border-none focus:outline-none focus:ring-0 p-0 disabled:opacity-40 tracking-tight transition-colors hover:text-indigo-900 placeholder:text-slate-200"
+                                                            />
+                                                            <div className="absolute -right-4 top-1/2 -translate-y-1/2 opacity-0 group-hover/input:opacity-100 text-slate-300">
+                                                                <TrendingUp className="w-3 h-3" />
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                ) : (
+                                                    // Static Label for others
+                                                    <div className="absolute top-full mt-2 text-[10px] font-bold text-slate-500 bg-white/80 px-1.5 py-0.5 rounded shadow-sm border border-slate-100">
+                                                        {p.val.toFixed(2)}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        );
+                                    });
+                                })()}
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Divider that feels like a 'Ground' for the chart */}
+                    <div className="h-px w-full bg-gradient-to-r from-transparent via-slate-200 to-transparent my-2" />
+
+                    {/* --- Control Deck (Bottom) --- */}
+                    <div className="p-5 pt-2 flex flex-col items-center gap-6 relative z-10">
+                        {/* Slider Control Area - Hero Input Removed */}
+
+                        <div className="w-full flex items-center gap-4">
+                            <button
+                                onClick={() => handleMtaChange(Math.max(3.00, simulatedMta - 0.01))}
+                                disabled={isLocked || simulatedMta <= 3.00 || simulatedRec === 'NOB'}
+                                className="w-8 h-8 rounded-full bg-slate-50 border border-slate-200 text-slate-400 flex items-center justify-center hover:border-indigo-300 hover:text-indigo-600 hover:bg-white shadow-sm active:scale-95 transition-all disabled:opacity-30 disabled:scale-100"
+                            >
+                                <Minus className="w-4 h-4" />
+                            </button>
 
                             <div
-                                className={cn(
-                                    "absolute top-1/2 -translate-y-1/2 w-5 h-5 bg-white border-2 rounded-full shadow-md pointer-events-none z-10 transition-transform duration-75 ease-out flex items-center justify-center",
-                                    isLocked || simulatedRec === 'NOB' ? "border-slate-300" : "border-indigo-600 scale-100 group-hover:scale-110"
-                                )}
-                                style={{ left: `calc(${getPercent(simulatedMta)}% - 10px)` }}
+                                className="relative flex-1 h-12 flex items-center touch-none select-none cursor-pointer"
+                                ref={sliderRef}
+                                onPointerDown={handlePointerDown}
+                                onPointerMove={handlePointerMove}
+                                onPointerUp={handlePointerUp}
                             >
-                                <div className={cn("w-1.5 h-1.5 rounded-full", isLocked || simulatedRec === 'NOB' ? "bg-slate-300" : "bg-indigo-600")} />
-                            </div>
-                        </div>
+                                {/* Track Background */}
+                                <div className="absolute left-0 right-0 h-3 bg-slate-100 rounded-full overflow-hidden shadow-inner">
+                                    <div
+                                        className={cn("h-full transition-all duration-75 ease-out", isLocked || simulatedRec === 'NOB' ? "bg-slate-300" : "bg-gradient-to-r from-indigo-400 via-indigo-500 to-indigo-600")}
+                                        style={{ width: `${getViewPercent(simulatedMta)}%` }}
+                                    />
+                                </div>
 
-                        <button
-                            onClick={() => handleMtaChange(Math.min(5.00, simulatedMta + 0.01))}
-                            disabled={isLocked || simulatedMta >= 5.00 || simulatedRec === 'NOB'}
-                            className="p-1 rounded-md text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 border border-transparent hover:border-indigo-200 transition-all disabled:opacity-30 disabled:pointer-events-none"
-                        >
-                            <Plus className="w-4 h-4" />
-                        </button>
-                    </div>
-                </div>
+                                {/* Markers / Milestones - Only show if in view */}
+                                {[3.0, 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 3.7, 3.8, 3.9, 4.0, 4.1, 4.2, 4.3, 4.4, 4.5, 4.6, 4.7, 4.8, 4.9, 5.0].map(val => {
+                                    // Filter out markers far outside the window to avoid DOM clutter, keeping a small buffer
+                                    if (val < windowStart - 0.1 || val > windowStart + windowSize + 0.1) return null;
 
-                {/* --- Section 3: Member Trajectory --- */}
-                <div className="p-5 pt-20 border-b border-slate-100 bg-slate-50/50">
-                    <div className="flex items-center justify-between mb-3">
-                        <div className="flex items-center gap-2 text-xs font-bold uppercase text-slate-500 tracking-wider">
-                            <TrendingUp className="w-3.5 h-3.5" />
-                            <span>Member Trajectory</span>
-                        </div>
-                    </div>
+                                    const isMajor = Math.abs(val % 0.5) < 0.001;
+                                    const isLabel = Math.abs(val % 0.5) < 0.001; // Label every 0.5
 
-                    <div className="flex flex-col gap-4">
-                        <div className="flex gap-4 h-[166px]">
-                            <div className="flex-1 bg-white rounded-lg border border-slate-200 p-2 relative">
-                                <svg className="w-full h-full overflow-visible" viewBox="0 0 100 100" preserveAspectRatio="none">
-
-                                </svg>
-
-                                {/* HTML Overlay */}
-                                <div className="absolute inset-0 pointer-events-none">
-                                    {(() => {
-                                        // Re-recreate data points here (duplication is acceptable for render isolation or simple logic reuse)
-                                        // Actually better to define data outside SVG, but inline IIFE complicates sharing.
-                                        // I'll repeat logic for safety and speed.
-                                        const pastPoints = (rosterMember.history || []).map(h => ({
-                                            type: 'Past',
-                                            val: h.traitAverage,
-                                            rsca: h.rscaAtTime,
-                                            label: h.promotionRecommendation
-                                        }));
-                                        const currentPoint = {
-                                            type: 'Current',
-                                            val: simulatedMta,
-                                            rsca: currentRsca,
-                                            label: simulatedRec
-                                        };
-                                        let plannedCount = currentReport?.reportsRemaining;
-                                        if (plannedCount === undefined && rosterMember.prd && currentReport?.periodEndDate) {
-                                            const prdYear = new Date(rosterMember.prd).getFullYear();
-                                            const reportYear = new Date(currentReport.periodEndDate).getFullYear();
-                                            if (!isNaN(prdYear) && !isNaN(reportYear)) plannedCount = Math.max(0, prdYear - reportYear);
-                                        }
-                                        plannedCount = plannedCount || 0;
-                                        const plannedPoints = Array.from({ length: plannedCount }).map((_, i) => ({
-                                            type: (i === plannedCount! - 1) ? 'Transfer' : 'Planned',
-                                            val: simulatedMta,
-                                            rsca: currentRsca, // Reuse for scaling consistency
-                                            label: (i === plannedCount! - 1) ? 'PRD' : 'Plan'
-                                        }));
-
-                                        const allPoints = [...pastPoints.slice(-3), currentPoint, ...plannedPoints];
-
-                                        // Scaling Logic (Duplicated for consistency)
-                                        const allMtas = allPoints.map(p => p.val);
-                                        const allRscas = allPoints.map(p => p.rsca).filter((r): r is number => r !== undefined);
-                                        const allValues = [...allMtas, ...allRscas];
-                                        const minVal = Math.min(...allValues);
-                                        const maxVal = Math.max(...allValues);
-                                        let range = maxVal - minVal;
-                                        if (range < 0.2) range = 0.2;
-                                        const margin = range * 0.30;
-                                        const domainMin = Math.max(0, minVal - margin);
-                                        const domainMax = Math.min(5.0, maxVal + margin);
-                                        const domainRange = domainMax - domainMin || 1;
-                                        const getY = (val: number) => 100 - ((val - domainMin) / domainRange * 100);
-
-                                        const maxIdx = Math.max(1, allPoints.length - 1);
-                                        const getX = (i: number) => 10 + (i / maxIdx) * 80;
-
-                                        return allPoints.map((p, i) => {
-                                            const x = getX(i);
-                                            const y = getY(p.val);
-                                            const isTransfer = p.type === 'Transfer';
-                                            const isCurrent = p.type === 'Current';
-                                            const isAbove = false;
-
-                                            // Delta Calculation
-                                            let deltaDisplay = null;
-                                            if (i > 0) {
-                                                const prev = allPoints[i - 1];
-                                                const delta = p.val - prev.val;
-                                                const prevX = getX(i - 1);
-                                                const prevY = getY(prev.val);
-
-                                                const midX = (prevX + x) / 2;
-                                                const midY = (prevY + y) / 2;
-
-                                                deltaDisplay = (
-                                                    <div
-                                                        className="absolute text-[9px] font-bold text-slate-400 bg-white/50 px-0.5 rounded backdrop-blur-[1px]"
-                                                        style={{ left: `${midX}%`, top: `${midY}%`, transform: 'translate(-50%, -50%)' }}
-                                                    >
-                                                        {delta > 0 ? '+' : ''}{delta.toFixed(2)}
-                                                    </div>
-                                                );
-                                            }
-
-                                            // RSCA Diff
-                                            let rscaDiffDisplay = null;
-                                            if (p.rsca !== undefined) {
-                                                const diff = p.val - p.rsca;
-                                                const diffColor = diff >= 0 ? 'text-green-600' : 'text-red-500';
-                                                rscaDiffDisplay = (
-                                                    <span className={cn("ml-1 text-[8px] font-bold", diffColor)}>
-                                                        ({diff >= 0 ? '+' : ''}{diff.toFixed(2)})
-                                                    </span>
-                                                );
-                                            }
-
-                                            return (
-                                                <div key={i}>
-                                                    {deltaDisplay}
-                                                    <div
-                                                        className="absolute flex items-center justify-center group/point"
-                                                        style={{
-                                                            left: `${x}%`,
-                                                            top: `${y}%`,
-                                                            transform: 'translate(-50%, -50%)'
-                                                        }}
-                                                    >
-                                                        {/* Icon - Clean, no performance rings */}
-                                                        <div className={cn(
-                                                            "w-4 h-4 rounded-full border-2 shadow-sm flex items-center justify-center transition-transform hover:scale-125 z-10 bg-white",
-                                                            isTransfer ? "border-red-500 bg-red-50" : "border-blue-500 bg-blue-50",
-                                                            isCurrent ? "ring-2 ring-blue-200/50 w-5 h-5 border-[3px]" : ""
-                                                        )}>
-                                                        </div>
-
-                                                        {/* Label */}
-                                                        <div className={cn(
-                                                            "absolute pointer-events-auto flex flex-col items-center whitespace-nowrap",
-                                                            isAbove ? "bottom-full mb-2" : "top-full mt-2"
-                                                        )}>
-                                                            <div className="flex items-center gap-0.5 bg-white/90 px-1 rounded shadow-sm border border-slate-100/50 backdrop-blur-sm">
-                                                                <span className="text-[10px] font-black text-slate-700 leading-tight">
-                                                                    {p.val.toFixed(2)}
-                                                                </span>
-                                                                {rscaDiffDisplay}
-                                                            </div>
-                                                            <span className="text-[9px] font-semibold text-slate-400 leading-tight">
-                                                                {p.type}
-                                                            </span>
-                                                        </div>
-                                                    </div>
+                                    return (
+                                        <div key={val} className="absolute inset-0 pointer-events-none z-0">
+                                            <div
+                                                className={cn("absolute top-1/2 -translate-y-1/2 w-px bg-slate-300/50 transition-all duration-300 ease-out", isMajor ? "h-3 bg-slate-400/50" : "h-1.5")}
+                                                style={{ left: `${getViewPercent(val)}%` }}
+                                            />
+                                            {/* Labels */}
+                                            {isLabel && (
+                                                <div
+                                                    className="absolute top-[34px] -translate-x-1/2 text-[10px] font-bold text-slate-300 transition-all duration-300 ease-out"
+                                                    style={{ left: `${getViewPercent(val)}%` }}
+                                                >
+                                                    {val.toFixed(1)}
                                                 </div>
-                                            );
-                                        });
-                                    })()}
+                                            )}
+                                        </div>
+                                    )
+                                })}
+
+                                {/* Rank Markers (Refined) */}
+                                {(() => {
+                                    if (!rankContext?.nextRanks && !rankContext?.prevRanks) return null;
+                                    const next = rankContext?.nextRanks || [];
+                                    const prev = rankContext?.prevRanks || [];
+                                    const allMarkers = [
+                                        ...next.map(r => ({ ...r, type: 'next' as const })),
+                                        ...prev.map(r => ({ ...r, type: 'prev' as const }))
+                                    ].sort((a, b) => a.rank - b.rank);
+
+                                    return allMarkers.map((marker) => {
+                                        if (marker.mta < windowStart - 0.1 || marker.mta > windowStart + windowSize + 0.1) return null;
+                                        const isNext = marker.type === 'next';
+                                        const pct = getViewPercent(marker.mta);
+                                        return (
+                                            <div
+                                                key={`${marker.type}-${marker.rank}`}
+                                                className="absolute top-1/2 -translate-y-1/2 z-10 pointer-events-none transition-all duration-300 ease-out"
+                                                style={{ left: `${pct}%` }}
+                                            >
+                                                {/* Flag / Diamond Marker */}
+                                                <div className={cn(
+                                                    "w-3 h-3 rotate-45 border-2 -translate-x-1/2 bg-white shadow-sm transition-transform",
+                                                    isNext ? "border-emerald-500" : "border-rose-400"
+                                                )} />
+
+                                                {/* Tooltip Label */}
+                                                <div className={cn(
+                                                    "absolute bottom-4 left-1/2 -translate-x-1/2 text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded shadow-sm border whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity delay-75",
+                                                    isNext ? "bg-emerald-50 text-emerald-700 border-emerald-100" : "bg-rose-50 text-rose-700 border-rose-100"
+                                                )}>
+                                                    #{marker.rank}
+                                                </div>
+                                            </div>
+                                        );
+                                    });
+                                })()}
+
+                                {/* Thumb */}
+                                <div
+                                    className={cn(
+                                        "absolute top-1/2 -translate-y-1/2 w-7 h-7 bg-white rounded-full shadow-[0_2px_8px_rgba(0,0,0,0.15)] ring-4 ring-white transition-all duration-75 pointer-events-none z-30 flex items-center justify-center",
+                                        isLocked || simulatedRec === 'NOB' ? "grayscale opacity-50" : "scale-100"
+                                    )}
+                                    style={{ left: `${getViewPercent(simulatedMta)}%`, transform: 'translate(-50%, -50%)' }}
+                                >
+                                    <div className="w-2.5 h-2.5 bg-indigo-500 rounded-full" />
                                 </div>
                             </div>
-                        </div>
 
-                        {/* Legend */}
-                        <div className="flex justify-center gap-6 mt-1 border-t border-slate-100 pt-2">
-                            <div className="flex items-center gap-1.5">
-                                <div className="w-3 h-3 rounded-full bg-blue-50 border-2 border-blue-500"></div>
-                                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">Periodic</span>
-                            </div>
-                            <div className="flex items-center gap-1.5">
-                                <div className="w-4 h-4 rounded-full bg-blue-50 border-2 border-blue-500 ring-1 ring-blue-200"></div>
-                                <span className="text-[10px] font-bold text-slate-900 uppercase tracking-wide">Current</span>
-                            </div>
-                            <div className="flex items-center gap-1.5">
-                                <div className="w-3 h-3 rounded-full bg-red-50 border-2 border-red-500"></div>
-                                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">Transfer</span>
-                            </div>
-
+                            <button
+                                onClick={() => handleMtaChange(Math.min(5.00, simulatedMta + 0.01))}
+                                disabled={isLocked || simulatedMta >= 5.00 || simulatedRec === 'NOB'}
+                                className="w-8 h-8 rounded-full bg-slate-50 border border-slate-200 text-slate-400 flex items-center justify-center hover:border-indigo-300 hover:text-indigo-600 hover:bg-white shadow-sm active:scale-95 transition-all disabled:opacity-30 disabled:scale-100"
+                            >
+                                <Plus className="w-4 h-4" />
+                            </button>
                         </div>
                     </div>
                 </div>
 
-                <div className="mb-10"></div>
+                <div className="mb-20"></div>
             </div>
-
-
-
-
 
             <UnsavedChangesModal
                 isOpen={showUnsavedModal}
@@ -1015,6 +932,21 @@ export function MemberDetailSidebar({
                 onDiscard={handleUnsavedDiscard}
                 onCancel={handleUnsavedCancel}
             />
+
+            {/* --- Footer / Floating Actions --- */}
+            {!isLocked && isDirty && (
+                <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-50 animate-in slide-in-from-bottom-2 fade-in">
+                    <button
+                        onClick={handleApply}
+                        className="pl-3 pr-4 py-2.5 bg-slate-900 text-white text-sm font-bold rounded-full hover:bg-black shadow-xl hover:shadow-2xl hover:-translate-y-0.5 active:translate-y-0 active:scale-95 transition-all flex items-center gap-2 ring-4 ring-white"
+                    >
+                        <div className="w-5 h-5 rounded-full bg-emerald-500 flex items-center justify-center text-emerald-950">
+                            <Check className="w-3 h-3" strokeWidth={3} />
+                        </div>
+                        Apply Changes
+                    </button>
+                </div>
+            )}
 
         </div >
     );

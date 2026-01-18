@@ -575,30 +575,42 @@ export function CycleContextPanel({ group }: CycleContextPanelProps) {
                             </div>
                         </div>
 
-                        {/* Row 2: RSCA Scoreboard Container - Full Width Equal Distribution */}
-                        <div className="flex justify-between items-stretch gap-4 w-full h-32">
-                            {/* 2A. RSCA Heads Up Display (Left) */}
-                            <div className="flex-1 min-w-0 rounded-xl border border-slate-200 shadow-sm overflow-hidden bg-white/50">
-                                <RscaHeadsUpDisplay
-                                    currentRsca={currentRsca}
-                                    projectedRsca={projectedRsca}
-                                    eotRsca={eotRsca}
-                                    showSuffix={false}
-                                />
+
+                        {/* Row 2: Visual Stack - Scattergram Main + Quota Footer */}
+                        <div className="flex flex-col items-stretch gap-4 w-full h-[350px]">
+
+                            {/* 2A. Main Visualization Area (Chart + Integrated HUD) */}
+                            <div className="flex-1 min-w-0 bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden relative flex flex-col">
+                                {/* Integrated RSCA Overlay (Top Right) */}
+                                <div className="absolute top-4 right-4 z-20 pointer-events-none">
+                                    <div className="pointer-events-auto bg-white/90 backdrop-blur-md rounded-lg shadow-sm border border-slate-100 p-2">
+                                        <RscaHeadsUpDisplay
+                                            currentRsca={currentRsca}
+                                            projectedRsca={projectedRsca}
+                                            eotRsca={eotRsca}
+                                            variant="integrated"
+                                        />
+                                    </div>
+                                </div>
+
+                                {/* Main Chart Canvas */}
+                                <div className="flex-1 w-full h-full relative z-10 pt-4"> {/* Slight pt for breathing room */}
+                                    <RscaScattergram
+                                        members={rankedMembers}
+                                        rsca={projectedRsca}
+                                    />
+                                </div>
                             </div>
 
-                            {/* 2B. Scattergram (Middle) */}
-                            <div className="flex-1 min-w-0 rounded-xl border border-slate-200 shadow-sm overflow-visible bg-white relative z-30">
-                                <RscaScattergram
-                                    members={rankedMembers}
-                                    rsca={projectedRsca}
-                                />
-                            </div>
-
-                            {/* 2C. Promotion Recommendation Scoreboard (Right) */}
-                            <div className="flex-1 min-w-0 rounded-xl border border-slate-200 shadow-sm overflow-hidden bg-white/50">
-                                <div className="h-full bg-white/95 backdrop-blur-sm transition-all duration-300">
-                                    <QuotaHeadsUpDisplay distribution={distribution} totalReports={effectiveSize} context={domainContext} />
+                            {/* 2B. Quota Efficiency Footer */}
+                            <div className="h-20 shrink-0 bg-white/50 rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                                <div className="h-full bg-white/95 backdrop-blur-sm">
+                                    <QuotaHeadsUpDisplay
+                                        distribution={distribution}
+                                        totalReports={effectiveSize}
+                                        context={domainContext}
+                                        variant="full-width"
+                                    />
                                 </div>
                             </div>
                         </div>
