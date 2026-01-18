@@ -8,7 +8,7 @@ interface QuotaHeadsUpDisplayProps {
     distribution: { EP: number; MP: number;[key: string]: number };
     totalReports: number;
     context: SummaryGroupContext;
-    variant?: 'standard' | 'full-width';
+    variant?: 'standard' | 'full-width' | 'minimal';
 }
 
 export function QuotaHeadsUpDisplay({ distribution, totalReports, context, variant = 'standard' }: QuotaHeadsUpDisplayProps) {
@@ -71,6 +71,51 @@ export function QuotaHeadsUpDisplay({ distribution, totalReports, context, varia
     const mpStatus = getQuotaStatus(mpUsed, dynamicMpLimit);
 
     // --- Render Logic ---
+
+    // MINIMAL VARIANT (Overlay Style)
+    if (variant === 'minimal') {
+        const ScoreItem = ({ label, used, limit, status }: { label: string, used: number, limit?: number, status?: any }) => (
+            <div className="flex items-baseline gap-1.5 text-xs">
+                <span className={clsx("font-bold tracking-wide",
+                    status?.status === 'Over' ? "text-red-600" :
+                        status?.status === 'Maximized' ? "text-emerald-600" : "text-slate-500"
+                )}>
+                    {label}
+                </span>
+                <span className="font-mono font-medium text-slate-700">
+                    <span className={clsx(status?.status === 'Over' && "text-red-600 font-bold")}>{used}</span>
+                    {limit !== undefined && <span className="text-slate-400">/{limit}</span>}
+                </span>
+            </div>
+        );
+
+        return (
+            <div className="flex items-center gap-4 select-none">
+                {/* EP */}
+                <ScoreItem label="EP" used={epUsed} limit={epLimit} status={epStatus} />
+                <div className="w-px h-3 bg-slate-200" />
+                {/* MP */}
+                <ScoreItem label="MP" used={mpUsed} limit={dynamicMpLimit} status={mpStatus} />
+                <div className="w-px h-3 bg-slate-200" />
+                {/* P */}
+                <ScoreItem label="P" used={distribution.P || 0} />
+
+                {/* Exceptions if present */}
+                {(distribution.PR || 0) > 0 && (
+                    <>
+                        <div className="w-px h-3 bg-slate-200" />
+                        <ScoreItem label="PR" used={distribution.PR} />
+                    </>
+                )}
+                {(distribution.SP || 0) > 0 && (
+                    <>
+                        <div className="w-px h-3 bg-slate-200" />
+                        <ScoreItem label="SP" used={distribution.SP} />
+                    </>
+                )}
+            </div>
+        );
+    }
 
     // FULL WIDTH VARIANT (Footer Style)
     if (variant === 'full-width') {

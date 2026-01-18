@@ -4,9 +4,12 @@ import {
     Calendar,
     Shield,
     Users,
-    Anchor
+    Anchor,
+    Maximize,
+    Minimize
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useFullScreen } from '@/hooks/useFullScreen';
 import { UserProfileMenu } from './UserProfileMenu';
 import { SystemStatus } from './SystemStatus';
 
@@ -51,6 +54,8 @@ interface SidebarProps {
 }
 
 export function Sidebar({ activeTab, onTabChange, collapsed, onToggleCollapse }: SidebarProps) {
+    const { isFullScreen, toggleFullScreen } = useFullScreen();
+
     return (
         <div
             className={cn(
@@ -120,7 +125,16 @@ export function Sidebar({ activeTab, onTabChange, collapsed, onToggleCollapse }:
                     onClick={() => onTabChange('admin')}
                     collapsed={collapsed}
                 />
+            </div>
 
+            {/* Utility Dock */}
+            <div className="py-2 border-t border-slate-800/50 space-y-1">
+                <SidebarItem
+                    icon={isFullScreen ? Minimize : Maximize}
+                    label={isFullScreen ? "Exit Full Screen" : "Full Screen"}
+                    onClick={toggleFullScreen}
+                    collapsed={collapsed}
+                />
             </div>
 
             {/* System Status Indicator - Pushed to bottom */}
