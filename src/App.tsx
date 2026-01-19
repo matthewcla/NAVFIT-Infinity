@@ -30,8 +30,8 @@ function App() {
 
   // Reset workspace view if tab changes
   useEffect(() => {
-    // Reset workspace view if navigating away from summary groups
-    if (activeTab !== 'summary_groups') {
+    // Reset workspace view if navigating away from strategy areas
+    if (activeTab !== 'summary_groups' && activeTab !== 'competitive_groups') {
       setStrategyViewMode('landing');
     }
   }, [activeTab, setStrategyViewMode]);

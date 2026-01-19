@@ -217,8 +217,11 @@ export function MemberInspector({
             // But updateReport takes a partial.
             // Let's just pass the whole simulatedReport as the update.
             // Ideally we diff, but sending all is safe.
-            // updateProjection for MTA is separate
-            updateProjection(activeGroupNode.id, currentReport.id, simulatedReport.traitAverage);
+            // Only update projection (which triggers auto-rebalance) if MTA actually changed
+            if (simulatedReport.traitAverage !== currentReport.traitAverage) {
+                updateProjection(activeGroupNode.id, currentReport.id, simulatedReport.traitAverage);
+            }
+
             updateReport(activeGroupNode.id, currentReport.id, simulatedReport);
             setHistory([]);
             setFuture([]);

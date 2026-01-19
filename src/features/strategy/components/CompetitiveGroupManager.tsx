@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useNavfitStore } from '@/store/useNavfitStore';
 import { PageShell, PageContent } from '@/components/layout/PageShell';
 import { ContextSidebar } from '@/components/layout/ContextSidebar';
@@ -7,10 +7,23 @@ import { CycleWorkspace } from './CycleWorkspace';
 import { Orbit, ChevronRight, Layers } from 'lucide-react';
 
 export function CompetitiveGroupManager() {
-    const { summaryGroups } = useNavfitStore();
+    const { summaryGroups, activeCompetitiveGroup, selectedCycleId: globalSelectedCycleId, strategyViewMode } = useNavfitStore();
     const [selectedGroupKey, setSelectedGroupKey] = useState<string | null>(null);
     const [selectedCycleId, setSelectedCycleId] = useState<string | null>(null);
     const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+
+    // Sync from Global Navigation (Dashboard Drill-Down)
+    useEffect(() => {
+        if (strategyViewMode === 'workspace') {
+            if (activeCompetitiveGroup) {
+                setSelectedGroupKey(activeCompetitiveGroup);
+                setIsSidebarCollapsed(true);
+            }
+            if (globalSelectedCycleId) {
+                setSelectedCycleId(globalSelectedCycleId);
+            }
+        }
+    }, [strategyViewMode, activeCompetitiveGroup, globalSelectedCycleId]);
 
     // Helper: Reset cycle selection when changing group
     const handleGroupSelect = (key: string) => {

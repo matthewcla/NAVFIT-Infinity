@@ -3,14 +3,17 @@ import { useSummaryGroups } from '@/features/strategy/hooks/useSummaryGroups';
 import { Calendar, ChevronRight } from 'lucide-react';
 
 export function ActiveDeadlinesWidget() {
-    const { selectCycle, setStrategyViewMode } = useNavfitStore();
+    const { selectCycle, setStrategyViewMode, setActiveTab } = useNavfitStore();
     const summaryGroups = useSummaryGroups(); // Uses rich data
 
-    // Filter Active Only
+    // Filter Active Only (Future deadlines only - Overdue items go to ActionItemsWidget)
     const activeCycles = summaryGroups
         .filter(g => {
             const status = g.status || 'Drafting';
-            return ['Drafting', 'Planning', 'Review', 'Draft'].includes(status);
+            const isActiveStatus = ['Drafting', 'Planning', 'Review', 'Draft'].includes(status);
+            const isFuture = new Date(g.periodEndDate) >= new Date();
+            // Show only if active status AND date is in future (or today)
+            return isActiveStatus && isFuture;
         })
         .sort((a, b) => new Date(a.periodEndDate).getTime() - new Date(b.periodEndDate).getTime());
 
@@ -19,6 +22,7 @@ export function ActiveDeadlinesWidget() {
         // Direct jump to workspace
         selectCycle(group.id, group.competitiveGroupKey || 'Unknown');
         setStrategyViewMode('workspace');
+        setActiveTab('competitive_groups');
     };
 
     return (
@@ -26,7 +30,7 @@ export function ActiveDeadlinesWidget() {
             <div className="px-5 py-3 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
                 <h3 className="text-sm font-bold text-slate-700 uppercase tracking-wider flex items-center gap-2">
                     <Calendar className="w-4 h-4 text-indigo-500" />
-                    Active Deadlines
+                    Upcoming Deadlines
                 </h3>
             </div>
 

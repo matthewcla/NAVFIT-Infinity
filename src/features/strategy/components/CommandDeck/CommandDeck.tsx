@@ -15,9 +15,6 @@ export function CommandDeck() {
                     <span className="text-sm text-slate-500 hidden md:block">
                         Welcome back, {currentUser?.rank || 'Skipper'} {currentUser?.name?.split(' ').pop() || ''}
                     </span>
-                    <span className="px-2 py-0.5 bg-indigo-50 text-indigo-700 text-xs font-bold uppercase rounded-md tracking-wider border border-indigo-100">
-                        Strategy Active
-                    </span>
                 </div>
             </PageHeader>
 

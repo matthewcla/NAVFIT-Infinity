@@ -130,8 +130,11 @@ export function assignRecommendationsByRank(reports: Report[], group: SummaryGro
     }
 
     // 5. Sort Candidates by MTA Descending (Strict Merit)
-    // Stable sort: keep original order if MTA is equal
-    candidates.sort((a, b) => b.traitAverage - a.traitAverage);
+    // REMOVED: We now rely on the input order of 'candidates' (which matches 'reports').
+    // - For Optimization/MTA updates, the caller sorts by MTA first.
+    // - For Manual Reordering, the caller provides the manual order.
+    // This allows "Rank Order" to drive recommendations, even if MTA is lower (Soft Breakout).
+    // candidates.sort((a, b) => b.traitAverage - a.traitAverage);
 
     // 6. Assign EP
     let availableEP = Math.max(0, epLimit - lockedEPs);
