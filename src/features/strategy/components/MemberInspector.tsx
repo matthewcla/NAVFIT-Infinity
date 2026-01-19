@@ -24,6 +24,7 @@ import { checkQuota } from '@/features/strategy/logic/validation';
 import { createSummaryGroupContext } from '@/features/strategy/logic/validation';
 import { ReportAdminTab } from './ReportAdminTab';
 import { ReportCommentsTab } from './ReportCommentsTab';
+import { TrajectorySimulator } from './TrajectorySimulator';
 
 interface MemberInspectorProps {
     memberId: string;
@@ -447,6 +448,14 @@ export function MemberInspector({
                                             <span>3.50</span>
                                             <span>5.00</span>
                                         </div>
+                                    </div>
+
+                                    {/* Trajectory Simulator - Collapsible or Inline? Inline for now */}
+                                    <div className="mt-6 pt-6 border-t border-slate-100">
+                                        <TrajectorySimulator
+                                            currentAvg={simulatedMta} // Using current report MTA as proxy for "Current Avg" for now, ideally Cumulative
+                                            totalReportsSoFar={1}
+                                        />
                                     </div>
                                 </div>
                             )}

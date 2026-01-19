@@ -1,19 +1,20 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useNavfitStore } from '@/store/useNavfitStore';
 import { format } from 'date-fns';
 import {
     Orbit,
     ChevronRight,
     TrendingUp,
-    Filter,
     Layers
 } from 'lucide-react';
 import { PageShell, PageHeader, PageContent } from '@/components/layout/PageShell';
 import { ContextSidebar } from '@/components/layout/ContextSidebar';
+import { RankEditor } from './RankEditor';
+import { MtaTrendChart } from './MtaTrendChart';
 
 
 export function CompetitiveGroupDashboard() {
-    const { summaryGroups } = useNavfitStore();
+    const { summaryGroups, updateSummaryGroup } = useNavfitStore();
     const [selectedKey, setSelectedKey] = useState<string | null>(null);
 
     // 1. Group Data by Competitive Group Key
@@ -73,6 +74,35 @@ export function CompetitiveGroupDashboard() {
         };
     }, [selectedKey, competitiveGroups]);
 
+    // 3. Planning Tab Logic
+    const [planningGroupId, setPlanningGroupId] = useState<string | null>(null);
+
+    // Derive planned groups for the selected key
+    const plannedGroups = useMemo(() => {
+        if (!selectedKey) return [];
+        return summaryGroups.filter(g =>
+            g.competitiveGroupKey === selectedKey &&
+            (g.status === 'Planned' || g.status === 'Draft')
+        ).sort((a, b) => new Date(a.periodEndDate).getTime() - new Date(b.periodEndDate).getTime());
+    }, [selectedKey, summaryGroups]);
+
+    // Auto-select first planned group when switching to planning mode or selection changes
+    useEffect(() => {
+        if (selectedKey && !planningGroupId) {
+            if (plannedGroups.length > 0) {
+                setPlanningGroupId(plannedGroups[0].id);
+            }
+        }
+    }, [selectedKey, plannedGroups, planningGroupId]);
+
+    const activePlanningGroup = useMemo(() =>
+        summaryGroups.find(g => g.id === planningGroupId),
+        [summaryGroups, planningGroupId]);
+
+    const handleSaveGroups = (updatedGroups: typeof summaryGroups) => {
+        // Bulk update
+        updatedGroups.forEach(g => updateSummaryGroup(g.id, g));
+    };
 
     return (
         <PageShell>
@@ -104,7 +134,10 @@ export function CompetitiveGroupDashboard() {
                                 return (
                                     <button
                                         key={cg.key}
-                                        onClick={() => setSelectedKey(cg.key)}
+                                        onClick={() => {
+                                            setSelectedKey(cg.key);
+                                            setPlanningGroupId(null);
+                                        }}
                                         className={`w-full text-left p-4 hover:bg-slate-50 transition-colors group border-l-4 ${isSelected
                                             ? 'bg-indigo-50/50 border-l-indigo-600'
                                             : 'border-l-transparent'
@@ -140,72 +173,69 @@ export function CompetitiveGroupDashboard() {
                 <div className="flex-1 overflow-y-auto bg-slate-50 p-6">
                     {selectedKey ? (
                         <div className="h-full flex flex-col">
+                            {/* Header */}
                             <div className="flex items-center justify-between mb-6">
                                 <div>
                                     <h2 className="text-xl font-bold text-slate-800">{selectedKey}</h2>
-                                    <p className="text-sm text-slate-500">Event-to-Event Timeline</p>
+                                    <p className="text-sm text-slate-500">Long-range strategy and optimization</p>
                                 </div>
-                                <button className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-slate-600 bg-white border border-slate-300 rounded-md hover:bg-slate-50 shadow-sm">
-                                    <Filter className="w-4 h-4" />
-                                    Filter
-                                </button>
                             </div>
 
-                            {/* Matrix */}
-                            <div className="bg-white border border-slate-200 rounded-lg shadow-sm overflow-hidden min-w-max">
-                                <table className="w-full text-left border-collapse">
-                                    <thead>
-                                        <tr className="bg-slate-50 border-b border-slate-200">
-                                            <th className="p-4 font-semibold text-slate-600 sticky left-0 bg-slate-50 z-10 border-r border-slate-200 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">
-                                                Member
-                                            </th>
-                                            {timelineData?.groups.map(g => (
-                                                <th key={g.id} className="p-4 font-semibold text-slate-600 border-r border-slate-100 min-w-[140px]">
-                                                    <div className="flex flex-col">
-                                                        <span className="text-sm truncate max-w-[120px]" title={g.name}>{g.name}</span>
-                                                        <span className="text-xs text-slate-400 font-normal">{format(new Date(g.periodEndDate), 'MMM yyyy')}</span>
-                                                    </div>
-                                                </th>
+                            {/* Main Layout: Trend + Planner */}
+                            <div className="flex flex-col gap-8">
+
+                                {/* 1. Trend Analysis */}
+                                {timelineData && (
+                                    <div className="h-[280px]">
+                                        <MtaTrendChart groups={timelineData.groups} />
+                                    </div>
+                                )}
+
+                                {/* 2. Cycle Planning */}
+                                <div className="flex flex-col gap-4">
+                                    <div className="flex items-center gap-2">
+                                        <Layers className="w-5 h-5 text-slate-400" />
+                                        <h3 className="text-lg font-bold text-slate-700">Cycle Planning</h3>
+                                    </div>
+
+                                    {/* Cycle Selector */}
+                                    {plannedGroups.length > 0 ? (
+                                        <div className="flex gap-2 mb-2 overflow-x-auto pb-2">
+                                            {plannedGroups.map(g => (
+                                                <button
+                                                    key={g.id}
+                                                    onClick={() => setPlanningGroupId(g.id)}
+                                                    className={`px-3 py-2 rounded-md text-sm font-medium border flex flex-col items-start min-w-[140px] transition-all ${planningGroupId === g.id
+                                                        ? 'bg-indigo-50 border-indigo-200 text-indigo-700 shadow-sm ring-1 ring-indigo-200'
+                                                        : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                                                        }`}
+                                                >
+                                                    <span className="font-bold">{format(new Date(g.periodEndDate), 'MMM yyyy')}</span>
+                                                    <span className="text-xs opacity-75">{g.status}</span>
+                                                </button>
                                             ))}
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {timelineData?.members.map((m) => (
-                                            <tr key={m.name} className="border-b border-slate-100 hover:bg-slate-50/50">
-                                                <td className="p-3 font-medium text-slate-700 sticky left-0 bg-white z-10 border-r border-slate-200 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">
-                                                    {m.name}
-                                                </td>
-                                                {timelineData?.groups.map(g => {
-                                                    const data = m.history[g.id];
-                                                    return (
-                                                        <td key={g.id} className="p-3 border-r border-slate-100 text-center">
-                                                            {data ? (
-                                                                <div className="flex flex-col items-center">
-                                                                    <span className="text-sm font-bold text-slate-700">{data.mta.toFixed(2)}</span>
-                                                                    <span className={`text-[10px] uppercase font-bold px-1.5 py-0.5 rounded leading-none mt-1 ${data.rec === 'EP' ? 'bg-indigo-100 text-indigo-700' :
-                                                                        data.rec === 'MP' ? 'bg-slate-100 text-slate-700' :
-                                                                            'bg-slate-50 text-slate-500'
-                                                                        }`}>
-                                                                        {data.rec}
-                                                                    </span>
-                                                                </div>
-                                                            ) : (
-                                                                <span className="text-slate-300">-</span>
-                                                            )}
-                                                        </td>
-                                                    );
-                                                })}
-                                            </tr>
-                                        ))}
-                                        {timelineData?.members.length === 0 && (
-                                            <tr>
-                                                <td colSpan={(timelineData?.groups.length || 0) + 1} className="p-8 text-center text-slate-400">
-                                                    No member data found for this timeline.
-                                                </td>
-                                            </tr>
-                                        )}
-                                    </tbody>
-                                </table>
+                                        </div>
+                                    ) : (
+                                        <div className="bg-amber-50 text-amber-800 p-4 rounded-md text-sm border border-amber-200">
+                                            No future planned cycles found for this group. Run the planner to generate cycles.
+                                        </div>
+                                    )}
+
+                                    {/* Editor */}
+                                    {activePlanningGroup ? (
+                                        <div className="min-h-[500px]">
+                                            <RankEditor
+                                                group={activePlanningGroup}
+                                                allPlannedGroups={plannedGroups}
+                                                onSaveGroups={handleSaveGroups}
+                                            />
+                                        </div>
+                                    ) : (
+                                        <div className="py-12 flex items-center justify-center text-slate-400 border-2 border-dashed border-slate-200 rounded-lg">
+                                            Select a cycle to begin planning
+                                        </div>
+                                    )}
+                                </div>
                             </div>
                         </div>
                     ) : (
@@ -215,7 +245,7 @@ export function CompetitiveGroupDashboard() {
                             </div>
                             <h2 className="text-xl font-bold text-slate-800 mb-2">Select a Competitive Group</h2>
                             <p className="text-slate-500 max-w-md text-center">
-                                Choose a group from the sidebar to view its long-range progression and event-to-event timelines.
+                                Choose a group from the sidebar to manage long-range strategy.
                             </p>
                         </div>
                     )}

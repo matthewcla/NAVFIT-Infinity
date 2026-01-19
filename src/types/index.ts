@@ -111,6 +111,13 @@ export interface SummaryGroup {
     eotRsca?: number; // Projected EOT RSCA including this group
     totalMembers?: number;
 
+    // Optimization Config
+    rankOrder?: string[]; // Array of member IDs in rank order
+    metricConfig?: {
+        targetRsca: number;
+        rscaMargin: number;
+    };
+
     // Constraints
     maxEP?: number;
     maxMP?: number;

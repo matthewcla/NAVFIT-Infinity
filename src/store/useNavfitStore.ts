@@ -56,6 +56,7 @@ interface NavfitStore {
     summaryGroups: SummaryGroup[];
     setSummaryGroups: (groups: SummaryGroup[]) => void;
     addSummaryGroup: (group: SummaryGroup) => void;
+    updateSummaryGroup: (groupId: string, updates: Partial<SummaryGroup>) => void;
     updateGroupStatus: (groupId: string, status: 'Draft' | 'Review' | 'Submitted' | 'Final' | 'Planned') => void;
 
     // State for persistence (Deletions)
@@ -305,6 +306,11 @@ export const useNavfitStore = create<NavfitStore>((set) => ({
         // Apply default anchors immediately for new group
         useNavfitStore.getState().applyDefaultAnchors(group.id);
     },
+    updateSummaryGroup: (groupId, updates) => set((state) => ({
+        summaryGroups: state.summaryGroups.map((g) =>
+            g.id === groupId ? { ...g, ...updates } : g
+        )
+    })),
     updateGroupStatus: (groupId, status) => set((state) => ({
         summaryGroups: state.summaryGroups.map((group) => {
             if (group.id !== groupId) return group;

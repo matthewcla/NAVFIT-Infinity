@@ -4,12 +4,6 @@ import type { SummaryGroup } from '@/types';
 import { DistributionPanel } from './DistributionPanel';
 import { ActiveCyclesList } from './ActiveCyclesList';
 import { DashboardMetrics } from '@/features/dashboard/components/DashboardMetrics';
-
-// Strategy Views
-import { StrategyScattergram } from './StrategyScattergram';
-import { ManningWaterfall } from './ManningWaterfall';
-import { StrategyListView } from './StrategyListView';
-// import { ReportEditor } from './ReportEditor';
 import { MemberInspector } from './MemberInspector';
 
 import { useNavfitStore } from '@/store/useNavfitStore';
@@ -17,18 +11,9 @@ import { useSummaryGroups } from '@/features/strategy/hooks/useSummaryGroups';
 
 import { AddSummaryGroupModal } from '@/features/dashboard/components/AddSummaryGroupModal';
 
-import {
-    LayoutGrid,
-    GanttChart,
-    BarChart3,
-    List
-} from 'lucide-react';
-
 import { PageContent } from '@/components/layout/PageShell';
 import { ContextSidebar } from '@/components/layout/ContextSidebar';
 
-
-type ViewTab = 'distribution' | 'timeline' | 'waterfall' | 'list';
 
 export function CommandStrategyCenter() {
     const {
@@ -39,21 +24,10 @@ export function CommandStrategyCenter() {
         cycleSort,
         cycleListPhase,
         addSummaryGroup,
-        selectMember,
-
-        // Editor State (Legacy support for Timeline/Waterfall)
-        setEditingReport,
-        selectReport,
-        updateProjection,
-        projections,
-        roster
+        selectMember
     } = useNavfitStore();
 
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const [viewTab, setViewTab] = useState<ViewTab>('distribution');
-
-    // Flight Path Mode State (Local to Timeline view)
-    const [flightPathMode, setFlightPathMode] = useState(false);
 
     const summaryGroups = useSummaryGroups();
 
@@ -66,9 +40,6 @@ export function CommandStrategyCenter() {
             [reportId]: val
         }));
     };
-
-    // Clear preview when cycle changes
-    // useEffect(() => setPreviewProjections({}), [selectedCycleId]); // Optional optimization
 
     // Auto-Select Logic: On mount, if no cycle is selected, pick the most urgent active one
     useEffect(() => {
@@ -109,28 +80,6 @@ export function CommandStrategyCenter() {
     const selectedGroup = useMemo(() => {
         return summaryGroups.find(g => g.id === selectedCycleId) || null;
     }, [summaryGroups, selectedCycleId]);
-
-    // Derived: Selected Group as Array for Strategy Components
-    const selectedGroupArray = useMemo(() => selectedGroup ? [selectedGroup] : [], [selectedGroup]);
-
-    // Resolve Report for Editor (Legacy)
-    // const activeReport = useMemo(() => {
-    //     if (!selectedReportId || !isEditingReport) return null;
-    //     for (const group of summaryGroups) {
-    //         const found = group.reports.find(r => r.id === selectedReportId);
-    //         if (found) return found;
-    //     }
-    //     return null;
-    // }, [selectedReportId, isEditingReport, summaryGroups]);
-
-    // Open Report Handler (Legacy)
-    const handleOpenReport = (_memberId: string, _name: string, _rank?: string, reportId?: string) => {
-        if (reportId) {
-            selectReport(reportId);
-            setEditingReport(true); // Ensure editor opens
-        }
-    };
-
 
     // 2. Filter & Sort Logic for Left Panel
     const groupedCycles = useMemo(() => {
@@ -211,45 +160,6 @@ export function CommandStrategyCenter() {
             <div className={`border-b px-6 py-3 flex items-center justify-between shrink-0 transition-colors duration-300 ${cycleListPhase === 'Archive' ? 'bg-indigo-50 border-indigo-200' : 'bg-white border-slate-200'}`}>
                 <div className="flex items-center gap-4">
                     <h1 className="text-lg font-bold text-slate-800 tracking-tight">Strategy Center</h1>
-                    <div className="h-6 w-px bg-slate-200" />
-
-                    {/* View Tabs - Only visible if group selected */}
-                    {selectedCycleId && (
-                        <div className="flex p-1 bg-slate-100 rounded-lg border border-slate-200">
-                            <button
-                                onClick={() => setViewTab('distribution')}
-                                className={`flex items-center px-3 py-1.5 rounded-md text-sm font-medium transition-all ${viewTab === 'distribution' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'
-                                    }`}
-                            >
-                                <LayoutGrid className="w-4 h-4 mr-2" />
-                                Distribution
-                            </button>
-                            <button
-                                onClick={() => setViewTab('timeline')}
-                                className={`flex items-center px-3 py-1.5 rounded-md text-sm font-medium transition-all ${viewTab === 'timeline' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'
-                                    }`}
-                            >
-                                <GanttChart className="w-4 h-4 mr-2" />
-                                Timeline
-                            </button>
-                            <button
-                                onClick={() => setViewTab('waterfall')}
-                                className={`flex items-center px-3 py-1.5 rounded-md text-sm font-medium transition-all ${viewTab === 'waterfall' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'
-                                    }`}
-                            >
-                                <BarChart3 className="w-4 h-4 mr-2" />
-                                Waterfall
-                            </button>
-                            <button
-                                onClick={() => setViewTab('list')}
-                                className={`flex items-center px-3 py-1.5 rounded-md text-sm font-medium transition-all ${viewTab === 'list' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'
-                                    }`}
-                            >
-                                <List className="w-4 h-4 mr-2" />
-                                List
-                            </button>
-                        </div>
-                    )}
                 </div>
             </div>
 
@@ -273,62 +183,10 @@ export function CommandStrategyCenter() {
 
                     {selectedCycleId && selectedGroup ? (
                         <div className={`flex-1 flex flex-col h-full min-w-0 animate-in fade-in duration-300 ${selectedMemberId ? 'mr-0' : ''}`}>
-                            {/* View Rendering Switch */}
-                            {viewTab === 'distribution' && (
-                                <DistributionPanel
-                                    group={selectedGroup}
-                                    previewProjections={previewProjections}
-                                />
-                            )}
-
-                            {viewTab === 'timeline' && (
-                                <div className="flex-1 min-h-0 relative p-4 flex flex-col overflow-hidden">
-                                    {/* Timeline Controls */}
-                                    <div className="flex justify-end mb-4">
-                                        <div className="flex items-center bg-white p-1 rounded-lg border border-slate-200 shadow-sm">
-                                            <button
-                                                onClick={() => setFlightPathMode(false)}
-                                                className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all ${!flightPathMode ? 'bg-indigo-50 text-indigo-700' : 'text-slate-500 hover:bg-slate-50'}`}
-                                            >
-                                                Standard
-                                            </button>
-                                            <button
-                                                onClick={() => setFlightPathMode(true)}
-                                                className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all ${flightPathMode ? 'bg-indigo-50 text-indigo-700' : 'text-slate-500 hover:bg-slate-50'}`}
-                                            >
-                                                Flight Path
-                                            </button>
-                                        </div>
-                                    </div>
-
-                                    <StrategyScattergram
-                                        summaryGroups={selectedGroupArray}
-                                        roster={roster}
-                                        onOpenReport={handleOpenReport}
-                                        onUpdateReport={(reportId, value) => updateProjection(selectedCycleId, reportId, value)}
-                                        flightPathMode={flightPathMode}
-                                        height={600}
-                                    />
-                                </div>
-                            )}
-
-                            {viewTab === 'waterfall' && (
-                                <div className="flex-1 min-h-0 relative p-4 flex flex-col overflow-hidden">
-                                    <ManningWaterfall
-                                        summaryGroups={selectedGroupArray}
-                                        roster={roster}
-                                        onOpenReport={handleOpenReport}
-                                        onReportUpdate={(reportId, value) => updateProjection(selectedCycleId, reportId, value)}
-                                        projections={projections}
-                                    />
-                                </div>
-                            )}
-
-                            {viewTab === 'list' && (
-                                <div className="flex-1 min-h-0 flex flex-col bg-white">
-                                    <StrategyListView summaryGroups={selectedGroupArray} />
-                                </div>
-                            )}
+                            <DistributionPanel
+                                group={selectedGroup}
+                                previewProjections={previewProjections}
+                            />
                         </div>
                     ) : (
                         <div className="h-full w-full animate-in fade-in duration-500">
