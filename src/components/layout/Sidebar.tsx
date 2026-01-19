@@ -3,11 +3,12 @@ import {
     LayoutDashboard,
     Calendar,
     Shield,
-    Anchor,
+    Infinity, // New Logo Icon
     Maximize,
     Minimize,
     LineChart,
-    UserCircle
+    UserCircle,
+    PanelLeft // New Toggle Icon
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useFullScreen } from '@/hooks/useFullScreen';
@@ -39,7 +40,7 @@ const SidebarItem = ({ icon: Icon, label, active, onClick, collapsed }: SidebarI
         {active && (
             <motion.div
                 layoutId="active-sidebar-item"
-                className="absolute inset-0 bg-gradient-to-r from-yellow-500/10 to-transparent rounded-lg shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05)] border-l-2 border-yellow-400/50"
+                className="absolute inset-0 bg-gradient-to-r from-yellow-500/5 to-transparent rounded-lg shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05)] border-l-2 border-yellow-400/50"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
@@ -70,7 +71,7 @@ const SidebarItem = ({ icon: Icon, label, active, onClick, collapsed }: SidebarI
                     animate={{ opacity: 1, x: 0 }}
                     exit={{ opacity: 0, x: -10 }}
                     className={cn(
-                        "font-medium whitespace-nowrap overflow-hidden",
+                        "font-medium whitespace-nowrap overflow-hidden transition-colors duration-200",
                         active ? "text-yellow-100/90" : "text-slate-400 group-hover:text-slate-200"
                     )}
                 >
@@ -104,9 +105,10 @@ export function Sidebar({ activeTab, onTabChange, collapsed, onToggleCollapse }:
         <motion.div
             className={cn(
                 "bg-slate-950/80 backdrop-blur-md flex flex-col fixed h-full z-50 shadow-2xl border-r border-white/5",
+                // Removed transition-all to let Framer Motion handle width exclusively
             )}
             initial={false}
-            animate={{ width: collapsed ? 80 : 256 }}
+            animate={{ width: collapsed ? 72 : 256 }} // Tightened generic width
             transition={{ type: "spring", stiffness: 300, damping: 30 }}
             onMouseLeave={() => {
                 if (!collapsed) {
@@ -114,36 +116,38 @@ export function Sidebar({ activeTab, onTabChange, collapsed, onToggleCollapse }:
                 }
             }}
         >
-            {/* Header Area */}
-            <div className="h-20 flex items-center px-4 space-x-3 border-b border-white/5 relative overflow-hidden shrink-0">
+            {/* Header Area - Brand Focus */}
+            <div className="h-18 flex items-center justify-center px-4 space-x-3 border-b border-white/5 relative overflow-hidden shrink-0">
 
                 {/* Subtle Ambient Light at Top */}
                 <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-white/20 to-transparent" />
 
-                {/* Anchor Icon - Functions as collapse toggle */}
-                <button
-                    onClick={onToggleCollapse}
-                    className="text-yellow-400/90 hover:text-yellow-300 hover:bg-white/5 p-2 rounded-lg transition-all duration-300 focus:outline-none shadow-[0_0_15px_rgba(250,204,21,0.05)] hover:shadow-[0_0_20px_rgba(250,204,21,0.2)]"
-                    title={collapsed ? "Expand Sidebar" : "Collapse Sidebar"}
-                >
-                    <Anchor size={28} className="transition-transform duration-300 transform group-hover:scale-110 drop-shadow-[0_0_5px_rgba(250,204,21,0.3)]" />
-                </button>
+                {/* Brand Logo - Persists in all states */}
+                <div className="flex items-center justify-center">
+                    <motion.div
+                        className="text-yellow-400 drop-shadow-[0_0_10px_rgba(250,204,21,0.4)]"
+                        animate={{ rotate: collapsed ? 0 : 360 }} // Subtle rotation on expand
+                        transition={{ duration: 0.5 }}
+                    >
+                        <Infinity size={collapsed ? 28 : 24} />
+                    </motion.div>
+                </div>
 
-                {/* Title */}
+                {/* Text Title - Hidden when collapsed */}
                 <AnimatePresence>
                     {!collapsed && (
                         <motion.div
                             className="flex flex-col overflow-hidden whitespace-nowrap"
-                            initial={{ opacity: 0, x: -20 }}
+                            initial={{ opacity: 0, x: -10 }}
                             animate={{ opacity: 1, x: 0 }}
-                            exit={{ opacity: 0, x: -20 }}
+                            exit={{ opacity: 0, x: -10 }}
                             transition={{ duration: 0.2 }}
                         >
                             <span className="text-xl font-bold tracking-tight text-slate-100 leading-none drop-shadow-md">
-                                NAVFIT <span className="text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-yellow-200 font-extrabold">Infinity</span>
+                                NAVFIT
                             </span>
                             <span className="text-[0.6rem] text-slate-400 uppercase tracking-[0.2em] font-medium ml-0.5">
-                                Command Advantage
+                                Infinity
                             </span>
                         </motion.div>
                     )}
@@ -198,16 +202,25 @@ export function Sidebar({ activeTab, onTabChange, collapsed, onToggleCollapse }:
                 />
             </div>
 
-            {/* Utility Dock */}
+            {/* Utility Dock - Now includes Collapse Toggle */}
             <div className="py-2 border-t border-white/5 space-y-1 relative shrink-0">
                 {/* Top shine for dock */}
                 <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+
+                <SidebarItem
+                    icon={PanelLeft}
+                    label={collapsed ? "Expand Sidebar" : "Collapse Sidebar"}
+                    onClick={onToggleCollapse}
+                    collapsed={collapsed}
+                    active={false} // Always inactive style
+                />
 
                 <SidebarItem
                     icon={isFullScreen ? Minimize : Maximize}
                     label={isFullScreen ? "Exit Full Screen" : "Full Screen"}
                     onClick={toggleFullScreen}
                     collapsed={collapsed}
+                    active={false}
                 />
             </div>
 
