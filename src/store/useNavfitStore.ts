@@ -267,7 +267,7 @@ export const useNavfitStore = create<NavfitStore>((set) => ({
                 selectedMemberId: null,
                 isContextPanelOpen: false,
                 projections: {},
-                activeTab: 'strategy' // Reset to default tab? Or keep?
+                activeTab: 'dashboard' // Reset to default tab
             });
         } catch (err: any) {
             console.error("Failed to load data:", err);
@@ -276,7 +276,7 @@ export const useNavfitStore = create<NavfitStore>((set) => ({
     },
 
     // Navigation
-    activeTab: 'strategy',
+    activeTab: 'dashboard',
     setActiveTab: (tab) => set({ activeTab: tab }),
 
     // View State
