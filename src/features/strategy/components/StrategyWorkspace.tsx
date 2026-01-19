@@ -31,6 +31,9 @@ export function StrategyWorkspace() {
         setStrategyViewMode
     } = useNavfitStore();
 
+    // Fix stale read: subscribe to selectedCycleId
+    const selectedCycleId = useNavfitStore(state => state.selectedCycleId);
+
     const summaryGroups = useSummaryGroups();
 
     const handleOpenReport = (_memberId: string, _name: string, _rank?: string, reportId?: string) => {
@@ -38,6 +41,18 @@ export function StrategyWorkspace() {
             selectReport(reportId);
         }
     };
+
+    const getRscaValue = () => {
+        if (!selectedCycleId) return 4.20;
+
+        const selectedGroup = summaryGroups.find(g => g.id === selectedCycleId);
+        if (!selectedGroup) return 4.20;
+
+        const rank = selectedGroup.paygrade || selectedGroup.competitiveGroupKey.split(' ')[0];
+        return calculateCumulativeRSCA(summaryGroups, rank);
+    };
+
+    const rscaValue = getRscaValue();
 
     return (
         <div className="flex flex-col h-full bg-slate-50">
@@ -79,37 +94,8 @@ export function StrategyWorkspace() {
             {/* Sticky HUD */}
             <div className="sticky top-0 z-20">
                 <RscaHeadsUpDisplay
-                    currentRsca={(() => {
-                        const selectedId = useNavfitStore.getState().selectedCycleId;
-                        if (!selectedId) return 4.20;
-
-                        const selectedGroup = summaryGroups.find(g => g.id === selectedId);
-                        if (!selectedGroup) return 4.20;
-
-                        const rank = selectedGroup.paygrade || selectedGroup.competitiveGroupKey.split(' ')[0];
-
-                        // Import of calculateCumulativeRSCA needed! I will add it to imports.
-                        // Since I can't add imports in this block easily without ensuring I don't break things,
-                        // I will assume I can add the import in a separate block or this tool call allows it if I target the right range.
-                        // Wait, I should add the import first or include it in a larger block.
-                        // I will update the whole file import section too? 
-                        // No, let's use the tool's ability to just replace this block, BUT I need to import the function.
-                        // I'll do a separate tool call for import or try to use a MultiReplace.
-                        // For now, I'll write the logic here assuming I add the import.
-                        // Wait, I can't assume. I must add the import.
-                        return calculateCumulativeRSCA(summaryGroups, rank);
-                    })()}
-                    projectedRsca={(() => {
-                        const selectedId = useNavfitStore.getState().selectedCycleId;
-                        if (!selectedId) return 4.20;
-
-                        const selectedGroup = summaryGroups.find(g => g.id === selectedId);
-                        if (!selectedGroup) return 4.20;
-
-                        const rank = selectedGroup.paygrade || selectedGroup.competitiveGroupKey.split(' ')[0];
-                        return calculateCumulativeRSCA(summaryGroups, rank);
-                    })()}
-
+                    currentRsca={rscaValue}
+                    projectedRsca={rscaValue}
                 />
             </div>
 
@@ -131,9 +117,8 @@ export function StrategyWorkspace() {
                         {flightPathMode ? (
                             <StrategyScattergram
                                 summaryGroups={
-                                    // Use store's selectedCycleId to filter if available
-                                    useNavfitStore.getState().selectedCycleId
-                                        ? summaryGroups.filter(g => g.id === useNavfitStore.getState().selectedCycleId)
+                                    selectedCycleId
+                                        ? summaryGroups.filter(g => g.id === selectedCycleId)
                                         : summaryGroups
                                 }
                                 roster={roster}
@@ -149,8 +134,8 @@ export function StrategyWorkspace() {
                         ) : (
                             <ManningWaterfall
                                 summaryGroups={
-                                    useNavfitStore.getState().selectedCycleId
-                                        ? summaryGroups.filter(g => g.id === useNavfitStore.getState().selectedCycleId)
+                                    selectedCycleId
+                                        ? summaryGroups.filter(g => g.id === selectedCycleId)
                                         : summaryGroups
                                 }
                                 roster={roster}
@@ -166,8 +151,8 @@ export function StrategyWorkspace() {
                 ) : (
                     <StrategyListView
                         summaryGroups={
-                            useNavfitStore.getState().selectedCycleId
-                                ? summaryGroups.filter(g => g.id === useNavfitStore.getState().selectedCycleId)
+                            selectedCycleId
+                                ? summaryGroups.filter(g => g.id === selectedCycleId)
                                 : summaryGroups
                         }
                     />
@@ -179,4 +164,3 @@ export function StrategyWorkspace() {
         </div>
     );
 };
-
