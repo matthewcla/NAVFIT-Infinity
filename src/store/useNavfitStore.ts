@@ -13,6 +13,7 @@ import { validateReportState, checkQuota, createSummaryGroupContext } from '@/fe
 
 import type { SummaryGroup, Report } from '@/types';
 import { assignRecommendationsByRank } from '@/features/strategy/logic/recommendation';
+import { calculateOptimizedTrajectory, distributeMtaByRank } from '@/features/strategy/logic/optimizer';
 import { fetchInitialData } from '@/services/dataLoader';
 import { planAllSummaryGroups } from '@/features/strategy/logic/planSummaryGroups';
 import type { User } from '@/domain/auth/types';
@@ -582,70 +583,92 @@ export const useNavfitStore = create<NavfitStore>((set) => ({
 
             // 2b. Auto-Calculate MTA for the moved item (Interpolation)
             // Note: We use targetIndex because draggedItem is now at targetIndex
-            const prevReport = updatedReportList[targetIndex - 1];
-            const nextReport = updatedReportList[targetIndex + 1];
-
-            let newMta = draggedItem.traitAverage;
-
-            if (prevReport && nextReport) {
-                newMta = (prevReport.traitAverage + nextReport.traitAverage) / 2;
-            } else if (prevReport) {
-                // Moved to bottom (or end)
-                newMta = Math.max(2.0, prevReport.traitAverage - 0.1);
-            } else if (nextReport) {
-                // Moved to top
-                newMta = Math.min(5.0, nextReport.traitAverage + 0.1);
-            }
-
-            // Simple Collision Avoidance (Nudge if identical)
-            if (prevReport && newMta >= prevReport.traitAverage) {
-                newMta = prevReport.traitAverage - 0.01;
-            }
-            if (nextReport && newMta <= nextReport.traitAverage) {
-                newMta = nextReport.traitAverage + 0.01;
-            }
-
-            updatedReportList[targetIndex] = {
-                ...draggedItem,
-                traitAverage: parseFloat(newMta.toFixed(2))
-            };
+            // Legacy handling or finding index...
+            // Assuming we are using the array of IDs now from RankStrategyMatrix
+            console.warn("reorderMembers called with legacy single-target logic, falling back to simple move if possible or ignoring");
         }
 
-        // 3. Auto-Assign Recommendations based on Rank and Policy
-        const finalReports = assignRecommendationsByRank(updatedReportList, group);
+        // 2. Auto-Assign Recommendations based on Rank
+        // This updates EP/MP/P based on the NEW rank order
+        const recReports = assignRecommendationsByRank(updatedReportList, group);
 
-        // 4. Update State
-        const newSummaryGroups = [...state.summaryGroups];
-        newSummaryGroups[groupIndex] = {
-            ...group,
-            reports: finalReports,
-            hasManualOrder: true // Mark that user has manually reordered this group
-        };
+        // 3. Calculate Optimized Trajectory to determine Budget
+        // We need to construct a temp view of groups to feed the optimizer
+        // The optimizer needs the *list* of groups to calculate accumulated RSCA.
+        // We replace the current group with our working copy (recReports) to be safe, 
+        // though optimizer ignores draft scores anyway.
+        // 3. Temporarily update the state just to calculate trajectory
+        // We create a fresh copy of summaryGroups to manipulate
+        let workingGroups = [...state.summaryGroups];
 
-        // 5. Trigger Redistribution Engine
-        // Convert to Domain Members
-        const domainMembers: DomainMember[] = finalReports.map((r, i) => ({
+        // Update the current group in this working copy
+        // We do NOT apply MTAs yet, just the Recs/Order, because optimizer dictates MTA
+        workingGroups[groupIndex] = { ...group, reports: recReports, hasManualOrder: true };
+
+        // 4. Run Strategy Engine (Cascade)
+        // This calculates the targets for EVERY group based on the new order of this group
+        const trajectory = calculateOptimizedTrajectory(workingGroups, state.rsConfig.targetRsca);
+
+        // 5. Apply Strategy to ALL Projected Groups (Cascade)
+        // We iterate through every group in the working set. 
+        // If it's projected, we update its MTAs based on the NEW trajectory.
+        const finalizedGroups = workingGroups.map(g => {
+            const point = trajectory.find(p => p.groupId === g.id);
+
+            // If no point or already Final, returned as is (or as modified above for current group)
+            if (!point || !point.isProjected) return g;
+
+            // It is a projected group (Draft/Planned). Update its MTAs.
+            // Note: 'g.reports' has the correct Rank Order (either existing, or newly updated for current group)
+            const targetMta = point.optimalMta;
+            const distributedScores = distributeMtaByRank(g.reports, targetMta);
+
+            const optimizedReports = g.reports.map((r, i) => ({
+                ...r,
+                traitAverage: distributedScores[i] || 0.00
+            }));
+
+            // Sync Recommendations AGAIN? 
+            // Technically `distributeMtaByRank` used the existing Recs to generate scores.
+            // If the Scores change significantly, should Recs change? 
+            // In our logic, Rank drives Recs. MTAs follow Recs. So Recs are stable unless Rank changes.
+            // And Rank only changes for the *Current* group (manual). 
+            // Future groups keep their Rank Order, just adjustment MTA budget. 
+            // So we are good.
+
+            return {
+                ...g,
+                reports: optimizedReports
+            };
+        });
+
+        // 6. Update State
+        const newSummaryGroups = finalizedGroups; // This now contains updates for Current + Cascade
+
+        // 6. Audit & Redistribution (Legacy?)
+        // We still trigger this just in case other components listen to it
+        // but we have already done the heavy lifting.
+        useAuditStore.getState().addLog('RANK_ORDER_CHANGE', {
+            groupId,
+            draggedId,
+            newOrderCount: newSummaryGroups[groupIndex].reports.length
+        });
+
+        // Convert to Domain Members for Redistribution Store (if it does extra validation)
+        const updatedCurrentReports = newSummaryGroups[groupIndex].reports;
+        const domainMembers: DomainMember[] = updatedCurrentReports.map((r, i) => ({
             id: r.id,
             rank: i + 1,
-            mta: r.traitAverage, // Send current MTA as baseline
+            mta: r.traitAverage,
             isAnchor: !!r.isLocked,
             anchorValue: r.traitAverage,
             name: r.memberName
         }));
 
-        useAuditStore.getState().addLog('RANK_ORDER_CHANGE', {
-            groupId,
-            draggedId,
-            targetIdOrOrder
-        });
-
-        // Do NOT call setRankOrder to avoid cycle (setRankOrder calls reorderMembers)
-        // Call requestRedistribution directly
         useRedistributionStore.getState().requestRedistribution(groupId, domainMembers, DEFAULT_CONSTRAINTS, state.rsConfig.targetRsca);
 
         return {
-            summaryGroups: newSummaryGroups,
-            // Projections will be updated by the store subscription/callback
+            summaryGroups: newSummaryGroups
         };
     }),
 

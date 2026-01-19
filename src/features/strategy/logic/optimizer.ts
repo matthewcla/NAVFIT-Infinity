@@ -167,3 +167,69 @@ export const analyzeGroupRisk = (trajectory: TrajectoryPoint[]) => {
         lastPoint
     };
 };
+
+/**
+ * Distributes a target Group Average MTA across a list of members based on their Rank.
+ * Assumes reports are already sorted by Rank (Index 0 = Rank 1).
+ * 
+ * Algorithm: "Stepped Slope"
+ * 1. Determine Quota Buckets (EPs, MPs).
+ * 2. Assign Base Values: EP = Avg + Step, MP = Avg, P = Avg - Step.
+ * 3. Calculate current Average of Base Values.
+ * 4. Shift all values by (TargetAvg - CurrentAvg) to align with Target.
+ * 5. Apply linear smoothing within buckets to differentiate Ranks (Rank 1 > Rank 2).
+ * 6. Clamp to 5.0 / 2.0.
+ */
+export const distributeMtaByRank = (reports: any[], targetAvg: number): number[] => {
+    const N = reports.length;
+    if (N === 0) return [];
+    if (N === 1) return [Math.min(5.0, Math.max(2.0, targetAvg))];
+
+    // Configuration
+    const EP_BOOST = 0.40; // EPs are significantly higher
+    const MP_BOOST = 0.10; // MPs are slightly higher
+    const RANK_DECAY = 0.02; // Score drops by 0.02 per rank position
+
+    // 1. Assign Initial Raw Scores based on Rec + Rank Decay
+    // We start with the TargetAvg as a baseline for everyone, then apply modifiers
+    let rawScores = reports.map((r, i) => {
+        let score = targetAvg;
+
+        // Rec Modifier
+        if (r.promotionRecommendation === 'EP' || r.promotionRecommendation === 'Early Promote') score += EP_BOOST;
+        else if (r.promotionRecommendation === 'MP' || r.promotionRecommendation === 'Must Promote') score += MP_BOOST;
+
+        // Rank Decay (Relative to center)
+        // Center index is (N-1)/2. 
+        // i=0 (Rank 1) should be Highest. i=N-1 (Rank N) Lowest.
+        // We just subtract i * Decay? No, let's center it.
+        // score += ( (N-1)/2 - i ) * RANK_DECAY;
+
+        // Actually, simple decay from top is safer for monotonicity
+        // But we need to shift later. So just linear decay is fine.
+        score -= (i * RANK_DECAY);
+
+        return score;
+    });
+
+    // 2. Adjust to match Target Average
+    const currentSum = rawScores.reduce((a, b) => a + b, 0);
+    const currentAvg = currentSum / N;
+    const shift = targetAvg - currentAvg;
+
+    let adjustedScores = rawScores.map(s => s + shift);
+
+    // 3. Clamp and Distribute Excess (Iterative)
+    // If any score > 5.0, cap it and distribute the excess to others to maintain Average?
+    // Actually, "Water Level" logic usually means if you cap the top, the average DROPS, unless you boost the bottom.
+    // But boosting the bottom reduces the "Spread".
+    // For Strategy, we want to hit the Target Average implies "Spending the Budget".
+    // If Rank 1 is capped at 5.0, we have "extra points" we couldn't give him. 
+    // We should give them to Rank 2, 3 etc. downwards? Or just general shift?
+    // Let's do a simple Clamp for now, acknowledging that Average might dip below Target if we hit ceiling.
+    // (It is better to be safe/legal than to force the average by breaking 5.0)
+
+    adjustedScores = adjustedScores.map(s => Math.min(5.0, Math.max(2.0, s)));
+
+    return adjustedScores.map(s => Math.round(s * 100) / 100);
+};

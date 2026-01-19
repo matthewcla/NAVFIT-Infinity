@@ -7,9 +7,11 @@ import { useNavfitStore } from '@/store/useNavfitStore';
 interface CycleCardGridProps {
     cycles: SummaryGroup[];
     onSelect: (cycleId: string) => void;
+    hoveredCycleId?: string | null;
+    onCardHover?: (cycleId: string | null) => void;
 }
 
-export function CycleCardGrid({ cycles, onSelect }: CycleCardGridProps) {
+export function CycleCardGrid({ cycles, onSelect, hoveredCycleId, onCardHover }: CycleCardGridProps) {
     const { summaryGroups } = useNavfitStore();
 
     if (cycles.length === 0) {
@@ -47,7 +49,10 @@ export function CycleCardGrid({ cycles, onSelect }: CycleCardGridProps) {
                         promotionStatus={group.promotionStatus}
                         reportType={getReportType(group.name)}
                         onClick={() => onSelect(group.id)}
-                        draggable={true} // Enable dragging if needed for future reordering
+                        draggable={true}
+                        isHovered={hoveredCycleId === group.id}
+                        onMouseEnter={() => onCardHover && onCardHover(group.id)}
+                        onMouseLeave={() => onCardHover && onCardHover(null)}
                     />
                 );
             })}

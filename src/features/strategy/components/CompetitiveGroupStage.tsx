@@ -1,8 +1,9 @@
 import { useMemo, useState } from 'react';
 import { useNavfitStore } from '@/store/useNavfitStore';
-import { MtaTrendChart } from './MtaTrendChart';
+import { RankStrategyMatrix } from './RankStrategyMatrix';
+import { RscaScatterPlot } from './CommandDeck/RscaScatterPlot';
 import { CycleCardGrid } from './CycleCardGrid';
-import { Layers, Plus } from 'lucide-react';
+import { Plus, ListOrdered } from 'lucide-react';
 
 interface CompetitiveGroupStageProps {
     groupKey: string;
@@ -21,11 +22,7 @@ export function CompetitiveGroupStage({ groupKey, onSelectCycle }: CompetitiveGr
         return relevant.sort((a, b) => new Date(b.periodEndDate).getTime() - new Date(a.periodEndDate).getTime());
     }, [summaryGroups, groupKey]);
 
-    // 2. Trend Data (Chronological)
-    const trendData = useMemo(() => {
-        // Trend chart needs oldest to newest
-        return [...groupData].reverse();
-    }, [groupData]);
+
 
     // 3. Filtered Cycles for Grid
     const filteredCycles = useMemo(() => {
@@ -46,6 +43,12 @@ export function CompetitiveGroupStage({ groupKey, onSelectCycle }: CompetitiveGr
         onSelectCycle(cycleId);
     };
 
+    // State for Hover Interaction (Bidirectional)
+    const [hoveredGroupId, setHoveredGroupId] = useState<string | null>(null);
+
+    // Debug Log
+    // useEffect(() => console.log('Stage Hovered:', hoveredGroupId), [hoveredGroupId]);
+
     return (
         <div className="h-full flex flex-col bg-slate-50 overflow-hidden">
             {/* Header / Toolbar */}
@@ -64,17 +67,38 @@ export function CompetitiveGroupStage({ groupKey, onSelectCycle }: CompetitiveGr
 
             <div className="flex-1 overflow-y-auto p-6 space-y-6">
 
-                {/* Zone 1: The Horizon (Trend) */}
+                {/* Zone 1: The Strategy Engine */}
                 <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+                    {/* Header handled by RscaScatterPlot internally or we wrap? 
+                        RscaScatterPlot has its own header. I will remove the wrapper header here to avoid duplication.
+                        Actually, RscaScatterPlot has a "sidebar" layout. 
+                        I will just render it full height.
+                     */}
+                    <div className="h-[320px]">
+                        <RscaScatterPlot
+                            fixedGroupKey={groupKey}
+                            hideSidebar
+                            hoveredGroupId={hoveredGroupId}
+                            onPointHover={setHoveredGroupId}
+                            onPointClick={handleCycleSelect}
+                        />
+                    </div>
+                </div>
+
+                {/* Zone 1.5: Rank Strategy Matrix */}
+                <div>
                     <div className="flex items-center gap-2 mb-4">
-                        <div className="p-1.5 bg-indigo-50 text-indigo-700 rounded-md">
-                            <Layers className="w-4 h-4" />
+                        <div className="p-1.5 bg-fuchsia-50 text-fuchsia-700 rounded-md">
+                            <ListOrdered className="w-4 h-4" />
                         </div>
-                        <h3 className="text-base font-bold text-slate-800">Performance Horizon</h3>
+                        <h3 className="text-base font-bold text-slate-800">Rank Strategy Matrix</h3>
                     </div>
-                    <div className="h-[280px]">
-                        <MtaTrendChart groups={trendData} />
-                    </div>
+                    <RankStrategyMatrix
+                        groupKey={groupKey}
+                        hoveredGroupId={hoveredGroupId}
+                        onGroupHover={setHoveredGroupId}
+                        onGroupClick={handleCycleSelect}
+                    />
                 </div>
 
                 {/* Zone 2: The Action (Cycle Grid) */}
@@ -102,6 +126,8 @@ export function CompetitiveGroupStage({ groupKey, onSelectCycle }: CompetitiveGr
                     <CycleCardGrid
                         cycles={filteredCycles}
                         onSelect={handleCycleSelect}
+                        hoveredCycleId={hoveredGroupId}
+                        onCardHover={setHoveredGroupId}
                     />
                 </div>
             </div>

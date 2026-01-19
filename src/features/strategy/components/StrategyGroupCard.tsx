@@ -17,6 +17,9 @@ interface StrategyGroupCardProps {
     onDragStart?: (e: React.DragEvent<HTMLDivElement>) => void;
     onDragEnd?: (e: React.DragEvent<HTMLDivElement>) => void;
     workflowStatus?: string;
+    isHovered?: boolean;
+    onMouseEnter?: () => void;
+    onMouseLeave?: () => void;
 }
 
 
@@ -33,7 +36,10 @@ export function StrategyGroupCard({
     workflowStatus,
     draggable,
     onDragStart,
-    onDragEnd
+    onDragEnd,
+    isHovered,
+    onMouseEnter,
+    onMouseLeave
 }: StrategyGroupCardProps) {
 
     const dragPreviewRef = useRef<HTMLDivElement>(null);
@@ -149,11 +155,15 @@ export function StrategyGroupCard({
                 onDragStart={handleDragStart}
                 onDragEnd={handleDragEnd}
                 onClick={onClick}
+                onMouseEnter={onMouseEnter}
+                onMouseLeave={onMouseLeave}
                 className={`
-                    group relative rounded-lg border transition-all cursor-pointer overflow-hidden flex flex-col
+                    group relative rounded-lg border transition-all cursor-pointer overflow-hidden flex flex-col transform duration-200
                     ${isSelected
                         ? 'bg-indigo-50 border-indigo-600 ring-1 ring-indigo-600 shadow-md z-10'
-                        : 'bg-white border-slate-200 shadow-sm hover:border-indigo-300 hover:shadow-md'
+                        : isHovered
+                            ? 'bg-indigo-50/50 border-indigo-400 ring-2 ring-indigo-400 shadow-lg z-20 scale-[1.02]'
+                            : 'bg-white border-slate-200 shadow-sm hover:border-indigo-300 hover:shadow-md'
                     }
                     ${isDragging ? 'opacity-50 ring-2 ring-indigo-400 ring-offset-2 scale-95 grayscale' : ''}
                 `}

@@ -5,7 +5,21 @@ import { calculateOptimizedTrajectory, analyzeGroupRisk } from '@/features/strat
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, ReferenceLine, CartesianGrid } from 'recharts';
 import { format } from 'date-fns';
 
-export function RscaScatterPlot() {
+interface RscaScatterPlotProps {
+    fixedGroupKey?: string;
+    hideSidebar?: boolean;
+    hoveredGroupId?: string | null;
+    onPointHover?: (groupId: string | null) => void;
+    onPointClick?: (groupId: string) => void;
+}
+
+export function RscaScatterPlot({
+    fixedGroupKey,
+    hideSidebar,
+    hoveredGroupId,
+    onPointHover,
+    onPointClick
+}: RscaScatterPlotProps = {}) {
     const summaryGroups = useSummaryGroups();
     const { rsConfig, selectCycle, setStrategyViewMode, setActiveTab } = useNavfitStore();
 
@@ -50,15 +64,19 @@ export function RscaScatterPlot() {
 
     const [selectedKey, setSelectedKey] = useState<string | null>(null);
 
-    // Auto-select the "Worst" group on load or when keys change
+    // Auto-select the "Worst" group on load or when keys change, UNLESS fixed key is provided
     useEffect(() => {
+        if (fixedGroupKey) {
+            setSelectedKey(fixedGroupKey);
+            return;
+        }
         if (defaultSelectedKey && !selectedKey) {
             setSelectedKey(defaultSelectedKey);
         }
-    }, [defaultSelectedKey, selectedKey]);
+    }, [defaultSelectedKey, selectedKey, fixedGroupKey]);
 
     // Derived Data for Render
-    const activeKey = selectedKey || defaultSelectedKey;
+    const activeKey = fixedGroupKey || selectedKey || defaultSelectedKey;
     const data = activeKey ? allTrajectories[activeKey] : [];
 
     // Safety check just in case data is empty
@@ -95,9 +113,11 @@ export function RscaScatterPlot() {
                     <div>
                         <h3 className="text-lg font-bold text-slate-800 tracking-tight flex items-center gap-2">
                             Strategy Engine
-                            <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-indigo-100 text-indigo-700 uppercase tracking-widest border border-indigo-200">
-                                {activeKey}
-                            </span>
+                            {!fixedGroupKey && (
+                                <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-indigo-100 text-indigo-700 uppercase tracking-widest border border-indigo-200">
+                                    {activeKey}
+                                </span>
+                            )}
                         </h3>
                         <p className="text-xs text-slate-500">Projected Cumulative RSCA vs. Target Band ({lowerTarget.toFixed(2)} - {targetLimit.toFixed(2)})</p>
                     </div>
@@ -119,6 +139,29 @@ export function RscaScatterPlot() {
                         <AreaChart
                             data={data}
                             margin={{ top: 20, right: 30, left: 0, bottom: 20 }}
+                            onMouseMove={(data: any) => {
+                                if (data?.activePayload && data.activePayload.length) {
+                                    const p = data.activePayload[0].payload;
+                                    if (onPointHover && p.groupId !== hoveredGroupId) {
+                                        onPointHover(p.groupId);
+                                    }
+                                }
+                            }}
+                            onMouseLeave={() => {
+                                if (onPointHover) onPointHover(null);
+                            }}
+                            onClick={(data: any) => {
+                                const p = data?.activePayload?.[0]?.payload;
+                                if (p && p.groupId) {
+                                    if (onPointClick) {
+                                        onPointClick(p.groupId);
+                                    } else {
+                                        selectCycle(p.groupId, p.compKey);
+                                        setStrategyViewMode('workspace');
+                                        setActiveTab('competitive_groups');
+                                    }
+                                }
+                            }}
                         >
                             <defs>
                                 <linearGradient id="splitColor" x1="0" y1="0" x2="0" y2="1">
@@ -162,12 +205,13 @@ export function RscaScatterPlot() {
 
                             <Tooltip
                                 cursor={{ stroke: '#6366f1', strokeWidth: 1, strokeDasharray: '4 4' }}
+                                wrapperStyle={{ pointerEvents: 'none' }} // Ensure wrapper doesn't capture events
                                 content={({ active, payload }: any) => {
                                     if (active && payload && payload.length) {
                                         const d = payload[0].payload;
                                         const isRisk = d.rsca > targetLimit; // Only flag upper limit burst as "RISK"
                                         return (
-                                            <div className="bg-slate-900/95 text-white p-3 rounded-xl shadow-xl backdrop-blur-md border border-slate-700/50 min-w-[200px]">
+                                            <div className="bg-slate-900/95 text-white p-3 rounded-xl shadow-xl backdrop-blur-md border border-slate-700/50 min-w-[200px] pointer-events-none">
                                                 <div className="flex justify-between items-start mb-2 pb-2 border-b border-white/10">
                                                     <span className="font-bold text-sm">{format(new Date(d.date), 'MMM yyyy')}</span>
                                                     <span className={`text-[10px] uppercase font-bold px-1.5 py-0.5 rounded ${d.isProjected ? 'bg-indigo-500/20 text-indigo-300' : 'bg-slate-700 text-slate-300'}`}>
@@ -218,75 +262,77 @@ export function RscaScatterPlot() {
                                 strokeWidth={3}
                                 activeDot={{ r: 6, strokeWidth: 0, fill: '#6366f1' }}
                                 dot={({ cx, cy, payload }: any) => {
+                                    const isHovered = hoveredGroupId && payload.groupId === hoveredGroupId;
+                                    const isProjected = payload.isProjected;
+
+                                    if (isHovered) {
+                                        return (
+                                            <circle cx={cx} cy={cy} r={6} fill="#ffffff" stroke="#6366f1" strokeWidth={3} style={{ pointerEvents: 'none' }} />
+                                        );
+                                    }
+
                                     // Custom Dot to show Actual vs Projected nodes
-                                    if (!payload.isProjected) {
-                                        return <circle cx={cx} cy={cy} r={3} fill="#cbd5e1" stroke="none" />;
+                                    if (!isProjected) {
+                                        return <circle cx={cx} cy={cy} r={3} fill="#cbd5e1" stroke="none" style={{ pointerEvents: 'none' }} />;
                                     }
                                     // Small dot for projected
-                                    return <circle cx={cx} cy={cy} r={3} fill="#6366f1" stroke="none" />;
+                                    return <circle cx={cx} cy={cy} r={3} fill="#6366f1" stroke="none" style={{ pointerEvents: 'none' }} />;
                                 }}
-                                onClick={(data: any) => {
-                                    // Recharts click handler passes the data point
-                                    const p = data?.payload; // Check data object structure
-                                    if (p && p.groupId) {
-                                        selectCycle(p.groupId, p.compKey);
-                                        setStrategyViewMode('workspace');
-                                        setActiveTab('competitive_groups');
-                                    }
-                                }}
-                                className="cursor-pointer"
+                                className="cursor-pointer transition-all"
                             />
                         </AreaChart>
                     </ResponsiveContainer>
                 </div>
             </div>
 
-            {/* SIDEBAR TRIAGE LIST */}
-            <div className="w-48 flex flex-col h-full min-h-0 pl-2 border-l border-slate-100">
-                <div className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 px-1 flex-none">
-                    Risk Triage
-                </div>
-                <div className="flex-1 overflow-y-auto pr-1 space-y-2 min-h-0 scrollbar-thin scrollbar-thumb-slate-200 scrollbar-track-transparent">
-                    {sortedKeys.map(key => {
-                        const risk = riskAnalysis[key];
-                        if (!risk || !risk.lastPoint) return null;
+            {/* SIDEBAR TRIAGE LIST (Conditionally Rendered) */}
+            {!hideSidebar && (
+                <div className="w-48 flex flex-col h-full min-h-0 pl-2 border-l border-slate-100">
+                    <div className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 px-1 flex-none">
+                        Risk Triage
+                    </div>
+                    <div className="flex-1 overflow-y-auto pr-1 space-y-2 min-h-0 scrollbar-thin scrollbar-thumb-slate-200 scrollbar-track-transparent">
+                        {sortedKeys.map(key => {
+                            const risk = riskAnalysis[key];
+                            if (!risk || !risk.lastPoint) return null;
 
-                        // Margin against the UPPER LIMIT (4.20)
-                        const margin = risk.minMargin;
-                        const isRisk = risk.isCritical; // Uses 4.20
-                        const isActive = activeKey === key;
+                            // Margin against the UPPER LIMIT (4.20)
+                            const margin = risk.minMargin;
+                            const isRisk = risk.isCritical; // Uses 4.20
+                            const isActive = activeKey === key;
 
-                        return (
-                            <button
-                                key={key}
-                                onClick={() => setSelectedKey(key)}
-                                className={`
+                            return (
+                                <button
+                                    key={key}
+                                    onClick={() => setSelectedKey(key)}
+                                    className={`
                                     group relative w-full text-left p-2 rounded-lg border transition-all shrink-0
                                     ${isActive
-                                        ? 'bg-white border-indigo-500 shadow-md ring-1 ring-indigo-500/20'
-                                        : 'bg-slate-50 border-slate-200 hover:border-slate-300 hover:bg-slate-100'
-                                    }
+                                            ? 'bg-white border-indigo-500 shadow-md ring-1 ring-indigo-500/20'
+                                            : 'bg-slate-50 border-slate-200 hover:border-slate-300 hover:bg-slate-100'
+                                        }
                                 `}
-                            >
-                                <div className="flex justify-between items-center mb-1">
-                                    <span className={`text-xs font-bold ${isActive ? 'text-indigo-700' : 'text-slate-700'}`}>
-                                        {key.split(' ')[0]} {/* Rank */}
-                                    </span>
-                                    <div className={`w-2 h-2 rounded-full ${isRisk ? 'bg-red-500 animate-pulse' : 'bg-emerald-500'}`} />
-                                </div>
-                                <div className="flex justify-between items-end">
-                                    <span className="text-[10px] text-slate-400 truncate max-w-[60px]">
-                                        {key.split(' ').slice(1).join(' ')}
-                                    </span>
-                                    <span className={`font-mono text-xs font-bold ${margin < 0 ? 'text-red-500' : 'text-emerald-600'}`}>
-                                        {margin > 0 ? '+' : ''}{margin.toFixed(2)}
-                                    </span>
-                                </div>
-                            </button>
-                        );
-                    })}
+                                >
+                                    <div className="flex justify-between items-center mb-1">
+                                        <span className={`text-xs font-bold ${isActive ? 'text-indigo-700' : 'text-slate-700'}`}>
+                                            {key.split(' ')[0]} {/* Rank */}
+                                        </span>
+                                        <div className={`w-2 h-2 rounded-full ${isRisk ? 'bg-red-500 animate-pulse' : 'bg-emerald-500'}`} />
+                                    </div>
+                                    <div className="flex justify-between items-end">
+                                        <span className="text-[10px] text-slate-400 truncate max-w-[60px]">
+                                            {key.split(' ').slice(1).join(' ')}
+                                        </span>
+                                        <span className={`font-mono text-xs font-bold ${margin < 0 ? 'text-red-500' : 'text-emerald-600'}`}>
+                                            {margin > 0 ? '+' : ''}{margin.toFixed(2)}
+                                        </span>
+                                    </div>
+                                </button>
+                            );
+                        })}
+                    </div>
                 </div>
-            </div>
+            )}
         </div>
     );
 }
