@@ -62,7 +62,7 @@ export function CommandDeck() {
                                 initial={{ opacity: 0, scale: 0.95 }}
                                 animate={{ opacity: 1, scale: 1 }}
                                 transition={{ duration: 0.5, delay: 0.1 }}
-                                className="col-span-12 lg:col-span-8 h-full bg-white rounded-2xl border border-slate-200 shadow-sm p-4 md:p-6 overflow-hidden"
+                                className="col-span-12 lg:col-span-9 h-full bg-white rounded-2xl border border-slate-200 shadow-sm p-4 md:p-6 overflow-hidden"
                             >
                                 <RscaScatterPlot />
                             </motion.div>
@@ -72,7 +72,7 @@ export function CommandDeck() {
                                 initial={{ opacity: 0, x: 20 }}
                                 animate={{ opacity: 1, x: 0 }}
                                 transition={{ duration: 0.5, delay: 0.2 }}
-                                className="col-span-12 lg:col-span-4 h-full"
+                                className="col-span-12 lg:col-span-3 h-full"
                             >
                                 <CommandFeed />
                             </motion.div>
