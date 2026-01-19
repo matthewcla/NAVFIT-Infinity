@@ -8,8 +8,7 @@ import { SailorProfiles } from '@/features/roster/components/SailorProfiles';
 import { useNavfitStore } from '@/store/useNavfitStore';
 import { useRedistributionStore } from '@/store/useRedistributionStore';
 import { CommandDeck } from '@/features/strategy/components/CommandDeck/CommandDeck';
-import { CommandStrategyCenter } from '@/features/strategy/components/CommandStrategyCenter';
-import { CompetitiveGroupDashboard } from './features/strategy/components/CompetitiveGroupDashboard';
+import { CompetitiveGroupManager } from '@/features/strategy/components/CompetitiveGroupManager';
 import { DevTools } from '@/features/dev/DevTools';
 
 function App() {
@@ -41,10 +40,11 @@ function App() {
     switch (activeTab) {
       case 'dashboard':
         return <CommandDeck />;
-      case 'summary_groups':
-        return <CommandStrategyCenter />;
       case 'competitive_groups':
-        return <CompetitiveGroupDashboard />;
+        return <CompetitiveGroupManager />;
+      case 'summary_groups':
+        // Legacy Redirect (Safety Net)
+        return <CompetitiveGroupManager />;
       case 'profiles':
         return <SailorProfiles />;
       case 'schedule':

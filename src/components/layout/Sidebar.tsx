@@ -1,7 +1,6 @@
 import React from 'react';
 import {
     LayoutDashboard,
-    Users,
     Calendar,
     Shield,
     Anchor,
@@ -113,13 +112,6 @@ export function Sidebar({ activeTab, onTabChange, collapsed, onToggleCollapse }:
                     collapsed={collapsed}
                 />
                 <div className="my-2 border-t border-slate-800/50 mx-4"></div>
-                <SidebarItem
-                    icon={Users}
-                    label="Summary Groups"
-                    active={activeTab === 'summary_groups'}
-                    onClick={() => onTabChange('summary_groups')}
-                    collapsed={collapsed}
-                />
                 <SidebarItem
                     icon={Calendar}
                     label="Board Schedule"
