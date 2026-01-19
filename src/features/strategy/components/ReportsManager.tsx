@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
-import type { SummaryGroup, Report } from '@/types';
-import { ReportEditor } from './ReportEditor.tsx';
+import type { SummaryGroup } from '@/types';
+
 import { CompetitiveGroupHeader } from './CompetitiveGroupHeader.tsx';
 import { cn } from '@/lib/utils';
 import { ChevronRight, FileText, AlertCircle, CheckCircle } from 'lucide-react';
@@ -74,11 +74,7 @@ export function ReportsManager() {
         setSelectedGroupId(null);
     };
 
-    const isReportEditable = (report: Report, groupStatus: string | undefined): boolean => {
-        if (report.draftStatus === 'Draft') return true;
-        if (report.draftStatus === 'Submitted' && groupStatus === 'Rejected') return true;
-        return false;
-    };
+
 
     // Helper to calculate statistics for a group
     const getGroupStats = (group: SummaryGroup) => {
@@ -178,11 +174,13 @@ export function ReportsManager() {
                             </button>
                             <span className="text-sm font-medium text-slate-500">Back to Group</span>
                         </div>
-                        <ReportEditor
-                            report={selectedReport}
-                            onBack={() => setSelectedReportId(null)}
-                            readOnly={!isReportEditable(selectedReport, selectedSummaryGroup?.status)}
-                        />
+                        <div className="flex-1 flex items-center justify-center text-slate-400">
+                            <div className="text-center">
+                                <AlertCircle className="w-12 h-12 mx-auto mb-2 text-slate-300" />
+                                <h3 className="text-lg font-medium text-slate-600">Report Editor Moved</h3>
+                                <p className="text-sm">Please use the Strategy Workspace to edit reports.</p>
+                            </div>
+                        </div>
                     </div>
                 ) : (
                     /* 2. MAIN DASHBOARD / SELECTED COMP GROUP VIEW (Shared Scattergram) */
