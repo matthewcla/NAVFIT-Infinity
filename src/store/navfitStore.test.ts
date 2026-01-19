@@ -159,4 +159,32 @@ describe('useNavfitStore', () => {
         const reportAfterSecondToggle = state.summaryGroups[0].reports[0];
         expect(reportAfterSecondToggle.isLocked).toBe(initialLockState);
     });
+
+    // --- GAP ANALYSIS (Missing Critical Tests) ---
+
+    describe('commitOptimization', () => {
+        it.todo('should apply optimized reports to summary group and clear projections', () => {
+             // 1. Setup group with projections
+             // 2. Call commitOptimization
+             // 3. Verify reports updated in summaryGroups
+             // 4. Verify projections cleared
+        });
+    });
+
+    describe('updateReport', () => {
+        it.todo('should validate quota limits when changing recommendation', () => {
+             // 1. Setup group with Max EP limit (1 for small group)
+             // 2. Try to change another report to EP
+             // 3. Verify violations array in report contains QUOTA_EXCEEDED
+        });
+    });
+
+    describe('reorderMembers', () => {
+        it.todo('should trigger strategy cascade and request redistribution', () => {
+             // 1. Setup summary group with reports
+             // 2. Call reorderMembers to move bottom member to top
+             // 3. Verify new rank order in summaryGroups
+             // 4. Verify requestRedistribution called (requires spy on RedistributionStore)
+        });
+    });
 });
