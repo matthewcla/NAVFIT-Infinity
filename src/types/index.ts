@@ -9,6 +9,8 @@ export type TraitGradeSet = { [key: string]: number };
 export interface Member {
     id: string;
     name: string; // Combined for display
+    firstName?: string;
+    lastName?: string;
     rank: string;
     payGrade?: string;
     designator?: string; // Officer

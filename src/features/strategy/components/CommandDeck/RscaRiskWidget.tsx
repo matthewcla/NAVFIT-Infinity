@@ -1,11 +1,11 @@
 import { useMemo } from 'react';
 import { useNavfitStore } from '@/store/useNavfitStore';
+import { useSummaryGroups } from '@/features/strategy/hooks/useSummaryGroups';
 import { calculateCumulativeRSCA } from '@/features/strategy/logic/rsca';
 import { Activity } from 'lucide-react';
 
 export function RscaRiskWidget() {
-    const { summaryGroups } = useNavfitStore();
-    // const enhancedGroups = useSummaryGroups(); // Might need this if we need derived state, but raw store is likely faster for high level
+    const summaryGroups = useSummaryGroups();
     const { rsConfig } = useNavfitStore();
 
     // Group SummaryGroups by Competitive Group Key
