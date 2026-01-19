@@ -1,6 +1,5 @@
 import React from 'react';
 import {
-    Zap,
     LayoutDashboard,
     Users,
     Calendar,
@@ -8,7 +7,8 @@ import {
     Anchor,
     Maximize,
     Minimize,
-    Orbit
+    LineChart,
+    UserCircle
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useFullScreen } from '@/hooks/useFullScreen';
@@ -106,7 +106,7 @@ export function Sidebar({ activeTab, onTabChange, collapsed, onToggleCollapse }:
                 />
 
                 <SidebarItem
-                    icon={Orbit}
+                    icon={LineChart}
                     label="Competitive Groups"
                     active={activeTab === 'competitive_groups'}
                     onClick={() => onTabChange('competitive_groups')}
@@ -114,25 +114,24 @@ export function Sidebar({ activeTab, onTabChange, collapsed, onToggleCollapse }:
                 />
                 <div className="my-2 border-t border-slate-800/50 mx-4"></div>
                 <SidebarItem
-                    icon={Zap}
+                    icon={Users}
                     label="Summary Groups"
                     active={activeTab === 'summary_groups'}
                     onClick={() => onTabChange('summary_groups')}
                     collapsed={collapsed}
                 />
                 <SidebarItem
-                    icon={Users}
-                    label="Sailor Profiles"
-                    active={activeTab === 'profiles'}
-                    onClick={() => onTabChange('profiles')}
-                    collapsed={collapsed}
-                />
-
-                <SidebarItem
                     icon={Calendar}
                     label="Board Schedule"
                     active={activeTab === 'schedule'}
                     onClick={() => onTabChange('schedule')}
+                    collapsed={collapsed}
+                />
+                <SidebarItem
+                    icon={UserCircle}
+                    label="Sailor Profiles"
+                    active={activeTab === 'profiles'}
+                    onClick={() => onTabChange('profiles')}
                     collapsed={collapsed}
                 />
                 <div className="my-2 border-t border-slate-800/50 mx-4"></div>

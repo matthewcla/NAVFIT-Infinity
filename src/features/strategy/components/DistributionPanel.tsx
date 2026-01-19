@@ -2,7 +2,6 @@ import { useMemo, useState, useEffect } from 'react';
 import { useNavfitStore } from '@/store/useNavfitStore';
 import { useRedistributionStore } from '@/store/useRedistributionStore';
 import type { SummaryGroup, Report } from '@/types';
-import type { RosterMember } from '@/types/roster';
 import { RscaHeadsUpDisplay } from './RscaHeadsUpDisplay';
 import { RscaScattergram } from './RscaScattergram';
 // generateSummaryGroups import removed - now using stored summaryGroups directly
@@ -16,7 +15,6 @@ import {
     Send
 } from 'lucide-react';
 
-import { MemberDetailSidebar } from '@/features/dashboard/components/MemberDetailSidebar';
 import { StatusBadge } from './StatusBadge';
 
 import { QuotaHeadsUpDisplay } from './QuotaHeadsUpDisplay';
@@ -27,12 +25,12 @@ import { DEFAULT_CONSTRAINTS } from '@/domain/rsca/constants';
 import { assignRecommendationsByRank } from '@/features/strategy/logic/recommendation';
 
 
-interface CycleContextPanelProps {
+interface DistributionPanelProps {
     group: SummaryGroup | null;
-    onOpenWorkspace?: () => void;
+    previewProjections?: Record<string, number>;
 }
 
-export function CycleContextPanel({ group }: CycleContextPanelProps) {
+export function DistributionPanel({ group, previewProjections = {} }: DistributionPanelProps) {
 
     const {
         roster,
@@ -45,9 +43,7 @@ export function CycleContextPanel({ group }: CycleContextPanelProps) {
 
         selectedMemberId,
         selectMember,
-        updateProjection,
-        updateGroupStatus,
-        updateReport
+        updateGroupStatus
     } = useNavfitStore();
 
     const { latestResult, requestRedistribution } = useRedistributionStore();
@@ -59,26 +55,14 @@ export function CycleContextPanel({ group }: CycleContextPanelProps) {
 
     const activeGroup = latestGroup || group;
 
-    // Real-time preview projections for MTA slider (merged with store projections in useMemo)
-    const [previewProjections, setPreviewProjections] = useState<Record<string, number>>({});
+    // Real-time preview state lifted to CommandStrategyCenter
+    // const [previewProjections, setPreviewProjections] = useState<Record<string, number>>({});
 
-    // Handler for real-time MTA preview during slider drag
-    const handlePreviewMTA = (memberId: string, newMta: number) => {
-        if (!activeGroup) return;
-        const report = activeGroup.reports.find(r => r.memberId === memberId);
-        if (report) {
-            setPreviewProjections(prev => ({
-                ...prev,
-                [report.id]: newMta
-            }));
-        }
-    };
+    // Handler removed (lifted)
+    // const handlePreviewMTA = ...
 
-    // Clear preview when member selection changes
-    const handleMemberSelect = (id: string | null) => {
-        setPreviewProjections({});
-        selectMember(id);
-    };
+    // Clear preview removed (handled by parent/store effect)
+    // const handleMemberSelect ...
 
     // Local Rank Mode State
     const [isSubmitModalOpen, setIsSubmitModalOpen] = useState(false);
@@ -87,12 +71,10 @@ export function CycleContextPanel({ group }: CycleContextPanelProps) {
     const [isOptimizing, setIsOptimizing] = useState(false);
     const [proposedReports, setProposedReports] = useState<Report[] | null>(null);
 
-    // Sidebar Initial Section State
-    const [initialSidebarSection, setInitialSidebarSection] = useState<'mta' | 'rec' | 'remarks'>('remarks');
+    // Sidebar Initial Section State removed (handled by MemberInspector internal logic or global context if needed)
+    // const [initialSidebarSection, setInitialSidebarSection] = useState<'mta' | 'rec' | 'remarks'>('remarks');
 
-    const handleSetInitialSection = (context: 'mta' | 'rec' | 'remarks') => {
-        setInitialSidebarSection(context);
-    };
+    // const handleSetInitialSection ...
 
     // Watch for Optimization Result - PARANOID/HARDENED VERSION
     useEffect(() => {
@@ -204,12 +186,12 @@ export function CycleContextPanel({ group }: CycleContextPanelProps) {
         // useNavfitStore.getState().setSummaryGroups(allGroups);
 
         setProposedReports(null);
-        setPreviewProjections({});
+        // setPreviewProjections({}); // Lifted
     };
 
     const handleCancelOptimization = () => {
         setProposedReports(null);
-        setPreviewProjections({});
+        // setPreviewProjections({}); // Lifted
     };
 
 
@@ -507,7 +489,7 @@ export function CycleContextPanel({ group }: CycleContextPanelProps) {
         );
     }
 
-    const { currentRsca, projectedRsca, mainDraftStatus, rankedMembers, previewMtaSortedMembers, previewMtaRankMap, previewPromRecMap, distribution, eotRsca, totalReports, effectiveSize, domainContext, isEnlisted } = contextData;
+    const { currentRsca, projectedRsca, mainDraftStatus, rankedMembers, previewMtaRankMap, previewPromRecMap, distribution, eotRsca, effectiveSize, domainContext, isEnlisted } = contextData;
 
     // Helper for Badge
     const getPromotionStatusBadge = (s?: string) => {
@@ -539,7 +521,9 @@ export function CycleContextPanel({ group }: CycleContextPanelProps) {
         <div className="h-full flex flex-row relative overflow-hidden">
             {/* Main Panel Content */}
             <div className="flex-1 flex flex-col bg-slate-50 border-l border-slate-200 min-w-0">
-                {/* 1. Sticky Header (Top) */}
+                {/* 1. Sticky Header - REMOVED VIEW TOGGLES (Handled by Parent) */}
+
+                {/* NOTE: We still need the group summary header. Keeping it but removing 'Workspace' button */}
                 <div className="sticky top-0 z-10 bg-white border-b border-slate-200">
                     <div className="px-6 pb-6 pt-6">
                         {/* Row 1: Title & Status Badges */}
@@ -561,15 +545,7 @@ export function CycleContextPanel({ group }: CycleContextPanelProps) {
 
                             <div className="flex flex-col items-end gap-1.5 pl-4">
                                 <div className="flex gap-2">
-                                    {/* Open Workspace Button */}
-                                    <button
-                                        onClick={() => useNavfitStore.getState().setStrategyViewMode('workspace')}
-                                        className="flex items-center justify-center h-11 px-4 bg-white border border-slate-200 text-slate-600 font-medium rounded-lg shadow-sm hover:bg-slate-50 transition-colors"
-                                        title="Open Strategy Workspace"
-                                    >
-                                        <Layout className="w-5 h-5 mr-2 text-indigo-500" />
-                                        Workspace
-                                    </button>
+                                    {/* Workspace Button REMOVED - We are already in the unified workspace */}
 
                                     {/* Submit Control - Only shown when all reports are locked */}
                                     {activeGroup.reports.every(r => r.isLocked) && (
@@ -652,13 +628,9 @@ export function CycleContextPanel({ group }: CycleContextPanelProps) {
                         previewPromRecMap={previewPromRecMap}
                         activeGroupId={activeGroup.id}
                         selectedMemberId={selectedMemberId}
-                        onSelectMember={(id, context) => {
+                        onSelectMember={(id, _context) => {
                             if (!proposedReports) selectMember(id);
-                            // We need to pass context to parent or handle it here. 
-                            // CycleContextPanel doesn't receive the context prop to pass up currently?
-                            // Wait, selectMember is from store. It just sets ID.
-                            // We need to set the Initial Context state in CycleContextPanel.
-                            if (context) handleSetInitialSection(context);
+                            // Context (section navigation) to be handled via store or event bus if needed
                         }}
                         onReorderMembers={(g, d, t) => {
                             if (!proposedReports) handleReorderMembers(g, d, t);
@@ -672,96 +644,13 @@ export function CycleContextPanel({ group }: CycleContextPanelProps) {
                 </div>
             </div>
 
-            {/* Sidebar: Hidden during optimization review to prevent any edits */}
-            {
-                selectedMemberId && !proposedReports && (
-                    <MemberDetailSidebar
-                        memberId={selectedMemberId}
-                        rosterMember={(() => {
-                            const m = roster.find(memb => memb.id === selectedMemberId);
-                            if (m) return m;
-
-                            return {
-                                id: selectedMemberId,
-                                firstName: 'Unknown',
-                                lastName: 'Member',
-                                rank: 'UNK',
-                                payGrade: 'O-1',
-                                designator: '0000',
-                                dateReported: new Date().toISOString().split('T')[0],
-                                prd: new Date().toISOString().split('T')[0],
-                                history: [],
-                                status: 'Onboard'
-                            } as RosterMember;
-                        })()}
-                        currentReport={activeGroup.reports.find(r => r.memberId === selectedMemberId)}
-
-                        quotaContext={{
-                            distribution,
-                            totalReports
-                        }}
-                        groupContext={domainContext}
-                        groupId={activeGroup.id}
-                        onPreviewMTA={handlePreviewMTA}
-
-                        // Pass Rank Context - use MTA-sorted order for accurate slider markers
-                        rankContext={(() => {
-                            // Use MTA-sorted order to show actual rank positions based on current MTA values
-                            const index = previewMtaSortedMembers.findIndex(m => m.id === selectedMemberId);
-                            if (index === -1) return undefined;
-
-                            // "Next Rank" (Ahead/Better) - Lower indices (higher MTA)
-                            // Get up to 5 members before current index (reversed to be closest first)
-                            const nextStart = Math.max(0, index - 5);
-                            const nextRanks = previewMtaSortedMembers.slice(nextStart, index).reverse().map((m, i) => ({
-                                mta: m.mta,
-                                rank: index - i // index is current rank-1. So neighbor is rank (index-i)
-                            }));
-
-                            // "Prev Rank" (Behind/Worse) - Higher indices (lower MTA)
-                            // Get up to 5 members after current index
-                            const prevEnd = Math.min(previewMtaSortedMembers.length, index + 6);
-                            const prevRanks = previewMtaSortedMembers.slice(index + 1, prevEnd).map((m, i) => ({
-                                mta: m.mta,
-                                rank: index + 2 + i // index+1 is next rank (#index+2)
-                            }));
-
-                            return {
-                                currentRank: index + 1,
-                                nextRanks,
-                                prevRanks
-                            };
-                        })()}
-
-                        onClose={() => handleMemberSelect(null)}
-                        onUpdateMTA={(id, val) => {
-                            const report = activeGroup.reports.find(r => r.memberId === id);
-                            if (report) {
-                                updateProjection(activeGroup.id, report.id, val);
-                            }
-                        }}
-                        onUpdatePromRec={(id, rec) => {
-                            const report = activeGroup.reports.find(r => r.memberId === id);
-                            if (report) {
-                                // Manual Update: Call updateReport (Method 2)
-                                // This action includes quota validation but does not FORCE auto-assignment of others
-                                // preserving the "Manual" nature of this specific interaction.
-                                updateReport(activeGroup.id, report.id, { promotionRecommendation: rec });
-                            }
-                        }}
-                        currentRsca={activeGroup.rsca}
-                        onNavigatePrev={() => {
-                            const idx = rankedMembers.findIndex(m => m.id === selectedMemberId);
-                            if (idx > 0) selectMember(rankedMembers[idx - 1].id);
-                        }}
-                        onNavigateNext={() => {
-                            const idx = rankedMembers.findIndex(m => m.id === selectedMemberId);
-                            if (idx < rankedMembers.length - 1) selectMember(rankedMembers[idx + 1].id);
-                        }}
-                        initialSection={initialSidebarSection}
-
-                    />
-                )
+            {/* Sidebar: Hidden - Now handled by CommandStrategyCenter / MemberInspector */}
+            {/*
+                Legacy Sidebar Logic removed.
+                Preview Interaction / Section Context needs to be lifted to CommandStrategyCenter if we want to restore:
+                - Live MTA Preview (onPreviewMTA)
+                - Contextual Section Opening (initialSidebarSection)
+            */
             }
 
             {

@@ -1,6 +1,5 @@
 import { useEffect } from 'react';
 import { AppLayout } from './components/layout/AppLayout';
-import { StrategyWorkspace } from '@/features/strategy/components/StrategyWorkspace';
 import { AppScaler } from '@/components/layout/AppScaler';
 
 import { SelectionBoardsManager } from '@/features/boards/components/SelectionBoardsManager';
@@ -9,7 +8,7 @@ import { SailorProfiles } from '@/features/roster/components/SailorProfiles';
 import { useNavfitStore } from '@/store/useNavfitStore';
 import { useRedistributionStore } from '@/store/useRedistributionStore';
 import { CommandDeck } from '@/features/strategy/components/CommandDeck/CommandDeck';
-import { MissionControl } from '@/features/strategy/components/MissionControl'; // Alias for CSC
+import { CommandStrategyCenter } from '@/features/strategy/components/CommandStrategyCenter';
 import { CompetitiveGroupDashboard } from './features/strategy/components/CompetitiveGroupDashboard';
 import { DevTools } from '@/features/dev/DevTools';
 
@@ -19,8 +18,6 @@ function App() {
     setActiveTab,
     sidebarCollapsed,
     toggleSidebar,
-    selectedCycleId,
-    strategyViewMode,
     setStrategyViewMode,
     loadData,
     isLoading
@@ -45,10 +42,7 @@ function App() {
       case 'dashboard':
         return <CommandDeck />;
       case 'summary_groups':
-        if (strategyViewMode === 'workspace' && selectedCycleId) {
-          return <StrategyWorkspace />;
-        }
-        return <MissionControl />;
+        return <CommandStrategyCenter />;
       case 'competitive_groups':
         return <CompetitiveGroupDashboard />;
       case 'profiles':
