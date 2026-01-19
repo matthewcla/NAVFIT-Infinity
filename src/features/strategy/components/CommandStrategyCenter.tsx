@@ -24,6 +24,9 @@ import {
     List
 } from 'lucide-react';
 
+import { PageContent } from '@/components/layout/PageShell';
+import { ContextSidebar } from '@/components/layout/ContextSidebar';
+
 
 type ViewTab = 'distribution' | 'timeline' | 'waterfall' | 'list';
 
@@ -251,36 +254,19 @@ export function CommandStrategyCenter() {
             </div>
 
             {/* Main Content Area - Split Panel */}
-            <div className="flex-1 flex overflow-hidden">
-
+            <PageContent>
                 {/* Left Panel: Active Cycles Stream */}
-                <div
-                    className={`border-r border-slate-200 flex flex-col shrink-0 z-infinity-sidebar relative transition-all duration-300 ease-in-out overflow-hidden ${selectedMemberId
-                        ? 'w-6 bg-slate-100 hover:bg-slate-200 cursor-pointer border-r-4 border-r-transparent hover:border-r-indigo-400'
-                        : 'w-sidebar-standard bg-slate-50 opacity-100'
-                        }`}
-                    onClick={() => {
-                        if (selectedMemberId) selectMember(null);
-                    }}
-                    title={selectedMemberId ? "Click to Expand list" : undefined}
+                <ContextSidebar
+                    isCollapsed={!!selectedMemberId}
+                    onExpand={() => selectMember(null)}
                 >
-
-                    {selectedMemberId ? (
-                        <div className="h-full flex flex-col items-center pt-8 gap-4 opacity-0 hover:opacity-100 transition-opacity duration-200 delay-100">
-                            <div className="w-1 h-12 bg-slate-300 rounded-full" />
-                        </div>
-                    ) : (
-                        <div className="flex-1 overflow-hidden animate-in fade-in duration-300">
-                            <ActiveCyclesList
-                                groups={Array.from(groupedCycles.values()).flat()}
-                                onSelect={handleGroupSelect}
-                                selectedGroupId={selectedCycleId}
-                                onAddClick={() => setIsModalOpen(true)}
-                            />
-                        </div>
-                    )}
-
-                </div>
+                    <ActiveCyclesList
+                        groups={Array.from(groupedCycles.values()).flat()}
+                        onSelect={handleGroupSelect}
+                        selectedGroupId={selectedCycleId}
+                        onAddClick={() => setIsModalOpen(true)}
+                    />
+                </ContextSidebar>
 
                 {/* Right Panel: Context & Details */}
                 <div className="flex-1 overflow-hidden relative bg-slate-50/50 flex">
@@ -371,8 +357,7 @@ export function CommandStrategyCenter() {
                     )}
 
                 </div>
-
-            </div>
+            </PageContent>
 
             <AddSummaryGroupModal
                 isOpen={isModalOpen}
@@ -381,6 +366,6 @@ export function CommandStrategyCenter() {
                 onCreate={handleCreateGroups}
             />
 
-        </div>
+        </div >
     );
 }

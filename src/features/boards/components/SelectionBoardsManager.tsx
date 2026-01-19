@@ -3,6 +3,7 @@ import type { Board } from '@/types';
 import { cn } from '@/lib/utils';
 import { RefreshCw, Calendar, Users, Plus, ChevronRight, Filter } from 'lucide-react';
 import { BoardService } from '@/services/boardService';
+import { PageShell, PageHeader, PageContent } from '@/components/layout/PageShell';
 
 export function SelectionBoardsManager() {
     const [boards, setBoards] = useState<Board[]>([]);
@@ -40,20 +41,9 @@ export function SelectionBoardsManager() {
     };
 
     return (
-        <div className="flex flex-col h-full bg-slate-50">
-            {/* Header - Consistent with StrategyWorkspace */}
-            <header className="h-16 bg-white border-b border-slate-200 flex justify-between items-center px-8 shadow-sm flex-shrink-0 z-10">
-                <div className="flex items-center gap-4">
-                    <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-indigo-600 text-white">
-                        <Calendar size={18} />
-                    </div>
-                    <div>
-                        <h1 className="text-lg font-bold text-slate-900 leading-tight">Board Schedule</h1>
-                        <p className="text-xs text-slate-500 font-medium">{year} Schedule</p>
-                    </div>
-                </div>
-
-                <div className="flex items-center gap-3">
+        <PageShell>
+            <PageHeader title="Board Schedule">
+                <div className="flex items-center gap-3 ml-auto">
                     {/* Year Toggle */}
                     <div className="flex bg-slate-100 p-0.5 rounded-lg border border-slate-200">
                         <button onClick={() => setYear(year - 1)} className="px-3 py-1 text-xs font-medium text-slate-600 hover:text-indigo-600 hover:bg-white rounded-md transition-all">
@@ -81,10 +71,10 @@ export function SelectionBoardsManager() {
                         Add Board
                     </button>
                 </div>
-            </header>
+            </PageHeader>
 
-            <div className="flex-1 overflow-auto p-6">
-                <div className="max-w-7xl mx-auto space-y-6">
+            <PageContent className="bg-slate-50 p-6">
+                <div className="max-w-7xl mx-auto space-y-6 w-full">
 
                     {/* Summary Cards Row */}
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -187,7 +177,7 @@ export function SelectionBoardsManager() {
                         </table>
                     </div>
                 </div>
-            </div>
-        </div>
+            </PageContent>
+        </PageShell>
     );
 }
