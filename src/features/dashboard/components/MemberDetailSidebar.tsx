@@ -31,7 +31,6 @@ interface MemberDetailSidebarProps {
     onUpdateMTA: (memberId: string, newMta: number) => void;
     onPreviewMTA?: (memberId: string, newMta: number) => void; // Real-time preview callback
     onUpdatePromRec: (memberId: string, rec: 'EP' | 'MP' | 'P' | 'Prog' | 'SP' | 'NOB') => void;
-    onUpdateReport?: (memberId: string, reportId: string, updates: Partial<Report>) => void;
     onNavigateNext: () => void;
     onNavigatePrev: () => void;
     rosterMember?: RosterMember;
@@ -60,7 +59,6 @@ export function MemberDetailSidebar({
     onUpdateMTA,
     onPreviewMTA,
     onUpdatePromRec,
-    onUpdateReport,
     onNavigateNext,
     onNavigatePrev,
     rosterMember: _passedRosterMember,
@@ -948,40 +946,43 @@ export function MemberDetailSidebar({
 
                 {/* --- 3. Milestones & Remarks --- */}
                 <div className="bg-white rounded-xl shadow-[0_2px_8px_-2px_rgba(0,0,0,0.05)] border border-slate-100/50 overflow-hidden">
-                    {renderSectionHeader("Milestones & Remarks", "remarks", <div className="w-4 h-4 border-2 border-slate-300 rounded-sm flex items-center justify-center"><div className="w-2 h-0.5 bg-slate-300" /></div>,
-                        "Add comments..."
+                    {renderSectionHeader("Report Content", "remarks", <Sparkles className="w-4 h-4 text-indigo-500" />,
+                        "Opening Statement, Comments..."
                     )}
 
                     {sections.remarks && (
                         <div className="p-5 pt-0 border-t border-slate-50 space-y-4 animate-in slide-in-from-top-2 fade-in duration-200 mt-2">
-                            <div className="space-y-2">
-                                <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Remarks / Comments</label>
-                                <textarea
-                                    className="w-full text-sm text-slate-700 bg-slate-50 border border-slate-200 rounded-lg p-3 min-h-[100px] focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all resize-none placeholder:text-slate-400"
-                                    placeholder="Enter report comments here..."
-                                    defaultValue={currentReport?.comments || ''}
-                                    onChange={(e) => {
-                                        if (onUpdateReport && currentReport) {
-                                            onUpdateReport(memberId, currentReport.id, { comments: e.target.value });
+
+                            <div className="rounded-lg border border-dashed border-slate-200 bg-slate-50 p-6 flex flex-col items-center justify-center text-center">
+                                <p className="text-sm text-slate-500 mb-4 max-w-[240px]">
+                                    Use the full editor to draft the Opening Statement, Bullet Points, and administrative data.
+                                </p>
+                                <button
+                                    onClick={() => {
+                                        if (currentReport) {
+                                            const store = useNavfitStore.getState();
+                                            store.selectReport(currentReport.id);
+                                            store.setEditingReport(true);
+                                            // Force navigation to Workspace to show Split View
+                                            store.setStrategyViewMode('workspace');
                                         }
                                     }}
-                                />
+                                    className="px-4 py-2 bg-white border border-indigo-200 text-indigo-700 font-bold rounded-lg shadow-sm hover:bg-indigo-50 hover:border-indigo-300 transition-all flex items-center gap-2"
+                                >
+                                    <Sparkles className="w-4 h-4" />
+                                    Open Full Editor
+                                </button>
                             </div>
 
-                            <div className="space-y-2">
-                                <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Milestone / Occasion</label>
-                                <input
-                                    type="text"
-                                    className="w-full text-sm text-slate-700 bg-slate-50 border border-slate-200 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all placeholder:text-slate-400"
-                                    placeholder="e.g. Transfer, Periodic..."
-                                    defaultValue={currentReport?.occasion || ''}
-                                    onChange={(e) => {
-                                        if (onUpdateReport && currentReport) {
-                                            onUpdateReport(memberId, currentReport.id, { occasion: e.target.value });
-                                        }
-                                    }}
-                                />
-                            </div>
+                            {currentReport?.comments && (
+                                <div className="mt-4 opacity-50 pointer-events-none grayscale select-none">
+                                    <h4 className="text-xs font-bold text-slate-400 uppercase mb-2">Preview</h4>
+                                    <div className="p-3 bg-white border border-slate-100 rounded text-sm text-slate-600 line-clamp-3">
+                                        {currentReport.comments}
+                                    </div>
+                                </div>
+                            )}
+
                         </div>
                     )}
                 </div>

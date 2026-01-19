@@ -3,7 +3,7 @@ import type { SummaryGroup } from '@/types';
 
 import { CycleContextPanel } from './CycleContextPanel';
 import { ActiveCyclesList } from './ActiveCyclesList';
-import { DashboardMetrics } from '@/features/dashboard/components/DashboardMetrics';
+
 
 
 import { useNavfitStore } from '@/store/useNavfitStore';
@@ -11,9 +11,10 @@ import { useSummaryGroups } from '@/features/strategy/hooks/useSummaryGroups';
 
 import { AddSummaryGroupModal } from '@/features/dashboard/components/AddSummaryGroupModal';
 import { ReportEditorModal } from './ReportEditorModal';
+import { useEffect } from 'react';
 
 
-export function CommandStrategyCenter() {
+export function MissionControl() {
     const {
         selectCycle,
         selectedCycleId,
@@ -30,6 +31,24 @@ export function CommandStrategyCenter() {
 
 
     const summaryGroups = useSummaryGroups();
+
+    // Auto-select top priority active group on mount if none selected
+    useEffect(() => {
+        if (!selectedCycleId && summaryGroups.length > 0) {
+            // Filter for active groups
+            const activeGroups = summaryGroups.filter(g =>
+                !['Final', 'Archive', 'Complete', 'Accepted', 'Rejected'].includes(g.status || 'Drafting')
+            );
+
+            // Sort by due date (earliest first)
+            activeGroups.sort((a, b) => new Date(a.periodEndDate).getTime() - new Date(b.periodEndDate).getTime());
+
+            if (activeGroups.length > 0) {
+                const topPriority = activeGroups[0];
+                selectCycle(topPriority.id, topPriority.competitiveGroupKey || 'Unknown');
+            }
+        }
+    }, [selectedCycleId, summaryGroups, selectCycle]);
 
     const allCompetitiveGroups = useMemo(() => {
         const keys = new Set<string>();
@@ -107,7 +126,7 @@ export function CommandStrategyCenter() {
 
     return (
         <div className="flex flex-col h-full bg-slate-50 overflow-hidden">
-            {/* Command Strategy Center Header */}
+            {/* Mission Control Header */}
             <div className={`border-b px-6 py-4 flex items-center justify-between shrink-0 transition-colors duration-300 ${cycleListPhase === 'Archive' ? 'bg-indigo-50 border-indigo-200' : 'bg-white border-slate-200'}`}>
                 <div className="flex items-center gap-3">
 
@@ -115,7 +134,7 @@ export function CommandStrategyCenter() {
                         {cycleListPhase === 'Archive' ? 'View historical and finalized fitness report cycles.' :
                             selectedMemberId ? 'Press ESC to close the Infinity Quick Editor.' :
                                 selectedCycleId ? 'Select a report to open the Infinity Quick Editor' :
-                                    'Select a Summary Group to view strategy.'}
+                                    'Summary Groups'}
                     </p>
                 </div>
 
@@ -167,8 +186,11 @@ export function CommandStrategyCenter() {
                             />
                         </div>
                     ) : (
-                        <div className="h-full w-full animate-in fade-in duration-500">
-                            <DashboardMetrics />
+                        <div className="h-full w-full flex items-center justify-center text-slate-400">
+                            <div className="flex flex-col items-center">
+                                <span className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mb-2"></span>
+                                Loading Summary Group...
+                            </div>
                         </div>
                     )}
 

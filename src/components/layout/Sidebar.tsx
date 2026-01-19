@@ -1,12 +1,14 @@
 import React from 'react';
 import {
-    TrendingUp,
+    Zap,
+    LayoutDashboard,
+    Users,
     Calendar,
     Shield,
-    Users,
     Anchor,
     Maximize,
-    Minimize
+    Minimize,
+    Orbit
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useFullScreen } from '@/hooks/useFullScreen';
@@ -14,7 +16,7 @@ import { UserProfileMenu } from './UserProfileMenu';
 import { SystemStatus } from './SystemStatus';
 
 // Define the tab type locally or import from a shared type file if needed
-export type Tab = 'strategy' | 'schedule' | 'profiles' | 'admin';
+export type Tab = 'dashboard' | 'summary_groups' | 'competitive_groups' | 'profiles' | 'schedule' | 'admin';
 
 interface SidebarItemProps {
     icon: React.ElementType;
@@ -96,10 +98,26 @@ export function Sidebar({ activeTab, onTabChange, collapsed, onToggleCollapse }:
             {/* Navigation */}
             <div className="flex-1 py-6 space-y-1 overflow-y-auto overflow-x-hidden scrollbar-thin scrollbar-thumb-slate-700">
                 <SidebarItem
-                    icon={TrendingUp}
-                    label="Command Strategy"
-                    active={activeTab === 'strategy'}
-                    onClick={() => onTabChange('strategy')}
+                    icon={LayoutDashboard}
+                    label="Command Deck"
+                    active={activeTab === 'dashboard'}
+                    onClick={() => onTabChange('dashboard')}
+                    collapsed={collapsed}
+                />
+
+                <SidebarItem
+                    icon={Orbit}
+                    label="Competitive Groups"
+                    active={activeTab === 'competitive_groups'}
+                    onClick={() => onTabChange('competitive_groups')}
+                    collapsed={collapsed}
+                />
+                <div className="my-2 border-t border-slate-800/50 mx-4"></div>
+                <SidebarItem
+                    icon={Zap}
+                    label="Summary Groups"
+                    active={activeTab === 'summary_groups'}
+                    onClick={() => onTabChange('summary_groups')}
                     collapsed={collapsed}
                 />
                 <SidebarItem

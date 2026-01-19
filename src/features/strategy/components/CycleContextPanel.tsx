@@ -560,25 +560,37 @@ export function CycleContextPanel({ group }: CycleContextPanelProps) {
                             </div>
 
                             <div className="flex flex-col items-end gap-1.5 pl-4">
-                                {/* Submit Control - Only shown when all reports are locked */}
-                                {activeGroup.reports.every(r => r.isLocked) && (
+                                <div className="flex gap-2">
+                                    {/* Open Workspace Button */}
                                     <button
-                                        onClick={() => setIsSubmitModalOpen(true)}
-                                        disabled={
-                                            !latestResult[activeGroup.id] ||
-                                            activeGroup.status === 'Submitted'
-                                        }
-                                        className="group relative flex items-center justify-center h-11 bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-200 disabled:text-slate-400 text-white rounded-full shadow-sm transition-all duration-300 ease-in-out w-11 hover:w-36 overflow-hidden"
-                                        title="Submit Strategy to Review"
+                                        onClick={() => useNavfitStore.getState().setStrategyViewMode('workspace')}
+                                        className="flex items-center justify-center h-11 px-4 bg-white border border-slate-200 text-slate-600 font-medium rounded-lg shadow-sm hover:bg-slate-50 transition-colors"
+                                        title="Open Strategy Workspace"
                                     >
-                                        <div className="absolute left-0 w-11 h-11 flex items-center justify-center shrink-0">
-                                            <Send className="w-5 h-5" />
-                                        </div>
-                                        <span className="whitespace-nowrap font-bold text-xs uppercase tracking-wide opacity-0 group-hover:opacity-100 transition-opacity duration-300 pl-10 pr-4 delay-75">
-                                            Submit Group
-                                        </span>
+                                        <Layout className="w-5 h-5 mr-2 text-indigo-500" />
+                                        Workspace
                                     </button>
-                                )}
+
+                                    {/* Submit Control - Only shown when all reports are locked */}
+                                    {activeGroup.reports.every(r => r.isLocked) && (
+                                        <button
+                                            onClick={() => setIsSubmitModalOpen(true)}
+                                            disabled={
+                                                !latestResult[activeGroup.id] ||
+                                                activeGroup.status === 'Submitted'
+                                            }
+                                            className="group relative flex items-center justify-center h-11 bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-200 disabled:text-slate-400 text-white rounded-full shadow-sm transition-all duration-300 ease-in-out w-11 hover:w-36 overflow-hidden"
+                                            title="Submit Strategy to Review"
+                                        >
+                                            <div className="absolute left-0 w-11 h-11 flex items-center justify-center shrink-0">
+                                                <Send className="w-5 h-5" />
+                                            </div>
+                                            <span className="whitespace-nowrap font-bold text-xs uppercase tracking-wide opacity-0 group-hover:opacity-100 transition-opacity duration-300 pl-10 pr-4 delay-75">
+                                                Submit Group
+                                            </span>
+                                        </button>
+                                    )}
+                                </div>
                             </div>
                         </div>
 
@@ -737,9 +749,6 @@ export function CycleContextPanel({ group }: CycleContextPanelProps) {
                                 updateReport(activeGroup.id, report.id, { promotionRecommendation: rec });
                             }
                         }}
-                        onUpdateReport={(_mid, rid, updates) => {
-                            updateReport(activeGroup.id, rid, updates);
-                        }}
                         currentRsca={activeGroup.rsca}
                         onNavigatePrev={() => {
                             const idx = rankedMembers.findIndex(m => m.id === selectedMemberId);
@@ -755,15 +764,17 @@ export function CycleContextPanel({ group }: CycleContextPanelProps) {
                 )
             }
 
-            {latestResult[activeGroup.id] && (
-                <SubmissionConfirmationModal
-                    isOpen={isSubmitModalOpen}
-                    onClose={() => setIsSubmitModalOpen(false)}
-                    onConfirm={handleConfirmSubmit}
-                    groupId={activeGroup.id}
-                    result={latestResult[activeGroup.id]!}
-                />
-            )}
+            {
+                latestResult[activeGroup.id] && (
+                    <SubmissionConfirmationModal
+                        isOpen={isSubmitModalOpen}
+                        onClose={() => setIsSubmitModalOpen(false)}
+                        onConfirm={handleConfirmSubmit}
+                        groupId={activeGroup.id}
+                        result={latestResult[activeGroup.id]!}
+                    />
+                )
+            }
 
         </div >
     );

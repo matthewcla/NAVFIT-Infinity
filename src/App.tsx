@@ -1,7 +1,6 @@
 import { useEffect } from 'react';
 import { AppLayout } from './components/layout/AppLayout';
 import { StrategyWorkspace } from '@/features/strategy/components/StrategyWorkspace';
-import { CommandStrategyCenter } from '@/features/strategy/components/CommandStrategyCenter';
 import { AppScaler } from '@/components/layout/AppScaler';
 
 import { SelectionBoardsManager } from '@/features/boards/components/SelectionBoardsManager';
@@ -9,6 +8,9 @@ import { CommandAdmin } from '@/features/admin/components/CommandAdmin';
 import { SailorProfiles } from '@/features/roster/components/SailorProfiles';
 import { useNavfitStore } from '@/store/useNavfitStore';
 import { useRedistributionStore } from '@/store/useRedistributionStore';
+import { CommandDeck } from '@/features/strategy/components/CommandDeck/CommandDeck';
+import { MissionControl } from '@/features/strategy/components/MissionControl'; // Alias for CSC
+import { CompetitiveGroupDashboard } from './features/strategy/components/CompetitiveGroupDashboard';
 import { DevTools } from '@/features/dev/DevTools';
 
 function App() {
@@ -32,21 +34,23 @@ function App() {
 
   // Reset workspace view if tab changes
   useEffect(() => {
-    // Optional: Reset to landing when leaving strategy tab?
-    // For now, we can keep the user's place or reset.
-    // Let's reset to be safe if they leave the tab context.
-    if (activeTab !== 'strategy') {
+    // Reset workspace view if navigating away from summary groups
+    if (activeTab !== 'summary_groups') {
       setStrategyViewMode('landing');
     }
   }, [activeTab, setStrategyViewMode]);
 
   const renderContent = () => {
     switch (activeTab) {
-      case 'strategy':
+      case 'dashboard':
+        return <CommandDeck />;
+      case 'summary_groups':
         if (strategyViewMode === 'workspace' && selectedCycleId) {
           return <StrategyWorkspace />;
         }
-        return <CommandStrategyCenter />;
+        return <MissionControl />;
+      case 'competitive_groups':
+        return <CompetitiveGroupDashboard />;
       case 'profiles':
         return <SailorProfiles />;
       case 'schedule':
@@ -54,7 +58,7 @@ function App() {
       case 'admin':
         return <CommandAdmin />;
       default:
-        return <CommandStrategyCenter />;
+        return <CommandDeck />;
     }
   };
 

@@ -37,6 +37,8 @@ export function StrategyScattergram({ summaryGroups = EMPTY_SUMMARY_GROUPS, rost
     // Prefer passed roster prop, fallback to store
     const roster = propRoster.length > 0 ? propRoster : storeRoster;
 
+    const { selectedReportId, selectReport } = useNavfitStore();
+
     const scrollContainerRef = useRef<HTMLDivElement>(null);
 
     // --- DIMENSIONS & SCALES ---
@@ -403,7 +405,7 @@ export function StrategyScattergram({ summaryGroups = EMPTY_SUMMARY_GROUPS, rost
                                     {[1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0].map(val => {
                                         const y = traitToY(val);
                                         return (
-                                        <line key={val} x1={0} y1={y} x2={CHART_TOTAL_WIDTH} y2={y} stroke={THEME_COLORS.slate400} strokeDasharray="4 4" />
+                                            <line key={val} x1={0} y1={y} x2={CHART_TOTAL_WIDTH} y2={y} stroke={THEME_COLORS.slate400} strokeDasharray="4 4" />
                                         );
                                     })}
 
@@ -525,7 +527,7 @@ export function StrategyScattergram({ summaryGroups = EMPTY_SUMMARY_GROUPS, rost
                                         let strokeColor: string = THEME_COLORS.special;
 
                                         // Highlight Selected Member if in Flight Path Mode
-                                        const isSelected = selectedMemberId === p.report.memberId;
+                                        const isSelected = selectedMemberId === p.report.memberId || selectedReportId === p.report.id;
                                         const opacity = (flightPathData && !isSelected) ? 0.3 : 1; // Dim others in Flight Mode
 
                                         // Default Logic
@@ -572,9 +574,11 @@ export function StrategyScattergram({ summaryGroups = EMPTY_SUMMARY_GROUPS, rost
                                                 opacity={opacity}
                                                 onMouseDown={(e) => handleMouseDown(e, p.id)}
                                                 onClick={(e) => {
-                                                    // Single click selects member for Cone View
+                                                    // Single click selects member/report
                                                     e.stopPropagation();
-                                                    // This was missing!
+                                                    if (selectReport) selectReport(p.report.id);
+
+                                                    // Also update member selection for context if needed
                                                     if (useNavfitStore.getState().selectMember) {
                                                         useNavfitStore.getState().selectMember(p.report.memberId);
                                                     }
