@@ -1,9 +1,10 @@
 import { useMemo } from 'react';
-import { useNavfitStore } from '@/store/useNavfitStore';
+// import { useNavfitStore } from '@/store/useNavfitStore'; // Not used if we switch to specific hook? Wait, let's see.
+import { useSummaryGroups } from '@/features/strategy/hooks/useSummaryGroups';
 import { AlertCircle } from 'lucide-react';
 
 export function ActionItemsWidget() {
-    const { summaryGroups } = useNavfitStore();
+    const summaryGroups = useSummaryGroups();
 
     const actionItems = useMemo(() => {
         const items: { id: string; type: 'Unranked' | 'Adverse' | 'Overdue'; message: string; severity: 'high' | 'medium'; }[] = [];

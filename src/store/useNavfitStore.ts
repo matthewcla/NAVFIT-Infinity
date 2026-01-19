@@ -219,8 +219,8 @@ export const useNavfitStore = create<NavfitStore>((set) => ({
 
             const roster: RosterMember[] = members.map(m => {
                 const parts = m.name.split(', ');
-                const lastName = parts[0] || '';
-                const firstName = parts[1] || '';
+                const lastName = m.lastName || parts[0] || '';
+                const firstName = m.firstName || parts[1] || '';
                 return {
                     id: m.id,
                     firstName,

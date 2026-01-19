@@ -8,8 +8,8 @@ import { THEME_COLORS } from '@/styles/theme';
 import { useScatterLayout, type RSCAReport } from '../hooks/useScatterLayout';
 import { useScatterChartDimensions } from '../hooks/useScatterChartDimensions';
 
-// --- MOCK DATA FOR PROTOTYPING ---
-const MOCK_START_DATE = new Date('2025-01-01');
+// Default start date logic handled in component props or hook defaults
+// const INITIAL_RSCA = 3.85; // This seems unused or mock? Let's keep for now if needed by logic but remove date.
 
 const INITIAL_RSCA = 3.85;
 const INITIAL_SIGNED_COUNT = 45;
@@ -58,7 +58,10 @@ export function StrategyScattergram({ summaryGroups = EMPTY_SUMMARY_GROUPS, rost
         yToTrait,
         dateToX,
         monthToX
-    } = useScatterChartDimensions({ height: propHeight, startDate: MOCK_START_DATE });
+    } = useScatterChartDimensions({
+        height: propHeight,
+        startDate: new Date(new Date().getFullYear(), 0, 1) // Default to Jan 1st of current year
+    });
 
     // Auto-scroll to focusDate (Horizontal)
     useEffect(() => {
@@ -196,7 +199,7 @@ export function StrategyScattergram({ summaryGroups = EMPTY_SUMMARY_GROUPS, rost
     // --- USE CUSTOM LAYOUT HOOK ---
     const { points, trendLines, impactConnections } = useScatterLayout({
         displayReports,
-        startDate: MOCK_START_DATE,
+        startDate: new Date(new Date().getFullYear(), 0, 1),
         traitToY,
         monthToX,
         chartTotalWidth: CHART_TOTAL_WIDTH
@@ -299,7 +302,7 @@ export function StrategyScattergram({ summaryGroups = EMPTY_SUMMARY_GROUPS, rost
     // Timeline Labels Generator
     const TIMELINE_LABELS = useMemo(() => {
         const arr = [];
-        const start = new Date(MOCK_START_DATE);
+        const start = new Date(new Date().getFullYear(), 0, 1);
         start.setMonth(start.getMonth() - 3);
 
         for (let i = 0; i < NUM_MONTHS; i++) {

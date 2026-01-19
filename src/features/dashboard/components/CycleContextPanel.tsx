@@ -14,7 +14,7 @@ import {
     Activity
 } from 'lucide-react';
 import { useState } from 'react';
-import { MemberDetailSidebar } from './MemberDetailSidebar';
+import { MemberInspector } from '../../strategy/components/MemberInspector';
 
 interface CycleContextPanelProps {
     group: SummaryGroup;
@@ -311,30 +311,24 @@ export function CycleContextPanel({ group }: CycleContextPanelProps) {
 
             {/* Member Details Sidebar (Overlay) */}
             {selectedMemberId && (
-                <MemberDetailSidebar
-                    memberId={selectedMemberId}
-                    onClose={() => setSelectedMemberId(null)}
-                    onUpdateMTA={(id, mta) => {
-                        console.log('Update MTA:', id, mta);
-                        // Implement update logic or connection store action here
-                    }}
-                    onUpdatePromRec={(id, rec) => {
-                        console.log('Update Prom Rec:', id, rec);
-                    }}
-                    onNavigateNext={() => {
-                        const currentIdx = group.reports.findIndex(r => r.memberId === selectedMemberId);
-                        if (currentIdx < group.reports.length - 1) {
-                            setSelectedMemberId(group.reports[currentIdx + 1].memberId);
-                        }
-                    }}
-                    onNavigatePrev={() => {
-                        const currentIdx = group.reports.findIndex(r => r.memberId === selectedMemberId);
-                        if (currentIdx > 0) {
-                            setSelectedMemberId(group.reports[currentIdx - 1].memberId);
-                        }
-                    }}
-                    rosterMember={undefined}
-                />
+                <div className="absolute top-0 right-0 h-full z-50">
+                    <MemberInspector
+                        memberId={selectedMemberId}
+                        onClose={() => setSelectedMemberId(null)}
+                        onNavigateNext={() => {
+                            const currentIdx = group.reports.findIndex(r => r.memberId === selectedMemberId);
+                            if (currentIdx < group.reports.length - 1) {
+                                setSelectedMemberId(group.reports[currentIdx + 1].memberId);
+                            }
+                        }}
+                        onNavigatePrev={() => {
+                            const currentIdx = group.reports.findIndex(r => r.memberId === selectedMemberId);
+                            if (currentIdx > 0) {
+                                setSelectedMemberId(group.reports[currentIdx - 1].memberId);
+                            }
+                        }}
+                    />
+                </div>
             )}
         </div>
     );

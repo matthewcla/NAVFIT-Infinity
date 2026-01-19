@@ -132,6 +132,8 @@ export async function fetchInitialData(userId: string = 'user_1'): Promise<{ mem
         members.push({
             id: detail.id,
             name: `${detail.lastName}, ${detail.firstName}`,
+            firstName: detail.firstName,
+            lastName: detail.lastName,
             rank: detail.rank || '',
             payGrade: detail.payGrade,
             designator: detail.designator,
@@ -163,8 +165,8 @@ export async function fetchInitialData(userId: string = 'user_1'): Promise<{ mem
             };
         });
 
-        // RECOVERY: If group name is generic (e.g., "O-3 Active") but should have specific category (e.g., "O-3 LDO Active")
-        // we reconstruct it from the first member's designator.
+        // RECOVERY & NORMALIZATION: Standardize group names and keys
+        // This fixes legacy mock data artifacts (e.g. "E-4 COMP") and ensures Officers have correct Category labels
         let groupName = rawGroup.name;
         let compKey = rawGroup.competitiveGroupKey;
 
@@ -172,28 +174,73 @@ export async function fetchInitialData(userId: string = 'user_1'): Promise<{ mem
             const firstDesignator = reports[0].designator;
             const rank = rawGroup.paygrade || reports[0].memberRank;
 
-            // Only attempt fix for Officers (O/W) if name doesn't seem to contain category
-            // Simple check: if name is just "RANK Active" or "RANK" but designator suggests specific category
-            const isOfficer = rank && (rank.startsWith('O') || rank.startsWith('W'));
+            if (rank) {
+                // Enlisted Rate to Paygrade Mapping
+                const RATE_TO_PAYGRADE: Record<string, string> = {
+                    'SR': 'E-1', 'AA': 'E-1', 'AR': 'E-1', 'FR': 'E-1', 'CR': 'E-1',
+                    'SA': 'E-2', 'DA': 'E-2', 'FA': 'E-2', // Generic E-2s
+                    'SN': 'E-3', 'AN': 'E-3', 'FN': 'E-3', 'CN': 'E-3',
+                    'PO3': 'E-4',
+                    'PO2': 'E-5',
+                    'PO1': 'E-6',
+                    'CPO': 'E-7',
+                    'MCPO': 'E-9', 'MC': 'E-9',
+                    'SCPO': 'E-8', 'SC': 'E-8'
+                };
 
-            if (isOfficer && firstDesignator) {
-                const cat = getCompetitiveCategory(firstDesignator);
-                const nicelabel = getCategoryLabel(cat);
+                const OFFICER_RANK_TO_PAYGRADE: Record<string, string> = {
+                    'ENS': 'O-1',
+                    'LTJG': 'O-2',
+                    'LT': 'O-3',
+                    'LCDR': 'O-4',
+                    'CDR': 'O-5',
+                    'CAPT': 'O-6',
+                    'RDML': 'O-7',
+                    'RADM': 'O-8',
+                    'VADM': 'O-9',
+                    'ADM': 'O-10',
+                    'CWO2': 'W-2', 'CWO3': 'W-3', 'CWO4': 'W-4', 'CWO5': 'W-5'
+                };
 
-                // If we found a valid category label (e.g. "LDO Active", "URL Active")
-                if (nicelabel) {
-                    // Reconstruct likely correct base name
-                    const expectedBase = `${rank} ${nicelabel}`;
+                const normalizedOfficerPaygrade = OFFICER_RANK_TO_PAYGRADE[rank.toUpperCase()];
+                const isOfficerRank = !!normalizedOfficerPaygrade;
+                const isOfficer = rank.startsWith('O') || rank.startsWith('W') || isOfficerRank;
 
-                    // If current name is just "RANK Active" but we expect "RANK LDO Active"
-                    // we update it.
-                    // This fixes "O-3 Active" -> "O-3 LDO Active"
-                    // Also handles "O-3 OFFICER Active" cleanup if it persists
+                // Enhanced Enlisted Detection & Normalization
+                // We map known rates to their Paygrade to ensure "E-4 Active" format instead of "PO3 Active"
+                const normalizedRank = RATE_TO_PAYGRADE[rank.toUpperCase()];
+                const isRate = !!normalizedRank;
+                // Strict check: It's enlisted if it matches E-X pattern OR it's a known Rate.
+                // Avoid "ENS" triggering startsWith('E').
+                const isEnlisted = (rank.startsWith('E') && !isOfficer) || isRate;
 
-                    const status = rawGroup.promotionStatus || 'REGULAR';
-                    const suffix = status !== 'REGULAR' ? ` (${status})` : '';
+                const status = rawGroup.promotionStatus || 'REGULAR';
+                const suffix = status !== 'REGULAR' ? ` (${status})` : '';
 
-                    // We overwrite the name to be correct
+                if (isOfficer && firstDesignator) {
+                    // For Officers/Warrants: Use designator to determine Competitive Category (URL, RL, Staff, LDO, CWO)
+                    const cat = getCompetitiveCategory(firstDesignator);
+                    const nicelabel = getCategoryLabel(cat);
+
+                    const finalRank = normalizedOfficerPaygrade || rank;
+
+                    if (nicelabel) {
+                        const expectedBase = `${finalRank} ${nicelabel}`;
+                        groupName = `${expectedBase}${suffix}`;
+                        compKey = expectedBase;
+                    }
+                } else if (isEnlisted) {
+                    // For Enlisted: Normalize to "[Paygrade] Active" (e.g. "E-4 Active")
+                    // If we have a mapped paygrade (from PO3->E-4), use it.
+                    // If the rank itself is already E-4, use it.
+                    const paygradeToken = normalizedRank || rank;
+
+                    const expectedBase = `${paygradeToken} Active`;
+                    groupName = `${expectedBase}${suffix}`;
+                    compKey = expectedBase;
+                } else if (rawGroup.competitiveGroupKey?.endsWith(' COMP')) {
+                    // Catch-all fallthrough
+                    const expectedBase = rawGroup.competitiveGroupKey.replace(' COMP', ' Active');
                     groupName = `${expectedBase}${suffix}`;
                     compKey = expectedBase;
                 }
