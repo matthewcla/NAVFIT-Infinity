@@ -14,6 +14,7 @@ export interface TrajectoryPoint {
     isProjected: boolean; // True if this is a future/optimized point
     optimalMta: number;   // The suggested MTA for this cycle
     memberCount: number;
+    isEot?: boolean;      // True if this is the End of Tour calculation
 }
 
 /**
@@ -48,10 +49,13 @@ export const calculateOptimizedTrajectory = (
     let accumulatedCount = 0;
 
     // Helper to snap score to 2 decimals
+    // Helper to snap score to 2 decimals
     const round2 = (num: number) => Math.round(num * 100) / 100;
 
-    for (const group of sortedGroups) {
+    for (let i = 0; i < sortedGroups.length; i++) {
+        const group = sortedGroups[i];
         const status = group.status || 'Draft';
+        // Treat "Planned" as "Projected" for optimization purposes
         const isFinal = ['Final', 'Submitted', 'Review'].includes(status);
         const date = new Date(group.periodEndDate).getTime();
 
@@ -68,20 +72,31 @@ export const calculateOptimizedTrajectory = (
             // --- HISTORICAL DATA ---
             // Just sum it up
             group.reports.forEach(r => {
-                if (r.traitAverage > 0) {
+                // Fix: Include NOB in count? No, NOB doesn't affect RSCA.
+                if (r.traitAverage > 0 && !r.notObservedReport && r.promotionRecommendation !== 'NOB') {
                     groupTotalScore += r.traitAverage;
                 }
             });
-            optimalMta = round2(groupTotalScore / reportCount);
+            // Recalculate count for valid reports only? 
+            // RSCA = Sum(Traits) / Sum(ValidReports).
+            const validReports = group.reports.filter(r => r.traitAverage > 0 && !r.notObservedReport && r.promotionRecommendation !== 'NOB').length;
 
-            // Update Running Totals
-            accumulatedScore += groupTotalScore;
-            accumulatedCount += reportCount;
+            if (validReports > 0) {
+                optimalMta = round2(groupTotalScore / validReports);
+                accumulatedScore += groupTotalScore;
+                accumulatedCount += validReports;
+            } else {
+                optimalMta = 0;
+            }
 
         } else {
             // --- OPTIMIZATION ENGINE ---
             // We want to find X (average MTA for this group) such that:
             // (CurrentSum + (X * Count)) / (CurrentCount + Count) <= Target
+
+            // Only optimize for valid reports (non-NOB)
+            // Ideally we predict how many will be valid. For now assume entire group size.
+            const validCount = reportCount;
 
             // Formula:
             // (S + X*N) / (C + N) = T
@@ -89,29 +104,30 @@ export const calculateOptimizedTrajectory = (
             // X*N = T*(C+N) - S
             // X = (T*(C+N) - S) / N
 
-            const nextTotalCount = accumulatedCount + reportCount;
+            const nextTotalCount = accumulatedCount + validCount;
             const maxAllowedGlobalScore = targetRsca * nextTotalCount;
             const maxAllowedGroupTotalScore = maxAllowedGlobalScore - accumulatedScore;
 
             // Calculate Maximum Average for this group
-            let calculatedMta = maxAllowedGroupTotalScore / reportCount;
+            let calculatedMta = maxAllowedGroupTotalScore / validCount;
 
             // Cap at 5.0 (Physics Limit)
             if (calculatedMta > 5.0) calculatedMta = 5.0;
 
-            // Fix "The Starvation": Clamp to 0.00 to prevent negative MTA
+            // Fix "The Starvation": Clamp to 0.00 to prevent negative MTA (though practically ~2.0 is floor)
             calculatedMta = Math.max(0.00, calculatedMta);
 
             optimalMta = round2(calculatedMta);
-            groupTotalScore = optimalMta * reportCount;
+            groupTotalScore = optimalMta * validCount;
 
             // Update Running Totals (Simulating that we executed this plan)
             accumulatedScore += groupTotalScore;
-            accumulatedCount += nextTotalCount;
+            accumulatedCount += validCount;
         }
 
         // Calculate the Resulting Cumulative RSCA at this waypoint
         const currentCumulative = accumulatedCount > 0 ? round2(accumulatedScore / accumulatedCount) : 0;
+        const isEot = i === sortedGroups.length - 1;
 
         trajectory.push({
             date: date,
@@ -123,7 +139,9 @@ export const calculateOptimizedTrajectory = (
             compKey: group.competitiveGroupKey,
             isProjected: !isFinal,
             optimalMta: optimalMta,
-            memberCount: reportCount
+            memberCount: reportCount,
+            // @ts-ignore - Adding dynamic property for now, should update interface
+            isEot: isEot
         });
     }
 
