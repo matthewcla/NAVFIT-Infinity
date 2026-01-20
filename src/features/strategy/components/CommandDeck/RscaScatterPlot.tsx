@@ -1,7 +1,7 @@
 import { useMemo, useState, useEffect } from 'react';
 import { useNavfitStore } from '@/store/useNavfitStore';
 import { useSummaryGroups } from '@/features/strategy/hooks/useSummaryGroups';
-import { calculateOptimizedTrajectory, analyzeGroupRisk } from '@/features/strategy/logic/optimizer';
+import { analyzeGroupRisk, type TrajectoryPoint } from '@/features/strategy/logic/optimizer';
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, ReferenceLine, CartesianGrid } from 'recharts';
 import { format } from 'date-fns';
 
@@ -20,33 +20,28 @@ export function RscaScatterPlot({
     onPointHover,
     onPointClick
 }: RscaScatterPlotProps = {}) {
-    const summaryGroups = useSummaryGroups();
-    const { rsConfig, selectCycle, setStrategyViewMode, setActiveTab } = useNavfitStore();
+    const { rsConfig, selectCycle, setStrategyViewMode, setActiveTab, trajectoryCache } = useNavfitStore();
 
     const targetLimit = rsConfig.targetRsca || 4.20;
     const lowerTarget = 3.80;
 
-    // 1. Group Data by Competitive Key & Analyze Risk
+    // 1. Group Data by Competitive Key & Analyze Risk (using Cached Trajectory)
     const { allTrajectories, riskAnalysis, sortedKeys, defaultSelectedKey } = useMemo(() => {
-        const groupsByKey = new Map<string, typeof summaryGroups>();
-
-        summaryGroups.forEach(g => {
-            const key = g.competitiveGroupKey || 'Uncategorized';
-            const status = g.status || 'Draft';
-            // Include all relevant statuses
-            if (['Draft', 'Drafting', 'Planning', 'Review', 'Submitted', 'Final', 'Planned', 'Pending'].includes(status)) {
-                if (!groupsByKey.has(key)) groupsByKey.set(key, []);
-                groupsByKey.get(key)!.push(g);
-            }
-        });
-
-        const trajectories: Record<string, ReturnType<typeof calculateOptimizedTrajectory>> = {};
+        const trajectories: Record<string, TrajectoryPoint[]> = {};
         const riskAnalysis: Record<string, ReturnType<typeof analyzeGroupRisk>> = {};
 
-        groupsByKey.forEach((groups, key) => {
-            const traj = calculateOptimizedTrajectory(groups, targetLimit);
-            trajectories[key] = traj;
-            riskAnalysis[key] = analyzeGroupRisk(traj);
+        // Group the flat trajectory cache by competitive key
+        trajectoryCache.forEach(point => {
+            const key = point.compKey || 'Uncategorized';
+            if (!trajectories[key]) trajectories[key] = [];
+            trajectories[key].push(point);
+        });
+
+        // Analyze Risk for each key
+        Object.keys(trajectories).forEach(key => {
+            // Ensure sorted by date
+            trajectories[key].sort((a, b) => a.date - b.date);
+            riskAnalysis[key] = analyzeGroupRisk(trajectories[key]);
         });
 
         // Sort Keys by Risk (Lowest Margin to 4.2 first)
@@ -60,7 +55,7 @@ export function RscaScatterPlot({
             sortedKeys: keys,
             defaultSelectedKey: keys[0] // Worst-First
         };
-    }, [summaryGroups, targetLimit]);
+    }, [trajectoryCache, targetLimit]);
 
     const [selectedKey, setSelectedKey] = useState<string | null>(null);
 
@@ -88,11 +83,6 @@ export function RscaScatterPlot({
     const minVal = Math.min(...data.map(d => d.rsca), lowerTarget) - 0.10;
     const maxVal = Math.max(...data.map(d => d.rsca), targetLimit) + 0.10;
 
-    // Define Gradient Offsets for "Green Zone" vs "Red Zone" fill
-    // We want Green (Safe) whenever < 4.20. (Technically 3.8-4.2 is Optimal, <3.8 is just "Low" but safe from bust)
-    // Actually, user wants to keep BETWEEN 3.8 and 4.2.
-    // So > 4.2 is RED using Gradient?
-    // Let's keep it simple: > 4.2 is RED, <= 4.2 is GREEN (Visualizing the "Ceiling" risk)
     const gradientOffset = () => {
         if (maxVal <= minVal) return 0;
         return (targetLimit - minVal) / (maxVal - minVal);
