@@ -23,6 +23,7 @@ interface MemberDetail {
     edd?: string;
     gainDate?: string;
     detachDate?: string;
+    dateReported?: string;
     milestoneTour?: string | null;
     linealNumber?: number | null;
     commissioningDate?: string | null;
@@ -144,7 +145,7 @@ const main = () => {
     const memberDetails: Record<string, MemberDetail> = JSON.parse(readFileSync(memberDetailsPath, 'utf-8'));
 
     // Load existing user data to append/merge
-    let userData = { roster: [], summaryGroups: [], rsConfig: {} };
+    let userData: { roster: RosterMember[], summaryGroups: SummaryGroup[], rsConfig: Record<string, unknown> } = { roster: [], summaryGroups: [], rsConfig: {} };
     try {
         userData = JSON.parse(readFileSync(outputDataPath, 'utf-8'));
     } catch (e) {

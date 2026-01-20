@@ -23,6 +23,7 @@ interface MemberDetail {
     edd?: string;
     gainDate?: string;
     detachDate?: string;
+    dateReported?: string;
     milestoneTour?: string | null;
     linealNumber?: number | null;
     commissioningDate?: string | null;
@@ -221,7 +222,6 @@ const main = () => {
         // Active Group Logic: O-3 Jan 2026
         const isActiveGroup = paygrade === 'O-3' && date.getFullYear() === 2026 && date.getMonth() === 0; // Jan
         const isPlanned = date > CURRENT_DEMO_DATE;
-        const isHistorical = date <= CURRENT_DEMO_DATE && !isActiveGroup;
 
         if (isActiveGroup) {
             status = 'Draft';
@@ -304,7 +304,7 @@ const main = () => {
 
             // Assign EPs to first N members
             let epCount = 0;
-            reports.forEach((r, idx) => {
+            reports.forEach((r) => {
                 if (epCount < targetEP && r.traitAverage !== null) {
                     r.promotionRecommendation = 'EP';
                     epCount++;
@@ -346,44 +346,44 @@ const main = () => {
         // Or should we plan them? "Planned groups... for all periodic cycles".
         // I'll stick to Historical Detachments.
         if (detachDate >= RS_ARRIVAL_DATE && detachDate <= CURRENT_DEMO_DATE) {
-             // Exclude if Gain Date > Detach Date (sanity check)
-             const reported = parseDate(detail.dateReported || detail.gainDate);
-             if (reported && reported > detachDate) return;
+            // Exclude if Gain Date > Detach Date (sanity check)
+            const reported = parseDate(detail.dateReported || detail.gainDate);
+            if (reported && reported > detachDate) return;
 
-             const reportId = randomUUID();
-             const report: Report = {
-                 id: reportId,
-                 memberId: m.id,
-                 periodEndDate: detail.detachDate!,
-                 traitAverage: getRandomFloat(3.5, 4.8, 2),
-                 promotionRecommendation: getRandomRecommendation(),
-                 memberName: `${m.lastName}, ${m.firstName}`,
-                 memberRank: m.rank,
-                 firstName: m.firstName,
-                 lastName: m.lastName,
-                 rank: m.rank,
-                 designator: m.designator,
-                 draftStatus: 'Final',
-                 isLocked: true
-             };
+            const reportId = randomUUID();
+            const report: Report = {
+                id: reportId,
+                memberId: m.id,
+                periodEndDate: detail.detachDate!,
+                traitAverage: getRandomFloat(3.5, 4.8, 2),
+                promotionRecommendation: getRandomRecommendation(),
+                memberName: `${m.lastName}, ${m.firstName}`,
+                memberRank: m.rank,
+                firstName: m.firstName,
+                lastName: m.lastName,
+                rank: m.rank,
+                designator: m.designator,
+                draftStatus: 'Final',
+                isLocked: true
+            };
 
-             if (!m.history) m.history = [];
-             m.history.push(report);
+            if (!m.history) m.history = [];
+            m.history.push(report);
 
-             const monthYear = detachDate.toLocaleString('default', { month: 'long', year: 'numeric' });
-             const groupName = `${m.rank} Detachment ${monthYear}`;
+            const monthYear = detachDate.toLocaleString('default', { month: 'long', year: 'numeric' });
+            const groupName = `${m.rank} Detachment ${monthYear}`;
 
-             const group: SummaryGroup = {
-                 id: randomUUID(),
-                 name: groupName,
-                 paygrade: m.rank,
-                 competitiveGroupKey: PAYGRADE_TO_KEY[m.rank] || `${m.rank} COMP`,
-                 periodEndDate: detail.detachDate,
-                 status: 'Final',
-                 reports: [report]
-             };
+            const group: SummaryGroup = {
+                id: randomUUID(),
+                name: groupName,
+                paygrade: m.rank,
+                competitiveGroupKey: PAYGRADE_TO_KEY[m.rank] || `${m.rank} COMP`,
+                periodEndDate: detail.detachDate,
+                status: 'Final',
+                reports: [report]
+            };
 
-             detachmentGroups.push(group);
+            detachmentGroups.push(group);
         }
     });
 
