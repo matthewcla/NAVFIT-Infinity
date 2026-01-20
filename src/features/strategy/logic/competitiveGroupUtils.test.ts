@@ -66,9 +66,9 @@ describe('competitiveGroupUtils', () => {
 
     describe('getCategoryLabel', () => {
         it('should return correct labels', () => {
-            expect(getCategoryLabel({ code: 'URL', name: 'Unrestricted Line' })).toBe('URL');
-            expect(getCategoryLabel({ code: 'LDO_ACTIVE', name: 'Active LDO' })).toBe('LDO');
-            expect(getCategoryLabel({ code: 'LDO_CWO_RESERVE', name: 'Reserve LDO/CWO' })).toBe('RES LDO/CWO');
+            expect(getCategoryLabel({ code: 'URL', name: 'Unrestricted Line' })).toBe('URL Active');
+            expect(getCategoryLabel({ code: 'LDO_ACTIVE', name: 'Active LDO' })).toBe('LDO Active');
+            expect(getCategoryLabel({ code: 'LDO_CWO_RESERVE', name: 'Reserve LDO/CWO' })).toBe('LDO/CWO Reserve');
         });
     });
 });
