@@ -9,14 +9,5 @@ export const MOCK_USERS: User[] = [
         command: 'USS SPRUANCE (DDG 111)',
         initials: 'MC',
         role: 'USER'
-    },
-    {
-        id: 'user_2',
-        name: 'K. Kennedy',
-        rank: 'RDML',
-        title: 'Commander',
-        command: 'Navy Personnel Command',
-        initials: 'KK',
-        role: 'ADMIN'
     }
 ];
