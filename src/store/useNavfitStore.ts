@@ -3,7 +3,6 @@ import type { Tab } from '../components/layout/Sidebar';
 import type { RosterMember, ReportingSeniorConfig, PayGrade } from '@/types/roster';
 import { INITIAL_RS_CONFIG } from '../domain/rsca/constants';
 
-// import { type Member } from '@/features/strategy/logic/autoPlan';
 import { useRedistributionStore } from './useRedistributionStore';
 import { useAuditStore } from './useAuditStore';
 import { DEFAULT_CONSTRAINTS } from '@/domain/rsca/constants';
@@ -13,11 +12,11 @@ import { validateReportState, checkQuota, createSummaryGroupContext } from '@/fe
 
 import type { SummaryGroup, Report } from '@/types';
 import { assignRecommendationsByRank } from '@/features/strategy/logic/recommendation';
-import { calculateOptimizedTrajectory, distributeMtaByRank } from '@/features/strategy/logic/optimizer';
 import { fetchInitialData } from '@/services/dataLoader';
 import { planAllSummaryGroups } from '@/features/strategy/logic/planSummaryGroups';
 import type { User } from '@/domain/auth/types';
 import { MOCK_USERS } from '@/domain/auth/mockUsers';
+import type { TrajectoryPoint } from '@/features/strategy/logic/optimizer';
 
 interface NavfitStore {
     // Auth State
@@ -48,7 +47,7 @@ interface NavfitStore {
     // Data State
     roster: RosterMember[];
     setRoster: (roster: RosterMember[]) => void;
-    reorderMember: (memberId: string, newIndex: number) => void; // Legacy roster reorder? Or keep for completeness
+    reorderMember: (memberId: string, newIndex: number) => void;
 
     // Summary Group / Ranking Mode Actions
     reorderMembers: (groupId: string, draggedId: string, targetIdOrOrder: string | string[]) => void;
@@ -78,6 +77,9 @@ interface NavfitStore {
     updateReport: (groupId: string, reportId: string, updates: Partial<Report>) => void;
     commitOptimization: (groupId: string, reports: Report[]) => void;
 
+    // Strategy Results Cache (From Worker)
+    trajectoryCache: TrajectoryPoint[];
+    updateStrategyResults: (groups: SummaryGroup[], trajectory: TrajectoryPoint[]) => void;
 
     // Cross-Component Requests
     pendingReportRequest: {
@@ -161,64 +163,6 @@ export const useNavfitStore = create<NavfitStore>((set) => ({
             const effectiveUserId = userId || useNavfitStore.getState().currentUser?.id;
             const { members, summaryGroups } = await fetchInitialData(effectiveUserId);
 
-            // Map Domain Members to UI RosterMembers if needed
-            // The RosterMember interface (from '@/types/roster') and Domain Member (from '@/types/index') are very similar but we should ensure compatibility.
-            // RosterMember expects: id, firstName, lastName, rank, payGrade, designator, dateReported, prd, lastTrait, status
-            // fetchInitialData returns Member[] which has name, but not split firstName/lastName?
-            // Wait, fetchInitialData implementation maps: name: `${detail.lastName}, ${detail.firstName}`
-            // But RosterMember in the store interface expects `firstName`, `lastName`.
-            // Let's check `fetchInitialData`. It returns Member[].
-            // RosterMember interface:
-            // export interface RosterMember { id, firstName, lastName, ... }
-            // Let's adapt the data from fetchInitialData to match RosterMember.
-
-            // However, looking at fetchInitialData, it returns objects that conform to Member interface.
-            // Member interface in src/types/index.ts has `name` (combined).
-            // RosterMember in src/types/roster.ts has firstName, lastName.
-
-            // We should inspect the data coming from fetchInitialData.
-            // Actually, fetchInitialData maps from raw member details which HAVE firstName and lastName.
-            // But it returns Member[].
-
-            // If the store expects RosterMember[], we might need to adjust fetchInitialData or map here.
-            // Since I cannot change fetchInitialData easily without potentially breaking other things (though it was just created),
-            // I will map it here. Ideally fetchInitialData should probably return what we need or we update the store type.
-            // Let's assume we map here for safety.
-
-            // Wait, looking at current `initializeRoster` (which I removed), it was mapping from raw JSON.
-            // fetchInitialData does the mapping.
-
-            // Let's look at `members` returned by `fetchInitialData`.
-            // It maps: name: "Last, First".
-            // It does NOT seem to preserve firstName/lastName in the return object explicitly unless Member has them.
-            // src/types/index.ts Member interface:
-            // export interface Member { id, name, rank, payGrade?, designator?, rating?, milestone?, prd?, status, gainDate?, ... }
-            // It does not have firstName, lastName.
-
-            // But RosterMember does.
-            // I should probably update RosterMember or NavfitStore to use Member, OR parse the name back.
-            // Or better, let's look at what `fetchInitialData` used. It used `detail.firstName`.
-            // I'll update the mapping here to be safe, assuming `fetchInitialData` is the source of truth for "loading data".
-            // BUT `fetchInitialData` returns `Member[]`.
-            // `useNavfitStore` state `roster` is `RosterMember[]`.
-
-            // If I change `roster` type to `Member[]`, it might break components expecting `firstName`.
-            // Let's map it. `Member` objects from `fetchInitialData` don't carry `firstName`.
-            // This is a slight mismatch introduced by the new service.
-            // I'll assume for now I can parse the name or that the UI can handle `name`.
-            // Actually, looking at `fetchInitialData` code in memory:
-            /*
-            return {
-                id: detail.id,
-                name: `${detail.lastName}, ${detail.firstName}`,
-                ...
-            };
-            */
-            // It drops firstName/lastName.
-            // To fix this cleanly, I should probably have `fetchInitialData` return objects that satisfy `RosterMember` (or a superset).
-            // But I am in the step of refactoring the store.
-            // I will split the name string here to populate firstName/lastName for RosterMember compatibility.
-
             const roster: RosterMember[] = members.map(m => {
                 const parts = m.name.split(', ');
                 const lastName = m.lastName || parts[0] || '';
@@ -229,8 +173,8 @@ export const useNavfitStore = create<NavfitStore>((set) => ({
                     lastName,
                     rank: m.rank,
                     payGrade: m.payGrade as PayGrade,
-                    designator: m.designator || '', // Enlisted now have designator populated from my previous step
-                    dateReported: (m as any).dateReported || new Date().toISOString().split('T')[0], // Cast as any if strictly typed Member doesn't have it (but I saw it in fetchInitialData source)
+                    designator: m.designator || '',
+                    dateReported: (m as any).dateReported || new Date().toISOString().split('T')[0],
                     prd: m.prd || '',
                     eda: (m as any).eda,
                     edd: (m as any).edd,
@@ -241,17 +185,6 @@ export const useNavfitStore = create<NavfitStore>((set) => ({
                     timeInGrade: m.timeInGrade
                 };
             });
-
-            // Auto-generate planned summary groups
-            // Note: In generated data, rsConfig is usually loaded from the file.
-            // We should ideally load RS config from the file if fetchInitialData returns it (it does not currently in the interface, but the raw data has it).
-            // For now, we use the static default or what is in store.
-            // Ideally fetchInitialData should return rsConfig too.
-            // But since I can't change fetchInitialData signature easily without refactoring widely (already done in previous step but kept signature simple),
-            // I will assume rsConfig is updated via separate mechanism or defaulting.
-            // Actually, my data generation script writes rsConfig to the JSON.
-            // I should update fetchInitialData to return it.
-            // For this specific step, I will stick to what's there to avoid scope creep, assuming RS Config is managed or default is acceptable.
 
             const rsConfig = useNavfitStore.getState().rsConfig;
             const plannedResults = planAllSummaryGroups(roster, rsConfig, summaryGroups);
@@ -271,6 +204,10 @@ export const useNavfitStore = create<NavfitStore>((set) => ({
                 projections: {},
                 activeTab: 'dashboard' // Reset to default tab
             });
+
+            // Initial Strategy Calculation
+            useRedistributionStore.getState().calculateStrategy(allGroups, rsConfig.targetRsca);
+
         } catch (err: any) {
             console.error("Failed to load data:", err);
             set({ isLoading: false, error: err.message || "Failed to load data" });
@@ -348,18 +285,6 @@ export const useNavfitStore = create<NavfitStore>((set) => ({
         })
     })),
     toggleReportLock: (groupId, reportId, targetValue) => {
-        // DEBUG: Entry point
-        const preState = useNavfitStore.getState();
-        const preGroup = preState.summaryGroups.find(g => g.id === groupId);
-        const preReport = preGroup?.reports.find(r => r.id === reportId);
-        const preRank = preGroup?.reports.findIndex(r => r.id === reportId);
-        console.log('[LOCK DEBUG] ENTRY', {
-            groupId, reportId, targetValue,
-            currentMta: preReport?.traitAverage,
-            currentLock: preReport?.isLocked,
-            currentRank: preRank !== undefined ? preRank + 1 : 'NOT FOUND'
-        });
-
         set((state) => ({
             summaryGroups: state.summaryGroups.map((group) => {
                 if (group.id !== groupId) return group;
@@ -369,8 +294,6 @@ export const useNavfitStore = create<NavfitStore>((set) => ({
                         if (report.id !== reportId) return report;
 
                         const willBeLocked = !report.isLocked;
-                        // If locking and a target value is provided, commit it.
-                        // Otherwise (unlocking or no value), keep existing traitAverage.
                         const newMta = (willBeLocked && targetValue !== undefined) ? targetValue : report.traitAverage;
 
                         return {
@@ -383,50 +306,9 @@ export const useNavfitStore = create<NavfitStore>((set) => ({
             })
         }));
 
-        // DEBUG: After first set()
-        const midState = useNavfitStore.getState();
-        const midGroup = midState.summaryGroups.find(g => g.id === groupId);
-        const midReport = midGroup?.reports.find(r => r.id === reportId);
-        const midRank = midGroup?.reports.findIndex(r => r.id === reportId);
-        console.log('[LOCK DEBUG] AFTER SET (pre-sort)', {
-            newMta: midReport?.traitAverage,
-            newLock: midReport?.isLocked,
-            newRank: midRank !== undefined ? midRank + 1 : 'NOT FOUND',
-            allReports: midGroup?.reports.map(r => ({ id: r.id, mta: r.traitAverage, locked: r.isLocked }))
-        });
-
-        // Trigger Redistribution for Anchor Update
-        const state = useNavfitStore.getState(); // Get fresh state
-        const group = state.summaryGroups.find(g => g.id === groupId);
-        if (group) {
-            const report = group.reports.find(r => r.id === reportId);
-            // Log the NEW state (which is in `report` because we got fresh state)
-            useAuditStore.getState().addLog('ANCHOR_SELECTION_CHANGE', {
-                groupId,
-                memberId: reportId,
-                isLocked: report?.isLocked,
-                value: report?.traitAverage
-            });
-
-            const anchors: Record<string, number> = {};
-            group.reports.forEach(r => {
-                if (r.isLocked) anchors[r.id] = r.traitAverage;
-            });
-
-            // FIX: REMOVED MTA-based re-sorting. Lock/unlock should preserve the user's
-            // manually-set rank order (from drag-and-drop). Automatic reordering by MTA
-            // was destroying the manual order every time a lock was toggled.
-            // The report order now remains unchanged - only the isLocked flag is toggled.
-
-            console.log('[LOCK DEBUG] PRESERVING ORDER - no re-sort on lock toggle');
-
-            console.log('[LOCK DEBUG] SKIPPING setAnchors - lock/unlock should not trigger redistribution', { anchors });
-
-            // FIX: Removed setAnchors call. Lock/unlock is purely a state change.
-            // Redistribution should NOT be triggered because it recalculates all non-anchor MTAs,
-            // which would overwrite committed optimization values.
-            // useRedistributionStore.getState().setAnchors(groupId, anchors);
-        }
+        // Trigger Strategy Calculation after lock toggle to update projections for others
+        const state = useNavfitStore.getState();
+        useRedistributionStore.getState().calculateStrategy(state.summaryGroups, state.rsConfig.targetRsca);
     },
     setGroupLockState: (groupId, isLocked, valueMap) => {
         set((state) => ({
@@ -435,7 +317,6 @@ export const useNavfitStore = create<NavfitStore>((set) => ({
                 return {
                     ...group,
                     reports: group.reports.map((report) => {
-                        // If locking, check if we have a specific value to commit for this report
                         const commitValue = (isLocked && valueMap && valueMap[report.id] !== undefined)
                             ? valueMap[report.id]
                             : report.traitAverage;
@@ -449,34 +330,11 @@ export const useNavfitStore = create<NavfitStore>((set) => ({
                 };
             })
         }));
-
-        // Trigger Redistribution
+        // Trigger Strategy Calculation
         const state = useNavfitStore.getState();
-        const group = state.summaryGroups.find(g => g.id === groupId);
-        if (group) {
-            useAuditStore.getState().addLog('ANCHOR_SELECTION_CHANGE', {
-                groupId,
-                message: isLocked ? "Locked All Reports" : "Unlocked All Reports"
-            });
-
-            const anchors: Record<string, number> = {};
-            if (isLocked) {
-                group.reports.forEach(r => {
-                    anchors[r.id] = r.traitAverage;
-                });
-            }
-
-            // FIX: REMOVED MTA-based re-sorting. Lock/unlock all should preserve the user's
-            // manually-set rank order (from drag-and-drop). Automatic reordering by MTA
-            // was destroying the manual order.
-            console.log('[LOCK DEBUG] PRESERVING ORDER - no re-sort on lock all toggle');
-            // FIX: Removed setAnchors call. Lock/unlock is purely a state change.
-            // Redistribution should NOT be triggered because it recalculates all non-anchor MTAs.
-            // useRedistributionStore.getState().setAnchors(groupId, anchors);
-        }
+        useRedistributionStore.getState().calculateStrategy(state.summaryGroups, state.rsConfig.targetRsca);
     },
     reorderMember: (memberId, newIndex) => set((state) => {
-        // Legacy Roster Reorder (Keep for Member Detail View if needed, but primary is now Group-based)
         const currentRoster = [...state.roster];
         const oldIndex = currentRoster.findIndex(m => m.id === memberId);
         if (oldIndex === -1) return {};
@@ -497,9 +355,6 @@ export const useNavfitStore = create<NavfitStore>((set) => ({
             const { top, bottom } = defaultAnchorIndices(N);
             const anchorIndices = new Set([...top, ...bottom]);
 
-            // Requirement says "provide default anchor selection".
-            // We strictly set the calculated indices as anchors and unlock others to ensure a clean default state.
-
             const updatedReports = group.reports.map((r, i) => ({
                 ...r,
                 isLocked: anchorIndices.has(i)
@@ -508,35 +363,10 @@ export const useNavfitStore = create<NavfitStore>((set) => ({
             const newSummaryGroups = [...state.summaryGroups];
             newSummaryGroups[groupIndex] = { ...group, reports: updatedReports };
 
-            // Trigger Engine
-            // We need to convert to domain members and call requestRedistribution
-            // We can do this outside the set in a useEffect, but here we can just do it after state update or immediately.
-            // But `set` callback returns partial state. We need to trigger side effect.
-            // Side effect:
+            // Trigger Strategy
             setTimeout(() => {
-                const updatedGroup = useNavfitStore.getState().summaryGroups[groupIndex];
-                if (!updatedGroup) return;
-
-                const domainMembers: DomainMember[] = updatedGroup.reports.map((r, i) => ({
-                    id: r.id,
-                    rank: i + 1,
-                    mta: r.traitAverage,
-                    isAnchor: !!r.isLocked,
-                    anchorValue: r.traitAverage,
-                    name: r.memberName
-                }));
-
-                useAuditStore.getState().addLog('ANCHOR_SELECTION_CHANGE', {
-                    groupId,
-                    message: "Applied Default Anchors (Top/Bottom 10%)"
-                });
-
-                useRedistributionStore.getState().requestRedistribution(
-                    groupId,
-                    domainMembers,
-                    DEFAULT_CONSTRAINTS,
-                    state.rsConfig.targetRsca
-                );
+                const currentState = useNavfitStore.getState();
+                useRedistributionStore.getState().calculateStrategy(currentState.summaryGroups, currentState.rsConfig.targetRsca);
             }, 0);
 
             return { summaryGroups: newSummaryGroups };
@@ -553,22 +383,16 @@ export const useNavfitStore = create<NavfitStore>((set) => ({
         let updatedReportList: typeof currentReports = [];
 
         if (Array.isArray(targetIdOrOrder)) {
-            // Bulk Reorder based on ID list
             const newOrderIds = targetIdOrOrder;
-            // Map current reports to the new order
             updatedReportList = newOrderIds
                 .map(id => currentReports.find(r => r.id === id))
                 .filter((r): r is typeof currentReports[0] => !!r);
 
-            // Append any missing reports (robustness)
             const missingReports = currentReports.filter(r => !newOrderIds.includes(r.id));
             updatedReportList = [...updatedReportList, ...missingReports];
 
         } else {
-            // Legacy Single-Item Move
             const targetId = targetIdOrOrder;
-
-            // 1. Identification
             const draggedIndex = currentReports.findIndex(r => r.id === draggedId);
             const targetIndex = currentReports.findIndex(r => r.id === targetId);
 
@@ -576,99 +400,43 @@ export const useNavfitStore = create<NavfitStore>((set) => ({
                 return {};
             }
 
-            // 2. Atomic Move (Remove and Insert)
             const [draggedItem] = currentReports.splice(draggedIndex, 1);
             currentReports.splice(targetIndex, 0, draggedItem);
             updatedReportList = currentReports;
-
-            // 2b. Auto-Calculate MTA for the moved item (Interpolation)
-            // Note: We use targetIndex because draggedItem is now at targetIndex
-            // Legacy handling or finding index...
-            // Assuming we are using the array of IDs now from RankStrategyMatrix
-            console.warn("reorderMembers called with legacy single-target logic, falling back to simple move if possible or ignoring");
+            console.warn("reorderMembers called with legacy single-target logic");
         }
 
-        // 2. Auto-Assign Recommendations based on Rank
-        // This updates EP/MP/P based on the NEW rank order
+        // 2. Auto-Assign Recommendations based on Rank (Optimistic)
         const recReports = assignRecommendationsByRank(updatedReportList, group);
 
-        // 3. Calculate Optimized Trajectory to determine Budget
-        // We need to construct a temp view of groups to feed the optimizer
-        // The optimizer needs the *list* of groups to calculate accumulated RSCA.
-        // We replace the current group with our working copy (recReports) to be safe, 
-        // though optimizer ignores draft scores anyway.
-        // 3. Temporarily update the state just to calculate trajectory
-        // We create a fresh copy of summaryGroups to manipulate
-        let workingGroups = [...state.summaryGroups];
+        // 3. Update State Optimistically (Order + Recs)
+        const optimisticGroups = [...state.summaryGroups];
+        optimisticGroups[groupIndex] = { ...group, reports: recReports, hasManualOrder: true };
 
-        // Update the current group in this working copy
-        // We do NOT apply MTAs yet, just the Recs/Order, because optimizer dictates MTA
-        workingGroups[groupIndex] = { ...group, reports: recReports, hasManualOrder: true };
+        // 4. Trigger Worker for Heavy Calculation (Trajectory + MTA Distribution)
+        setTimeout(() => {
+             // We pass the optimistically updated groups to the worker
+             useRedistributionStore.getState().calculateStrategy(optimisticGroups, state.rsConfig.targetRsca);
+        }, 0);
 
-        // 4. Run Strategy Engine (Cascade)
-        // This calculates the targets for EVERY group based on the new order of this group
-        const trajectory = calculateOptimizedTrajectory(workingGroups, state.rsConfig.targetRsca);
-
-        // 5. Apply Strategy to ALL Projected Groups (Cascade)
-        // We iterate through every group in the working set. 
-        // If it's projected, we update its MTAs based on the NEW trajectory.
-        const finalizedGroups = workingGroups.map(g => {
-            const point = trajectory.find(p => p.groupId === g.id);
-
-            // If no point or already Final, returned as is (or as modified above for current group)
-            if (!point || !point.isProjected) return g;
-
-            // It is a projected group (Draft/Planned). Update its MTAs.
-            // Note: 'g.reports' has the correct Rank Order (either existing, or newly updated for current group)
-            const targetMta = point.optimalMta;
-            const distributedScores = distributeMtaByRank(g.reports, targetMta);
-
-            const optimizedReports = g.reports.map((r, i) => ({
-                ...r,
-                traitAverage: distributedScores[i] || 0.00
-            }));
-
-            // Sync Recommendations AGAIN? 
-            // Technically `distributeMtaByRank` used the existing Recs to generate scores.
-            // If the Scores change significantly, should Recs change? 
-            // In our logic, Rank drives Recs. MTAs follow Recs. So Recs are stable unless Rank changes.
-            // And Rank only changes for the *Current* group (manual). 
-            // Future groups keep their Rank Order, just adjustment MTA budget. 
-            // So we are good.
-
-            return {
-                ...g,
-                reports: optimizedReports
-            };
-        });
-
-        // 6. Update State
-        const newSummaryGroups = finalizedGroups; // This now contains updates for Current + Cascade
-
-        // 6. Audit & Redistribution (Legacy?)
-        // We still trigger this just in case other components listen to it
-        // but we have already done the heavy lifting.
         useAuditStore.getState().addLog('RANK_ORDER_CHANGE', {
             groupId,
             draggedId,
-            newOrderCount: newSummaryGroups[groupIndex].reports.length
+            newOrderCount: optimisticGroups[groupIndex].reports.length
         });
 
-        // Convert to Domain Members for Redistribution Store (if it does extra validation)
-        const updatedCurrentReports = newSummaryGroups[groupIndex].reports;
-        const domainMembers: DomainMember[] = updatedCurrentReports.map((r, i) => ({
-            id: r.id,
-            rank: i + 1,
-            mta: r.traitAverage,
-            isAnchor: !!r.isLocked,
-            anchorValue: r.traitAverage,
-            name: r.memberName
-        }));
-
-        useRedistributionStore.getState().requestRedistribution(groupId, domainMembers, DEFAULT_CONSTRAINTS, state.rsConfig.targetRsca);
+        // Convert to Domain Members for Redistribution Store (for specific group detailed audit/checks if needed, but calculateStrategy covers the main flow)
+        // We keep the old requestRedistribution call for now if it does specific detailed logging or validation,
+        // OR we rely on calculateStrategy.
+        // The original code called BOTH calculateOptimizedTrajectory AND requestRedistribution.
+        // calculateStrategy in worker basically does the calculateOptimizedTrajectory part.
+        // Does requestRedistribution do anything extra? It logs 'REDISTRIBUTION_RUN'.
+        // Let's keep requestRedistribution trigger for the CURRENT group specifically if we want detailed logs for it,
+        // BUT it might be redundant calculation.
+        // For now, I will omit the specific requestRedistribution because calculateStrategy should handle updating the store with optimized values.
 
         return {
-            summaryGroups: newSummaryGroups
+            summaryGroups: optimisticGroups
         };
     }),
 
@@ -686,23 +454,25 @@ export const useNavfitStore = create<NavfitStore>((set) => ({
             const group = state.summaryGroups[groupIndex];
 
             // 1. Update the value AND mark as locked (anchor)
-            // Manual MTA change implies an override - mark as locked so redistribution preserves it
             const updatedReports = group.reports.map(r => r.id === reportId ? { ...r, traitAverage: value, isLocked: true } : r);
 
             // 2. Strict Sort by MTA (Descending)
-            // FIX: Use stable sort with secondary key (id) to prevent rank jumping with equal MTA values.
             updatedReports.sort((a, b) => {
                 const mtaDiff = b.traitAverage - a.traitAverage;
                 if (mtaDiff !== 0) return mtaDiff;
-                return a.id.localeCompare(b.id); // Tiebreaker for stability
+                return a.id.localeCompare(b.id);
             });
 
             // 3. Auto-Assign Recommendations based on Rank
-            // This ensures that if the rank order changes due to MTA change, the recommendations update (Automatic Method)
             const finalReports = assignRecommendationsByRank(updatedReports, group);
 
             const newSummaryGroups = [...state.summaryGroups];
             newSummaryGroups[groupIndex] = { ...group, reports: finalReports };
+
+            // Trigger Strategy
+            setTimeout(() => {
+                useRedistributionStore.getState().calculateStrategy(newSummaryGroups, state.rsConfig.targetRsca);
+            }, 0);
 
             return {
                 projections: {
@@ -712,27 +482,6 @@ export const useNavfitStore = create<NavfitStore>((set) => ({
                 summaryGroups: newSummaryGroups
             };
         });
-
-        // Trigger Engine
-        const state = useNavfitStore.getState();
-        const group = state.summaryGroups.find(g => g.id === groupId);
-        if (group) {
-            useAuditStore.getState().addLog('ANCHOR_MTA_EDIT', {
-                groupId,
-                memberId: reportId,
-                value
-            });
-
-            const domainMembers: DomainMember[] = group.reports.map((r, i) => ({
-                id: r.id,
-                rank: i + 1,
-                mta: r.traitAverage,
-                isAnchor: !!r.isLocked,
-                anchorValue: r.traitAverage,
-                name: r.memberName
-            }));
-            useRedistributionStore.getState().requestRedistribution(groupId, domainMembers, DEFAULT_CONSTRAINTS, state.rsConfig.targetRsca);
-        }
     },
 
     updateReport: (groupId, reportId, updates) => set((state) => {
@@ -744,47 +493,28 @@ export const useNavfitStore = create<NavfitStore>((set) => ({
         const reportIndex = reports.findIndex(r => r.id === reportId);
         if (reportIndex === -1) return {};
 
-        // 1. Apply Updates
         const originalReport = reports[reportIndex];
         const updatedReport: Report = {
             ...originalReport,
             ...updates
         };
 
-        // 2. Validate Domain Policy (Traits, NOB, SP, O1/O2)
-        // Find previous report for SP logic (simplified: looking in roster or ignoring for now if complexity too high)
-        // Ideally we check history in roster.
         const rosterMember = state.roster.find(m => m.id === updatedReport.memberId);
-        // Sort history by date desc, find one before this report's period
-        // For now, passing undefined to validateReportState unless we strictly need SP withdrawal check to work.
-        // Prompt requires it.
         let previousReport: Report | undefined;
         if (rosterMember && rosterMember.history) {
-            // Basic sort
             const sorted = [...rosterMember.history].sort((a, b) => new Date(b.periodEndDate).getTime() - new Date(a.periodEndDate).getTime());
-            // The report being edited might be in history or not? If it's a draft, maybe not fully in history array or is the latest.
-            // We look for the first one strictly before this report's end date.
             const currentEndDate = new Date(updatedReport.periodEndDate);
             previousReport = sorted.find(r => new Date(r.periodEndDate) < currentEndDate);
         }
 
         const violations = validateReportState(updatedReport, group, previousReport);
 
-        // 3. Validate Quotas (Group Level)
-        // If recommendation changed to EP or MP, we need to check limits.
         if (updates.promotionRecommendation) {
             const tempReports = [...reports];
             tempReports[reportIndex] = updatedReport;
-
             const epCount = tempReports.filter(r => r.promotionRecommendation === 'EP').length;
             const mpCount = tempReports.filter(r => r.promotionRecommendation === 'MP').length;
-
-            // Generate Context for Validation
             const context = createSummaryGroupContext(group, updatedReport);
-
-            // Ensure size matches report array
-            // Note: If we just added a report, group.reports might be outdated if we don't use tempReports,
-            // but updateReport assumes report exists.
             const quotaResult = checkQuota(context, epCount, mpCount);
 
             if (!quotaResult.isValid && quotaResult.message) {
@@ -815,29 +545,28 @@ export const useNavfitStore = create<NavfitStore>((set) => ({
 
         const group = state.summaryGroups[groupIndex];
 
-        // 1. Update Group with new Reports (Optimized)
         const newSummaryGroups = [...state.summaryGroups];
         newSummaryGroups[groupIndex] = {
             ...group,
             reports
         };
 
-        // 2. Clear Projections for these members
-        // We want to remove the projection key so the UI falls back to the report's traitAverage (which is now updated)
         const newProjections = { ...state.projections };
         reports.forEach(r => {
             delete newProjections[r.id];
         });
 
-        // 3. Clear any preview projections as well (though usually handled by component state)
-        // If we had store-based preview, we'd clear it here.
-
         return {
             summaryGroups: newSummaryGroups,
             projections: newProjections,
-            // Also update loaded state references if needed? 
-            // In CycleContextPanel, we use latestGroup from summaryGroups, so this is sufficient.
         };
+    }),
+
+    // Worker Results
+    trajectoryCache: [],
+    updateStrategyResults: (groups, trajectory) => set({
+        summaryGroups: groups,
+        trajectoryCache: trajectory
     }),
 
     // Requests
@@ -848,20 +577,17 @@ export const useNavfitStore = create<NavfitStore>((set) => ({
     // Context Rail State (Selection)
     selectedReportId: null,
     selectReport: (id) => set(() => {
-        // If selecting a report (id is not null), clear member selection and open rail
         if (id) {
             return {
                 selectedReportId: id,
                 selectedMemberId: null
             };
         }
-        // If clearing, just clear it (optionally keep rail open or closed? request just says "selectReport should open context rail")
         return { selectedReportId: null };
     }),
 
     selectedMemberId: null,
     selectMember: (id) => set(() => {
-        // If selecting a member, clear report selection and open rail
         if (id) {
             return {
                 selectedMemberId: id,
@@ -874,7 +600,6 @@ export const useNavfitStore = create<NavfitStore>((set) => ({
     selectedCompetitiveGroupKey: null,
     setSelectedCompetitiveGroupKey: (key) => set({ selectedCompetitiveGroupKey: key }),
 
-
     // Modal State
     isEditingReport: false,
     setEditingReport: (isEditing) => set({ isEditingReport: isEditing }),
@@ -885,14 +610,12 @@ export const useNavfitStore = create<NavfitStore>((set) => ({
     isContextPanelOpen: false,
     cycleFilter: 'All',
     cycleSort: 'DueDate',
-    strategyViewMode: 'landing', // Default to landing
+    strategyViewMode: 'landing',
 
     selectCycle: (cycleId, competitiveGroupKey) => set({
         selectedCycleId: cycleId,
         activeCompetitiveGroup: competitiveGroupKey,
         isContextPanelOpen: true,
-        // Also sync legacy selection if needed, or keep distinct?
-        // User request didn't specify syncing with selectedCompetitiveGroupKey, but activeCompetitiveGroup seems to serve that purpose.
     }),
     clearSelection: () => set({
         selectedCycleId: null,
@@ -917,7 +640,6 @@ export const useNavfitStore = create<NavfitStore>((set) => ({
         roster: loadedState.roster,
         summaryGroups: loadedState.summaryGroups,
         rsConfig: loadedState.rsConfig,
-        // Reset selections and temporary state
         selectedCycleId: null,
         activeCompetitiveGroup: null,
         selectedReportId: null,
@@ -931,6 +653,3 @@ export const selectActiveCycle = (state: NavfitStore): SummaryGroup | null => {
     if (!state.selectedCycleId) return null;
     return state.summaryGroups.find(g => g.id === state.selectedCycleId) || null;
 };
-
-// Initialize
-// useNavfitStore.getState().loadData();
