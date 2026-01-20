@@ -16,14 +16,17 @@ class MockWorker {
                 this.onmessage({
                     data: {
                         requestId: data.requestId,
+                        type: data.type, // Echo back the type
                         success: true,
                         result: {
-                            mtaVector: members.map((m: any) => m.mta), // Return same MTA for simplicity
+                            updatedMembers: members.map((m: any) => ({ ...m, mta: m.mta })), // Return same MTA for simplicity
+                            rsca: 4.0,
+                            // Legacy properties if needed by other tests, but main flow uses updatedMembers and rsca
+                            mtaVector: members.map((m: any) => m.mta),
                             finalRSCA: 4.0,
                             isFeasible: true,
                             deltas: [],
                             explanation: 'Mock Success',
-                            updatedMembers: members, // Mock updated members
                             changedMembers: [],
                             reasonCodes: []
                         }
