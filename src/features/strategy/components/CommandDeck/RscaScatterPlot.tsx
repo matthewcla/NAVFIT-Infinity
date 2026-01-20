@@ -203,9 +203,16 @@ export function RscaScatterPlot({
                                             <div className="bg-slate-900/95 text-white p-3 rounded-xl shadow-xl backdrop-blur-md border border-slate-700/50 min-w-[200px] pointer-events-none">
                                                 <div className="flex justify-between items-start mb-2 pb-2 border-b border-white/10">
                                                     <span className="font-bold text-sm">{format(new Date(d.date), 'MMM yyyy')}</span>
-                                                    <span className={`text-[10px] uppercase font-bold px-1.5 py-0.5 rounded ${d.isProjected ? 'bg-indigo-500/20 text-indigo-300' : 'bg-slate-700 text-slate-300'}`}>
-                                                        {d.isProjected ? 'Optimized' : 'Actual'}
-                                                    </span>
+                                                    <div className="flex flex-col items-end gap-1">
+                                                        <span className={`text-[10px] uppercase font-bold px-1.5 py-0.5 rounded ${d.isProjected ? 'bg-indigo-500/20 text-indigo-300' : 'bg-slate-700 text-slate-300'}`}>
+                                                            {d.isProjected ? 'Optimized' : 'Actual'}
+                                                        </span>
+                                                        {d.isEot && (
+                                                            <span className="text-[10px] uppercase font-bold px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                                                                End of Tour
+                                                            </span>
+                                                        )}
+                                                    </div>
                                                 </div>
 
                                                 <div className="space-y-1.5 text-xs">
@@ -260,7 +267,10 @@ export function RscaScatterPlot({
                                         );
                                     }
 
-                                    // Custom Dot to show Actual vs Projected nodes
+                                    // Custom Dot to show Actual vs Projected vs EOT
+                                    if (payload.isEot) {
+                                        return <circle cx={cx} cy={cy} r={5} fill="#f59e0b" stroke="#fff" strokeWidth={2} style={{ pointerEvents: 'none' }} />;
+                                    }
                                     if (!isProjected) {
                                         return <circle cx={cx} cy={cy} r={3} fill="#cbd5e1" stroke="none" style={{ pointerEvents: 'none' }} />;
                                     }

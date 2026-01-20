@@ -1,5 +1,6 @@
 import type { Member, SummaryGroup, Report } from '@/types/index';
 import { getCompetitiveCategory, getCategoryLabel } from '../features/strategy/logic/competitiveGroupUtils';
+import { assignRecommendationsByRank } from '../features/strategy/logic/recommendation';
 
 // Interfaces matching public/member_details.json
 export interface RawMemberDetail {
@@ -247,13 +248,33 @@ export async function fetchInitialData(userId: string = 'user_1'): Promise<{ mem
             }
         }
 
-        return {
-            ...rawGroup,
+        // --- AUTO-RANK FOR DEMO ---
+        // Automatically assign Promotion Recommendations based on Trait Average (Merit Order)
+        // to prevent "Unranked Members" in Command Feed for the demo.
+
+        let rankedReports = reports;
+        const initialGroupState: SummaryGroup = {
+            id: rawGroup.id,
             name: groupName,
-            competitiveGroupKey: compKey, // Ensure key matches name structure
+            competitiveGroupKey: compKey,
             promotionStatus: rawGroup.promotionStatus || 'REGULAR',
             reports: reports,
-            status: (rawGroup.status as any) || 'Draft'
+            status: (rawGroup.status as any) || 'Draft',
+            paygrade: rawGroup.paygrade,
+            designator: rawGroup.designator,
+            periodEndDate: rawGroup.periodEndDate
+        };
+
+        if (reports.length > 0) {
+            // Sort by Trait Average Descending (Merit)
+            const sortedReports = [...reports].sort((a, b) => b.traitAverage - a.traitAverage);
+            // Assign Recommendations
+            rankedReports = assignRecommendationsByRank(sortedReports, initialGroupState);
+        }
+
+        return {
+            ...initialGroupState,
+            reports: rankedReports
         };
     });
 
