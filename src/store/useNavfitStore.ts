@@ -5,9 +5,7 @@ import { INITIAL_RS_CONFIG } from '../domain/rsca/constants';
 
 import { useRedistributionStore } from './useRedistributionStore';
 import { useAuditStore } from './useAuditStore';
-import { DEFAULT_CONSTRAINTS } from '@/domain/rsca/constants';
 import { defaultAnchorIndices } from '@/domain/rsca/redistribution';
-import type { Member as DomainMember } from '@/domain/rsca/types';
 import { validateReportState, checkQuota, createSummaryGroupContext } from '@/features/strategy/logic/validation';
 
 import type { SummaryGroup, Report } from '@/types';
@@ -206,7 +204,7 @@ export const useNavfitStore = create<NavfitStore>((set) => ({
             });
 
             // Initial Strategy Calculation
-            useRedistributionStore.getState().calculateStrategy(allGroups, rsConfig.targetRsca);
+            useRedistributionStore.getState().calculateStrategy(allGroups, rsConfig.targetRsca ?? 4.0);
 
         } catch (err: any) {
             console.error("Failed to load data:", err);
@@ -308,7 +306,7 @@ export const useNavfitStore = create<NavfitStore>((set) => ({
 
         // Trigger Strategy Calculation after lock toggle to update projections for others
         const state = useNavfitStore.getState();
-        useRedistributionStore.getState().calculateStrategy(state.summaryGroups, state.rsConfig.targetRsca);
+        useRedistributionStore.getState().calculateStrategy(state.summaryGroups, state.rsConfig.targetRsca ?? 4.0);
     },
     setGroupLockState: (groupId, isLocked, valueMap) => {
         set((state) => ({
@@ -332,7 +330,7 @@ export const useNavfitStore = create<NavfitStore>((set) => ({
         }));
         // Trigger Strategy Calculation
         const state = useNavfitStore.getState();
-        useRedistributionStore.getState().calculateStrategy(state.summaryGroups, state.rsConfig.targetRsca);
+        useRedistributionStore.getState().calculateStrategy(state.summaryGroups, state.rsConfig.targetRsca ?? 4.0);
     },
     reorderMember: (memberId, newIndex) => set((state) => {
         const currentRoster = [...state.roster];
@@ -366,7 +364,7 @@ export const useNavfitStore = create<NavfitStore>((set) => ({
             // Trigger Strategy
             setTimeout(() => {
                 const currentState = useNavfitStore.getState();
-                useRedistributionStore.getState().calculateStrategy(currentState.summaryGroups, currentState.rsConfig.targetRsca);
+                useRedistributionStore.getState().calculateStrategy(currentState.summaryGroups, currentState.rsConfig.targetRsca ?? 4.0);
             }, 0);
 
             return { summaryGroups: newSummaryGroups };
@@ -415,8 +413,8 @@ export const useNavfitStore = create<NavfitStore>((set) => ({
 
         // 4. Trigger Worker for Heavy Calculation (Trajectory + MTA Distribution)
         setTimeout(() => {
-             // We pass the optimistically updated groups to the worker
-             useRedistributionStore.getState().calculateStrategy(optimisticGroups, state.rsConfig.targetRsca);
+            // We pass the optimistically updated groups to the worker
+            useRedistributionStore.getState().calculateStrategy(optimisticGroups, state.rsConfig.targetRsca ?? 4.0);
         }, 0);
 
         useAuditStore.getState().addLog('RANK_ORDER_CHANGE', {
@@ -471,7 +469,7 @@ export const useNavfitStore = create<NavfitStore>((set) => ({
 
             // Trigger Strategy
             setTimeout(() => {
-                useRedistributionStore.getState().calculateStrategy(newSummaryGroups, state.rsConfig.targetRsca);
+                useRedistributionStore.getState().calculateStrategy(newSummaryGroups, state.rsConfig.targetRsca ?? 4.0);
             }, 0);
 
             return {

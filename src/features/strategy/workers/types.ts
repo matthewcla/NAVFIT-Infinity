@@ -9,13 +9,14 @@ export interface StrategyParams extends Constraints {
     algorithmParams: AlgorithmParams;
 }
 
-export enum WorkerActionType {
-    REDISTRIBUTE = 'REDISTRIBUTE',
-    CALCULATE_STRATEGY = 'CALCULATE_STRATEGY'
-}
+// Use string literal constants instead of enum for erasableSyntaxOnly compatibility
+export const REDISTRIBUTE = 'REDISTRIBUTE' as const;
+export const CALCULATE_STRATEGY = 'CALCULATE_STRATEGY' as const;
+
+export type WorkerActionType = typeof REDISTRIBUTE | typeof CALCULATE_STRATEGY;
 
 export interface RedistributionInput {
-    type: WorkerActionType.REDISTRIBUTE;
+    type: typeof REDISTRIBUTE;
     members: Member[];
     anchors: AnchorMap;
     params: StrategyParams;
@@ -23,7 +24,7 @@ export interface RedistributionInput {
 }
 
 export interface CalculateStrategyInput {
-    type: WorkerActionType.CALCULATE_STRATEGY;
+    type: typeof CALCULATE_STRATEGY;
     summaryGroups: SummaryGroup[];
     targetRsca: number;
     requestId: string;
@@ -37,6 +38,6 @@ export interface StrategyResult {
 }
 
 export type WorkerOutput =
-    | { success: true; result: RedistributionResult; requestId: string; type: WorkerActionType.REDISTRIBUTE }
-    | { success: true; result: StrategyResult; requestId: string; type: WorkerActionType.CALCULATE_STRATEGY }
+    | { success: true; result: RedistributionResult; requestId: string; type: typeof REDISTRIBUTE }
+    | { success: true; result: StrategyResult; requestId: string; type: typeof CALCULATE_STRATEGY }
     | { success: false; error: string; requestId: string; type: WorkerActionType };

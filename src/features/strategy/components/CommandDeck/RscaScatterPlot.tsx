@@ -1,6 +1,5 @@
 import { useMemo, useState, useEffect } from 'react';
 import { useNavfitStore } from '@/store/useNavfitStore';
-import { useSummaryGroups } from '@/features/strategy/hooks/useSummaryGroups';
 import { analyzeGroupRisk, type TrajectoryPoint } from '@/features/strategy/logic/optimizer';
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, ReferenceLine, CartesianGrid } from 'recharts';
 import { format } from 'date-fns';

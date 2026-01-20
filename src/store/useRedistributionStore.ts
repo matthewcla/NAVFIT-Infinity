@@ -6,7 +6,7 @@ import { DEFAULT_CONSTRAINTS } from '@/domain/rsca/constants';
 import { useNavfitStore } from './useNavfitStore';
 import { useAuditStore } from './useAuditStore';
 import { redistributeMTA } from '@/domain/rsca/redistribution'; // Fallback
-import { type WorkerInput, type WorkerOutput, type AnchorMap, type StrategyParams, WorkerActionType, type StrategyResult } from '@/features/strategy/workers/types';
+import { type WorkerInput, type WorkerOutput, type AnchorMap, type StrategyParams, REDISTRIBUTE, CALCULATE_STRATEGY, type StrategyResult } from '@/features/strategy/workers/types';
 import RedistributionWorker from '@/features/strategy/workers/redistribution.worker?worker';
 
 interface RedistributionStoreState {
@@ -154,7 +154,7 @@ export const useRedistributionStore = create<RedistributionStoreState>((set, get
 
         if (worker) {
             const input: WorkerInput = {
-                type: WorkerActionType.REDISTRIBUTE,
+                type: REDISTRIBUTE,
                 members,
                 anchors,
                 params,
@@ -219,7 +219,7 @@ export const useRedistributionStore = create<RedistributionStoreState>((set, get
 
         if (worker) {
             const input: WorkerInput = {
-                type: WorkerActionType.CALCULATE_STRATEGY,
+                type: CALCULATE_STRATEGY,
                 summaryGroups,
                 targetRsca,
                 requestId
@@ -249,33 +249,33 @@ export const useRedistributionStore = create<RedistributionStoreState>((set, get
                     const { latestRequestId, latestStrategyRequestId } = get();
 
                     // Check type and handle accordingly
-                    if (data.type === WorkerActionType.CALCULATE_STRATEGY) {
-                         if (data.requestId !== latestStrategyRequestId) {
-                             return; // Ignore stale strategy results
-                         }
-                         if (data.success) {
-                             handleStrategySuccess(data.result);
-                         } else {
-                             set({ isCalculating: false, error: data.error });
-                         }
-                         return;
+                    if (data.type === CALCULATE_STRATEGY) {
+                        if (data.requestId !== latestStrategyRequestId) {
+                            return; // Ignore stale strategy results
+                        }
+                        if (data.success) {
+                            handleStrategySuccess(data.result as StrategyResult);
+                        } else {
+                            set({ isCalculating: false, error: data.error });
+                        }
+                        return;
                     }
 
-                    if (data.type === WorkerActionType.REDISTRIBUTE) {
-                         if (data.requestId !== latestRequestId) {
-                             requestContexts.delete(data.requestId);
-                             return;
-                         }
-                         const context = requestContexts.get(data.requestId);
-                         if (!context) return;
+                    if (data.type === REDISTRIBUTE) {
+                        if (data.requestId !== latestRequestId) {
+                            requestContexts.delete(data.requestId);
+                            return;
+                        }
+                        const context = requestContexts.get(data.requestId);
+                        if (!context) return;
 
-                         if (!data.success) {
-                             set({ isCalculating: false, error: data.error });
-                         } else {
-                             handleSuccess(context.groupId, data.result);
-                         }
-                         requestContexts.delete(data.requestId);
-                         return;
+                        if (!data.success) {
+                            set({ isCalculating: false, error: data.error });
+                        } else {
+                            handleSuccess(context.groupId, data.result as RedistributionResult);
+                        }
+                        requestContexts.delete(data.requestId);
+                        return;
                     }
                 };
 

@@ -1,23 +1,15 @@
 import type { RedistributionEngineResult, Member, RedistributionResult } from '@/domain/rsca/types';
 import { redistributeMTA } from '@/domain/rsca/redistribution';
 import { calculateOptimizedTrajectory, distributeMtaByRank, type TrajectoryPoint } from '../logic/optimizer';
-import { type WorkerInput, type WorkerOutput, WorkerActionType, type StrategyResult } from './types';
+import { type WorkerInput, type WorkerOutput, REDISTRIBUTE, CALCULATE_STRATEGY, type StrategyResult } from './types';
 import type { SummaryGroup } from '@/types';
 
 export function processWorkerMessage(data: WorkerInput): WorkerOutput {
-    // Legacy support or strict checking. We assume strict checking as we update the store too.
-    if (data.type === WorkerActionType.CALCULATE_STRATEGY) {
+    if (data.type === CALCULATE_STRATEGY) {
         return handleCalculateStrategy(data);
-    } else if (data.type === WorkerActionType.REDISTRIBUTE) {
-        return handleRedistribute(data);
-    } else {
-        return {
-            success: false,
-            error: "Unknown worker action type",
-            requestId: data.requestId,
-            type: data.type
-        };
     }
+    // Default to REDISTRIBUTE for backwards compatibility
+    return handleRedistribute(data);
 }
 
 function handleRedistribute(data: import('./types').RedistributionInput): WorkerOutput {
@@ -63,10 +55,10 @@ function handleRedistribute(data: import('./types').RedistributionInput): Worker
             infeasibilityReport: engineResult.infeasibilityReport
         };
 
-        return { success: true, result, requestId, type: WorkerActionType.REDISTRIBUTE };
+        return { success: true, result, requestId, type: REDISTRIBUTE };
 
     } catch (error) {
-        return { success: false, error: (error as Error).message, requestId, type: WorkerActionType.REDISTRIBUTE };
+        return { success: false, error: (error as Error).message, requestId, type: REDISTRIBUTE };
     }
 }
 
@@ -122,9 +114,9 @@ function handleCalculateStrategy(data: import('./types').CalculateStrategyInput)
             optimizedGroups
         };
 
-        return { success: true, result, requestId, type: WorkerActionType.CALCULATE_STRATEGY };
+        return { success: true, result, requestId, type: CALCULATE_STRATEGY };
 
     } catch (error) {
-        return { success: false, error: (error as Error).message, requestId, type: WorkerActionType.CALCULATE_STRATEGY };
+        return { success: false, error: (error as Error).message, requestId, type: CALCULATE_STRATEGY };
     }
 }
