@@ -1,6 +1,6 @@
 // import { Calendar, Plus } from 'lucide-react'; 
 // import { CURRENT_YEAR } from '@/lib/constants';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { GanttChart, List, ChevronLeft } from 'lucide-react';
 import { ManningWaterfall } from './ManningWaterfall';
 import { StrategyListView } from './StrategyListView';
@@ -20,18 +20,15 @@ import { calculateCumulativeRSCA } from '@/features/strategy/logic/rsca';
 
 export function StrategyWorkspace() {
     const [flightPathMode, setFlightPathMode] = useState(false);
-    const {
-        roster,
-        projections,
-        updateProjection,
-        selectReport,
 
-        viewMode,
-        setViewMode,
-        setStrategyViewMode
-    } = useNavfitStore();
-
-    // Fix stale read: subscribe to selectedCycleId
+    // Granular selectors to prevent unnecessary re-renders
+    const roster = useNavfitStore(state => state.roster);
+    const projections = useNavfitStore(state => state.projections);
+    const updateProjection = useNavfitStore(state => state.updateProjection);
+    const selectReport = useNavfitStore(state => state.selectReport);
+    const viewMode = useNavfitStore(state => state.viewMode);
+    const setViewMode = useNavfitStore(state => state.setViewMode);
+    const setStrategyViewMode = useNavfitStore(state => state.setStrategyViewMode);
     const selectedCycleId = useNavfitStore(state => state.selectedCycleId);
 
     const summaryGroups = useSummaryGroups();
@@ -42,7 +39,7 @@ export function StrategyWorkspace() {
         }
     };
 
-    const getRscaValue = () => {
+    const rscaValue = useMemo(() => {
         if (!selectedCycleId) return 4.20;
 
         const selectedGroup = summaryGroups.find(g => g.id === selectedCycleId);
@@ -50,9 +47,13 @@ export function StrategyWorkspace() {
 
         const rank = selectedGroup.paygrade || selectedGroup.competitiveGroupKey.split(' ')[0];
         return calculateCumulativeRSCA(summaryGroups, rank);
-    };
+    }, [selectedCycleId, summaryGroups]);
 
-    const rscaValue = getRscaValue();
+    const filteredSummaryGroups = useMemo(() => {
+        return selectedCycleId
+            ? summaryGroups.filter(g => g.id === selectedCycleId)
+            : summaryGroups;
+    }, [selectedCycleId, summaryGroups]);
 
     return (
         <div className="flex flex-col h-full bg-slate-50">
@@ -116,11 +117,7 @@ export function StrategyWorkspace() {
 
                         {flightPathMode ? (
                             <StrategyScattergram
-                                summaryGroups={
-                                    selectedCycleId
-                                        ? summaryGroups.filter(g => g.id === selectedCycleId)
-                                        : summaryGroups
-                                }
+                                summaryGroups={filteredSummaryGroups}
                                 roster={roster}
                                 onOpenReport={handleOpenReport}
                                 onUpdateReport={(reportId, value) => {
@@ -133,11 +130,7 @@ export function StrategyWorkspace() {
                             />
                         ) : (
                             <ManningWaterfall
-                                summaryGroups={
-                                    selectedCycleId
-                                        ? summaryGroups.filter(g => g.id === selectedCycleId)
-                                        : summaryGroups
-                                }
+                                summaryGroups={filteredSummaryGroups}
                                 roster={roster}
                                 onOpenReport={handleOpenReport}
                                 onReportUpdate={(reportId, value) => {
@@ -150,11 +143,7 @@ export function StrategyWorkspace() {
                     </div>
                 ) : (
                     <StrategyListView
-                        summaryGroups={
-                            selectedCycleId
-                                ? summaryGroups.filter(g => g.id === selectedCycleId)
-                                : summaryGroups
-                        }
+                        summaryGroups={filteredSummaryGroups}
                     />
                 )}
             </div>
