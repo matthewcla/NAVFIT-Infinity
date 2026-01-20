@@ -1,4 +1,3 @@
-
 import { readFileSync, writeFileSync } from 'fs';
 import { resolve } from 'path';
 import { randomUUID } from 'crypto';
@@ -29,8 +28,19 @@ interface MemberDetail {
     linealNumber: number | null;
     commissioningDate: string | null;
     dateOfRank: string;
-    timeInRank?: number; // Calculated field requested by prompt? Prompt said "Time in Rank (number of years at present rank)" but then "No. Instead of Time in Rank, implement a "Date of Rank"". So I will include Date of Rank.
+    timeInRank?: number;
 }
+
+// Name Generators
+const FIRST_NAMES = ["James", "John", "Robert", "Michael", "William", "David", "Richard", "Joseph", "Thomas", "Charles", "Mary", "Patricia", "Jennifer", "Linda", "Elizabeth", "Barbara", "Susan", "Jessica", "Sarah", "Karen"];
+const LAST_NAMES = ["Smith", "Johnson", "Williams", "Jones", "Brown", "Davis", "Miller", "Wilson", "Moore", "Taylor", "Anderson", "Thomas", "Jackson", "White", "Harris", "Martin", "Thompson", "Garcia", "Martinez", "Robinson"];
+
+const getRandomName = () => {
+    return {
+        firstName: FIRST_NAMES[getRandomInt(0, FIRST_NAMES.length - 1)],
+        lastName: LAST_NAMES[getRandomInt(0, LAST_NAMES.length - 1)]
+    };
+};
 
 // Utils
 const addDays = (date: Date, days: number): Date => {
@@ -85,6 +95,7 @@ const getYearsForRank = (rank: string): number => {
 const main = () => {
     const inputPath = resolve('public/summary_groups_test_data.json');
     const outputPath = resolve('public/member_details.json');
+    const gainsPath = resolve('public/prospective_gains.json');
 
     const data = JSON.parse(readFileSync(inputPath, 'utf-8'));
     const roster: RosterMember[] = data.roster;
@@ -92,32 +103,30 @@ const main = () => {
 
     const memberDetailsMap: Record<string, MemberDetail> = {};
     const allOfficers: { id: string, rank: string, dateOfRank: Date }[] = [];
+    const prospectiveGainsRoster: RosterMember[] = [];
 
     // 1. Process Existing Members
     console.log(`Processing ${roster.length} existing members...`);
     roster.forEach(member => {
         const rank = member.rank;
         const gainDate = new Date(member.dateReported);
-        const prd = new Date(member.prd);
+        let prd = new Date(member.prd);
 
-        // EDD is typically PRD +/- 3 months. Let's make it PRD - 1 month for simplicity or close to it.
-        // Prompt says "EDD is estimated date member must detach".
+        // Logic to keep most members until 2028 (Core Roster)
+        // 80% chance to extend PRD to > Jan 2028
+        if (Math.random() < 0.8) {
+            prd = new Date('2028-02-01'); // After RS Detach
+            // Add some randomness
+            prd = addDays(prd, getRandomInt(0, 300));
+        }
+
         const edd = addDays(prd, getRandomInt(-30, 30));
-        const detachDate = edd; // Assuming actual detach matches estimated for test data
-        const eda = gainDate; // For existing members, they arrived on Gain Date.
+        const detachDate = edd;
+        const eda = gainDate;
 
-        // Date of Rank
-        // Simulate: Current Date - (Random time in current rank)
-        // Ensure it's somewhat realistic.
-        // For O-1, < 2 years. O-2, < 2 years.
-        // Actually, let's just make it randomly 0.5 to 3 years before TODAY, constrained by their rank.
-        // Or better: dateReported minus some time?
-        // Let's assume they've been in rank for 1-3 years.
         const yearsInRank = getRandomInt(1, 4);
         const dateOfRank = addDays(new Date(), -1 * yearsInRank * 365);
 
-        // Commissioning Date
-        // Years in service calculated from rank and time in rank (used for commissioning date below)
         const commissioningDate = rank.startsWith('O') || rank.startsWith('W')
             ? addDays(dateOfRank, -1 * getYearsForRank(rank) * 365)
             : null;
@@ -149,11 +158,8 @@ const main = () => {
 
     summaryGroups.forEach(group => {
         distinctGroups.add(group.competitiveGroupKey);
-        // Find a representative member for this group to copy Rank/Designator
-        // Usually reports have member details snapshot.
         if (group.reports && group.reports.length > 0) {
             const rep = group.reports[0];
-            // Reports in SummaryGroup have { memberId, rank, designator, ... }
             groupSampleMember[group.competitiveGroupKey] = {
                 rank: rep.rank,
                 designator: rep.designator
@@ -165,14 +171,14 @@ const main = () => {
     distinctGroups.forEach(groupKey => {
         const count = getRandomInt(5, 10);
         const sample = groupSampleMember[groupKey];
-        if (!sample) return; // Should not happen
+        if (!sample) return;
 
         for (let i = 0; i < count; i++) {
             const id = randomUUID();
             const rank = sample.rank;
+            const { firstName, lastName } = getRandomName();
 
             // Dates for Prospective Gains
-            // Gain Date is in future.
             const daysUntilArrival = getRandomInt(30, 365);
             const gainDate = addDays(new Date(), daysUntilArrival);
             const eda = gainDate;
@@ -180,11 +186,9 @@ const main = () => {
             const edd = addDays(prd, getRandomInt(-10, 10));
             const detachDate = edd;
 
-            // Date of Rank (similar logic to existing)
             const yearsInRank = getRandomInt(1, 3);
             const dateOfRank = addDays(new Date(), -1 * yearsInRank * 365);
 
-            // Commissioning Date
             const commissioningDate = rank.startsWith('O') || rank.startsWith('W')
                 ? addDays(dateOfRank, -1 * getYearsForRank(rank) * 365)
                 : null;
@@ -204,6 +208,17 @@ const main = () => {
 
             memberDetailsMap[id] = detail;
 
+            // Add to Prospective Gains Roster
+            prospectiveGainsRoster.push({
+                id,
+                firstName,
+                lastName,
+                rank,
+                designator: sample.designator,
+                dateReported: formatDate(gainDate),
+                prd: formatDate(prd)
+            });
+
             if (rank.startsWith('O') || rank.startsWith('W')) {
                 allOfficers.push({ id, rank, dateOfRank });
             }
@@ -211,16 +226,13 @@ const main = () => {
     });
 
     // 3. Assign Lineal Numbers
-    // Sort by Rank (Desc) then Date of Rank (Asc - earlier date means more senior)
     console.log('Assigning Lineal Numbers...');
-    const rankOrder = ['O-10', 'O-9', 'O-8', 'O-7', 'O-6', 'O-5', 'O-4', 'O-3', 'O-2', 'O-1', 'W-5', 'W-4', 'W-3', 'W-2']; // Simplified
+    const rankOrder = ['O-10', 'O-9', 'O-8', 'O-7', 'O-6', 'O-5', 'O-4', 'O-3', 'O-2', 'O-1', 'W-5', 'W-4', 'W-3', 'W-2'];
 
     allOfficers.sort((a, b) => {
         const rankIdxA = rankOrder.indexOf(a.rank);
         const rankIdxB = rankOrder.indexOf(b.rank);
         if (rankIdxA !== rankIdxB) {
-            // Lower index is higher rank (e.g. 0 is O-10)
-            // But we want to handle unknown ranks gracefully? assuming normalized data.
             return rankIdxA - rankIdxB;
         }
         return a.dateOfRank.getTime() - b.dateOfRank.getTime();
@@ -234,7 +246,9 @@ const main = () => {
 
     // Write Output
     writeFileSync(outputPath, JSON.stringify(memberDetailsMap, null, 2));
+    writeFileSync(gainsPath, JSON.stringify(prospectiveGainsRoster, null, 2));
     console.log(`Successfully generated member_details.json with ${Object.keys(memberDetailsMap).length} entries.`);
+    console.log(`Successfully generated prospective_gains.json with ${prospectiveGainsRoster.length} entries.`);
 };
 
 main();
