@@ -21,8 +21,8 @@ export function RscaScatterPlot({
 }: RscaScatterPlotProps = {}) {
     const { rsConfig, selectCycle, setStrategyViewMode, setActiveTab, trajectoryCache } = useNavfitStore();
 
-    const targetLimit = rsConfig.targetRsca || 4.20;
-    const lowerTarget = 3.80;
+    const targetLimit = rsConfig.targetRsca || 3.60;
+    const lowerTarget = 3.40;
 
     // 1. Group Data by Competitive Key & Analyze Risk (using Cached Trajectory)
     const { allTrajectories, riskAnalysis, sortedKeys, defaultSelectedKey } = useMemo(() => {
@@ -90,7 +90,7 @@ export function RscaScatterPlot({
     const off = gradientOffset();
 
     return (
-        <div className="w-full h-full min-h-[300px] flex gap-2">
+        <div className="w-full h-full min-h-[150px] flex gap-2">
             <style>{`
                 .recharts-wrapper { outline: none !important; }
                 .recharts-surface:focus { outline: none !important; }
