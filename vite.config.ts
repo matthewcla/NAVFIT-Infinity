@@ -15,4 +15,19 @@ export default defineConfig({
     port: 5173,
     strictPort: false,
   },
+  build: {
+    chunkSizeWarningLimit: 700, // App code is ~685KB, accept this for now
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          // Split large vendor libraries into separate chunks
+          'vendor-react': ['react', 'react-dom'],
+          'vendor-charts': ['recharts'],
+          'vendor-utils': ['date-fns', 'lodash'],
+          'vendor-state': ['zustand'],
+          'vendor-icons': ['lucide-react'],
+        },
+      },
+    },
+  },
 })

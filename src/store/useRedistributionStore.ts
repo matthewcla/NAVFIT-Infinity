@@ -1,11 +1,12 @@
 import { create } from 'zustand';
 import { debounce } from 'lodash';
 import type { Member, Constraints, RedistributionResult, AlgorithmParams } from '@/domain/rsca/types';
+import type { SummaryGroup } from '@/types';
 import { DEFAULT_CONSTRAINTS } from '@/domain/rsca/constants';
 import { useNavfitStore } from './useNavfitStore';
 import { useAuditStore } from './useAuditStore';
 import { redistributeMTA } from '@/domain/rsca/redistribution'; // Fallback
-import type { WorkerInput, WorkerOutput, AnchorMap, StrategyParams } from '@/features/strategy/workers/types';
+import { type WorkerInput, type WorkerOutput, type AnchorMap, type StrategyParams, REDISTRIBUTE, CALCULATE_STRATEGY, type StrategyResult } from '@/features/strategy/workers/types';
 import RedistributionWorker from '@/features/strategy/workers/redistribution.worker?worker';
 
 interface RedistributionStoreState {
@@ -14,10 +15,12 @@ interface RedistributionStoreState {
     error: string | null;
     worker: Worker | null;
     latestRequestId: string | null;
+    latestStrategyRequestId: string | null; // Track strategy requests separately?
 
     // Actions
     initWorker: () => void;
     requestRedistribution: (groupId: string, members: Member[], constraints: Constraints, targetRSCA?: number) => void;
+    calculateStrategy: (summaryGroups: SummaryGroup[], targetRsca: number) => void;
 
     // Explicit API
     setRankOrder: (groupId: string, members: Member[]) => void;
@@ -69,11 +72,6 @@ export const useRedistributionStore = create<RedistributionStoreState>((set, get
         }));
 
         // Update NavfitStore - Projections Only
-        // IMPORTANT: Only update projections for NON-anchor members.
-        // Anchor members (user-edited via slider) should preserve their values.
-        // This prevents the redistribution engine from overwriting manual slider edits.
-        // FIX: Also skip locked reports (except NOB) to preserve committed MTA values.
-
         const navfitStore = useNavfitStore.getState();
         const updatedMembers = result.updatedMembers;
         const currentGroup = navfitStore.summaryGroups.find(g => g.id === groupId);
@@ -94,18 +92,34 @@ export const useRedistributionStore = create<RedistributionStoreState>((set, get
             newProjections[m.id] = m.mta;
         });
 
-        // DEBUG: Log redistribution result and projection updates
-        console.log('[REDISTRIB DEBUG] handleSuccess', {
-            groupId,
-            rsca: result.rsca,
-            isFeasible: result.isFeasible,
-            updatedMembers: updatedMembers.map(m => ({ id: m.id, mta: m.mta, isAnchor: m.isAnchor })),
-            newProjections
-        });
-
         useNavfitStore.setState({
             projections: newProjections
         });
+    };
+
+    const handleStrategySuccess = (result: StrategyResult) => {
+        // Update NavfitStore with optimized groups and trajectory
+        // We assume useNavfitStore has updateStrategyResults action (will be added)
+        // Or we can set state directly if we have access, but action is cleaner.
+        // Since we are in the store file, useNavfitStore.getState().updateStrategyResults(...) is preferred.
+        // Assuming I will add it. If not, I can use setState.
+        // useNavfitStore.setState({ summaryGroups: result.optimizedGroups, trajectoryCache: result.trajectory });
+
+        // I'll call the action I plan to create.
+        const navfitStore = useNavfitStore.getState();
+        if (navfitStore.updateStrategyResults) {
+            navfitStore.updateStrategyResults(result.optimizedGroups, result.trajectory);
+        } else {
+            console.warn("updateStrategyResults not found on NavfitStore, falling back to setState");
+            // Fallback during transition
+            useNavfitStore.setState({
+                summaryGroups: result.optimizedGroups,
+                // @ts-ignore - trajectoryCache might not exist yet in types
+                trajectoryCache: result.trajectory
+            });
+        }
+
+        set({ isCalculating: false });
     };
 
     const debouncedCalculate = debounce((groupId: string, members: Member[], constraints: Constraints, targetRSCA?: number) => {
@@ -125,7 +139,6 @@ export const useRedistributionStore = create<RedistributionStoreState>((set, get
             }
         });
 
-        // Extract algorithm params from constraints (DEFAULT_CONSTRAINTS includes these)
         const algorithmParams: AlgorithmParams = {
             delta: (constraints as unknown as { delta?: number }).delta ?? 0.1,
             p: (constraints as unknown as { p?: number }).p ?? 1.0,
@@ -140,7 +153,13 @@ export const useRedistributionStore = create<RedistributionStoreState>((set, get
         };
 
         if (worker) {
-            const input: WorkerInput = { members, anchors, params, requestId };
+            const input: WorkerInput = {
+                type: REDISTRIBUTE,
+                members,
+                anchors,
+                params,
+                requestId
+            };
             worker.postMessage(input);
         } else {
             // Fallback: Synchronous execution
@@ -192,12 +211,33 @@ export const useRedistributionStore = create<RedistributionStoreState>((set, get
         }
     }, 100);
 
+    const debouncedStrategyCalculate = debounce((summaryGroups: SummaryGroup[], targetRsca: number) => {
+        const { worker } = get();
+        const requestId = generateUUID();
+
+        set({ isCalculating: true, error: null, latestStrategyRequestId: requestId });
+
+        if (worker) {
+            const input: WorkerInput = {
+                type: CALCULATE_STRATEGY,
+                summaryGroups,
+                targetRsca,
+                requestId
+            };
+            worker.postMessage(input);
+        } else {
+            console.error("Worker not initialized for strategy calculation. Synchronous fallback not implemented for strategy.");
+            set({ isCalculating: false, error: "Worker not available" });
+        }
+    }, 100);
+
     return {
         isCalculating: false,
         latestResult: {},
         error: null,
         worker: null,
         latestRequestId: null,
+        latestStrategyRequestId: null,
 
         initWorker: () => {
             if (typeof Worker !== 'undefined' && !get().worker) {
@@ -206,24 +246,37 @@ export const useRedistributionStore = create<RedistributionStoreState>((set, get
 
                 worker.onmessage = (e: MessageEvent<WorkerOutput>) => {
                     const data = e.data;
-                    const { latestRequestId } = get();
+                    const { latestRequestId, latestStrategyRequestId } = get();
 
-                    // Latest-only check
-                    if (data.requestId !== latestRequestId) {
-                        requestContexts.delete(data.requestId); // Cleanup old context
+                    // Check type and handle accordingly
+                    if (data.type === CALCULATE_STRATEGY) {
+                        if (data.requestId !== latestStrategyRequestId) {
+                            return; // Ignore stale strategy results
+                        }
+                        if (data.success) {
+                            handleStrategySuccess(data.result as StrategyResult);
+                        } else {
+                            set({ isCalculating: false, error: data.error });
+                        }
                         return;
                     }
 
-                    const context = requestContexts.get(data.requestId);
-                    if (!context) return;
+                    if (data.type === REDISTRIBUTE) {
+                        if (data.requestId !== latestRequestId) {
+                            requestContexts.delete(data.requestId);
+                            return;
+                        }
+                        const context = requestContexts.get(data.requestId);
+                        if (!context) return;
 
-                    if (!data.success) {
-                        set({ isCalculating: false, error: data.error });
-                    } else {
-                        handleSuccess(context.groupId, data.result);
+                        if (!data.success) {
+                            set({ isCalculating: false, error: data.error });
+                        } else {
+                            handleSuccess(context.groupId, data.result as RedistributionResult);
+                        }
+                        requestContexts.delete(data.requestId);
+                        return;
                     }
-
-                    requestContexts.delete(data.requestId);
                 };
 
                 set({ worker });
@@ -234,6 +287,10 @@ export const useRedistributionStore = create<RedistributionStoreState>((set, get
             debouncedCalculate(groupId, members, constraints, targetRSCA);
         },
 
+        calculateStrategy: (summaryGroups, targetRsca) => {
+            debouncedStrategyCalculate(summaryGroups, targetRsca);
+        },
+
         getRedistributionResult: (groupId) => get().latestResult[groupId] || null,
 
         reset: () => {
@@ -242,6 +299,7 @@ export const useRedistributionStore = create<RedistributionStoreState>((set, get
                 latestResult: {},
                 error: null,
                 latestRequestId: null,
+                latestStrategyRequestId: null
             });
         },
 
@@ -271,15 +329,10 @@ export const useRedistributionStore = create<RedistributionStoreState>((set, get
         },
 
         setAnchors: (groupId, _anchorMap) => {
-            // FIX: Do NOT update state here - toggleReportLock() already handles state updates.
-            // This function should only trigger redistribution using the current (already sorted) state.
-            // Previously, this was overwriting the sorted state from toggleReportLock(), causing rank jumps.
-
             const navfitStore = useNavfitStore.getState();
             const group = navfitStore.summaryGroups.find(g => g.id === groupId);
             if (!group) return;
 
-            // Use current reports from store (already sorted by toggleReportLock)
             const payloadMembers = group.reports.map((r, i) => ({
                 id: r.id,
                 rank: i + 1,

@@ -2,6 +2,7 @@ import { useMemo, useState, useEffect } from 'react';
 import { useNavfitStore } from '@/store/useNavfitStore';
 import { useRedistributionStore } from '@/store/useRedistributionStore';
 import type { SummaryGroup, Report } from '@/types';
+import type { RosterMember } from '@/types/roster';
 import { RscaHeadsUpDisplay } from './RscaHeadsUpDisplay';
 import { RscaScattergram } from './RscaScattergram';
 // generateSummaryGroups import removed - now using stored summaryGroups directly
@@ -15,6 +16,7 @@ import {
     Send
 } from 'lucide-react';
 
+import { MemberDetailSidebar } from '@/features/dashboard/components/MemberDetailSidebar';
 import { StatusBadge } from './StatusBadge';
 
 import { QuotaHeadsUpDisplay } from './QuotaHeadsUpDisplay';
@@ -25,12 +27,12 @@ import { DEFAULT_CONSTRAINTS } from '@/domain/rsca/constants';
 import { assignRecommendationsByRank } from '@/features/strategy/logic/recommendation';
 
 
-interface DistributionPanelProps {
+interface CycleContextPanelProps {
     group: SummaryGroup | null;
-    previewProjections?: Record<string, number>;
+    onOpenWorkspace?: () => void;
 }
 
-export function DistributionPanel({ group, previewProjections = {} }: DistributionPanelProps) {
+export function CycleContextPanel({ group }: CycleContextPanelProps) {
 
     const {
         roster,
@@ -43,7 +45,9 @@ export function DistributionPanel({ group, previewProjections = {} }: Distributi
 
         selectedMemberId,
         selectMember,
-        updateGroupStatus
+        updateProjection,
+        updateGroupStatus,
+        updateReport
     } = useNavfitStore();
 
     const { latestResult, requestRedistribution } = useRedistributionStore();
@@ -55,14 +59,26 @@ export function DistributionPanel({ group, previewProjections = {} }: Distributi
 
     const activeGroup = latestGroup || group;
 
-    // Real-time preview state lifted to CommandStrategyCenter
-    // const [previewProjections, setPreviewProjections] = useState<Record<string, number>>({});
+    // Real-time preview projections for MTA slider (merged with store projections in useMemo)
+    const [previewProjections, setPreviewProjections] = useState<Record<string, number>>({});
 
-    // Handler removed (lifted)
-    // const handlePreviewMTA = ...
+    // Handler for real-time MTA preview during slider drag
+    const handlePreviewMTA = (memberId: string, newMta: number) => {
+        if (!activeGroup) return;
+        const report = activeGroup.reports.find(r => r.memberId === memberId);
+        if (report) {
+            setPreviewProjections(prev => ({
+                ...prev,
+                [report.id]: newMta
+            }));
+        }
+    };
 
-    // Clear preview removed (handled by parent/store effect)
-    // const handleMemberSelect ...
+    // Clear preview when member selection changes
+    const handleMemberSelect = (id: string | null) => {
+        setPreviewProjections({});
+        selectMember(id);
+    };
 
     // Local Rank Mode State
     const [isSubmitModalOpen, setIsSubmitModalOpen] = useState(false);
@@ -70,11 +86,6 @@ export function DistributionPanel({ group, previewProjections = {} }: Distributi
     // Optimization Review State
     const [isOptimizing, setIsOptimizing] = useState(false);
     const [proposedReports, setProposedReports] = useState<Report[] | null>(null);
-
-    // Sidebar Initial Section State removed (handled by MemberInspector internal logic or global context if needed)
-    // const [initialSidebarSection, setInitialSidebarSection] = useState<'mta' | 'rec' | 'remarks'>('remarks');
-
-    // const handleSetInitialSection ...
 
     // Watch for Optimization Result - PARANOID/HARDENED VERSION
     useEffect(() => {
@@ -186,12 +197,12 @@ export function DistributionPanel({ group, previewProjections = {} }: Distributi
         // useNavfitStore.getState().setSummaryGroups(allGroups);
 
         setProposedReports(null);
-        // setPreviewProjections({}); // Lifted
+        setPreviewProjections({});
     };
 
     const handleCancelOptimization = () => {
         setProposedReports(null);
-        // setPreviewProjections({}); // Lifted
+        setPreviewProjections({});
     };
 
 
@@ -426,11 +437,8 @@ export function DistributionPanel({ group, previewProjections = {} }: Distributi
 
         // Compute preview promotion recommendations based on MTA-sorted rank order
         // This ensures promotion recs update in real-time as the slider moves
-        // FIX: Only do this if we are actively previewing (slider interaction), otherwise show stored state.
         const previewPromRecMap = new Map<string, string>();
-        const isPreviewActive = Object.keys(previewProjections).length > 0;
-
-        if (isPreviewActive && previewMtaSortedMembers.length > 0) {
+        if (previewMtaSortedMembers.length > 0) {
             // Create temporary reports with MTA-sorted order and current preview MTAs
             const tempReports = previewMtaSortedMembers.map(m => ({
                 ...m.report,
@@ -492,7 +500,7 @@ export function DistributionPanel({ group, previewProjections = {} }: Distributi
         );
     }
 
-    const { currentRsca, projectedRsca, mainDraftStatus, rankedMembers, previewMtaRankMap, previewPromRecMap, distribution, eotRsca, effectiveSize, domainContext, isEnlisted } = contextData;
+    const { currentRsca, projectedRsca, mainDraftStatus, rankedMembers, previewMtaSortedMembers, previewMtaRankMap, previewPromRecMap, distribution, eotRsca, totalReports, effectiveSize, domainContext, isEnlisted } = contextData;
 
     // Helper for Badge
     const getPromotionStatusBadge = (s?: string) => {
@@ -524,9 +532,7 @@ export function DistributionPanel({ group, previewProjections = {} }: Distributi
         <div className="h-full flex flex-row relative overflow-hidden">
             {/* Main Panel Content */}
             <div className="flex-1 flex flex-col bg-slate-50 border-l border-slate-200 min-w-0">
-                {/* 1. Sticky Header - REMOVED VIEW TOGGLES (Handled by Parent) */}
-
-                {/* NOTE: We still need the group summary header. Keeping it but removing 'Workspace' button */}
+                {/* 1. Sticky Header (Top) */}
                 <div className="sticky top-0 z-10 bg-white border-b border-slate-200">
                     <div className="px-6 pb-6 pt-6">
                         {/* Row 1: Title & Status Badges */}
@@ -547,72 +553,54 @@ export function DistributionPanel({ group, previewProjections = {} }: Distributi
                             </div>
 
                             <div className="flex flex-col items-end gap-1.5 pl-4">
-                                <div className="flex gap-2">
-                                    {/* Workspace Button REMOVED - We are already in the unified workspace */}
-
-                                    {/* Submit Control - Only shown when all reports are locked */}
-                                    {activeGroup.reports.every(r => r.isLocked) && (
-                                        <button
-                                            onClick={() => setIsSubmitModalOpen(true)}
-                                            disabled={
-                                                !latestResult[activeGroup.id] ||
-                                                activeGroup.status === 'Submitted'
-                                            }
-                                            className="group relative flex items-center justify-center h-11 bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-200 disabled:text-slate-400 text-white rounded-full shadow-sm transition-all duration-300 ease-in-out w-11 hover:w-36 overflow-hidden"
-                                            title="Submit Strategy to Review"
-                                        >
-                                            <div className="absolute left-0 w-11 h-11 flex items-center justify-center shrink-0">
-                                                <Send className="w-5 h-5" />
-                                            </div>
-                                            <span className="whitespace-nowrap font-bold text-xs uppercase tracking-wide opacity-0 group-hover:opacity-100 transition-opacity duration-300 pl-10 pr-4 delay-75">
-                                                Submit Group
-                                            </span>
-                                        </button>
-                                    )}
-                                </div>
+                                {/* Submit Control - Only shown when all reports are locked */}
+                                {activeGroup.reports.every(r => r.isLocked) && (
+                                    <button
+                                        onClick={() => setIsSubmitModalOpen(true)}
+                                        disabled={
+                                            !latestResult[activeGroup.id] ||
+                                            activeGroup.status === 'Submitted'
+                                        }
+                                        className="group relative flex items-center justify-center h-11 bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-200 disabled:text-slate-400 text-white rounded-full shadow-sm transition-all duration-300 ease-in-out w-11 hover:w-36 overflow-hidden"
+                                        title="Submit Strategy to Review"
+                                    >
+                                        <div className="absolute left-0 w-11 h-11 flex items-center justify-center shrink-0">
+                                            <Send className="w-5 h-5" />
+                                        </div>
+                                        <span className="whitespace-nowrap font-bold text-xs uppercase tracking-wide opacity-0 group-hover:opacity-100 transition-opacity duration-300 pl-10 pr-4 delay-75">
+                                            Submit Group
+                                        </span>
+                                    </button>
+                                )}
                             </div>
                         </div>
 
-
-                        {/* Row 2: Visual Stack - Scattergram Main + Quota Footer */}
-                        <div className="flex flex-col items-stretch gap-4 w-full h-[240px]">
-
-                            {/* 2A. Main Visualization Area (Chart + Integrated HUD) */}
-                            <div className="flex-1 min-w-0 bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden relative flex flex-col">
-                                {/* Integrated RSCA Overlay (Top Right) */}
-                                <div className="absolute top-4 right-4 z-20 pointer-events-none">
-                                    <div className="pointer-events-auto bg-white/90 backdrop-blur-md rounded-lg shadow-sm border border-slate-100 p-2">
-                                        <RscaHeadsUpDisplay
-                                            currentRsca={currentRsca}
-                                            projectedRsca={projectedRsca}
-                                            eotRsca={eotRsca}
-                                            variant="integrated"
-                                        />
-                                    </div>
-                                </div>
-
-                                {/* Integrated Scoreboard Overlay (Top Left) */}
-                                <div className="absolute top-4 left-4 z-20 pointer-events-none">
-                                    <div className="pointer-events-auto bg-white/90 backdrop-blur-md rounded-lg shadow-sm border border-slate-100 px-3 py-1.5 flex items-center">
-                                        <QuotaHeadsUpDisplay
-                                            distribution={distribution}
-                                            totalReports={effectiveSize}
-                                            context={domainContext}
-                                            variant="minimal"
-                                        />
-                                    </div>
-                                </div>
-
-                                {/* Main Chart Canvas */}
-                                <div className="flex-1 w-full h-full relative z-10 pt-4"> {/* Slight pt for breathing room */}
-                                    <RscaScattergram
-                                        members={rankedMembers.filter(m => m.promRec !== 'NOB')}
-                                        rsca={projectedRsca}
-                                    />
-                                </div>
+                        {/* Row 2: RSCA Scoreboard Container - Full Width Equal Distribution */}
+                        <div className="flex justify-between items-stretch gap-4 w-full h-32">
+                            {/* 2A. RSCA Heads Up Display (Left) */}
+                            <div className="flex-1 min-w-0 rounded-xl border border-slate-200 shadow-sm overflow-hidden bg-white/50">
+                                <RscaHeadsUpDisplay
+                                    currentRsca={currentRsca}
+                                    projectedRsca={projectedRsca}
+                                    eotRsca={eotRsca}
+                                    showSuffix={false}
+                                />
                             </div>
 
+                            {/* 2B. Scattergram (Middle) */}
+                            <div className="flex-1 min-w-0 rounded-xl border border-slate-200 shadow-sm overflow-visible bg-white relative z-30">
+                                <RscaScattergram
+                                    members={rankedMembers}
+                                    rsca={projectedRsca}
+                                />
+                            </div>
 
+                            {/* 2C. Promotion Recommendation Scoreboard (Right) */}
+                            <div className="flex-1 min-w-0 rounded-xl border border-slate-200 shadow-sm overflow-hidden bg-white/50">
+                                <div className="h-full bg-white/95 backdrop-blur-sm transition-all duration-300">
+                                    <QuotaHeadsUpDisplay distribution={distribution} totalReports={effectiveSize} context={domainContext} />
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -631,9 +619,8 @@ export function DistributionPanel({ group, previewProjections = {} }: Distributi
                         previewPromRecMap={previewPromRecMap}
                         activeGroupId={activeGroup.id}
                         selectedMemberId={selectedMemberId}
-                        onSelectMember={(id, _context) => {
+                        onSelectMember={(id) => {
                             if (!proposedReports) selectMember(id);
-                            // Context (section navigation) to be handled via store or event bus if needed
                         }}
                         onReorderMembers={(g, d, t) => {
                             if (!proposedReports) handleReorderMembers(g, d, t);
@@ -647,26 +634,106 @@ export function DistributionPanel({ group, previewProjections = {} }: Distributi
                 </div>
             </div>
 
-            {/* Sidebar: Hidden - Now handled by CommandStrategyCenter / MemberInspector */}
-            {/*
-                Legacy Sidebar Logic removed.
-                Preview Interaction / Section Context needs to be lifted to CommandStrategyCenter if we want to restore:
-                - Live MTA Preview (onPreviewMTA)
-                - Contextual Section Opening (initialSidebarSection)
-            */
-            }
-
+            {/* Sidebar: Hidden during optimization review to prevent any edits */}
             {
-                latestResult[activeGroup.id] && (
-                    <SubmissionConfirmationModal
-                        isOpen={isSubmitModalOpen}
-                        onClose={() => setIsSubmitModalOpen(false)}
-                        onConfirm={handleConfirmSubmit}
+                selectedMemberId && !proposedReports && (
+                    <MemberDetailSidebar
+                        memberId={selectedMemberId}
+                        rosterMember={(() => {
+                            const m = roster.find(memb => memb.id === selectedMemberId);
+                            if (m) return m;
+
+                            return {
+                                id: selectedMemberId,
+                                firstName: 'Unknown',
+                                lastName: 'Member',
+                                rank: 'UNK',
+                                payGrade: 'O-1',
+                                designator: '0000',
+                                dateReported: new Date().toISOString().split('T')[0],
+                                prd: new Date().toISOString().split('T')[0],
+                                history: [],
+                                status: 'Onboard'
+                            } as RosterMember;
+                        })()}
+                        currentReport={activeGroup.reports.find(r => r.memberId === selectedMemberId)}
+
+                        quotaContext={{
+                            distribution,
+                            totalReports
+                        }}
+                        groupContext={domainContext}
                         groupId={activeGroup.id}
-                        result={latestResult[activeGroup.id]!}
+                        onPreviewMTA={handlePreviewMTA}
+
+                        // Pass Rank Context - use MTA-sorted order for accurate slider markers
+                        rankContext={(() => {
+                            // Use MTA-sorted order to show actual rank positions based on current MTA values
+                            const index = previewMtaSortedMembers.findIndex(m => m.id === selectedMemberId);
+                            if (index === -1) return undefined;
+
+                            // "Next Rank" (Ahead/Better) - Lower indices (higher MTA)
+                            // Get up to 5 members before current index (reversed to be closest first)
+                            const nextStart = Math.max(0, index - 5);
+                            const nextRanks = previewMtaSortedMembers.slice(nextStart, index).reverse().map((m, i) => ({
+                                mta: m.mta,
+                                rank: index - i // index is current rank-1. So neighbor is rank (index-i)
+                            }));
+
+                            // "Prev Rank" (Behind/Worse) - Higher indices (lower MTA)
+                            // Get up to 5 members after current index
+                            const prevEnd = Math.min(previewMtaSortedMembers.length, index + 6);
+                            const prevRanks = previewMtaSortedMembers.slice(index + 1, prevEnd).map((m, i) => ({
+                                mta: m.mta,
+                                rank: index + 2 + i // index+1 is next rank (#index+2)
+                            }));
+
+                            return {
+                                currentRank: index + 1,
+                                nextRanks,
+                                prevRanks
+                            };
+                        })()}
+
+                        onClose={() => handleMemberSelect(null)}
+                        onUpdateMTA={(id, val) => {
+                            const report = activeGroup.reports.find(r => r.memberId === id);
+                            if (report) {
+                                updateProjection(activeGroup.id, report.id, val);
+                            }
+                        }}
+                        onUpdatePromRec={(id, rec) => {
+                            const report = activeGroup.reports.find(r => r.memberId === id);
+                            if (report) {
+                                // Manual Update: Call updateReport (Method 2)
+                                // This action includes quota validation but does not FORCE auto-assignment of others
+                                // preserving the "Manual" nature of this specific interaction.
+                                updateReport(activeGroup.id, report.id, { promotionRecommendation: rec });
+                            }
+                        }}
+                        currentRsca={activeGroup.rsca}
+                        onNavigatePrev={() => {
+                            const idx = rankedMembers.findIndex(m => m.id === selectedMemberId);
+                            if (idx > 0) selectMember(rankedMembers[idx - 1].id);
+                        }}
+                        onNavigateNext={() => {
+                            const idx = rankedMembers.findIndex(m => m.id === selectedMemberId);
+                            if (idx < rankedMembers.length - 1) selectMember(rankedMembers[idx + 1].id);
+                        }}
+
                     />
                 )
             }
+
+            {latestResult[activeGroup.id] && (
+                <SubmissionConfirmationModal
+                    isOpen={isSubmitModalOpen}
+                    onClose={() => setIsSubmitModalOpen(false)}
+                    onConfirm={handleConfirmSubmit}
+                    groupId={activeGroup.id}
+                    result={latestResult[activeGroup.id]!}
+                />
+            )}
 
         </div >
     );

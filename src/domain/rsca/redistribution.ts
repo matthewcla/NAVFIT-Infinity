@@ -320,6 +320,32 @@ export function redistributeMTA(
   }
 
   const finalRsca = mean(x);
+
+  // Fix 4: Sanity Check - Conflict Detector
+  // Verify monotonicity (Rank 1 >= Rank 2 >= ... >= Rank N)
+  // If failed, revert to anchors/priors (User Lock wins).
+  let monotonicityViolated = false;
+  for (let i = 0; i < N - 1; i++) {
+    if (x[i] < x[i + 1] - 1e-9) { // Tolerance for float
+      monotonicityViolated = true;
+      break;
+    }
+  }
+
+  if (monotonicityViolated) {
+    const safeVector = members.map(m => m.anchorValue ?? m.mta ?? muTarget);
+    return {
+      mtaVector: safeVector,
+      finalRSCA: mean(safeVector),
+      isFeasible: false, // Or true if safe vector is feasible? But usually if we revert, we consider the optimization failed.
+      reasonCodes: [RedistributionReasonCode.ANCHOR_CONSTRAINT],
+      changedMembers: [],
+      deltas: [],
+      explanation: "Optimization failed: User locks conflict with Rank Order (Rank 1 < Rank 2). Reverted to anchored values.",
+      diagnostics: { meanMin, meanMax, band: { muMin, muMax }, iterations: iter },
+    };
+  }
+
   // Re-check feasibility (might have drifted slightly or failed to converge)
   const feasible = finalRsca >= muMin - tol && finalRsca <= muMax + tol;
 

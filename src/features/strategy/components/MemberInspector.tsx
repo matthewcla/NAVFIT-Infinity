@@ -24,6 +24,7 @@ import { checkQuota } from '@/features/strategy/logic/validation';
 import { createSummaryGroupContext } from '@/features/strategy/logic/validation';
 import { ReportAdminTab } from './ReportAdminTab';
 import { ReportCommentsTab } from './ReportCommentsTab';
+import { TrajectorySimulator } from './TrajectorySimulator';
 
 interface MemberInspectorProps {
     memberId: string;
@@ -216,8 +217,11 @@ export function MemberInspector({
             // But updateReport takes a partial.
             // Let's just pass the whole simulatedReport as the update.
             // Ideally we diff, but sending all is safe.
-            // updateProjection for MTA is separate
-            updateProjection(activeGroupNode.id, currentReport.id, simulatedReport.traitAverage);
+            // Only update projection (which triggers auto-rebalance) if MTA actually changed
+            if (simulatedReport.traitAverage !== currentReport.traitAverage) {
+                updateProjection(activeGroupNode.id, currentReport.id, simulatedReport.traitAverage);
+            }
+
             updateReport(activeGroupNode.id, currentReport.id, simulatedReport);
             setHistory([]);
             setFuture([]);
@@ -447,6 +451,14 @@ export function MemberInspector({
                                             <span>3.50</span>
                                             <span>5.00</span>
                                         </div>
+                                    </div>
+
+                                    {/* Trajectory Simulator - Collapsible or Inline? Inline for now */}
+                                    <div className="mt-6 pt-6 border-t border-slate-100">
+                                        <TrajectorySimulator
+                                            currentAvg={simulatedMta} // Using current report MTA as proxy for "Current Avg" for now, ideally Cumulative
+                                            totalReportsSoFar={1}
+                                        />
                                     </div>
                                 </div>
                             )}

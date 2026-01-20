@@ -8,8 +8,8 @@ import { THEME_COLORS } from '@/styles/theme';
 import { useScatterLayout, type RSCAReport } from '../hooks/useScatterLayout';
 import { useScatterChartDimensions } from '../hooks/useScatterChartDimensions';
 
-// Default start date logic handled in component props or hook defaults
-// const INITIAL_RSCA = 3.85; // This seems unused or mock? Let's keep for now if needed by logic but remove date.
+// --- MOCK DATA FOR PROTOTYPING ---
+const MOCK_START_DATE = new Date('2025-01-01');
 
 const INITIAL_RSCA = 3.85;
 const INITIAL_SIGNED_COUNT = 45;
@@ -37,8 +37,6 @@ export function StrategyScattergram({ summaryGroups = EMPTY_SUMMARY_GROUPS, rost
     // Prefer passed roster prop, fallback to store
     const roster = propRoster.length > 0 ? propRoster : storeRoster;
 
-    const { selectedReportId, selectReport } = useNavfitStore();
-
     const scrollContainerRef = useRef<HTMLDivElement>(null);
 
     // --- DIMENSIONS & SCALES ---
@@ -58,10 +56,7 @@ export function StrategyScattergram({ summaryGroups = EMPTY_SUMMARY_GROUPS, rost
         yToTrait,
         dateToX,
         monthToX
-    } = useScatterChartDimensions({
-        height: propHeight,
-        startDate: new Date(new Date().getFullYear(), 0, 1) // Default to Jan 1st of current year
-    });
+    } = useScatterChartDimensions({ height: propHeight, startDate: MOCK_START_DATE });
 
     // Auto-scroll to focusDate (Horizontal)
     useEffect(() => {
@@ -199,7 +194,7 @@ export function StrategyScattergram({ summaryGroups = EMPTY_SUMMARY_GROUPS, rost
     // --- USE CUSTOM LAYOUT HOOK ---
     const { points, trendLines, impactConnections } = useScatterLayout({
         displayReports,
-        startDate: new Date(new Date().getFullYear(), 0, 1),
+        startDate: MOCK_START_DATE,
         traitToY,
         monthToX,
         chartTotalWidth: CHART_TOTAL_WIDTH
@@ -302,7 +297,7 @@ export function StrategyScattergram({ summaryGroups = EMPTY_SUMMARY_GROUPS, rost
     // Timeline Labels Generator
     const TIMELINE_LABELS = useMemo(() => {
         const arr = [];
-        const start = new Date(new Date().getFullYear(), 0, 1);
+        const start = new Date(MOCK_START_DATE);
         start.setMonth(start.getMonth() - 3);
 
         for (let i = 0; i < NUM_MONTHS; i++) {
@@ -408,7 +403,7 @@ export function StrategyScattergram({ summaryGroups = EMPTY_SUMMARY_GROUPS, rost
                                     {[1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0].map(val => {
                                         const y = traitToY(val);
                                         return (
-                                            <line key={val} x1={0} y1={y} x2={CHART_TOTAL_WIDTH} y2={y} stroke={THEME_COLORS.slate400} strokeDasharray="4 4" />
+                                        <line key={val} x1={0} y1={y} x2={CHART_TOTAL_WIDTH} y2={y} stroke={THEME_COLORS.slate400} strokeDasharray="4 4" />
                                         );
                                     })}
 
@@ -530,7 +525,7 @@ export function StrategyScattergram({ summaryGroups = EMPTY_SUMMARY_GROUPS, rost
                                         let strokeColor: string = THEME_COLORS.special;
 
                                         // Highlight Selected Member if in Flight Path Mode
-                                        const isSelected = selectedMemberId === p.report.memberId || selectedReportId === p.report.id;
+                                        const isSelected = selectedMemberId === p.report.memberId;
                                         const opacity = (flightPathData && !isSelected) ? 0.3 : 1; // Dim others in Flight Mode
 
                                         // Default Logic
@@ -577,11 +572,9 @@ export function StrategyScattergram({ summaryGroups = EMPTY_SUMMARY_GROUPS, rost
                                                 opacity={opacity}
                                                 onMouseDown={(e) => handleMouseDown(e, p.id)}
                                                 onClick={(e) => {
-                                                    // Single click selects member/report
+                                                    // Single click selects member for Cone View
                                                     e.stopPropagation();
-                                                    if (selectReport) selectReport(p.report.id);
-
-                                                    // Also update member selection for context if needed
+                                                    // This was missing!
                                                     if (useNavfitStore.getState().selectMember) {
                                                         useNavfitStore.getState().selectMember(p.report.memberId);
                                                     }

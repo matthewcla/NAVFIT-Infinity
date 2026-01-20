@@ -8,8 +8,7 @@ import { SailorProfiles } from '@/features/roster/components/SailorProfiles';
 import { useNavfitStore } from '@/store/useNavfitStore';
 import { useRedistributionStore } from '@/store/useRedistributionStore';
 import { CommandDeck } from '@/features/strategy/components/CommandDeck/CommandDeck';
-import { CommandStrategyCenter } from '@/features/strategy/components/CommandStrategyCenter';
-import { CompetitiveGroupDashboard } from './features/strategy/components/CompetitiveGroupDashboard';
+import { CompetitiveGroupManager } from '@/features/strategy/components/CompetitiveGroupManager';
 import { DevTools } from '@/features/dev/DevTools';
 
 function App() {
@@ -31,8 +30,8 @@ function App() {
 
   // Reset workspace view if tab changes
   useEffect(() => {
-    // Reset workspace view if navigating away from summary groups
-    if (activeTab !== 'summary_groups') {
+    // Reset workspace view if navigating away from strategy areas
+    if (activeTab !== 'summary_groups' && activeTab !== 'competitive_groups') {
       setStrategyViewMode('landing');
     }
   }, [activeTab, setStrategyViewMode]);
@@ -41,10 +40,11 @@ function App() {
     switch (activeTab) {
       case 'dashboard':
         return <CommandDeck />;
-      case 'summary_groups':
-        return <CommandStrategyCenter />;
       case 'competitive_groups':
-        return <CompetitiveGroupDashboard />;
+        return <CompetitiveGroupManager />;
+      case 'summary_groups':
+        // Legacy Redirect (Safety Net)
+        return <CompetitiveGroupManager />;
       case 'profiles':
         return <SailorProfiles />;
       case 'schedule':

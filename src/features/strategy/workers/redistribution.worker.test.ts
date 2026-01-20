@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { processWorkerMessage } from './workerLogic';
-import type { WorkerInput } from './types';
-import type { Member } from '@/domain/rsca/types';
+import { REDISTRIBUTE, type RedistributionInput } from './types';
+import type { Member, RedistributionResult } from '@/domain/rsca/types';
 import { DEFAULT_CONSTRAINTS } from '@/domain/rsca/constants';
 // Import the mocked module so we can control it
 import { redistributeMTA } from '@/domain/rsca/redistribution';
@@ -34,7 +34,8 @@ describe('Worker Logic', () => {
     };
 
     it('processes valid input correctly', () => {
-        const input: WorkerInput = {
+        const input: RedistributionInput = {
+            type: REDISTRIBUTE,
             members: [
                 { id: '1', rank: 1, mta: 4.2, isAnchor: false }
             ],
@@ -46,15 +47,17 @@ describe('Worker Logic', () => {
         const output = processWorkerMessage(input);
 
         expect(output.success).toBe(true);
-        if (output.success) {
+        if (output.success && output.type === REDISTRIBUTE) {
+            const result = output.result as RedistributionResult;
             expect(output.requestId).toBe('req-1');
-            expect(output.result.rsca).toBe(4.0);
-            expect(output.result.updatedMembers[0].mta).toBe(4.2);
+            expect(result.rsca).toBe(4.0);
+            expect(result.updatedMembers[0].mta).toBe(4.2);
         }
     });
 
     it('merges anchors correctly before processing', () => {
-        const input: WorkerInput = {
+        const input: RedistributionInput = {
+            type: REDISTRIBUTE,
             members: [
                 { id: '1', rank: 1, mta: 4.2, isAnchor: false }
             ],
@@ -66,9 +69,10 @@ describe('Worker Logic', () => {
         const output = processWorkerMessage(input);
 
         expect(output.success).toBe(true);
-        if (output.success) {
-            expect(output.result.updatedMembers[0].mta).toBe(4.5); // Should have been updated by anchor map
-            expect(output.result.updatedMembers[0].isAnchor).toBe(true);
+        if (output.success && output.type === REDISTRIBUTE) {
+            const result = output.result as RedistributionResult;
+            expect(result.updatedMembers[0].mta).toBe(4.5); // Should have been updated by anchor map
+            expect(result.updatedMembers[0].isAnchor).toBe(true);
         }
     });
 
@@ -78,7 +82,8 @@ describe('Worker Logic', () => {
             throw new Error("Calculation failed");
         });
 
-        const input: WorkerInput = {
+        const input: RedistributionInput = {
+            type: REDISTRIBUTE,
             members: [],
             anchors: {},
             params: { ...DEFAULT_CONSTRAINTS, algorithmParams: DEFAULT_ALGORITHM_PARAMS },

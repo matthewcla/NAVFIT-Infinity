@@ -6,13 +6,13 @@ import type { RosterMember } from '@/types/roster';
 
 const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
-// Align with StrategyScattergram dynamic defaults
-const getDynamicStartDate = () => new Date(new Date().getFullYear(), 0, 1);
+// Align with StrategyScattergram MOCK_START_DATE for "Same Chart" consistency
+const START_DATE = new Date('2025-01-01');
 
-const generateTimeline = (startDate: Date): TimelineMonth[] => {
+const generateTimeline = (): TimelineMonth[] => {
     // Start 3 months back from Fixed Start Date
-    const startYear = startDate.getFullYear();
-    const startMonth = startDate.getMonth();
+    const startYear = START_DATE.getFullYear();
+    const startMonth = START_DATE.getMonth();
 
     const months: TimelineMonth[] = [];
     for (let i = -3; i < 21; i++) { // Total 24 months
@@ -27,9 +27,7 @@ const generateTimeline = (startDate: Date): TimelineMonth[] => {
     return months;
 };
 
-// We calculate this inside component or keep global if static enough for session?
-// Ideally strictly dynamic.
-const TIMELINE_MONTHS = generateTimeline(getDynamicStartDate());
+const TIMELINE_MONTHS = generateTimeline();
 
 interface ManningWaterfallProps {
     summaryGroups?: SummaryGroup[];
@@ -178,7 +176,7 @@ export function ManningWaterfall({ summaryGroups = [], roster = [], onOpenReport
                                     members={sortedMembers}
                                     isExpanded={isExpanded}
                                     onToggle={() => toggleGroup(groupTitle)}
-                                    startDate={getDynamicStartDate()}
+                                    startDate={START_DATE}
                                     timelineMonths={TIMELINE_MONTHS}
                                     projections={projections}
                                     onOpenReport={onOpenReport}

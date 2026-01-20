@@ -1,11 +1,11 @@
 import { useState, useMemo } from 'react';
 import { useNavfitStore } from '@/store/useNavfitStore';
+import { getCompetitiveGroupStats } from '@/features/strategy/logic/rsca';
 import type { SummaryGroup } from '@/types';
 import { StrategyGroupCard } from './StrategyGroupCard';
-import { ChevronRight, Filter, Plus, Calendar, Layers, Search } from 'lucide-react';
+import { ChevronRight, Filter, Plus } from 'lucide-react';
 import { TrashDropZone } from '@/features/dashboard/components/TrashDropZone';
 import { ConfirmationModal } from '@/features/dashboard/components/ConfirmationModal';
-import { calculateImpact, getReportType } from '@/features/strategy/logic/cycleHelpers';
 
 interface ActiveCyclesListProps {
     groups: SummaryGroup[];
@@ -30,6 +30,52 @@ export function ActiveCyclesList({ groups, onSelect, selectedGroupId, onAddClick
     // Search State
     const [searchTerm, setSearchTerm] = useState('');
     const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({});
+
+    // Helper: RSCA Impact Calculation
+    const calculateImpact = (group: SummaryGroup) => {
+        const rank = group.paygrade || (group.competitiveGroupKey ? group.competitiveGroupKey.split(' ')[0] : null);
+        if (!rank) return 0.00;
+
+        // Baseline: All *other* groups for this rank
+        const stats = getCompetitiveGroupStats(summaryGroups, rank, group.id);
+        const baselineAvg = stats.average;
+
+        // This Group Stats
+        let groupTotal = 0;
+        let groupCount = 0;
+        group.reports.forEach(r => {
+            const mta = r.traitAverage || 0;
+            if (mta > 0) {
+                groupTotal += mta;
+                groupCount++;
+            }
+        });
+
+        if (groupCount === 0) return 0.00;
+
+        // Projected Cumulative if this group is added
+        const newTotal = stats.totalScore + groupTotal;
+        const newCount = stats.count + groupCount;
+
+        // If baseline is 0 (first group), the impact is effectively the distance from "neutral" or 0,
+        // but typically we show 0 impact if it defines the average or just show deviation from 3.0?
+        // Let's stick to 0.00 if it's the only group.
+        if (stats.count === 0) return 0.00;
+
+        const newAvg = newTotal / newCount;
+        return newAvg - baselineAvg;
+    };
+
+    // Helper: Report Type
+    const getReportType = (name: string): string => {
+        const n = name.toLowerCase();
+        if (n.includes('periodic')) return 'Periodic';
+        if (n.includes('detachment of rs') || n.includes('det. of rs') || n.includes('dors')) return 'RS Det.';
+        if (n.includes('detachment of individual') || n.includes('doi')) return 'Ind Det.';
+        if (n.includes('special')) return 'Special';
+        if (n.includes('detachment')) return 'Ind Det.'; // Default detachment 
+        return 'Periodic'; // Default
+    };
 
     // Search Logic
     const filteredGroups = useMemo(() => {
@@ -77,7 +123,7 @@ export function ActiveCyclesList({ groups, onSelect, selectedGroupId, onAddClick
             map.get(key)!.push(g);
         });
         return map;
-    }, [filteredGroups, cycleSort]);
+    }, [filteredGroups, cycleSort]); // Changed logic to use filteredGroups
 
     // Sorting the Groups (Keys)
     const sortedKeys = useMemo(() => {
@@ -126,59 +172,56 @@ export function ActiveCyclesList({ groups, onSelect, selectedGroupId, onAddClick
     const showTrash = draggingItemType === 'summary_group' || draggingItemType === 'member_report';
 
     return (
-        <div className="relative h-full flex flex-col bg-slate-50/50">
+        <div className="relative h-full flex flex-col">
 
             {/* Header / Controls */}
-            <div className="sticky top-0 z-20 bg-slate-50/95 backdrop-blur-md border-b border-slate-200/60 pb-2 transition-all duration-200">
-                {/* Row 1: Search & Tabs */}
-                <div className="flex flex-col sm:flex-row items-center gap-3 px-4 pt-3 pb-2">
-                    {/* Search */}
-                    <div className="relative flex-1 w-full">
-                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                            <Search className="h-4 w-4 text-slate-400" />
-                        </div>
-                        <input
-                            type="text"
-                            placeholder="Search cycles..."
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full pl-9 pr-3 py-1.5 bg-white border border-slate-200 rounded-lg text-sm text-slate-700 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all font-medium shadow-sm"
-                        />
-                    </div>
-
-                    {/* Phase Tabs (Segmented Control style) */}
-                    <div className="flex bg-slate-200/50 p-1 rounded-lg shrink-0 w-full sm:w-auto">
-                        {['Active', 'Planned', 'Archive'].map((phase) => (
-                            <button
-                                key={phase}
-                                onClick={() => setCycleListPhase(phase as 'Active' | 'Planned' | 'Archive')}
-                                className={`flex-1 sm:flex-none px-3 py-1 text-[11px] font-bold uppercase tracking-wide rounded-md transition-all ${cycleListPhase === phase
-                                    ? 'bg-white text-indigo-600 shadow-sm'
-                                    : 'text-slate-500 hover:text-slate-700 hover:bg-slate-200/50'
-                                    }`}
-                            >
-                                {phase}
-                            </button>
-                        ))}
-                    </div>
+            <div className="px-6 pb-2 pt-2 bg-slate-50 border-b border-slate-100 flex flex-col gap-3 sticky top-0 z-20">
+                {/* 1. Search Bar (Top) */}
+                <div className="relative">
+                    <input
+                        type="text"
+                        placeholder="Search cycles, members..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm text-slate-700 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all font-medium shadow-sm"
+                    />
                 </div>
 
-                {/* Row 2: Secondary Controls */}
-                <div className="flex items-center justify-between px-4 pb-1">
-                    {/* Sort Toggle */}
-                    <button
-                        onClick={() => setCycleSort(cycleSort === 'DueDate' ? 'Status' : 'DueDate')}
-                        className="flex items-center gap-1.5 px-2 py-1 text-[10px] font-bold text-slate-500 uppercase tracking-wider hover:text-indigo-600 hover:bg-indigo-50 rounded transition-colors"
-                    >
-                        {cycleSort === 'DueDate' ? <Calendar className="w-3 h-3" /> : <Layers className="w-3 h-3" />}
-                        <span>Sorted by {cycleSort === 'DueDate' ? 'Date' : 'Status'}</span>
-                    </button>
+                {/* 2. Phase Toggles (Middle - Swapped In) */}
+                <div className="flex p-1 bg-slate-100 rounded-lg">
+                    {['Active', 'Planned', 'Archive'].map((phase) => (
+                        <button
+                            key={phase}
+                            onClick={() => setCycleListPhase(phase as 'Active' | 'Planned' | 'Archive')}
+                            className={`flex-1 px-3 py-1.5 text-xs font-semibold rounded-md transition-all ${cycleListPhase === phase
+                                ? 'bg-white text-slate-900 shadow-sm'
+                                : 'text-slate-500 hover:text-slate-700'
+                                }`}
+                        >
+                            {phase}
+                        </button>
+                    ))}
+                </div>
 
-                    {/* Expand/Collapse */}
-                    <div className="flex gap-3 text-[10px] font-medium text-slate-400">
-                        <button onClick={handleExpandAll} className="hover:text-indigo-600 transition-colors">Expand All</button>
-                        <span className="text-slate-300">|</span>
-                        <button onClick={handleCollapseAll} className="hover:text-indigo-600 transition-colors">Collapse All</button>
+                {/* 3. Controls Row: Sort | Expand */}
+                <div className="flex items-center justify-between pt-1">
+                    {/* Sort Toggle (Left Edge) */}
+                    <div className="flex items-center gap-2">
+                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest hidden sm:inline-block">
+                            Sort
+                        </span>
+                        <button
+                            onClick={() => setCycleSort(cycleSort === 'DueDate' ? 'Status' : 'DueDate')}
+                            className="px-2 py-1 bg-white border border-slate-200 rounded text-[10px] font-bold text-slate-600 uppercase tracking-wider hover:border-slate-300 hover:text-slate-800 transition-colors shadow-sm"
+                        >
+                            {cycleSort === 'DueDate' ? 'Due' : 'Status'}
+                        </button>
+                    </div>
+
+                    {/* Expand/Collapse (Right Edge) */}
+                    <div className="flex gap-2 text-[10px] font-medium text-slate-500">
+                        <button onClick={handleExpandAll} className="hover:text-indigo-600 transition-colors">Expand</button>
+                        <button onClick={handleCollapseAll} className="hover:text-indigo-600 transition-colors">Collapse</button>
                     </div>
                 </div>
             </div>
@@ -186,15 +229,12 @@ export function ActiveCyclesList({ groups, onSelect, selectedGroupId, onAddClick
             {/* Scrollable List Container */}
             <div className="flex-1 overflow-y-auto custom-scrollbar pb-24 px-0 [scrollbar-gutter:stable]">
                 {groups.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center py-16 px-4 text-slate-400">
-                        <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mb-4">
-                            <Filter className="w-8 h-8 opacity-20 text-slate-500" />
-                        </div>
-                        <h3 className="text-sm font-semibold text-slate-600">No active cycles</h3>
-                        <p className="text-xs text-slate-400 mt-1">Try adjusting filters or create a new group.</p>
+                    <div className="text-center py-12 px-4 text-slate-400">
+                        <Filter className="w-8 h-8 mx-auto mb-2 opacity-20" />
+                        <p className="text-sm">No summary groups found.</p>
                     </div>
                 ) : (
-                    <div className="space-y-6 pt-4">
+                    <div className="space-y-6 pt-2">
                         {sortedKeys.map(key => {
                             const subGroups = groupedMap.get(key) || [];
                             const isCollapsed = collapsedGroups[key] || false;
@@ -202,20 +242,18 @@ export function ActiveCyclesList({ groups, onSelect, selectedGroupId, onAddClick
                             if (subGroups.length === 0) return null;
 
                             return (
-                                <div key={key} className="flex flex-col gap-2 px-4 transition-all duration-300">
+                                <div key={key} className="flex flex-col gap-3 px-4">
                                     <button
                                         onClick={() => toggleGroup(key)}
-                                        className="flex items-center gap-2 pl-2 w-full hover:bg-white p-1.5 rounded-lg transition-all group sticky top-0 z-10"
+                                        className="flex items-center gap-2 pl-2 w-full hover:bg-slate-100 p-1 rounded transition-colors group sticky top-0 z-10 bg-slate-50/95 backdrop-blur-sm shadow-sm border border-slate-100/50"
                                     >
-                                        <div className={`p-0.5 rounded-md transition-colors ${!isCollapsed ? 'bg-indigo-50 text-indigo-600' : 'text-slate-300 group-hover:text-slate-400'}`}>
-                                            <ChevronRight
-                                                className={`w-3.5 h-3.5 transition-transform duration-200 ${!isCollapsed ? 'rotate-90' : ''}`}
-                                            />
-                                        </div>
-                                        <span className="text-xs font-bold text-slate-500 uppercase tracking-widest group-hover:text-indigo-600 transition-colors">
+                                        <ChevronRight
+                                            className={`w-4 h-4 text-slate-400 transition-transform duration-200 ${!isCollapsed ? 'rotate-90' : ''}`}
+                                        />
+                                        <span className="text-xs font-bold text-slate-600 uppercase tracking-widest group-hover:text-slate-800">
                                             {key}
                                         </span>
-                                        <span className="text-[10px] font-bold text-slate-400 ml-auto bg-slate-100 px-2 py-0.5 rounded-full group-hover:bg-indigo-50 group-hover:text-indigo-600 transition-colors">
+                                        <span className="text-xs text-slate-400 ml-auto font-medium bg-slate-100 px-1.5 py-0.5 rounded-full">
                                             {subGroups.length}
                                         </span>
                                     </button>
@@ -223,9 +261,9 @@ export function ActiveCyclesList({ groups, onSelect, selectedGroupId, onAddClick
                                     {/* Cards */}
                                     {
                                         !isCollapsed && (
-                                            <div className="grid gap-3 pl-2 border-l-2 border-slate-100 ml-3">
+                                            <div className="grid gap-2.5">
                                                 {subGroups.map(group => {
-                                                    const rscaImpact = calculateImpact(group, summaryGroups);
+                                                    const rscaImpact = calculateImpact(group);
                                                     const memberCount = group.reports.length;
                                                     const now = new Date();
                                                     const endDate = new Date(group.periodEndDate);
@@ -300,13 +338,13 @@ export function ActiveCyclesList({ groups, onSelect, selectedGroupId, onAddClick
                         <div>
                             <button
                                 onClick={onAddClick}
-                                className="group bg-indigo-600 text-white shadow-lg shadow-indigo-600/30 rounded-full h-14 w-14 hover:w-48 transition-all duration-300 ease-in-out overflow-hidden flex items-center"
+                                className="group bg-indigo-600 text-white shadow-lg rounded-full h-14 w-14 hover:w-48 transition-all duration-300 ease-in-out overflow-hidden flex items-center"
                             >
                                 <div className="flex-shrink-0 w-14 h-14 flex items-center justify-center">
                                     <Plus className="w-6 h-6" />
                                 </div>
-                                <span className="whitespace-nowrap font-bold pr-6 opacity-0 group-hover:opacity-100 transition-opacity duration-300 delay-75 text-sm">
-                                    New Summary Group
+                                <span className="whitespace-nowrap font-bold pr-6 opacity-0 group-hover:opacity-100 transition-opacity duration-300 delay-75">
+                                    Summary Group
                                 </span>
                             </button>
                         </div>

@@ -3,44 +3,19 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { useRedistributionStore } from './useRedistributionStore';
 import { useNavfitStore } from './useNavfitStore';
 import type { Member } from '@/domain/rsca/types';
-
-// Mock Worker
-class MockWorker {
-    onmessage: ((e: any) => void) | null = null;
-    postMessage(data: any) {
-        // Simulate worker processing
-        setTimeout(() => {
-            if (this.onmessage) {
-                // Mock result
-                const { members } = data;
-                this.onmessage({
-                    data: {
-                        requestId: data.requestId,
-                        success: true,
-                        result: {
-                            mtaVector: members.map((m: any) => m.mta), // Return same MTA for simplicity
-                            finalRSCA: 4.0,
-                            isFeasible: true,
-                            deltas: [],
-                            explanation: 'Mock Success',
-                            updatedMembers: members, // Mock updated members
-                            changedMembers: [],
-                            reasonCodes: []
-                        }
-                    }
-                });
-            }
-        }, 50);
-    }
-    terminate() { }
-}
-
-(globalThis as any).Worker = MockWorker as any;
+import { WorkerMock } from '@/test/mocks/workerMock';
+import { REDISTRIBUTE } from '@/features/strategy/workers/types';
 
 describe('useRedistributionStore', () => {
     beforeEach(() => {
-        useRedistributionStore.getState().initWorker();
-        // Reset NavfitStore
+        // Reset Store State
+        useRedistributionStore.setState({
+            worker: null,
+            latestResult: {},
+            isCalculating: false,
+            error: null
+        });
+
         useNavfitStore.setState({
             summaryGroups: [{
                 id: 'group1',
@@ -53,8 +28,10 @@ describe('useRedistributionStore', () => {
                 promotionStatus: 'REGULAR',
                 billetSubcategory: 'ALL',
                 memberIds: ['1', '2']
-            }]
+            } as any]
         } as any);
+
+        useRedistributionStore.getState().initWorker();
     });
 
     afterEach(() => {
@@ -64,6 +41,8 @@ describe('useRedistributionStore', () => {
     it('should initialize worker', () => {
         const store = useRedistributionStore.getState();
         expect(store.worker).toBeDefined();
+        // Check if mock captured it
+        expect(WorkerMock.instances.length).toBeGreaterThan(0);
     });
 
     it('should request redistribution and update state', async () => {
@@ -82,12 +61,33 @@ describe('useRedistributionStore', () => {
             maxIterations: 30
         });
 
-        // Initially calculating
-        // Note: debounce might delay this.
-        await new Promise(r => setTimeout(r, 400)); // Wait for debounce
+        // Advance timers for debounce (100ms)
+        await new Promise(r => setTimeout(r, 150));
 
-        // Wait for worker mock response
-        await new Promise(r => setTimeout(r, 100));
+        const worker = WorkerMock.latest;
+        expect(worker).toBeDefined();
+
+        // Verify message sent
+        const lastMsg = worker!.getLastMessage();
+        expect(lastMsg).toBeDefined();
+        expect(lastMsg.type).toBe(REDISTRIBUTE);
+        expect(lastMsg.requestId).toBeDefined();
+
+        // Simulate Worker Response
+        worker!.triggerMessage({
+            requestId: lastMsg.requestId,
+            type: REDISTRIBUTE,
+            success: true,
+            result: {
+                updatedMembers: members.map(m => ({ ...m, mta: m.mta })),
+                rsca: 4.0,
+                isFeasible: true,
+                auditTrail: [],
+                changedMembers: [],
+                reasonCodes: [],
+                infeasibilityReport: null
+            }
+        });
 
         const result = useRedistributionStore.getState().latestResult['group1'];
         expect(result).toBeDefined();
@@ -108,6 +108,17 @@ describe('useRedistributionStore', () => {
         const group = navfitState.summaryGroups.find(g => g.id === 'group1');
         expect(group?.reports[0].id).toBe('2');
         expect(group?.reports[1].id).toBe('1');
+
+        // Wait for potential debounce in setRankOrder if any (it calls requestRedistribution)
+        await new Promise(r => setTimeout(r, 150));
+
+        const worker = WorkerMock.latest;
+
+        // It might send both REDISTRIBUTE and CALCULATE_STRATEGY.
+        // We just verify REDISTRIBUTE was sent.
+        const redistributeMsg = worker!.sentMessages.find(m => m.type === REDISTRIBUTE);
+
+        expect(redistributeMsg).toBeDefined();
     });
 
     it('setAnchorMTA should update NavfitStore and trigger redistribution', async () => {
@@ -120,5 +131,11 @@ describe('useRedistributionStore', () => {
 
         expect(member?.isLocked).toBe(true);
         expect(member?.traitAverage).toBe(4.8);
+
+        await new Promise(r => setTimeout(r, 150));
+        const worker = WorkerMock.latest;
+        const lastMsg = worker!.getLastMessage();
+        expect(lastMsg).toBeDefined();
+        expect(lastMsg.type).toBe(REDISTRIBUTE);
     });
 });
