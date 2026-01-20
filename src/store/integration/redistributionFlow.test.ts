@@ -71,12 +71,22 @@ describe('Integration: Redistribution Flow', () => {
         const dummyResult: StrategyResult = {
             optimizedGroups: [
                 {
-                     ...updatedGroup,
-                     reports: updatedGroup.reports.map(r => ({ ...r, violations: [] }))
+                    ...updatedGroup,
+                    reports: updatedGroup.reports.map(r => ({ ...r, violations: [] }))
                 }
             ],
-            trajectory: [{ mta: 4.0, rsca: 3.8, rank: 1, delta: 0, memberId: 'r2' }], // Dummy trajectory point
-            explanation: 'Done'
+            trajectory: [{
+                date: Date.now(),
+                rsca: 3.8,
+                target: 4.2,
+                margin: 0.4,
+                groupName: 'G1',
+                groupId: 'g1',
+                compKey: 'O3 1110',
+                isProjected: false,
+                optimalMta: 4.0,
+                memberCount: 2
+            }]
         };
 
         worker!.triggerMessage({
