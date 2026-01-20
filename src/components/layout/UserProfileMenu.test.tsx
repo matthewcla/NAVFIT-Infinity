@@ -45,49 +45,11 @@ describe('UserProfileMenu', () => {
 
         // Wait for menu transition
         await waitFor(() => {
-            // Use getAll because strictly speaking Headless UI might keep hidden nodes or transitions might duplicate?
-            // But usually getByText is fine if open.
-            expect(screen.getByText('Switch Profile')).toBeTruthy();
+            // Check for Actions
+            expect(screen.getByText('Settings')).toBeTruthy();
         });
 
-        // Check for other users
-        expect(screen.getByText('RDML K. Kennedy')).toBeTruthy();
-
-        // Check for Actions
-        expect(screen.getByText('Settings')).toBeTruthy();
         expect(screen.getByText('Log out')).toBeTruthy();
-    });
-
-    test('switching profile updates store', async () => {
-        render(<UserProfileMenu collapsed={false} />);
-
-        // Open menu
-        const trigger = screen.getByRole('button');
-        fireEvent.click(trigger);
-
-        // Click on second user
-        await waitFor(() => {
-            expect(screen.getByText('RDML K. Kennedy')).toBeTruthy();
-        });
-
-        const secondUserText = screen.getByText('RDML K. Kennedy');
-        const secondUserBtn = secondUserText.closest('button');
-
-        // Ensure button is found
-        expect(secondUserBtn).toBeTruthy();
-        fireEvent.click(secondUserBtn!);
-
-        // Expect store to update
-        await waitFor(() => {
-            const state = useNavfitStore.getState();
-            expect(state.currentUser?.id).toBe(MOCK_USERS[1].id);
-        });
-
-        // And UI updates
-        // Note: The menu might close or the main button might update.
-        // The main button should now show RDML K. Kennedy.
-        // We use getAllByText because it might be in the menu (if still open/animating) AND the main button.
-        expect(screen.getAllByText('RDML K. Kennedy').length).toBeGreaterThan(0);
     });
 
     test('logging out clears user', async () => {

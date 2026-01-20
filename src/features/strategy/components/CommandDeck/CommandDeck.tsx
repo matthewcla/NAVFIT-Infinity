@@ -9,12 +9,14 @@ import { isActiveCycle } from '@/features/strategy/logic/cycleStatus';
 import { TacticalCycleGrid } from './TacticalCycleGrid';
 
 export function CommandDeck() {
-    const { currentUser } = useNavfitStore();
+    const { currentUser, roster } = useNavfitStore();
     const summaryGroups = useSummaryGroups();
 
     // Quick Stats
     const activeCycles = summaryGroups.filter(isActiveCycle).length;
-    const totalMembers = summaryGroups.reduce((acc, g) => acc + (g.reports?.length || 0), 0);
+
+    // Fixed: Count unique active members, not report entries
+    const totalMembers = roster.filter(m => !m.prd || new Date(m.prd) >= new Date()).length;
 
     const firstName = currentUser?.name?.split(' ').pop() || 'Skipper';
 
@@ -55,14 +57,14 @@ export function CommandDeck() {
                     <div className="flex-1 min-h-0 flex flex-col gap-4">
 
                         {/* Bento Grid - Takes available space */}
-                        <div className="flex-1 min-h-0 grid grid-cols-12 gap-4">
+                        <div className="flex-1 min-h-0 grid grid-cols-12 gap-4 overflow-hidden">
 
                             {/* Primary Visual: Trajectory Engine */}
                             <motion.div
                                 initial={{ opacity: 0, scale: 0.95 }}
                                 animate={{ opacity: 1, scale: 1 }}
                                 transition={{ duration: 0.5, delay: 0.1 }}
-                                className="col-span-12 lg:col-span-9 h-full bg-white rounded-2xl border border-slate-200 shadow-sm p-4 md:p-6 overflow-hidden"
+                                className="col-span-12 lg:col-span-9 h-full min-h-0 bg-white rounded-2xl border border-slate-200 shadow-sm p-4 md:p-6 overflow-hidden flex flex-col"
                             >
                                 <RscaScatterPlot />
                             </motion.div>
@@ -72,7 +74,7 @@ export function CommandDeck() {
                                 initial={{ opacity: 0, x: 20 }}
                                 animate={{ opacity: 1, x: 0 }}
                                 transition={{ duration: 0.5, delay: 0.2 }}
-                                className="col-span-12 lg:col-span-3 h-full"
+                                className="col-span-12 lg:col-span-3 h-full min-h-0 overflow-hidden"
                             >
                                 <CommandFeed />
                             </motion.div>

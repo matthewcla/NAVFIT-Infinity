@@ -8,7 +8,8 @@ import {
     CartesianGrid,
     Tooltip,
     ResponsiveContainer,
-    Legend
+    Legend,
+    ReferenceLine
 } from 'recharts';
 import { format } from 'date-fns';
 import type { SummaryGroup } from '@/types';
@@ -33,7 +34,9 @@ export function MtaTrendChart({ groups }: MtaTrendChartProps) {
             // or trust `group.rsca` if it was updated (NavfitStore doesn't always auto-update `rsca` property on the group object itself).
 
             // Let's calc largely to be safe for display
-            const activeReports = g.reports.filter(r => r.promotionRecommendation !== 'NOB');
+            // Align logic with optimizer.ts: valid reports only (Trait > 0, Not NOB, Not Observed)
+            const activeReports = g.reports.filter(r => r.traitAverage > 0 && r.promotionRecommendation !== 'NOB' && !r.notObservedReport);
+
             const calculatedRsca = activeReports.length > 0
                 ? activeReports.reduce((sum, r) => sum + r.traitAverage, 0) / activeReports.length
                 : (g.rsca || 0);
@@ -87,7 +90,14 @@ export function MtaTrendChart({ groups }: MtaTrendChartProps) {
                         />
                         <Tooltip
                             contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-                            labelFormatter={(label) => format(new Date(label), 'MMM d, yyyy')}
+                            labelFormatter={(label, payload) => {
+                                const dateStr = format(new Date(label), 'MMM d, yyyy');
+                                // Check if this is the last point (EOT) - heuristic matching the data array order
+                                if (payload && payload.length > 0 && payload[0].payload.id === data[data.length - 1].id) {
+                                    return `${dateStr} (End of Tour)`;
+                                }
+                                return dateStr;
+                            }}
                         />
                         <Legend wrapperStyle={{ fontSize: '12px', paddingTop: '10px' }} />
 
@@ -126,6 +136,14 @@ export function MtaTrendChart({ groups }: MtaTrendChartProps) {
                             strokeDasharray="4 4"
                             dot={false}
                             connectNulls
+                        />
+
+                        {/* Today Horizon Line */}
+                        <ReferenceLine
+                            x={new Date().getTime()}
+                            stroke="#94a3b8"
+                            strokeDasharray="3 3"
+                            label={{ position: 'insideTopLeft', value: 'TODAY', fill: '#94a3b8', fontSize: 10 }}
                         />
                     </LineChart>
                 </ResponsiveContainer>

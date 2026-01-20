@@ -149,7 +149,7 @@ export function CommandFeed() {
     };
 
     return (
-        <div className="flex flex-col h-full bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+        <div className="flex flex-col h-full min-h-[150px] bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
             {/* Header */}
             <div className="px-4 py-3 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
                 <div className="flex items-center gap-2">

@@ -25,7 +25,7 @@ export function TacticalCycleGrid() {
     if (activeCycles.length === 0) return null;
 
     return (
-        <div className="flex flex-col h-[220px] bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
+        <div className="flex flex-col h-[280px] bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
             {/* Sticky Header */}
             <div className="flex-none px-4 py-2 bg-slate-50/90 backdrop-blur-sm border-b border-slate-100 flex items-center gap-2 z-10">
                 <div className="w-1 h-4 bg-indigo-500 rounded-full" />
