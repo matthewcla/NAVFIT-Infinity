@@ -8,7 +8,8 @@ import {
     CartesianGrid,
     Tooltip,
     ResponsiveContainer,
-    Legend
+    Legend,
+    ReferenceLine
 } from 'recharts';
 import { format } from 'date-fns';
 import type { SummaryGroup } from '@/types';
@@ -135,6 +136,14 @@ export function MtaTrendChart({ groups }: MtaTrendChartProps) {
                             strokeDasharray="4 4"
                             dot={false}
                             connectNulls
+                        />
+
+                        {/* Today Horizon Line */}
+                        <ReferenceLine
+                            x={new Date().getTime()}
+                            stroke="#94a3b8"
+                            strokeDasharray="3 3"
+                            label={{ position: 'insideTopLeft', value: 'TODAY', fill: '#94a3b8', fontSize: 10 }}
                         />
                     </LineChart>
                 </ResponsiveContainer>

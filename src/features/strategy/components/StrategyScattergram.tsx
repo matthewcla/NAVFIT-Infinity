@@ -403,7 +403,7 @@ export function StrategyScattergram({ summaryGroups = EMPTY_SUMMARY_GROUPS, rost
                                     {[1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0].map(val => {
                                         const y = traitToY(val);
                                         return (
-                                        <line key={val} x1={0} y1={y} x2={CHART_TOTAL_WIDTH} y2={y} stroke={THEME_COLORS.slate400} strokeDasharray="4 4" />
+                                            <line key={val} x1={0} y1={y} x2={CHART_TOTAL_WIDTH} y2={y} stroke={THEME_COLORS.slate400} strokeDasharray="4 4" />
                                         );
                                     })}
 
@@ -442,6 +442,26 @@ export function StrategyScattergram({ summaryGroups = EMPTY_SUMMARY_GROUPS, rost
                                     {Array.from({ length: NUM_MONTHS }).map((_, i) => (
                                         <line key={i} x1={(i + 1) * COL_WIDTH} y1={0} x2={(i + 1) * COL_WIDTH} y2={TOTAL_SCROLL_HEIGHT} stroke={THEME_COLORS.slate100} strokeWidth={1} />
                                     ))}
+
+                                    {/* TODAY Line */}
+                                    <g>
+                                        <line
+                                            x1={dateToX(new Date())}
+                                            y1={0}
+                                            x2={dateToX(new Date())}
+                                            y2={TOTAL_SCROLL_HEIGHT}
+                                            stroke={THEME_COLORS.slate400}
+                                            strokeDasharray="3 3"
+                                            strokeWidth={1.5}
+                                        />
+                                        <text
+                                            x={dateToX(new Date()) + 4}
+                                            y={20}
+                                            className="text-[10px] fill-slate-400 font-mono font-bold uppercase tracking-widest"
+                                        >
+                                            TODAY
+                                        </text>
+                                    </g>
 
                                     {/* Flight Path Cone (Behind points) */}
                                     {flightPathData && (

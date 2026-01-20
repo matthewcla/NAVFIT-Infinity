@@ -191,6 +191,15 @@ export function RscaScatterPlot({
                             {/* The Floor Line (Lower Limit) */}
                             <ReferenceLine y={lowerTarget} stroke="#10b981" strokeDasharray="3 3" strokeOpacity={0.4} label={{ position: 'right', value: 'Min', fill: '#10b981', fontSize: 10 }} />
 
+                            {/* Today / Horizon Line */}
+                            <ReferenceLine
+                                x={new Date().getTime()}
+                                stroke="#94a3b8" // Slate-400
+                                strokeDasharray="3 3"
+                                strokeWidth={1.5}
+                                label={{ position: 'insideTopLeft', value: 'TODAY', fill: '#94a3b8', fontSize: 10, dy: 10 }}
+                            />
+
 
                             <Tooltip
                                 cursor={{ stroke: '#6366f1', strokeWidth: 1, strokeDasharray: '4 4' }}
