@@ -10,6 +10,8 @@ import { useRedistributionStore } from '@/store/useRedistributionStore';
 import { CommandDeck } from '@/features/strategy/components/CommandDeck/CommandDeck';
 import { CompetitiveGroupManager } from '@/features/strategy/components/CompetitiveGroupManager';
 import { DevTools } from '@/features/dev/DevTools';
+import { StartupAnimation } from '@/components/layout/StartupAnimation';
+import { useState } from 'react';
 
 function App() {
   const {
@@ -21,6 +23,8 @@ function App() {
     loadData,
     isLoading
   } = useNavfitStore();
+
+  const [showIntro, setShowIntro] = useState(true);
 
   // Initialize Data
   useEffect(() => {
@@ -68,17 +72,20 @@ function App() {
   }
 
   return (
-    <AppScaler>
-      <AppLayout
-        activeTab={activeTab}
-        onTabChange={setActiveTab}
-        collapsed={sidebarCollapsed}
-        onToggleCollapse={toggleSidebar}
-      >
-        {renderContent()}
-        <DevTools />
-      </AppLayout>
-    </AppScaler>
+    <>
+      {showIntro && <StartupAnimation onComplete={() => setShowIntro(false)} />}
+      <AppScaler>
+        <AppLayout
+          activeTab={activeTab}
+          onTabChange={setActiveTab}
+          collapsed={sidebarCollapsed}
+          onToggleCollapse={toggleSidebar}
+        >
+          {renderContent()}
+          <DevTools />
+        </AppLayout>
+      </AppScaler>
+    </>
   );
 }
 
