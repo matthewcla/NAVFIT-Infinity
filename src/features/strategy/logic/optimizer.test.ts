@@ -6,6 +6,79 @@ import type { SummaryGroup, Report } from '@/types';
 describe('Optimizer Logic (Phase 3 Remediation)', () => {
 
     describe('calculateOptimizedTrajectory', () => {
+        it('should apply urgency when few reports remain and off-target (below)', () => {
+            // Time-Horizon Awareness Test
+            // Scenario: User at 3.5 RSCA with only 1 report remaining
+            // Should apply urgent correction to get closer to 4.0
+            const summaryGroups: SummaryGroup[] = [
+                {
+                    id: 'past1',
+                    periodEndDate: '2023-01-01',
+                    status: 'Final',
+                    reports: Array(10).fill({ traitAverage: 3.5 } as Report),
+                    competitiveGroupKey: 'Test',
+                    paygrade: 'O-3',
+                    designator: '1110',
+                    name: 'Past Period'
+                },
+                {
+                    id: 'lastChance',
+                    periodEndDate: '2024-01-01',
+                    status: 'Draft',
+                    reports: Array(10).fill({} as Report),
+                    competitiveGroupKey: 'Test',
+                    paygrade: 'O-3',
+                    designator: '1110',
+                    name: 'Last Report'
+                }
+            ];
+
+            const trajectory = calculateOptimizedTrajectory(summaryGroups);
+            const lastPoint = trajectory.find(p => p.groupId === 'lastChance');
+
+            expect(lastPoint).toBeDefined();
+            // With urgency, MTA should be pushed higher to compensate quickly
+            // Base target would be ~3.9, but urgency should push it higher
+            expect(lastPoint?.optimalMta).toBeGreaterThan(4.0);
+        });
+
+        it('should apply urgency when few reports remain and RSCA too high', () => {
+            // Time-Horizon Awareness Test (Pullback)
+            // Scenario: User at 4.6 RSCA (way above safe zone) with only 1 report remaining
+            // Should apply urgent pullback to get back into 3.8-4.2 safe zone
+            const summaryGroups: SummaryGroup[] = [
+                {
+                    id: 'past1',
+                    periodEndDate: '2023-01-01',
+                    status: 'Final',
+                    reports: Array(10).fill({ traitAverage: 4.6 } as Report),
+                    competitiveGroupKey: 'Test',
+                    paygrade: 'O-3',
+                    designator: '1110',
+                    name: 'Past Period - Too High'
+                },
+                {
+                    id: 'correction',
+                    periodEndDate: '2024-01-01',
+                    status: 'Draft',
+                    reports: Array(10).fill({} as Report),
+                    competitiveGroupKey: 'Test',
+                    paygrade: 'O-3',
+                    designator: '1110',
+                    name: 'Correction Report'
+                }
+            ];
+
+            const trajectory = calculateOptimizedTrajectory(summaryGroups);
+            const correctionPoint = trajectory.find(p => p.groupId === 'correction');
+
+            expect(correctionPoint).toBeDefined();
+            // With urgency, MTA should be pulled down aggressively
+            // Should recommend low MTA (< 3.5) to bring cumulative RSCA down
+            expect(correctionPoint?.optimalMta).toBeLessThan(3.5);
+            expect(correctionPoint?.optimalMta).toBeGreaterThanOrEqual(2.0); // But not below physics limit
+        });
+
         it('should clamp optimized MTA to 0.00 even if budget is blown', () => {
             // Fix 1: The Starvation
             // Setup a scenario where we are massively over budget
