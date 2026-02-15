@@ -1,4 +1,5 @@
 import type { TrajectoryPoint, TargetConfig } from './optimizer';
+export type { TrajectoryPoint, TargetConfig } from './optimizer';
 
 /**
  * Risk severity levels based on trajectory analysis
