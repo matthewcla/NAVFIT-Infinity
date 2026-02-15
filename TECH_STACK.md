@@ -1,4 +1,4 @@
-deb# NAVFIT-Infinity: Architecture & Standards
+# NAVFIT-Infinity: Architecture & Standards
 
 ## 1. Core Technology Stack
 * **Framework:** React 19 + Vite (Type: Module)
